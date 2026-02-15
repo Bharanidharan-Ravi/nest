@@ -40,6 +40,7 @@ build/Release
 # Dependency directories
 node_modules/
 jspm_packages/
+backup/
 
 # Snowpack dependency directory (https://snowpack.dev/)
 web_modules/
@@ -137,3 +138,65 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+/UI/pnpm-workspace.zip
+/UI/pnpm-lock.yaml
+/API/API/.vs
+/API/API/WGAPP/.config
+/API/API/WGAPP/10/31
+/API/API/WGAPP/11
+/API/API/WGAPP/12
+/API/API/WGAPP/6
+/API/API/WGAPP/7
+/API/API/WGAPP/8/19
+/API/API/WGAPP/bin
+/API/API/WGAPP/Extensions
+/API/API/WGAPP/obj
+/API/API/WGAPP/Properties
+/API/API/WGAPP/appsettings.Development.json
+/API/API/WGAPP/WGAPP.csproj
+/API/API/WGAPP/WGAPP.csproj.user
+/API/API/WGAPP.BusinessLayer/bin
+/API/API/WGAPP.BusinessLayer/obj
+/API/API/WGAPP.DomainLayer/bin
+/API/API/WGAPP.ModelLayer/bin
+/API/WGNestAPIGateway/.vs
+/API/WGNestAPIGateway/APIGateWay.Business Layer/bin/Debug/net8.0
+/API/WGNestAPIGateway/APIGateWay.Business Layer/obj
+/API/WGNestAPIGateway/APIGateWay.DomainLayer/bin/Debug/net8.0
+/API/WGNestAPIGateway/APIGateWay.DomainLayer/obj
+/API/WGNestAPIGateway/APIGateWay.ModalLayer/bin/Debug/net8.0
+/API/WGNestAPIGateway/APIGateWay.ModalLayer/obj
+/API/WGNestAPIGateway/WGNestAPIGateway/bin/Debug/net8.0
+/API/WGNestAPIGateway/WGNestAPIGateway/obj
+*.user
+*.http
+/.vs
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.AssemblyInfo.cs
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.AssemblyInfoInputs.cache
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.assets.cache
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.csproj.AssemblyReference.cache
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.GeneratedMSBuildEditorConfig.editorconfig
+/API/API/WGAPP.DomainLayer/obj/project.assets.json
+/API/API/WGAPP.DomainLayer/obj/project.nuget.cache
+/API/API/WGAPP.DomainLayer/obj/WGAPP.DomainLayer.csproj.nuget.dgspec.json
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.AssemblyInfo.cs
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.AssemblyInfoInputs.cache
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.assets.cache
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.GeneratedMSBuildEditorConfig.editorconfig
+/API/API/WGAPP.ModelLayer/obj/project.assets.json
+/API/API/WGAPP.ModelLayer/obj/project.nuget.cache
+/API/API/WGAPP.ModelLayer/obj/WGAPP.ModelLayer.csproj.nuget.dgspec.json
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/ref/WGAPP.DomainLayer.dll
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/refint/WGAPP.DomainLayer.dll
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.csproj.CoreCompileInputs.cache
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.csproj.FileListAbsolute.txt
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.dll
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.genruntimeconfig.cache
+/API/API/WGAPP.DomainLayer/obj/Debug/net7.0/WGAPP.DomainLayer.pdb
+# *.json
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/ref/WGAPP.ModelLayer.dll
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/refint/WGAPP.ModelLayer.dll
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.csproj.FileListAbsolute.txt
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.dll
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.genruntimeconfig.cache
+/API/API/WGAPP.ModelLayer/obj/Debug/net7.0/WGAPP.ModelLayer.pdb
