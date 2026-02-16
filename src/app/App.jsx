@@ -7,35 +7,59 @@ import { useEffect } from "react";
 
 import Dashboard from "../features/dashboard/pages/Dashboard";
 import { useRef } from "react";
+import LoginPage from "../features/auth/pages/loginPage";
+import MainLayout from "./layout/MainLayout";
 
 function App() {
-  const initialized = useRef(false);
-
-  useEffect(() => {
-    if (!initialized.current) {
-      bootstrapApp();
-      initialized.current = true;
-    }
-  }, []);
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
-        {/* Protected */}
-        <Route
-          path="/*"
-          element={
-            // <AuthGuard>
-            <RouteRenderer />
-            // </AuthGuard>
-          }
-        />
 
-        {/* Fallback */}
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="/login" element={<LoginPage />} />
+
+        <Route element={<AuthGuard />}>
+          <Route element={<MainLayout />}>
+            {RouteRenderer()}
+          </Route>
+        </Route>
+
+        <Route path="/" element={<Navigate to="/login" />} />
+
       </Routes>
     </BrowserRouter>
-  );
+  )
 }
-
 export default App;
+
+
+// function App() {
+//   const initialized = useRef(false);
+
+//   // useEffect(() => {
+//   //   if (!initialized.current) {
+//   //     bootstrapApp();
+//   //     initialized.current = true;
+//   //   }
+//   // }, []);
+//   return (
+//     <BrowserRouter>
+//       <Routes>
+//         <Route path="/login" element={<LoginPage />} />
+//         {/* Protected */}
+//         <Route
+//           path="/*"
+//           element={
+//             // <AuthGuard>
+//             <RouteRenderer />
+//             // </AuthGuard>
+//           }
+//         />
+
+//         {/* Fallback */}
+//         <Route path="*" element={<Navigate to="/login" />} />
+//       </Routes>
+//     </BrowserRouter>
+//   );
+// }
+
+// export default App;
