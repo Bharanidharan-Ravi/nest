@@ -1,20 +1,23 @@
-import { create } from "zustand"
+import { create } from "zustand";
 
 export const useAppStore = create((set) => ({
-//   user: null,
+  //   user: null,
   token: null,
   isAuthenticated: false,
 
-  login: (token) =>
+  login: (token) => {
+    sessionStorage.setItem("user", JSON.stringify(token));
     set({
       token,
-      isAuthenticated: true
-    }),
-
-  logout: () =>
+      isAuthenticated: true,
+    });
+  },
+  logout: () => {
+    sessionStorage.removeItem("user");
     set({
-    //   user: null,
+      //   user: null,
       token: null,
-      isAuthenticated: false
-    })
-}))
+      isAuthenticated: false,
+    });
+  },
+}));

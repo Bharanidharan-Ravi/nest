@@ -1,12 +1,14 @@
 import { useAppStore } from "../state/useAppStore"
-import { Navigate } from "react-router-dom"
+import { Navigate, Outlet } from "react-router-dom"
 
-export default function AuthGuard({ children }) {
-  const isAuthenticated = useAppStore((s) => s.isAuthenticated)
-
-  if (!isAuthenticated) {
+export default function AuthGuard() {
+  // const isAuthenticated = useAppStore((s) => s.isAuthenticated)
+  const userData = sessionStorage.getItem('user');
+  console.log("userData: ", userData);
+  
+  if (!userData) {
     return <Navigate to="/login" />
   }
 
-  return children
+   return <Outlet />
 }

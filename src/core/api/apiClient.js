@@ -45,10 +45,10 @@ apiClient.interceptors.response.use(
         const respData = response?.data ?? {};
         const code = respData.code ?? 200;
         const message = respData.message ?? '';
-        const data = respData.Data ?? respData.data ?? null; // fallback to either Data or data
+        const data = respData.Res ?? (respData.Res || null) ?? (respData || null); // fallback to either Data or data
 
         const method = response?.config?.method?.toUpperCase();
-        console.log("response data :", response);
+        console.log("response data :", response, data, respData);
 
         if (code >= 200 && code < 300) {
             if (message && (method === 'POST' || method === 'PUT' || method === 'DELETE') && message !== 'NO') {

@@ -2,7 +2,7 @@ export default {
   widgets: [
     {
       key: "repoMaster",
-      endpoint: "/repo/master"
+      endpoint: "/sync/v2"
     },
     {
       key: "ticketStats",
