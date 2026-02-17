@@ -7,6 +7,12 @@ export const queryKeys = {
   ticket: {
     all: ["ticket"],
     list: (repoId) => [...queryKeys.ticket.all, "list", repoId],
-    detail: (id) => [...queryKeys.ticket.all, "detail", id]
+    detail: (id) => [...queryKeys.ticket.all, "detail", id],
+    thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId]
+  },
+  project: {
+    all: ["project"],
+    list: (repoId) => [...queryKeys.project.all, "list", repoId],
+    detail: (id) => [...queryKeys.project.all, "detail", id]
   }
 }

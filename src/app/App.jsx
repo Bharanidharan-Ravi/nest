@@ -4,33 +4,32 @@ import AuthGuard from "../core/auth/AuthGuard";
 import RouteRenderer from "../core/routing/RouteRenderer";
 import { bootstrapApp } from "./bootstrap";
 import { useEffect } from "react";
+import "./App.css";
 
 import Dashboard from "../features/dashboard/pages/Dashboard";
 import { useRef } from "react";
 import LoginPage from "../features/auth/pages/loginPage";
 import MainLayout from "./layout/MainLayout";
+import RouteDataLoader from "../core/routing/RouteDataLoader";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         <Route path="/login" element={<LoginPage />} />
 
         <Route element={<AuthGuard />}>
-          <Route element={<MainLayout />}>
-            {RouteRenderer()}
+          <Route element={<RouteDataLoader />}>
+            <Route element={<MainLayout />}>{RouteRenderer()}</Route>
           </Route>
         </Route>
 
         <Route path="/" element={<Navigate to="/login" />} />
-
       </Routes>
     </BrowserRouter>
-  )
+  );
 }
 export default App;
-
 
 // function App() {
 //   const initialized = useRef(false);

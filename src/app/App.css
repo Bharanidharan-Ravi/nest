@@ -1,0 +1,16 @@
+.textdesign {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  text-decoration: none;
+}
+
+.textdesign a {
+    color: #333;
+    text-decoration: none;
+}
+
+.textdesign a:hover {
+    text-decoration: underline;
+    color: #ffb300;
+}
