@@ -5,7 +5,7 @@ import { useRepoMaster } from "../hooks/useRepoMaster";
 
 export default function RepositoryPage() {
 const { data, isLoading } = useRepoMaster();
-  if (isLoading) return <p>Loading repo details...</p>
+  // if (isLoading) return <p>Loading repo details...</p>
 
   return (
     <div>

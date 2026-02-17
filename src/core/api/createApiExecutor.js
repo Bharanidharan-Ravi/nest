@@ -4,7 +4,7 @@ export function createApiExecutor(apiClient) {
 
     switch (method) {
       case "GET":
-        return apiClient.get(url,payload, { params, ...config })
+        return apiClient.get(url, { params, ...config })
 
       case "POST":
         return apiClient.post(url, payload, config)

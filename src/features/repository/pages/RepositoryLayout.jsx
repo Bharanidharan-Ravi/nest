@@ -1,9 +1,12 @@
 import { useParams, NavLink, Outlet, Navigate, useLocation } from "react-router-dom"
+import Breadcrumbs from "../../../core/navigation/Breadcrumbs"
+import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
+import { useRepoMaster } from "../hooks/useRepoMaster";
 
 export default function RepositoryLayout() {
-  const { repoId } = useParams()
+  const { repoId,ticketId } = useParams()
   const location = useLocation()
-
+  
   // If user lands exactly on /repository/:repoId → redirect to tickets tab
   if (location.pathname === `/repository/${repoId}`) {
     return <Navigate to={`/repository/${repoId}/t`} replace />
@@ -11,8 +14,6 @@ export default function RepositoryLayout() {
 
   return (
     <div>
-      <h2>Repository: {repoId}</h2>
-
       {/* Nav Tabs */}
       <div style={{ display: "flex", gap: 20 }}>
         <NavLink to={`/repository/${repoId}/overview`}>

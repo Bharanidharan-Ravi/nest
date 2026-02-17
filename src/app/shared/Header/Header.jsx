@@ -3,6 +3,8 @@ import { IoMenu } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import "./Header.css";
 import { useAppStore } from "../../../core/state/useAppStore";
+import Breadcrumbs from "../../../core/navigation/Breadcrumbs";
+import workglowlogo from "../../../assets/WORKGLOWLOGO.png";
 
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
@@ -22,25 +24,24 @@ const Header = ({ toggleMobileMenu }) => {
   const firstLetter = UserName.charAt(0).toUpperCase();
 
   return (
-    <header className="header py-3">
-      <div className="container">
-        <div className="d-flex justify-content-between align-items-center">
-          <button
-            className="menu-toggle d-block d-lg-none"
-            onClick={toggleMobileMenu}
-          >
-            <IoMenu size={24} />
+    <header className="header py-3 px-5">
+      {/* <div className="container"> */}
+        <div className="d-flex gap-3 justify-content-between align-items-center">
+          <button className="menu-toggle d-block p-0" onClick={toggleMobileMenu}>
+            <IoMenu size={24} color="black" />
           </button>
 
-          <div className="d-flex justify-content-center flex-grow-1 d-lg-flex justify-content-lg-start">
+          <div className="d-flex justify-content-center">
             <img
-              src="/WORKGLOW LOGO.png"
+              src={workglowlogo}
               alt="Logo"
               className="d-inline-block align-top"
-              style={{ width: "120px" }}
+              style={{ width: "100px" }}
             />
           </div>
-
+        </div>
+        <div className="d-flex align-items-center">
+           <Breadcrumbs />
           <div className="dropdown">
             <div
               className="userheader d-flex align-items-center"
@@ -66,7 +67,7 @@ const Header = ({ toggleMobileMenu }) => {
             )}
           </div>
         </div>
-      </div>
+      {/* </div> */}
     </header>
   );
 };

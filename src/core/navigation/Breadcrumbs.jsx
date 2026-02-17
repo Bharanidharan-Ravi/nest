@@ -1,0 +1,90 @@
+import { useQueryClient } from "@tanstack/react-query";
+import { Link, useLocation, useParams } from "react-router-dom";
+import { queryKeys } from "../query/queryKeys";
+import { useTicketMaster } from "../../features/tickets/hooks/useTicketMaster";
+import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
+import "./Breadcrumbs.css";
+
+export default function Breadcrumbs() {
+  const location = useLocation();
+  const { repoId, ticketId } = useParams();
+
+  const pathnames = location.pathname.split("/").filter(Boolean);
+  const { data: repoList } = useRepoMaster();
+  const { data: ticketList } = useTicketMaster(repoId);
+
+  const getLabel = (value) => {
+    if (value === "repository") return "Repository";
+    if (value === "t") return "Tickets";
+    if (value === "p") return "Projects";
+    if (value === "overview") return "Overview";
+
+    if (value === repoId) {
+      if (!repoList) return "Loading...";
+      const repo = repoList?.Data?.find((r) => r.Repo_Id === value);
+      return repo?.Title || "Unknown Repo";
+    }
+
+    if (value === ticketId) {
+      if (!ticketList) return "Loading...";
+      const ticket = ticketList?.Data?.find((t) => t.Issue_Id === value);
+      return ticket?.Issue_Title || "Unknown Ticket";
+    }
+    return value;
+  };
+
+  const isHidden = (value) => {
+    return value === "dashboard";
+  };
+
+  return (
+    <nav aria-label="breadcrumb" className="breadcrumb-container">
+      <Link to="/dashboard" className="breadcrumb-link">
+        Home
+      </Link>
+
+      {pathnames.map((value, index) => {
+        // 1. Hide unwanted segments
+        if (isHidden(value)) return null;
+
+        // 2. FIX: Join the array to create a valid URL string
+        const to = "/" + pathnames.slice(0, index + 1).join("/");
+        
+        const isLast = index === pathnames.length - 1;
+
+        return (
+          // 3. FIX: Renamed class to 'custom-breadcrumb-item' to stop Bootstrap double slashes
+          <span key={to} className="custom-breadcrumb-item">
+            <span className="breadcrumb-separator">/</span>
+
+            {isLast ? (
+              <span className="breadcrumb-active">
+                {getLabel(value)}
+              </span>
+            ) : (
+              <Link to={to} className="breadcrumb-link">
+                {getLabel(value)}
+              </Link>
+            )}
+          </span>
+        );
+      })}
+    </nav>
+  );
+}
+//   return (
+//     <div className="textdesign">
+//       <Link to="/dashboard">Home</Link>
+//       {pathnames.map((value, index) => {
+//         const to = "/" + pathnames.slice(0, index + 1).join("/");
+//         if (isHidden(value)) return null;
+//         return (
+//           <span key={to}>
+//             {" / "}
+//             <Link to={to}>{getLabel(value, index)}</Link>
+//           </span>
+//         );
+//       })}
+//     </div>
+//   );
+// }

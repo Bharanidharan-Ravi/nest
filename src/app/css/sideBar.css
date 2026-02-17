@@ -1,0 +1,81 @@
+/* Sidebar Overlay - The blurred background */
+.sidebar-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.3); /* Darken background */
+  backdrop-filter: blur(4px); /* Blur effect */
+  z-index: 998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.sidebar-overlay.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Sidebar Container - The actual drawer */
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 280px;
+  background: #fff;
+  z-index: 999;
+  transform: translateX(-100%); /* Hidden by default */
+  transition: transform 0.3s ease-in-out;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-container.open {
+  transform: translateX(0); /* Slide in */
+}
+
+/* Close Button Position */
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #eee;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+/* Links Container */
+.sidebar-content {
+  padding: 20px;
+  overflow-y: auto;
+}
+
+/* Responsive Logic:
+   On Desktop (screens > 768px), you might want the sidebar 
+   always visible without the overlay. If so, un-comment the lines below. 
+*/
+/* @media (min-width: 768px) {
+  .sidebar-container {
+    position: relative; 
+    transform: none !important;
+    width: 250px;
+    height: auto;
+    box-shadow: none;
+    border-right: 1px solid #eee;
+  }
+  .sidebar-overlay, .close-btn {
+    display: none !important;
+  }
+} 
+*/
