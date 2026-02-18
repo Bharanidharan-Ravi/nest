@@ -1,3 +1,4 @@
+import ProjectCreate from "./pages/CreateProject";
 import ProjectPage from "./pages/ProjectPage";
 
 export const ProjectFeature = {
@@ -7,6 +8,10 @@ export const ProjectFeature = {
     {
       path: "",
       element: ProjectPage,
+    },
+   {
+      path: "/create",
+      element: ProjectCreate,
     },
   ],
   // sidebar: [

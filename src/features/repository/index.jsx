@@ -10,6 +10,7 @@ import { queryKeys } from "../../core/query/queryKeys"
 import { executeApi } from "../../core/api/executor"
 import RepositoryPage from "./pages/RepositoryPage"
 import ProjectPage from "../project/pages/ProjectPage"
+import RepoCreate from "./pages/RepoCreate"
 
 export const RepositoryFeature = {
   name: "repository",
@@ -19,6 +20,10 @@ export const RepositoryFeature = {
     {
       path: "",
       element: RepositoryPage
+    },
+     {
+      path: "/create",
+      element: RepoCreate
     },
     {
       path: "/:repoId",
@@ -43,20 +48,6 @@ export const RepositoryFeature = {
         {
           path: "t",
           element: TicketsPage,
-          // prefetch: ({ params }) => [
-          //   {
-          //     queryKey: queryKeys.ticket.list(params.repoId),
-          //     queryFn: () =>
-          //       executeApi({
-          //         url: "/sync/v2",
-          //         method: "POST",
-          //         payload: buildSyncPayload({
-          //           configKey: "TicketsList",
-          //           repoId: params.repoId
-          //         })
-          //       })
-          //   }
-          // ]
         },
         {
           path: "t/:ticketId",

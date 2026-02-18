@@ -4,7 +4,6 @@ export const registerFeature = (feature) => {
   if (!feature?.name) {
     throw new Error("Feature must have a name")
   }
-console.log("Registering feature:", feature, featureMap);
 
   // idempotent – safe for HMR
   if (!featureMap.has(feature.name)) {

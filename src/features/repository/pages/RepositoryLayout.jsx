@@ -1,7 +1,4 @@
 import { useParams, NavLink, Outlet, Navigate, useLocation } from "react-router-dom"
-import Breadcrumbs from "../../../core/navigation/Breadcrumbs"
-import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
-import { useRepoMaster } from "../hooks/useRepoMaster";
 
 export default function RepositoryLayout() {
   const { repoId,ticketId } = useParams()
