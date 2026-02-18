@@ -4,15 +4,19 @@ import { queryKeys } from "../query/queryKeys";
 import { useTicketMaster } from "../../features/tickets/hooks/useTicketMaster";
 import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
 import "./Breadcrumbs.css";
+import { useMasterData } from "../master/useMasterData";
 
 export default function Breadcrumbs() {
   const location = useLocation();
   const { repoId, ticketId } = useParams();
 
   const pathnames = location.pathname.split("/").filter(Boolean);
-  const { data: repoList } = useRepoMaster();
-  const { data: ticketList } = useTicketMaster(repoId);
-
+  // const { data: repoList } = useRepoMaster();
+  // const { data: ticketList } = useTicketMaster(repoId);
+  const { data, isLoading } = useMasterData();
+  const { data: ticketList } = useTicketMaster(repoId, {
+    enabled: !!ticketId,
+  });
   const getLabel = (value) => {
     if (value === "repository") return "Repository";
     if (value === "t") return "Tickets";
@@ -20,8 +24,9 @@ export default function Breadcrumbs() {
     if (value === "overview") return "Overview";
 
     if (value === repoId) {
-      if (!repoList) return "Loading...";
-      const repo = repoList?.Data?.find((r) => r.Repo_Id === value);
+      if (!data?.RepoList) return "Loading...";
+      const repo = data?.RepoList?.Data?.find((r) => r.Repo_Id === value);
+      console.log("value:", value, "data:", data);
       return repo?.Title || "Unknown Repo";
     }
 
@@ -32,7 +37,6 @@ export default function Breadcrumbs() {
     }
     return value;
   };
-
   const isHidden = (value) => {
     return value === "dashboard";
   };
@@ -47,20 +51,21 @@ export default function Breadcrumbs() {
         // 1. Hide unwanted segments
         if (isHidden(value)) return null;
 
-        // 2. FIX: Join the array to create a valid URL string
-        const to = "/" + pathnames.slice(0, index + 1).join("/");
-        
         const isLast = index === pathnames.length - 1;
 
+        // 2. FIX: Join the array to create a valid URL string
+        let to = "/" + pathnames.slice(0, index + 1).join("/");
+
+        // if (value === repoId) {
+        //   to = `${to}/overview`;
+        // }
         return (
           // 3. FIX: Renamed class to 'custom-breadcrumb-item' to stop Bootstrap double slashes
           <span key={to} className="custom-breadcrumb-item">
             <span className="breadcrumb-separator">/</span>
 
             {isLast ? (
-              <span className="breadcrumb-active">
-                {getLabel(value)}
-              </span>
+              <span className="breadcrumb-active">{getLabel(value)}</span>
             ) : (
               <Link to={to} className="breadcrumb-link">
                 {getLabel(value)}

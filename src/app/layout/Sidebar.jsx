@@ -1,9 +1,11 @@
 import { Link } from "react-router-dom";
 import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
 import "../css/sideBar.css"; // Ensure you import the CSS file created above
+import { useMasterData } from "../../core/master/useMasterData";
 
 export default function Sidebar({ isOpen, onClose }) {
-  const { data, isLoading } = useRepoMaster();
+  // const { data, isLoading } = useRepoMaster();
+   const { data, isLoading } = useMasterData();
 
   return (
     <>
@@ -45,10 +47,10 @@ export default function Sidebar({ isOpen, onClose }) {
             <Link to="/repository" onClick={onClose}>Repositories</Link>
           </div>
 
-          {isLoading && <p>Loading...</p>}
+          {/* {isLoading && <p>Loading...</p>} */}
 
           <div className="d-flex flex-column gap-2 mt-2">
-            {data?.Data?.map((repo) => (
+            {data?.RepoList?.Data?.map((repo) => (
               <div key={repo.Repo_Id}>
                 <Link to={`/repository/${repo.Repo_Id}`} onClick={onClose}>
                   {repo.Title}

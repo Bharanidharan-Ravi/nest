@@ -4,7 +4,6 @@ import { Navigate, Outlet } from "react-router-dom"
 export default function AuthGuard() {
   // const isAuthenticated = useAppStore((s) => s.isAuthenticated)
   const userData = sessionStorage.getItem('user');
-  console.log("userData: ", userData);
   
   if (!userData) {
     return <Navigate to="/login" />

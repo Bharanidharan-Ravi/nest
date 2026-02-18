@@ -1,7 +1,6 @@
 import { useQueries } from "@tanstack/react-query"
 import dashboardConfig from "../config/dashboard.config"
 import { fetchDashboardData } from "../api/dashboard.api"
-import { useRepoMaster } from "../../repository/hooks/useRepoMaster"
 
 export default function Dashboard() {
   // const queries = useQueries({
@@ -10,7 +9,6 @@ export default function Dashboard() {
   //     queryFn: () => fetchDashboardData(widget.endpoint)
   //   }))
   // })
-    // const { data, isLoading } = useRepoMaster();
 
   return (
     <div>

@@ -4,15 +4,11 @@ import Footer from "../shared/Footer/Footer";
 import Header from "../shared/Header/Header";
 import Breadcrumbs from "../../core/navigation/Breadcrumbs";
 import { useTicketMaster } from "../../features/tickets/hooks/useTicketMaster";
-import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../core/query/queryKeys";
 import { useState } from "react";
 
 export default function MainLayout() {
-  const { repoId, ticketId } = useParams();
-  const queryClient = useQueryClient();
-  console.log("mainlayout");
   const [openSidebar, setOpenSidebar] = useState(false);
 
   const toggleMobileMenu = () => {

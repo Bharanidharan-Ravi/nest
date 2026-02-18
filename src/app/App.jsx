@@ -11,6 +11,7 @@ import { useRef } from "react";
 import LoginPage from "../features/auth/pages/loginPage";
 import MainLayout from "./layout/MainLayout";
 import RouteDataLoader from "../core/routing/RouteDataLoader";
+import AppBootstrap from "../core/master/AppBootstrap";
 
 function App() {
   return (
@@ -19,8 +20,10 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
 
         <Route element={<AuthGuard />}>
-          <Route element={<RouteDataLoader />}>
-            <Route element={<MainLayout />}>{RouteRenderer()}</Route>
+          <Route element={<AppBootstrap />}>
+            <Route element={<RouteDataLoader />}>
+              <Route element={<MainLayout />}>{RouteRenderer()}</Route>
+            </Route>
           </Route>
         </Route>
 

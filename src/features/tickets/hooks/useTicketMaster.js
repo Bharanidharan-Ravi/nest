@@ -1,21 +1,20 @@
-import { useApiQuery } from "../../../core/query/useApiQuery"
-import { queryKeys } from "../../../core/query/queryKeys"
+import { useApiQuery } from "../../../core/query/useApiQuery";
+import { queryKeys } from "../../../core/query/queryKeys";
 
-export const useTicketMaster = (repoId) => {
-
+export const useTicketMaster = (repoId, options = {}) => {
   // Build payload dynamically
   const payload = repoId
     ? {
         ConfigKeys: ["TicketsList"],
         Params: {
           TicketsList: {
-            repoId: repoId
-          }
-        }
+            repoId: repoId,
+          },
+        },
       }
     : {
-        ConfigKeys: ["TicketsList"]
-      }
+        ConfigKeys: ["TicketsList"],
+      };
 
   return useApiQuery({
     queryKey: repoId
@@ -28,7 +27,10 @@ export const useTicketMaster = (repoId) => {
     source: "TicketsList",
     options: {
       staleTime: 5 * 60 * 1000,
-      enabled: true
-    }
-  })
-}
+      // 2. Merge the passed options.
+      // If 'enabled' is passed in options, use it; otherwise default to true.
+      ...options,
+      enabled: options.enabled !== undefined ? options.enabled : true,
+    },
+  });
+};
