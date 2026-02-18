@@ -10,7 +10,7 @@ export const useMasterData = (configKeys) => {
   return useQuery({
     queryKey: masterKeys.multi(keys),
     queryFn: () => fetchMasterData(keys),
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: Infinity,
+    gcTime: Infinity,
   });
 };
