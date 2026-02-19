@@ -133,7 +133,7 @@ export const RepoFieldConfig = () => [
         key: "role",
         apiKey: "Role",
         hidden: true,
-        defaultValue: 2,
+        defaultValue: 3,
         dataType: "number",
       },
 

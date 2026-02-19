@@ -11,14 +11,18 @@ const MuiSelectInput = ({
   disabled = false,
   required,
 }) => {
-  const selected = options.find((o) => o.value === value?.value) ?? null;
-//   console.log("selected :", selected, "value :", value, "options :", options );
+  // const selected = options.find((o) => o.value === value?.value) ?? null;
+  const selected = options.find((o) => o.value?.id === value?.value.id) ?? null;
+  console.log("values input :", value, options, "selected :", selected);
+
+  //   console.log("selected :", selected, "value :", value, "options :", options );
 
   return (
     <Autocomplete
       options={options}
       value={selected}
-      isOptionEqualToValue={(o, v) => o.value === v.value}
+      // isOptionEqualToValue={(o, v) => o.value === v.value}
+      isOptionEqualToValue={(o, v) => o.value?.id === (v?.value?.id ?? v?.id)}
       disableClearable={!clearable}
       disabled={disabled}
       onChange={(_, option, reason) => {

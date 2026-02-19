@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }) {
           {/* {isLoading && <p>Loading...</p>} */}
 
           <div className="d-flex flex-column gap-2 mt-2">
-            {data?.RepoList?.Data?.map((repo) => (
+            {data?.RepoList?.map((repo) => (
               <div key={repo.Repo_Id}>
                 <Link to={`/repository/${repo.Repo_Id}`} onClick={onClose}>
                   {repo.Title}

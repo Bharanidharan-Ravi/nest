@@ -23,3 +23,14 @@ export const updateMasterCache = (type, updatedItem) => {
     );
   });
 };
+
+export const addRepoToCache = (repo) => {
+  queryClient.setQueryData(
+    queryKeys.repo.list(),
+    (old = []) => {
+      const exists = old.some(r => r.Repo_Id === repo.Repo_Id);
+      if (exists) return old; // 🔥 prevent duplicate
+      return [...old, repo];
+    }
+  );
+};
