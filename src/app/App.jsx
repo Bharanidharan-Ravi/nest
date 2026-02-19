@@ -12,8 +12,29 @@ import LoginPage from "../features/auth/pages/loginPage";
 import MainLayout from "./layout/MainLayout";
 import RouteDataLoader from "../core/routing/RouteDataLoader";
 import AppBootstrap from "../core/master/AppBootstrap";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  connectSignalR,
+  disconnectSignalR,
+} from "../core/realtime/realtimeManager";
+import { decryptUserInfo } from "./shared/decryption/Decryption";
+import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
 
 function App() {
+  const queryClient = useQueryClient();
+ useEffect(() => {
+  const user = sessionStorage.getItem("user");
+  if (!user) return;
+
+  const userdata = decryptUserInfo(JSON.parse(user));
+
+  connectSignalR(userdata[0].JwtToken, (message) => {
+    console.log("api msdd :", message);
+    
+    handleRealtimeMessage(queryClient, message);
+  });
+
+}, []);
   return (
     <BrowserRouter>
       <Routes>

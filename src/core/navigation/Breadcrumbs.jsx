@@ -25,14 +25,14 @@ export default function Breadcrumbs() {
 
     if (value === repoId) {
       if (!data?.RepoList) return "Loading...";
-      const repo = data?.RepoList?.Data?.find((r) => r.Repo_Id === value);
+      const repo = data?.RepoList?.find((r) => r.Repo_Id === value);
       console.log("value:", value, "data:", data);
       return repo?.Title || "Unknown Repo";
     }
 
     if (value === ticketId) {
       if (!ticketList) return "Loading...";
-      const ticket = ticketList?.Data?.find((t) => t.Issue_Id === value);
+      const ticket = ticketList?.find((t) => t.Issue_Id === value);
       return ticket?.Issue_Title || "Unknown Ticket";
     }
     return value;

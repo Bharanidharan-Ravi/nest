@@ -10,7 +10,7 @@ const RepoCreate = () => {
   return (
     <div>
       <h2>Create Repository</h2>
-      <FormEngine fields={RepoFields} values={values} />
+      {/* <FormEngine fields={RepoFields} values={values} /> */}
       <EntityFormPage mode="create" config={repositoryFormConfig} />
     </div>
   );

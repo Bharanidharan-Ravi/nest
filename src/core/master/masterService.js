@@ -3,11 +3,29 @@
 import { executeApi } from "../api/executor";
 
 export const fetchMasterData = async (configKeys) => {
-  return executeApi({
+  const response = await executeApi({
     url: "/sync/v2",
     method: "POST",
     payload: {
       ConfigKeys: configKeys,
     },
   });
+
+  // response already comes from interceptor → response.data.Res
+  const raw = response || {};
+
+  const normalized = {};
+
+  configKeys.forEach((key) => {
+    const section = raw?.[key];
+
+    if (section?.Ok && Array.isArray(section?.Data)) {
+      normalized[key] = section.Data;
+    } else {
+      normalized[key] = [];
+    }
+  });
+console.log("Normalized Master Data:", normalized);
+
+  return normalized;
 };

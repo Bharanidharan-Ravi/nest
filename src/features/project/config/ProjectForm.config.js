@@ -1,6 +1,6 @@
 import { queryKeys } from "../../../core/query/queryKeys";
-import { RepoFieldConfig } from "./CreateRepo.Config";
-export const repositoryFormConfig = {
+import { ProjFieldConfig } from "./ProjectCreate.config";
+export const projectFormConfig = {
   key: "project",
   title: "Project",
   api: "/Project/PostProject",
@@ -9,5 +9,5 @@ export const repositoryFormConfig = {
 
   redirectTo: "/p",
 
-  fields: RepoFieldConfig(),
+  fields: ProjFieldConfig(),
 };

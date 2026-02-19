@@ -2,11 +2,13 @@ import { useEntityForm } from "../formFramework/useEntityForm";
 import { useApiMutation } from "../../../core/query/useApiMutation";
 import FormEngine from "../../react-input-engine/core/FormEngine";
 import { useNavigate } from "react-router-dom";
+import { useMasterData } from "../../../core/master/useMasterData";
 
-export default function EntityFormPage({ config, mode }) {
+export default function EntityFormPage({ config, mode, context = {} }) {
   const navigate = useNavigate();
+
   const { formData, fields, handleChange, validate, buildDto } =
-    useEntityForm(config);
+    useEntityForm(config, context);
 
   const mutation = useApiMutation({
     url: config.api,
@@ -15,13 +17,13 @@ export default function EntityFormPage({ config, mode }) {
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "edit" ? "PUT" : "POST",
-    invalidateKeys: config.invalidateKeys || [],
+    // invalidateKeys: config.invalidateKeys || [],
     onSuccess: () => {
       console.log("success trigger");
       
-      if (config.redirectTo) {
-        navigate(config.redirectTo);
-      }
+      // if (config.redirectTo) {
+      //   navigate(config.redirectTo);
+      // }
     }
   });
   const handleSubmit = () => {
