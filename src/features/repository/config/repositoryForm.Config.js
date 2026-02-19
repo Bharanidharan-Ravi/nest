@@ -1,3 +1,4 @@
+import { masterKeys } from "../../../core/master/masterKeys";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { RepoFieldConfig } from "./CreateRepo.Config";
 export const repositoryFormConfig = {
@@ -5,7 +6,7 @@ export const repositoryFormConfig = {
   title: "Repository",
   api: "/Repo/PostRepo",
 
-  invalidateKeys: [queryKeys.repo.list()],
+  invalidateKeys: [masterKeys.multi(["RepoList"])],
 
   redirectTo: "/repository",
 

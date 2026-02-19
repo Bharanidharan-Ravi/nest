@@ -6,7 +6,7 @@ const ProjectPage = () => {
     <div>       
         <h2>Projects</h2>
         <p>This is the Projects page.</p>
-         <button onClick={() => navigate("/projects/create")}>Create New Repository</button>
+         <button onClick={() => navigate("create")}>Create New Project</button>
     </div>
   )
 }   
