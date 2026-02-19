@@ -11,6 +11,7 @@ import { executeApi } from "../../core/api/executor"
 import RepositoryPage from "./pages/RepositoryPage"
 import ProjectPage from "../project/pages/ProjectPage"
 import RepoCreate from "./pages/RepoCreate"
+import ProjectCreate from "../project/pages/CreateProject"
 
 export const RepositoryFeature = {
   name: "repository",
@@ -72,6 +73,24 @@ export const RepositoryFeature = {
         {
           path: "p",
           element: ProjectPage,
+          prefetch: ({ params }) => [
+            {
+              queryKey: queryKeys.project.list(params.repoId),
+              queryFn: () =>
+                executeApi({
+                  url: "/sync/v2",
+                  method: "POST",
+                  payload: buildSyncPayload({
+                    configKey: "ProjectList",
+                    repoId: params.repoId,
+                  })
+                })
+            }
+          ]
+        },
+        {
+          path: "p/create",
+          element: ProjectCreate,
           prefetch: ({ params }) => [
             {
               queryKey: queryKeys.project.list(params.repoId),
