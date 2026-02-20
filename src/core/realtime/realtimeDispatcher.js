@@ -25,11 +25,9 @@ export const handleRealtimeMessage = (queryClient, message) => {
   queryClient.setQueryData(
     masterKeys.multi(MASTER_CONFIG_KEYS),
     (oldData) => {
-    console.log("Realtime message received:", message, oldData);
 
       if (!oldData) return oldData;
       const updateList = (list) => {
-console.log("Old Data:", oldData, "List to Update:",list);
 
         if (!Array.isArray(list)) return [];
 
@@ -37,7 +35,6 @@ console.log("Old Data:", oldData, "List to Update:",list);
           normalize(x[keyField]) === normalize(payload[keyField]);
 
         if (action === "Create") {
-            console.log("action :", action,list, payload, match);
             
           if (list.some(match)) return list;
           return [payload, ...list];

@@ -12,8 +12,6 @@ export default function MainLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
 
   const toggleMobileMenu = () => {
-    // Implement mobile menu toggle logic here
-    console.log("Toggle mobile menu");
     setOpenSidebar((prev) => !prev);
   };
   return (

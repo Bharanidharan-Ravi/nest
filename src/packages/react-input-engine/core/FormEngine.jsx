@@ -1,8 +1,7 @@
 // core/FormEngine.jsx
 import { inputRegistry } from "../registry/inputRegistry";
 
-const FormEngine = ({ fields, values, errors = {}, onChange }) => {
-  // console.log("FormEngine props:", { fields, values, errors });
+const FormEngine = ({ fields, values, errors = {}, onChange, master, uploadFile }) => {
 
   return (
     <>
@@ -10,7 +9,7 @@ const FormEngine = ({ fields, values, errors = {}, onChange }) => {
         fields.map((field) => {
 
           const Component = inputRegistry?.[field.ui || "html"]?.[field.type];
-console.log("values in FormEngine:", values,"values", values[field.name], "field:", field);
+// console.log("values in FormEngine:",inputRegistry, field.ui, field.type, Component);
 
           if (!Component) return null;
 
@@ -27,6 +26,9 @@ console.log("values in FormEngine:", values,"values", values[field.name], "field
               required={field.required}
               clearable={field.clearable}
               disabled={field.disabled}
+              userList={master?.EmployeeList}
+              labelList={master?.LabelMaster}
+              uploadFile={uploadFile}
             />
           );
         })}

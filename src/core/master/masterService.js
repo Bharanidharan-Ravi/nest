@@ -25,7 +25,6 @@ export const fetchMasterData = async (configKeys) => {
       normalized[key] = [];
     }
   });
-console.log("Normalized Master Data:", normalized);
 
   return normalized;
 };

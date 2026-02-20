@@ -18,7 +18,6 @@ export default function Login() {
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
     onSuccess: (data) => {
-        console.log("data", data);
         loginStore(data); // store token
         navigate("/dashboard");
     },

@@ -83,7 +83,18 @@ export const ProjFieldConfig = () => [
           name: user.UserName,
         },
       })) || [],
+  },
+  {
+    label: "Description",
+    name: "description",
+    type: "adEditor",
+    ui: "editor",
 
+    required: true,
+    dataType: "string",
+
+    apiKey: "Description",
+    visibleWhen: () => true,
   },
   //    {
   //     label: "Repository",

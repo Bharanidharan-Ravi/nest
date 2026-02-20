@@ -13,10 +13,7 @@ const MuiSelectInput = ({
 }) => {
   // const selected = options.find((o) => o.value === value?.value) ?? null;
   const selected = options.find((o) => o.value?.id === value?.value.id) ?? null;
-  console.log("values input :", value, options, "selected :", selected);
-
-  //   console.log("selected :", selected, "value :", value, "options :", options );
-
+  
   return (
     <Autocomplete
       options={options}

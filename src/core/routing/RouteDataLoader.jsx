@@ -61,38 +61,3 @@ export default function RouteDataLoader() {
 
   return <Outlet />;
 }
-
-// import { useEffect } from "react";
-// import { useLocation, useParams } from "react-router-dom";
-// import { useQueryClient } from "@tanstack/react-query";
-
-// export default function RouteDataLoader({ routeConfig, children }) {
-//   const location = useLocation();
-//   const params = useParams();
-//   const queryClient = useQueryClient();
-
-//   useEffect(() => {
-//     if (!routeConfig?.prefetch) return;
-
-//     const tasks = routeConfig.prefetch({ params }) || [];
-// console.log("RouteDataLoader:", routeConfig, params, tasks);
-
-//        // Case 1: tasks is a function → execute directly
-//     if (typeof tasks === "function") {
-//       tasks();
-//       return;
-//     }
-
-//     // Case 2: tasks is an array → run query prefetch
-//     if (Array.isArray(tasks)) {
-//       tasks.forEach((task) => {
-//         queryClient.ensureQueryData({
-//           queryKey: task.queryKey,
-//           queryFn: task.queryFn,
-//         });
-//       });
-//     }
-//   }, [location.pathname]);
-
-//   return children;
-// }
