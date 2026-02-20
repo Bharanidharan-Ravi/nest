@@ -1,5 +1,6 @@
 // registry/inputRegistry.js
 
+import AdvancedEditor from "../adapters/advanceEditor/AdvanceEditor";
 import HtmlDateInput from "../adapters/html/HtmlDateInput";
 import HtmlSelectInput from "../adapters/html/HtmlSelectInput";
 import HtmlTextInput from "../adapters/html/HtmlTextInput";
@@ -23,5 +24,8 @@ export const inputRegistry = {
     select: HtmlSelectInput,
     date: HtmlDateInput,
     time: HtmlTimeInput
+  },
+  editor: {
+    adEditor: AdvancedEditor,
   }
 };

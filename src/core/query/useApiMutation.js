@@ -38,7 +38,6 @@ export const useApiMutation = ({
     },
 
     onError: (error) => {
-      console.log("Mutation failed:", error);
       if (onError) onError(error);
     },
 

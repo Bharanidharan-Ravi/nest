@@ -1,0 +1,202 @@
+.editor-container {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #fff;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 8px;
+  border-bottom: 1px solid #ccc;
+  background-color: #f8f9fa;
+}
+
+.toolbar button {
+  border: 1px solid #ced4da;
+  background-color: #fff;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.toolbar button:hover {
+  background-color: #e9ecef;
+}
+
+.toolbar button.is-active {
+  background-color: #e2e6ea;
+  border-color: #adb5bd;
+}
+
+/* ===================================================
+   PROSEMIRROR (EDITOR CONTENT) STYLES
+=================================================== */
+
+.ProseMirror {
+  outline: none !important; /* <-- THIS IS THE KEY FIX FROM IMAGE */
+  min-height: 150px;
+  padding: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5em;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #ccc;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #666;
+}
+
+/* Table Styles inside editor */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+.ProseMirror td,
+.ProseMirror th {
+  min-width: 1em;
+  border: 2px solid #ced4da;
+  padding: 3px 5px;
+  vertical-align: top;
+  box-sizing: border-box;
+  position: relative;
+}
+
+.ProseMirror th {
+  font-weight: bold;
+  text-align: left;
+  background-color: #f1f3f5;
+}
+.ProseMirror img {
+  width: 400px !important;    /* Fixed width */
+  height: 400px !important;   /* Fixed height */
+  object-fit: cover;          /* Crops the image cleanly so it doesn't stretch/squish */
+  border-radius: 8px;         /* Rounded corners */
+  margin: 4px 8px 12px 0;     /* Right and Bottom spacing */
+  border: 1px solid #e5e7eb;  /* Light border */
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+/* Give the file chips some breathing room too */
+.ProseMirror .file-wrapper {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+
+/* Mention Styles */
+.mention-user {
+  background-color: #e8f0fe;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+.mention-label {
+  background-color: #fce8e6;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #c5221f;
+  font-weight: 500;
+}
+
+/* File Attachment Styles */
+.file-wrapper {
+  display: inline-block;
+  margin: 4px 0;
+}
+
+.file-chip {
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f3f4;
+  border: 1px solid #dce0e4;
+  border-radius: 16px;
+  padding: 4px 12px;
+  font-size: 13px;
+  color: #3c4043;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.file-chip:hover {
+  background-color: #e8eaed;
+}
+
+/* Placeholder Style */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.preview-mode {
+  padding: 12px;
+}
+
+/* ===================================================
+   MENTION DROPDOWN UI
+=================================================== */
+.mention-dropdown {
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  border: 1px solid #e5e7eb;
+  padding: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+  min-width: 150px;
+}
+
+.mention-item {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.4rem;
+  padding: 0.2rem 0.4rem;
+  text-align: left;
+  cursor: pointer;
+  color: #374151;
+}
+
+.mention-item:hover,
+.mention-item.is-selected {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.mention-item.no-result {
+  color: #9ca3af;
+  cursor: default;
+}
+
+.mention-item.no-result:hover {
+  background-color: transparent;
+}

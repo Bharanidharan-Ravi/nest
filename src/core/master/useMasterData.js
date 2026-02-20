@@ -5,7 +5,7 @@ import { fetchMasterData } from "./masterService";
 import { masterKeys } from "./masterKeys";
 
 export const useMasterData = (configKeys) => {
-  const keys = ["RepoList", "ProjectList", "EmployeeList", "LabelList"];
+  const keys = ["RepoList", "ProjectList", "EmployeeList", "LabelMaster"];
  
   return useQuery({
     queryKey: masterKeys.multi(keys),

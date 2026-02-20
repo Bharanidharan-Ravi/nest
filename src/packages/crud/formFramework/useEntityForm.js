@@ -12,17 +12,6 @@ export const useEntityForm = (config, context = {}) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const { data: masterData } = useMasterData();
-  // const processedFields = useMemo(() => {
-  //   const fields = config.fields || [];
-  //   let updated = applyDependencies(formData, fields);
-  //   console.log("processedFields:", updated, fields);
-
-  //     if (fields.optionsResolver) {
-  //     updated.options = fields.optionsResolver(masterData);
-  //   }
-  //   updated = applyVisibilityRules(formData, updated);
-  //   return updated;
-  // }, [formData, config.fields]);
 
   const processedFields = useMemo(() => {
     const baseFields = config.fields || [];
@@ -58,8 +47,6 @@ export const useEntityForm = (config, context = {}) => {
     processedFields.forEach((field) => {
       if (field.initValueResolver) {
         const initialValue = field.initValueResolver(context, masterData);
-        console.log("context :", field, "initialValue ", initialValue);
-
         if (initialValue) {
           setFormData((prev) => ({
             ...prev,
@@ -69,16 +56,10 @@ export const useEntityForm = (config, context = {}) => {
       }
     });
   }, [masterData]);
-  //   const handleChange = (name, value, metadata = {}) => {
-  //     console.log("handleChange called with:", name, value, metadata);
-
-  //     setFormData(prev => ({
-  //       ...prev,
-  //       [name]: metadata.raw ? metadata.raw : metadata
-  //     }));
-  //   };
 
   const handleChange = (name, value, metadata = {}) => {
+    console.log("handleChange called with:", name, value, metadata);
+    
     setFormData((prev) => {
       const next = {
         ...prev,
@@ -101,8 +82,6 @@ export const useEntityForm = (config, context = {}) => {
 
   const validate = () => {
     const validationErrors = validateForm(formData, config.fields);
-    console.log("Validation errors:", validationErrors);
-
     setErrors(validationErrors);
 
     return Object.keys(validationErrors).length === 0;

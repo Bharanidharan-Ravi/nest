@@ -3,12 +3,15 @@ import { useApiMutation } from "../../../core/query/useApiMutation";
 import FormEngine from "../../react-input-engine/core/FormEngine";
 import { useNavigate } from "react-router-dom";
 import { useMasterData } from "../../../core/master/useMasterData";
+import { executeApi } from "../../../core/api/executor";
 
 export default function EntityFormPage({ config, mode, context = {} }) {
   const navigate = useNavigate();
-
-  const { formData, fields, handleChange, validate, buildDto } =
-    useEntityForm(config, context);
+  const { data: masterData } = useMasterData();
+  const { formData, fields, handleChange, validate, buildDto } = useEntityForm(
+    config,
+    context,
+  );
 
   const mutation = useApiMutation({
     url: config.api,
@@ -19,12 +22,11 @@ export default function EntityFormPage({ config, mode, context = {} }) {
     method: mode === "edit" ? "PUT" : "POST",
     // invalidateKeys: config.invalidateKeys || [],
     onSuccess: () => {
-      console.log("success trigger");
-      
+
       // if (config.redirectTo) {
       //   navigate(config.redirectTo);
       // }
-    }
+    },
   });
   const handleSubmit = () => {
     if (!validate()) return;
@@ -34,10 +36,37 @@ export default function EntityFormPage({ config, mode, context = {} }) {
   };
   console.log("fields :", fields, formData);
 
+  const uploadFile = async (file) => {
+    console.log("Uploading file:", file);
+    const formData = new FormData();
+    formData.append("files", file);
+
+    const response = await executeApi({
+      url: "Attachment/tempUpload",
+      method: "POST",
+      payload: formData,
+      // 2. Wrap headers inside 'config' so your executor picks them up
+      config: {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    });
+    console.log("Upload response:", response);
+    const data = response.Data;
+    return data.PublicUrl; // backend returns public URL
+  };
+
   return (
     <>
       {fields?.length > 0 && (
-        <FormEngine fields={fields} values={formData} onChange={handleChange} />
+        <FormEngine
+          fields={fields}
+          values={formData}
+          onChange={handleChange}
+          master={masterData}
+          uploadFile={uploadFile}
+        />
       )}
       <button onClick={handleSubmit}>Save</button>
     </>

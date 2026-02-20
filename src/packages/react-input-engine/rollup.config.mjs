@@ -5,28 +5,31 @@ import postcss from "rollup-plugin-postcss";
 
 export default {
   input: "src/index.js",
-  external: ["react", "react-dom"],
   output: [
     {
       file: "dist/index.cjs.js",
       format: "cjs",
-      exports: "named"
+      sourcemap: true
     },
     {
       file: "dist/index.esm.js",
-      format: "esm"
+      format: "esm",
+      sourcemap: true
     }
+  ],
+  external: [
+    "react",
+    "react-dom"
   ],
   plugins: [
     resolve(),
     commonjs(),
-    postcss({
-      extract: "styles.css",
-      minimize: true
-    }),
     babel({
       babelHelpers: "bundled",
       exclude: "node_modules/**"
+    }),
+    postcss({
+      extract: true
     })
   ]
 };

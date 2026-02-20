@@ -7,7 +7,6 @@ export const connectSignalR = async (token, onMessage) => {
   if (!token) return;
 
   if (connection || isConnecting) {
-    console.log("SignalR already initialized");
     return;
   }
 
@@ -22,7 +21,6 @@ export const connectSignalR = async (token, onMessage) => {
     .build();
 
   newConnection.on("EntityChanged", (message) => {
-     console.log("🔥 SIGNALR RECEIVED:", message);
     if (onMessage) onMessage(message);
     
   });

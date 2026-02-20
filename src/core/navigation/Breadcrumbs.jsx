@@ -26,7 +26,6 @@ export default function Breadcrumbs() {
     if (value === repoId) {
       if (!data?.RepoList) return "Loading...";
       const repo = data?.RepoList?.find((r) => r.Repo_Id === value);
-      console.log("value:", value, "data:", data);
       return repo?.Title || "Unknown Repo";
     }
 

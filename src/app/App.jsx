@@ -28,9 +28,7 @@ function App() {
 
   const userdata = decryptUserInfo(JSON.parse(user));
 
-  connectSignalR(userdata[0].JwtToken, (message) => {
-    console.log("api msdd :", message);
-    
+  connectSignalR(userdata[0].JwtToken, (message) => {    
     handleRealtimeMessage(queryClient, message);
   });
 

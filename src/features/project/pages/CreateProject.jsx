@@ -4,9 +4,7 @@ import { repositoryFormConfig } from "../../repository/config/repositoryForm.Con
 import { projectFormConfig } from "../config/ProjectForm.config";
 
 const ProjectCreate = () => {
-    const params = useParams();
-    console.log("params:", params);
-    
+    const params = useParams();    
   return (
     <div>
       <p> Create Project</p>
