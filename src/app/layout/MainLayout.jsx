@@ -15,23 +15,26 @@ export default function MainLayout() {
     setOpenSidebar((prev) => !prev);
   };
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        minHeight: "100vh",
-        width: "100vw",
-      }}
-    >
-      <Header toggleMobileMenu={toggleMobileMenu} />
-
-      <div style={{ display: "flex", flex: 1 }}>
-        <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
-        <div style={{ flex: 1, padding: 20 }}>
-          <Outlet />
-        </div>
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-brand-gray-light">
+      {/* 2. Header stays fixed at the top (flex-none prevents it from shrinking) */}
+      <div className="flex-none">
+        <Header toggleMobileMenu={toggleMobileMenu} />
       </div>
-      <Footer />
+
+      {/* 3. Middle section takes up remaining space */}
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
+
+        {/* 4. The main content area is now a flex container that passes height down */}
+        <main className="flex-1 flex flex-col overflow-hidden p-3">
+          <Outlet />
+        </main>
+      </div>
+
+      {/* 5. Footer stays fixed at bottom */}
+      <div className="flex-none">
+        <Footer />
+      </div>
     </div>
   );
 }

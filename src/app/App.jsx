@@ -22,17 +22,16 @@ import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
 
 function App() {
   const queryClient = useQueryClient();
- useEffect(() => {
-  const user = sessionStorage.getItem("user");
-  if (!user) return;
+  useEffect(() => {
+    const user = sessionStorage.getItem("user");
+    if (!user) return;
 
-  const userdata = decryptUserInfo(JSON.parse(user));
+    const userdata = decryptUserInfo(JSON.parse(user));
 
-  connectSignalR(userdata[0].JwtToken, (message) => {    
-    handleRealtimeMessage(queryClient, message);
-  });
-
-}, []);
+    connectSignalR(userdata[0].JwtToken, (message) => {
+      handleRealtimeMessage(queryClient, message);
+    });
+  }, []);
   return (
     <BrowserRouter>
       <Routes>
