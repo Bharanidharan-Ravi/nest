@@ -1,13 +1,7 @@
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom";
 import { useMasterData } from "../../../core/master/useMasterData";
-import { ListCardView } from "../../../packages/ui-List/components/ListCardView";
-import { ListFilters } from "../../../packages/ui-List/components/ListFilters";
-import { ListPagination } from "../../../packages/ui-List/components/ListPagination";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
-import { ListTableView } from "../../../packages/ui-List/components/ListTableView";
-import { ListToolbar } from "../../../packages/ui-List/components/ListToolbar";
-import { useList } from "../../../packages/ui-List/context/ListContext";
-import { RepoUIConfig } from "../config/RepoUI.config";
+import { repoListConfig, RepoUIConfig } from "../config/RepoUI.config";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 
 export default function RepositoryPage() {
@@ -24,30 +18,28 @@ export default function RepositoryPage() {
     createdAt: repo.CreatedAt,
   });
   const repos = data?.RepoList?.map(normalizeRepo) || [];
-  // function TicketContent() {
-  //   const { view } = useList()
-  //   console.log(" view: ", view);
+ return (
+    // 1. Make this page a flex column that fills 100% of the height
+    <div className="flex flex-col h-full pb-2">
+      
+      {/* 2. Top section (Title and Button) stays fixed */}
+      <div className="flex justify-between items-center mb-3 flex-none">
+        <h2 className="text-2xl font-semibold m-0">Repository</h2>
+        <button 
+          onClick={() => navigate("/repository/create")}
+          className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
+        >
+          Create New Repository
+        </button>
+      </div>
 
-  //   return (
-  //     <>
-  //       <ListToolbar />
-  //       <ListFilters />
-  //       {view === "table" ? <ListTableView /> : <ListCardView />}
-  //       <ListPagination />
-  //     </>
-  //   )
-  // }
-  // if (isLoading) return <p>Loading repo details...</p>
-
-  return (
-    <div>
-      <h2>Repository</h2>
-      <ListProvider config={RepoUIConfig} data={repos}>
-        <ListLayout />
-      </ListProvider>
-      <button onClick={() => navigate("/repository/create")}>Create New Repository</button>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      {/* 3. The List container takes up all remaining vertical space */}
+      {/* Note: min-h-0 is a crucial CSS trick to stop flex children from overflowing! */}
+      <div className="flex-1 min-h-0">
+        <ListProvider config={repoListConfig} data={repos}>
+          <ListLayout />
+        </ListProvider>
+      </div>
     </div>
-  )
+  );
 }
-
