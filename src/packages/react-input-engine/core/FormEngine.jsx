@@ -1,39 +1,62 @@
 // core/FormEngine.jsx
 import { inputRegistry } from "../registry/inputRegistry";
 
-const FormEngine = ({ fields, values, errors = {}, onChange, master, uploadFile, onFileDelete }) => {
-
+const FormEngine = ({
+  fields,
+  values,
+  errors = {},
+  onChange,
+  master,
+  uploadFile,
+  onFileDelete,
+  globalTheme
+}) => {
   return (
-    <>
+    // 1. CSS Grid: 1 column on mobile/small spaces, 2 columns when space allows
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
       {fields?.length > 0 &&
         fields.map((field) => {
-
           const Component = inputRegistry?.[field.ui || "html"]?.[field.type];
-// console.log("values in FormEngine:",inputRegistry, field.ui, field.type, Component);
 
           if (!Component) return null;
+          const fieldTheme = field.theme || globalTheme || {};
+          // 2. Logic to determine if a field should take the full width of the row
+          // We force 'adEditor' and 'group' (multi-inputs) to always take a full line.
+          // You can also add `fullWidth: true` to any field in CreateRepo.Config.js to force it!
+          const isFullWidth =
+            field.type === "adEditor" ||
+            field.type === "group" ||
+            field.fullWidth;
 
           return (
-            <Component
+            // 3. Apply column spanning conditionally
+            <div
               key={field.name}
-              name={field.name}
-              label={field.label}
-              value={values[field.name]}
-              error={errors[field.name]}
-              options={field.options}
-              fields={field.fields}
-              onChange={onChange}
-              required={field.required}
-              clearable={field.clearable}
-              disabled={field.disabled}
-              userList={master?.EmployeeList}
-              labelList={master?.LabelMaster}
-              uploadFile={uploadFile}
-              onFileDelete={onFileDelete}
-            />
+              className={
+                isFullWidth ? "col-span-1 md:col-span-2" : "col-span-1"
+              }
+            >
+              <Component
+                name={field.name}
+                label={field.label}
+                value={values[field.name]}
+                error={errors[field.name]}
+                options={field.options}
+                fields={field.fields}
+                onChange={onChange}
+                required={field.required}
+                clearable={field.clearable}
+                disabled={field.disabled}
+                userList={master?.EmployeeList}
+                labelList={master?.LabelMaster}
+                uploadFile={uploadFile}
+                onFileDelete={onFileDelete}
+                theme={fieldTheme}
+              />
+            </div>
           );
         })}
-    </>
+    </div>
   );
 };
 

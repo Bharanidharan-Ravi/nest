@@ -5,6 +5,7 @@ export function ListSortDropdown() {
   const { config, sortField, setSortField, sortOrder, setSortOrder } = useList();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
+  if (!config.enableSort) return null;
 
   useEffect(() => {
     function handleClickOutside(e) {

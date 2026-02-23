@@ -20,69 +20,7 @@ export const RepoFieldConfig = () => [
 
     visibleWhen: () => true,
   },
-
-  /* --------------------------------------------------
-     Description
-  -------------------------------------------------- */
-  {
-    label: "Description",
-    name: "description",
-    type: "adEditor",
-    ui: "editor",
-
-    required: true,
-    dataType: "string",
-
-    apiKey: "Description",
-  },
-
-  /* --------------------------------------------------
-     Owner Selection (Example multi-map)
-     One input → Owner1 + Owner2
-  -------------------------------------------------- */
-  // {
-  //   label: "Primary Owner",
-  //   name: "owner",
-  //   type: "select",
-  //   masterKey: "EmployeeList",
-
-  //   apiKey: "Owner1",
-  //   mapTo: ["Owner1", "Owner2"],
-  //   ui: "mui",
-  //   options: [
-  //     { label: "Alice", value: "Alice1" },
-  //     { label: "Bob", value: "Bob1" },
-  //     { label: "Charlie", value: "Charlie" },
-  //   ],
-  //   dataType: "string",
-  // },
-
-  /* --------------------------------------------------
-     Status with transform
-     UI gives number
-     Backend expects string
-  -------------------------------------------------- */
-  // {
-  //   label: "Status",
-  //   name: "status",
-  //   type: "select",
-
-  //   dataType: "string",
-  //   apiKey: "Status",
-
-  //   transform: (value) => (value === 1 ? "Active" : "Inactive"),
-  // },
-
-  /* --------------------------------------------------
-     Hidden Default Field (Auto Inject)
-  -------------------------------------------------- */
-  // {
-  //   name: "repoKey",
-  //   apiKey: "RepoKey",
-  //   hidden: true,
-  //   defaultValue: null,
-  //   dataType: "string",
-  // },
+  
 
   /* --------------------------------------------------
      Repository Users (Group Multi)
@@ -147,7 +85,71 @@ export const RepoFieldConfig = () => [
       },
     ],
   },
+    /* --------------------------------------------------
+     Description
+  -------------------------------------------------- */
+  {
+    label: "Description",
+    name: "description",
+    type: "adEditor",
+    ui: "editor",
+
+    required: true,
+    dataType: "string",
+
+    apiKey: "Description",
+  },
+
 ];
+
+  /* --------------------------------------------------
+     Owner Selection (Example multi-map)
+     One input → Owner1 + Owner2
+  -------------------------------------------------- */
+  // {
+  //   label: "Primary Owner",
+  //   name: "owner",
+  //   type: "select",
+  //   masterKey: "EmployeeList",
+
+  //   apiKey: "Owner1",
+  //   mapTo: ["Owner1", "Owner2"],
+  //   ui: "mui",
+  //   options: [
+  //     { label: "Alice", value: "Alice1" },
+  //     { label: "Bob", value: "Bob1" },
+  //     { label: "Charlie", value: "Charlie" },
+  //   ],
+  //   dataType: "string",
+  // },
+
+  /* --------------------------------------------------
+     Status with transform
+     UI gives number
+     Backend expects string
+  -------------------------------------------------- */
+  // {
+  //   label: "Status",
+  //   name: "status",
+  //   type: "select",
+
+  //   dataType: "string",
+  //   apiKey: "Status",
+
+  //   transform: (value) => (value === 1 ? "Active" : "Inactive"),
+  // },
+
+  /* --------------------------------------------------
+     Hidden Default Field (Auto Inject)
+  -------------------------------------------------- */
+  // {
+  //   name: "repoKey",
+  //   apiKey: "RepoKey",
+  //   hidden: true,
+  //   defaultValue: null,
+  //   dataType: "string",
+  // },
+
 
 // export const RepoFieldConfig = () => {
 //   const RepoFields = [

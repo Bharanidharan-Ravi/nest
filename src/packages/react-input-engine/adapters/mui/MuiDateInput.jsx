@@ -1,10 +1,13 @@
 // MuiDateInput.jsx
 import { TextField } from "@mui/material";
 
-const MuiDateInput = ({ name, label, value, error, onChange,required }) => (
+const MuiDateInput = ({ name, label, value, error, onChange,required, theme }) => (
   <TextField
     type="date"
     label={label}
+    variant="outlined"
+    size="small"
+    className={theme.input || "wg-mui-input"}
     InputLabelProps={{ shrink: true }}
     value={value || ""}
     error={!!error}

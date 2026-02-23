@@ -3,15 +3,21 @@
 @tailwind utilities;
 
 @layer base {
+
   /* 1. Global App Background and Text Color */
   body {
     @apply bg-brand-gray-light text-brand-black font-sans antialiased m-0 p-0 min-h-screen;
-    /* Responsive base font size: 14px on mobile, 16px on tablets and up */
-    @apply text-sm md:text-base; 
+    /* Global font size applies to inputs, buttons, and paragraphs automatically */
+    @apply text-sm md:text-base;
   }
 
   /* 2. Responsive Headings */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold text-brand-black mb-2;
   }
 
@@ -22,16 +28,82 @@
 
   h2 {
     /* 20px mobile, 24px tablet, 30px desktop */
-    @apply text-xl md:text-2xl lg:text-3xl; 
+    @apply text-xl md:text-2xl lg:text-3xl;
   }
 
   /* 3. Global Links */
   a {
     @apply text-brand-black hover:text-brand-yellow transition-colors duration-200 cursor-pointer;
   }
+}
 
-  /* 4. Global Input/Button resets (optional but helpful for your filter bar) */
-  input[type="text"] {
-    @apply border-brand-gray-border bg-brand-white focus:outline-none focus:ring-2 focus:ring-brand-yellow rounded-md;
+/* -------------------------------------------------------------------------- */
+/* TIER 2B: GLOBAL COMPONENTS (Standardized buttons, cards, and inputs)       */
+/* -------------------------------------------------------------------------- */
+@layer components {
+
+  /* Forms & Cards */
+  .wg-form-container {
+    @apply bg-white border border-gray-300 rounded-lg shadow-sm flex flex-col max-h-[calc(100vh-160px)];
+  }
+
+  .wg-form-footer {
+    @apply px-6 py-4 bg-gray-50 border-t border-gray-300 flex justify-end gap-3 rounded-b-lg flex-none;
+  }
+
+  /* Standard Inputs */
+  .wg-input {
+    @apply w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:outline-none focus:bg-white focus:border-gray-500 focus:ring-0 transition-colors placeholder-gray-400;
+  }
+
+  /* Global Button Typography & Sizing */
+  .wg-btn {
+    @apply px-4 py-2 text-sm font-semibold rounded-md transition-colors disabled:opacity-50 inline-flex items-center justify-center;
+  }
+
+  /* Specific Button Variations */
+  .wg-btn-primary {
+    @apply wg-btn bg-gray-800 text-white hover:bg-black;
+  }
+
+  .wg-btn-secondary {
+    @apply wg-btn bg-white border border-gray-300 text-gray-700 hover:bg-gray-100;
+  }
+
+  /* 🔥 MUI Specific Input Styling */
+  .wg-mui-input {
+    @apply w-full; 
+  }
+
+  /* Resting State */
+  .wg-mui-input .MuiOutlinedInput-root {
+    @apply bg-gray-50 rounded-md transition-all text-sm text-gray-900;
+  }
+
+  .wg-mui-input .MuiOutlinedInput-notchedOutline {
+    @apply border-gray-500;
+  }
+
+  /* Hover State */
+  .wg-mui-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
+    @apply border-gray-500;
+  }
+
+  /* Focus/Active State */
+  .wg-mui-input .MuiOutlinedInput-root.Mui-focused {
+    @apply bg-white;
+  }
+
+  .wg-mui-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+    @apply border-gray-500 border-[1px] ring-0;
+  }
+
+  /* Label Styling */
+  .wg-mui-input .MuiInputLabel-root {
+    @apply text-sm text-gray-800 ;
+  }
+
+  .wg-mui-input .MuiInputLabel-root.Mui-focused {
+    @apply text-gray-900 border-red-500;
   }
 }
