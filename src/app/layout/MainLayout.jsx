@@ -26,7 +26,7 @@ export default function MainLayout() {
         <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
 
         {/* 4. The main content area is now a flex container that passes height down */}
-        <main className="flex-1 flex flex-col overflow-hidden p-3">
+        <main className="flex-1 flex flex-col overflow-auto p-3">
           <Outlet />
         </main>
       </div>

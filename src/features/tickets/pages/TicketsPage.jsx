@@ -1,6 +1,9 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import "../css/ViewTickets.css";
+import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
+import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
+import { repoListConfig } from "../config/Ticket.Config";
 
 export default function TicketsPage() {
   const { repoId } = useParams();
@@ -46,6 +49,11 @@ export default function TicketsPage() {
           />
         </div> */}
 
+        <div className="flex-1 min-h-0">
+          <ListProvider config={repoListConfig} data={data?.Data || []}>
+            <ListLayout />
+          </ListProvider>
+        </div>
         <ul className="ticket-list">
           {data?.Data && data.Data.length > 0 ? (
             data.Data.map((ticket) => (

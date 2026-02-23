@@ -1,10 +1,15 @@
 // HtmlTextInput.jsx
 const HtmlTextInput = ({ name, label, value, error, onChange }) => (
   <div>
-    <label>{label}</label>
+    <label className="block text-sm font-medium text-gray-700 mb-1">
+      {label}
+    </label>
     <input
-      value={value || ""}
-      onChange={(e) => onChange(name, e.target.value)}
+      type="text"
+      value={value}
+      onChange={onChange}
+      // Automatically applies your global config class!
+      className={theme?.input || "w-full border p-2"}
     />
     {error && <div style={{ color: "red" }}>{error}</div>}
   </div>

@@ -6,7 +6,7 @@ import { useMasterData } from "../../../core/master/useMasterData";
 import { executeApi } from "../../../core/api/executor";
 import { useState } from "react";
 
-export default function EntityFormPage({ config, mode, context = {} }) {
+export default function EntityFormPage({ config, mode, context = {}, module }) {
   const navigate = useNavigate();
   const { data: masterData } = useMasterData();
   const { formData, fields, handleChange, validate, buildDto } = useEntityForm(
@@ -16,24 +16,22 @@ export default function EntityFormPage({ config, mode, context = {} }) {
   const [tempFiles, setTempFiles] = useState([]);
   const mutation = useApiMutation({
     url: config.api,
-    method: mode === "edit" ? "PUT" : "POST",
+    method: mode === "Update" ? "PUT" : "POST",
   });
   const { mutate, isPending } = useApiMutation({
     url: config.api,
-    method: mode === "edit" ? "PUT" : "POST",
+    method: mode === "Update" ? "PUT" : "POST",
     // invalidateKeys: config.invalidateKeys || [],
-    onSuccess: () => {
-
-      if (config.redirectTo) {
-        navigate(config.redirectTo);
-      }
-    },
+    // onSuccess: () => {
+    //   if (config.redirectTo) {
+    //     navigate(config.redirectTo);
+    //   }
+    // },
   });
 
   const handleEditorFileDelete = async (deletedUrl) => {
     // 1. Only process deletions for files in the temporary folder
     if (deletedUrl.includes("/UploadsTemp/")) {
-
       // 2. Find the complete Tempdata object (which contains the LocalPath) from state
       const fileToDelete = tempFiles.find((f) => f.PublicUrl === deletedUrl);
 
@@ -41,34 +39,42 @@ export default function EntityFormPage({ config, mode, context = {} }) {
         try {
           // 3. Construct the payload matching your C# TempReturn class
           const payload = {
-            Delete: "single",        // Maps to: CASE 1 — Delete Single File
-            temps: [fileToDelete],   // Maps to: List<Tempdata>
+            Delete: "single", // Maps to: CASE 1 — Delete Single File
+            temps: [fileToDelete], // Maps to: List<Tempdata>
           };
 
           // 4. Trigger the backend API
           await executeApi({
-            url: "Attachment/DeleteTemp", // Ensure this matches your Controller Route
+            url: "Attachment/tempCleanUp", // Ensure this matches your Controller Route
             method: "POST", // Use POST since you are sending a body
             payload: payload,
           });
 
           // 5. Remove it from the local React state so it isn't included in the final Save
-          setTempFiles((prev) => prev.filter((f) => f.PublicUrl !== deletedUrl));
+          setTempFiles((prev) =>
+            prev.filter((f) => f.PublicUrl !== deletedUrl),
+          );
 
-          console.log("Successfully deleted from temporary storage:", deletedUrl);
+          console.log(
+            "Successfully deleted from temporary storage:",
+            deletedUrl,
+          );
         } catch (error) {
           console.error("Failed to call delete API:", error);
         }
       } else {
         // This happens if the user deletes a file but the state was lost (e.g., page refresh)
-        console.warn("File object not found in local state for URL:", deletedUrl);
+        console.warn(
+          "File object not found in local state for URL:",
+          deletedUrl,
+        );
       }
     }
   };
   const handleSubmit = () => {
     console.log("itest trigger");
 
-    if (!validate()) return;
+    // if (!validate()) return;
 
     const dto = buildDto();
     if (tempFiles.length > 0) {
@@ -110,20 +116,34 @@ export default function EntityFormPage({ config, mode, context = {} }) {
     return data.PublicUrl;
   };
 
+const theme = config.theme || {};
+
   return (
-    <>
-      {fields?.length > 0 && (
-        <FormEngine
-          fields={fields}
-          values={formData}
-          onChange={handleChange}
-          master={masterData}
-          uploadFile={uploadFile}
-          onFileDelete={handleEditorFileDelete}
-        />
-      )}
-      <button onClick={handleSubmit}>Save</button>
-    </>
+    <div className={`wg-form-container ${theme.formContainer || ""}`}>
+      <div className="p-6 flex-1 overflow-y-auto">
+        {fields?.length > 0 && (
+          <FormEngine
+            fields={fields}
+            values={formData}
+            onChange={handleChange}
+            master={masterData}
+            uploadFile={uploadFile}
+            onFileDelete={handleEditorFileDelete}
+            globalTheme={theme} // 🔥 Pass the theme down!
+          />
+        )}
+      </div>
+
+      <div className={`wg-form-footer ${theme.footer || ""}`}>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={isPending}
+          className={`wg-btn-primary ${theme.submitBtn || ""}`}
+        >
+          {isPending ? (mode === "Create" ? "Creating..." : "updating..."): `${mode} ${module}`}
+        </button>
+      </div>
+    </div>
   );
 }
-

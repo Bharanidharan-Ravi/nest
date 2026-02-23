@@ -2,15 +2,11 @@
 export default {
   content: [
     "./index.html",
-    "./src/**/*.js",
-    "./src/**/*.ts",
-    "./src/**/*.jsx",
-    "./src/**/*.tsx",
+    "src/**/*.jsx", // <-- ONLY use this single line!
   ],
   theme: {
     extend: {
       colors: {
-        // 1. GitHub colors (accessible directly via text-ghBlue, bg-ghBg)
         ghBg: "#f6f8fa",
         ghBorder: "#d0d7de",
         ghText: "#24292f",
@@ -19,7 +15,6 @@ export default {
         ghHover: "#f3f4f6",
         ghInput: "#ffffff",
 
-        // 2. Your WorkGlow Brand colors (accessible via text-brand-yellow)
         brand: {
           yellow: "#ffb300",
           yhover: "#fff8e1",

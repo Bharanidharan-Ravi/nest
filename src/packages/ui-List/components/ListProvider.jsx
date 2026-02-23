@@ -7,7 +7,7 @@ export function ListProvider({ config, data, children }) {
   const state = useListState(config, data)
   useUrlSync(state)
 
-  if (config.infinite)
+  // if (config.infinite)
     useInfiniteScroll(state.loadMore, state.hasMore)
 
   return (

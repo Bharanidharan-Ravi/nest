@@ -10,10 +10,11 @@ const MuiSelectInput = ({
   clearable = true,
   disabled = false,
   required,
+  theme={}
 }) => {
   // const selected = options.find((o) => o.value === value?.value) ?? null;
   const selected = options.find((o) => o.value?.id === value?.value.id) ?? null;
-  
+
   return (
     <Autocomplete
       options={options}
@@ -43,6 +44,9 @@ const MuiSelectInput = ({
           {...params}
           label={label}
           error={!!error}
+          variant="outlined"
+          size="small"
+          className={theme.input || "wg-mui-input"}
           helperText={error}
           required={required}
         />

@@ -1,6 +1,8 @@
 import { useEffect } from "react"
 
 export function useInfiniteScroll(callback, hasMore) {
+  console.log("trigger:", callback, hasMore);
+  
   useEffect(() => {
     const handleScroll = () => {
       if (

@@ -188,6 +188,7 @@ const AdvancedEditor = ({
   userList = [],
   labelList = [],
   resetKey,
+  theme
 }) => {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(false);
@@ -284,7 +285,6 @@ const AdvancedEditor = ({
       // Trigger parent onChange
       onChange?.(name, editor.getHTML());
 
-
       // 🔥 5. Compare current media to previous media to detect deletions
       const currentMediaUrls = extractMediaUrls(editor);
       console.log("itest trigger :", currentMediaUrls);
@@ -292,7 +292,7 @@ const AdvancedEditor = ({
 
       // Find URLs that were in the previous state but are missing now
       const deletedUrls = previousMediaUrls.filter(
-        (url) => !currentMediaUrls.includes(url)
+        (url) => !currentMediaUrls.includes(url),
       );
 
       if (deletedUrls.length > 0 && onFileDelete) {
@@ -367,45 +367,60 @@ const AdvancedEditor = ({
   };
 
   if (!editor) return null;
-
+  // const theme = theme.theme || {};
+  // 1. A helper function to keep the button code clean
+  const ToolbarButton = ({ onClick, isActive, disabled, children, title, customClass = "" }) => (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${
+        isActive
+          ? "bg-gray-300 text-gray-900"
+          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 bg-transparent"
+      } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${customClass}`}
+    >
+      {children}
+    </button>
+  );
   return (
-    <div className="editor-container">
-      {/* Toolbar */}
-      <div className="toolbar">
+   <div className={theme.editorContainer || "border border-gray-300 rounded-md"}>
+      {/* GitHub Style Toolbar: Transparent background, bottom border, flex layout */}
+      <div className={theme.editorToolbar || "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"}>
         {/* ... (Keep existing toolbar buttons: bold, italic, etc.) ... */}
-        <button
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           className={editor.isActive("bold") ? "is-active" : ""}
         >
           <FaBold />
-        </button>
-        <button
+        </ToolbarButton>
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
           className={editor.isActive("italic") ? "is-active" : ""}
         >
           <FaItalic />
-        </button>
-        <button
+        </ToolbarButton>
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           className={editor.isActive("underline") ? "is-active" : ""}
         >
           <FaUnderline />
-        </button>
-        <button
+        </ToolbarButton>
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           className={editor.isActive("bulletList") ? "is-active" : ""}
         >
           <FaListUl />
-        </button>
-        <button
+        </ToolbarButton>
+        <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           className={editor.isActive("orderedList") ? "is-active" : ""}
         >
           <FaListOl />
-        </button>
+        </ToolbarButton>
 
         {/* Table Module */}
-        <button
+        <ToolbarButton
           onClick={() =>
             editor
               .chain()
@@ -415,72 +430,112 @@ const AdvancedEditor = ({
           }
         >
           <FaTable /> Insert
-        </button>
+        </ToolbarButton>
+        <div className="w-px h-5 bg-gray-300 mx-1"></div>
+        {/* {editor.isActive("table") && ( */}
+        {/* // <>
+          //   <button
+          //     onClick={() => editor.chain().focus().addColumnBefore().run()}
+          //   >
+          //     Add Col Before
+          //   </button>
+          //   <button
+          //     onClick={() => editor.chain().focus().addColumnAfter().run()}
+          //   >
+          //     Add Col After
+          //   </button>
+          //   <button onClick={() => editor.chain().focus().deleteColumn().run()}>
+          //     Del Col
+          //   </button>
+          //   <button onClick={() => editor.chain().focus().addRowBefore().run()}>
+          //     Add Row Before
+          //   </button>
+          //   <button onClick={() => editor.chain().focus().addRowAfter().run()}>
+          //     Add Row After
+          //   </button>
+          //   <button onClick={() => editor.chain().focus().deleteRow().run()}>
+          //     Del Row
+          //   </button>
+          //   <button onClick={() => editor.chain().focus().deleteTable().run()}>
+          //     Del Table
+          //   </button>
+          // </> */}
 
-        {editor.isActive("table") && (
-          <>
+        {editor.isActive("table") ? (
+          // Show simplified table controls when active
+          <div className="flex items-center gap-1 text-xs font-medium text-ghMuted">
             <button
               onClick={() => editor.chain().focus().addColumnBefore().run()}
+              className="hover:text-ghText"
             >
-              Add Col Before
+              Add Col
             </button>
+            <span className="text-gray-300">|</span>
             <button
-              onClick={() => editor.chain().focus().addColumnAfter().run()}
+              onClick={() => editor.chain().focus().addRowAfter().run()}
+              className="hover:text-ghText"
             >
-              Add Col After
+              Add Row
             </button>
-            <button onClick={() => editor.chain().focus().deleteColumn().run()}>
-              Del Col
-            </button>
-            <button onClick={() => editor.chain().focus().addRowBefore().run()}>
-              Add Row Before
-            </button>
-            <button onClick={() => editor.chain().focus().addRowAfter().run()}>
-              Add Row After
-            </button>
-            <button onClick={() => editor.chain().focus().deleteRow().run()}>
-              Del Row
-            </button>
-            <button onClick={() => editor.chain().focus().deleteTable().run()}>
+            <span className="text-gray-300">|</span>
+            <button
+              onClick={() => editor.chain().focus().deleteTable().run()}
+              className="text-red-500 hover:text-red-700"
+            >
               Del Table
             </button>
-          </>
+          </div>
+        ) : (
+          <ToolbarButton
+            onClick={() =>
+              editor
+                .chain()
+                .focus()
+                .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                .run()
+            }
+            title="Insert Table"
+          >
+            <FaTable size={14} />
+          </ToolbarButton>
         )}
-
+        <div className="w-px h-5 bg-gray-300 mx-1"></div>
         {/* 🔥 UPDATED: Use triggerFileUpload instead of direct click */}
-        <button onClick={triggerFileUpload}>
+        <ToolbarButton onClick={triggerFileUpload}>
           <FaPaperclip />
-        </button>
-        <button onClick={triggerFileUpload}>
+        </ToolbarButton>
+        <ToolbarButton onClick={triggerFileUpload}>
           <FaImage />
-        </button>
+        </ToolbarButton>
 
         {/* ... (Keep Undo/Redo/Preview buttons) ... */}
-        <button
+        <ToolbarButton
           onClick={() => editor.chain().focus().undo().run()}
           disabled={!editor.can().undo()}
         >
           <FaUndo />
-        </button>
-        <button
+        </ToolbarButton>
+        <ToolbarButton
           onClick={() => editor.chain().focus().redo().run()}
           disabled={!editor.can().redo()}
         >
           <FaRedo />
-        </button>
-        <button onClick={() => setPreview(!preview)}>
+        </ToolbarButton>
+        <ToolbarButton onClick={() => setPreview(!preview)}>
           {preview ? "Edit" : "Preview"}
-        </button>
+        </ToolbarButton>
       </div>
 
-      {preview ? (
-        <div
-          className="preview-mode ProseMirror"
-          dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
-        />
-      ) : (
-        <EditorContent editor={editor} />
-      )}
+      <div className="p-3 min-h-[150px] text-sm text-ghText">
+        {preview ? (
+          <div
+            className="preview-mode ProseMirror"
+            dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+          />
+        ) : (
+          <EditorContent editor={editor} />
+        )}
+      </div>
 
       <input
         type="file"

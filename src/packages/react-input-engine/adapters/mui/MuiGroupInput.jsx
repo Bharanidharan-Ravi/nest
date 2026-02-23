@@ -13,7 +13,8 @@ const MuiGroupInput = ({
   value = [],
   onChange,
   fields = [],
-  disabled = false
+  disabled = false,
+  theme={}
 }) => {
   const values =
     Array.isArray(value) && value.length > 0
@@ -24,7 +25,7 @@ const MuiGroupInput = ({
     const updated = [...values];
     updated[index] = {
       ...updated[index],
-      [key]: val
+      [key]: val,
     };
     onChange(name, updated, updated);
   };
@@ -40,47 +41,40 @@ const MuiGroupInput = ({
   };
 
   return (
-    <div style={{ marginBottom: "20px" }}>
+    <div>
       <h4>{label}</h4>
 
       {values.map((item, idx) => (
         <div
-          key={`${name}-${idx}`}   // 🔥 FIXED KEY
+          key={`${name}-${idx}`} // 🔥 FIXED KEY
           style={{
             display: "flex",
             gap: "8px",
-            marginBottom: "10px"
+            marginBottom: "10px",
           }}
         >
           {fields.map((subField) => (
             <TextField
-              key={`${name}-${idx}-${subField.name}`}  // 🔥 UNIQUE KEY
+              key={`${name}-${idx}-${subField.name}`} // 🔥 UNIQUE KEY
               label={subField.label}
               value={item[subField.name] || ""}
-              onChange={(e) =>
-                handleChange(idx, subField.name, e.target.value)
-              }
+              variant="outlined"
+              className={theme.input || "wg-mui-input"}
+              onChange={(e) => handleChange(idx, subField.name, e.target.value)}
               disabled={disabled}
               size="small"
             />
           ))}
 
           {!disabled && idx > 0 && (
-            <Button
-              color="error"
-              onClick={() => handleRemove(idx)}
-            >
+            <Button color="error" onClick={() => handleRemove(idx)}>
               Remove
             </Button>
           )}
         </div>
       ))}
 
-      {!disabled && (
-        <Button onClick={handleAdd}>
-          + Add {label}
-        </Button>
-      )}
+      {!disabled && <Button onClick={handleAdd}>+ Add {label}</Button>}
     </div>
   );
 };

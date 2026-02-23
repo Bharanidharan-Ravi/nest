@@ -10,21 +10,17 @@ export const DashboardFeature = {
     {
       path: "",
       element: Dashboard,
-      // prefetch: () => [
-      //   {
-      //     queryKey: queryKeys.repo.list(),
-      //     queryFn: () =>
-      //       executeApi({
-      //         url: "/sync/v2",
-      //         method: "POST",
-      //         payload: buildSyncPayload({
-      //           configKey: "RepoList",
-      //           // idKey: "repoId",
-      //           // idValue: params.repoId
-      //         }),
-      //       }),
-      //   },
-      // ],
+      prefetch: () => [
+        {
+          queryKey: queryKeys.repo.list(),
+          queryFn: () =>
+            executeApi({
+              url: "/sync/v",
+              method: "POST",
+              
+            }),
+        },
+      ],
     },
   ],
   sidebar: [
