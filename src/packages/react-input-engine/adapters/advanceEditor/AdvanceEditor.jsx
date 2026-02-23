@@ -287,7 +287,6 @@ const AdvancedEditor = ({
 
       // 🔥 5. Compare current media to previous media to detect deletions
       const currentMediaUrls = extractMediaUrls(editor);
-      console.log("itest trigger :", currentMediaUrls);
       const previousMediaUrls = previousMediaRef.current;
 
       // Find URLs that were in the previous state but are missing now

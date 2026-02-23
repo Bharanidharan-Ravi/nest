@@ -55,10 +55,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
             prev.filter((f) => f.PublicUrl !== deletedUrl),
           );
 
-          console.log(
-            "Successfully deleted from temporary storage:",
-            deletedUrl,
-          );
+          
         } catch (error) {
           console.error("Failed to call delete API:", error);
         }
@@ -72,9 +69,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     }
   };
   const handleSubmit = () => {
-    console.log("itest trigger");
-
-    // if (!validate()) return;
+    if (!validate()) return;
 
     const dto = buildDto();
     if (tempFiles.length > 0) {
@@ -87,12 +82,9 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     }
     mutate(dto);
   };
-  console.log("fields :", fields, formData);
 
   const uploadFile = async (file) => {
-    console.log("Uploading file:", file);
     const formData = new FormData();
-    formData.append("files", file);
 
     const response = await executeApi({
       url: "Attachment/tempUpload",
@@ -105,7 +97,6 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
         },
       },
     });
-    console.log("Upload response:", response);
     // The backend returns the Tempdata object: { FileName, PublicUrl, LocalPath }
     const data = response.Data;
 

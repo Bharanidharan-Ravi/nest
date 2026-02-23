@@ -25,6 +25,7 @@ export const RepoUIConfig = {
 
 export const repoListConfig = {
   defaultView: "card",
+  pageSize:100,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,

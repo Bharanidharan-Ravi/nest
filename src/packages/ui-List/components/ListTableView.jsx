@@ -2,7 +2,6 @@ import { useList } from "../context/ListContext"
 
 export function ListTableView() {
   const { data, config } = useList()
-console.log("ListTableView data:", data, config);
 
   return (
     <table className="w-full text-gray-200">

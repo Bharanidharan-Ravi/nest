@@ -33,7 +33,6 @@ export const ProjFieldConfig = () => [
       if (!repoId) return null;
 
       const repo = masterData?.RepoList?.find((r) => r.Repo_Id === repoId);
-      // console.log("repoId:", repoId, "repo:", repo);
 
       if (!repo) return null;
 
