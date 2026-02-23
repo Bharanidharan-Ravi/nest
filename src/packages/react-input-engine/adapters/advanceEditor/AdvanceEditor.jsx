@@ -184,6 +184,7 @@ const AdvancedEditor = ({
   value = "",
   onChange,
   uploadFile,
+  onFileDelete,
   userList = [],
   labelList = [],
   resetKey,
@@ -192,17 +193,27 @@ const AdvancedEditor = ({
   const [preview, setPreview] = useState(false);
   // 🔥 NEW: State to remember cursor position before clicking upload button
   const [selectionBeforeUpload, setSelectionBeforeUpload] = useState(null);
-
+  const previousMediaRef = useRef([]);
   const listsRef = useRef({ users: userList, labels: labelList });
 
   useEffect(() => {
     listsRef.current = { users: userList, labels: labelList };
   }, [userList, labelList]);
-
- /* ===================================================
-     🔥 FIXED HELPER: Process and Insert Files
-  =================================================== */
-  const processAndInsertFiles =async (files, insertPos = null) => {
+  // 🔥 3. Helper to extract all image/file URLs from the current editor state
+  const extractMediaUrls = (editorInstance) => {
+    const urls = [];
+    editorInstance.state.doc.descendants((node) => {
+      // 🔥 2. Remove the console.log from here to stop the console spam
+      if (node.type.name === "image" || node.type.name === "fileAttachment") {
+        if (node.attrs.src) urls.push(node.attrs.src);
+      }
+    });
+    return urls;
+  };
+  /* ===================================================
+      🔥 FIXED HELPER: Process and Insert Files
+   =================================================== */
+  const processAndInsertFiles = async (files, insertPos = null) => {
     if (!editor || files.length === 0) return;
 
     try {
@@ -236,11 +247,11 @@ const AdvancedEditor = ({
       // 3. Insert all of them at once!
       if (contentToInsert.length > 0) {
         let chain = editor.chain().focus();
-        
+
         if (insertPos !== null) {
           chain = chain.setTextSelection(insertPos);
         }
-        
+
         chain.insertContent(contentToInsert).run();
       }
     } catch (error) {
@@ -266,17 +277,39 @@ const AdvancedEditor = ({
       createMentionExtension(listsRef, "@", "users", "UserName", "UserID"),
       createMentionExtension(listsRef, "#", "labels", "LabelName", "LabelID"),
     ],
-
-    onUpdate: ({ editor }) => {
-      onChange?.(name, editor.getHTML());
+    onCreate: ({ editor }) => {
+      previousMediaRef.current = extractMediaUrls(editor);
     },
+    onUpdate: ({ editor }) => {
+      // Trigger parent onChange
+      onChange?.(name, editor.getHTML());
 
-  editorProps: {
+
+      // 🔥 5. Compare current media to previous media to detect deletions
+      const currentMediaUrls = extractMediaUrls(editor);
+      console.log("itest trigger :", currentMediaUrls);
+      const previousMediaUrls = previousMediaRef.current;
+
+      // Find URLs that were in the previous state but are missing now
+      const deletedUrls = previousMediaUrls.filter(
+        (url) => !currentMediaUrls.includes(url)
+      );
+
+      if (deletedUrls.length > 0 && onFileDelete) {
+        deletedUrls.forEach((url) => {
+          onFileDelete(url); // Trigger API call for each deleted file
+        });
+      }
+
+      // Update the ref for the next keystroke/update
+      previousMediaRef.current = currentMediaUrls;
+    },
+    editorProps: {
       handleDrop: (view, event, slice, moved) => {
         if (!moved && event.dataTransfer?.files?.length) {
           event.preventDefault();
           const files = Array.from(event.dataTransfer.files);
-          
+
           // Get exact cursor drop coordinates
           const coordinates = view.posAtCoords({
             left: event.clientX,
@@ -330,7 +363,7 @@ const AdvancedEditor = ({
     await processAndInsertFiles(files);
 
     // Reset input for next use
-    e.target.value = "";    
+    e.target.value = "";
   };
 
   if (!editor) return null;

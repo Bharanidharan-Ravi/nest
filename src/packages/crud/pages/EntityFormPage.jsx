@@ -4,6 +4,7 @@ import FormEngine from "../../react-input-engine/core/FormEngine";
 import { useNavigate } from "react-router-dom";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { executeApi } from "../../../core/api/executor";
+import { useState } from "react";
 
 export default function EntityFormPage({ config, mode, context = {} }) {
   const navigate = useNavigate();
@@ -12,7 +13,7 @@ export default function EntityFormPage({ config, mode, context = {} }) {
     config,
     context,
   );
-
+  const [tempFiles, setTempFiles] = useState([]);
   const mutation = useApiMutation({
     url: config.api,
     method: mode === "edit" ? "PUT" : "POST",
@@ -23,15 +24,61 @@ export default function EntityFormPage({ config, mode, context = {} }) {
     // invalidateKeys: config.invalidateKeys || [],
     onSuccess: () => {
 
-      // if (config.redirectTo) {
-      //   navigate(config.redirectTo);
-      // }
+      if (config.redirectTo) {
+        navigate(config.redirectTo);
+      }
     },
   });
+
+  const handleEditorFileDelete = async (deletedUrl) => {
+    // 1. Only process deletions for files in the temporary folder
+    if (deletedUrl.includes("/UploadsTemp/")) {
+
+      // 2. Find the complete Tempdata object (which contains the LocalPath) from state
+      const fileToDelete = tempFiles.find((f) => f.PublicUrl === deletedUrl);
+
+      if (fileToDelete) {
+        try {
+          // 3. Construct the payload matching your C# TempReturn class
+          const payload = {
+            Delete: "single",        // Maps to: CASE 1 — Delete Single File
+            temps: [fileToDelete],   // Maps to: List<Tempdata>
+          };
+
+          // 4. Trigger the backend API
+          await executeApi({
+            url: "Attachment/DeleteTemp", // Ensure this matches your Controller Route
+            method: "POST", // Use POST since you are sending a body
+            payload: payload,
+          });
+
+          // 5. Remove it from the local React state so it isn't included in the final Save
+          setTempFiles((prev) => prev.filter((f) => f.PublicUrl !== deletedUrl));
+
+          console.log("Successfully deleted from temporary storage:", deletedUrl);
+        } catch (error) {
+          console.error("Failed to call delete API:", error);
+        }
+      } else {
+        // This happens if the user deletes a file but the state was lost (e.g., page refresh)
+        console.warn("File object not found in local state for URL:", deletedUrl);
+      }
+    }
+  };
   const handleSubmit = () => {
+    console.log("itest trigger");
+
     if (!validate()) return;
 
     const dto = buildDto();
+    if (tempFiles.length > 0) {
+      dto.temp = {
+        Delete: "all", // Optional: Send "all" if your backend expects it for cleanup logic
+        temps: tempFiles,
+      };
+    } else {
+      dto.temp = null;
+    }
     mutate(dto);
   };
   console.log("fields :", fields, formData);
@@ -53,8 +100,14 @@ export default function EntityFormPage({ config, mode, context = {} }) {
       },
     });
     console.log("Upload response:", response);
+    // The backend returns the Tempdata object: { FileName, PublicUrl, LocalPath }
     const data = response.Data;
-    return data.PublicUrl; // backend returns public URL
+
+    // 🔥 2. Save the full temp data object into our React state
+    setTempFiles((prev) => [...prev, data]);
+
+    // 🔥 3. Return ONLY the public URL for the Tiptap editor to display
+    return data.PublicUrl;
   };
 
   return (
@@ -66,6 +119,7 @@ export default function EntityFormPage({ config, mode, context = {} }) {
           onChange={handleChange}
           master={masterData}
           uploadFile={uploadFile}
+          onFileDelete={handleEditorFileDelete}
         />
       )}
       <button onClick={handleSubmit}>Save</button>
@@ -73,86 +127,3 @@ export default function EntityFormPage({ config, mode, context = {} }) {
   );
 }
 
-// // core/crud/EntityFormPage.jsx
-
-// import React, { useEffect, useState } from "react";
-// import { useApiMutation } from "../../../core/query/useApiMutation";
-// import { useNavigate } from "react-router-dom";
-// import FormEngine from "../../react-input-engine/core/FormEngine";
-// import { useApiQuery } from "../../../core/query/useApiQuery";
-
-// export default function EntityFormPage({
-//   mode = "create",        // create | edit | view
-//   id,
-//   config,
-// }) {
-//   const navigate = useNavigate();
-//   const isEdit = mode === "edit";
-//   const isView = mode === "view";
-//   const isCreate = mode === "create";
-
-//   const [formData, setFormData] = useState({});
-
-//   // 🔥 Fetch detail if edit/view
-//   const { data: detailData, isLoading } = useApiQuery({
-//     queryKey: [config.key, id],
-//     url: `${config.api}/${id}`,
-//     method: "GET",
-//     options: {
-//       enabled: isEdit || isView,
-//     },
-//   });
-
-//   // Populate formData when editing
-//   useEffect(() => {
-//     if (detailData) {
-//       setFormData(detailData);
-//     }
-//   }, [detailData]);
-
-//   // 🔥 Mutation
-//   const mutation = useApiMutation({
-//     url: config.api,
-//     method: isEdit ? "PUT" : "POST",
-//     invalidateKeys: config.invalidateKeys || [],
-//   });
-
-//   // 🔥 Handle change from FormEngine
-//   const handleChange = (fieldName, value) => {
-//     setFormData((prev) => ({
-//       ...prev,
-//       [fieldName]: value,
-//     }));
-//   };
-
-//   const handleSubmit = () => {
-//     mutation.mutate(formData, {
-//       onSuccess: () => {
-//         if (config.redirectTo) {
-//           navigate(config.redirectTo);
-//         }
-//       },
-//     });
-//   };
-
-//   if (isLoading) return <div>Loading...</div>;
-
-//   return (
-//     <div>
-//       <h2>{config.title}</h2>
-
-//       <FormEngine
-//         fields={config.fields}
-//         values={formData}
-//         onChange={handleChange}
-//         readOnly={isView}
-//       />
-
-//       {!isView && (
-//         <button onClick={handleSubmit} disabled={mutation.isPending}>
-//           {isEdit ? "Update" : "Create"}
-//         </button>
-//       )}
-//     </div>
-//   );
-// }
