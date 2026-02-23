@@ -57,9 +57,7 @@ export const useEntityForm = (config, context = {}) => {
     });
   }, [masterData]);
 
-  const handleChange = (name, value, metadata = {}) => {
-    console.log("handleChange called with:", name, value, metadata);
-    
+  const handleChange = (name, value, metadata = {}) => {    
     setFormData((prev) => {
       const next = {
         ...prev,

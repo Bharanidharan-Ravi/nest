@@ -65,36 +65,3 @@ export default function Sidebar({ isOpen, onClose }) {
 }
 
 
-// export default function Sidebar() {
-//   const { data, isLoading } = useRepoMaster();
-// console.log("data :", data);
-
-//   return (
-//     <div style={{ width: 250, background: "#f4f4f4", padding: 20 }}>
-//       <Link to="/dashboard">Dashboard</Link>
-
-//       <hr />
-//       <div className="d-flex flex-column gap-2">
-//         <div>
-//           <Link to="/tickets">Tickets</Link>
-//         </div>
-//         <div>
-//           <Link to="/projects">Projects</Link>
-//         </div>
-//       </div>
-//       <hr />
-//       {/* <h4>Repositories</h4> */}
-//       <div>
-//         <Link to="/repository">Repositories</Link>
-//       </div>
-
-//       {isLoading && <p>Loading...</p>}
-
-//       {data?.Data.map((repo) => (
-//         <div key={repo.Repo_Id}>
-//           <Link to={`/repository/${repo.Repo_Id}`}>{repo.Title}</Link>
-//         </div>
-//       ))}
-//     </div>
-//   );
-// }

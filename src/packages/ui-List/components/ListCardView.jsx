@@ -14,7 +14,8 @@ export function ListCardView() {
   return (
     <div className={containerClasses}>
       {data.map(item => (
-        <div key={item.id} className={itemClasses}>
+        <div key={item.id} className={itemClasses}
+        onClick={() => config.onItemClick && config.onItemClick(item)}>
            {config.cardRenderer(item)}
         </div>
       ))}
