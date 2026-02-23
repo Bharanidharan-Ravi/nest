@@ -1,7 +1,7 @@
 // core/FormEngine.jsx
 import { inputRegistry } from "../registry/inputRegistry";
 
-const FormEngine = ({ fields, values, errors = {}, onChange, master, uploadFile }) => {
+const FormEngine = ({ fields, values, errors = {}, onChange, master, uploadFile, onFileDelete }) => {
 
   return (
     <>
@@ -29,6 +29,7 @@ const FormEngine = ({ fields, values, errors = {}, onChange, master, uploadFile 
               userList={master?.EmployeeList}
               labelList={master?.LabelMaster}
               uploadFile={uploadFile}
+              onFileDelete={onFileDelete}
             />
           );
         })}

@@ -27,12 +27,12 @@ export const RepoFieldConfig = () => [
   {
     label: "Description",
     name: "description",
-    type: "CommentBar",
+    type: "adEditor",
+    ui: "editor",
 
-    // required: true,
+    required: true,
     dataType: "string",
-    hidden: true,
-    defaultValue: "test description",
+
     apiKey: "Description",
   },
 
