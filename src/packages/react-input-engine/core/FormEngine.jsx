@@ -9,33 +9,43 @@ const FormEngine = ({
   master,
   uploadFile,
   onFileDelete,
-  globalTheme
+  globalTheme,
 }) => {
+  const colSpanClasses = {
+    12: "col-span-12",
+    8: "col-span-12 md:col-span-8",
+    6: "col-span-12 md:col-span-6",
+    4: "col-span-12 md:col-span-4",
+    3: "col-span-12 md:col-span-2",
+  };
   return (
     // 1. CSS Grid: 1 column on mobile/small spaces, 2 columns when space allows
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+    <div className="grid grid-cols-12 gap-x-6 gap-y-5">
       {fields?.length > 0 &&
         fields.map((field) => {
           const Component = inputRegistry?.[field.ui || "html"]?.[field.type];
 
           if (!Component) return null;
           const fieldTheme = field.theme || globalTheme || {};
-          // 2. Logic to determine if a field should take the full width of the row
-          // We force 'adEditor' and 'group' (multi-inputs) to always take a full line.
-          // You can also add `fullWidth: true` to any field in CreateRepo.Config.js to force it!
-          const isFullWidth =
+
+          // 3. Determine the column span for this specific field
+          let currentSpan = field.colSpan || 6; // Default to 6 (50% width)
+
+          // Force full width (12 columns) for specific types or if explicitly requested
+          if (
             field.type === "adEditor" ||
             field.type === "group" ||
-            field.fullWidth;
+            field.fullWidth
+          ) {
+            currentSpan = 12;
+          }
+
+          // Safely grab the Tailwind classes from our map (fallback to 12 if an invalid number is passed)
+          const spanClass = colSpanClasses[currentSpan] || colSpanClasses[12];
 
           return (
-            // 3. Apply column spanning conditionally
-            <div
-              key={field.name}
-              className={
-                isFullWidth ? "col-span-1 md:col-span-2" : "col-span-1"
-              }
-            >
+            // 4. Apply the dynamic span class to the wrapper
+            <div key={field.name} className={spanClass}>
               <Component
                 name={field.name}
                 label={field.label}

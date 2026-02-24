@@ -72,7 +72,7 @@ export const ProjFieldConfig = () => [
 
     apiKey: "Title",
     masterKey: "RepoList",
-
+    // colSpan:,
     // 🔥 Build dropdown options
     optionsResolver: (masterData) =>
       masterData?.EmployeeList?.map((user) => ({
@@ -82,6 +82,28 @@ export const ProjFieldConfig = () => [
           name: user.UserName,
         },
       })) || [],
+  },
+  {
+    label: "Start Date",
+    name: "startDate",
+    type: "date",
+    ui: "mui",
+
+    required: true,
+    dataType: "string",
+    colSpan: 3,
+    apiKey: "StartDate",
+  },
+  {
+    label: "Due Date",
+    name: "dueDate",
+    type: "date",
+    ui: "mui",
+
+    required: true,
+    dataType: "string",
+    colSpan: 3,
+    apiKey: "DueDate",
   },
   {
     label: "Description",
@@ -95,35 +117,4 @@ export const ProjFieldConfig = () => [
     apiKey: "Description",
     visibleWhen: () => true,
   },
-  //    {
-  //     label: "Repository",
-  //     name: "title",
-  //     type: "text",
-  //     ui: "mui",
-
-  //     required: true,
-  //     dataType: "string",
-
-  //     apiKey: "Title",
-
-  //     pattern: "^[A-Za-z0-9 ]+$",
-  //     errorMessage: "Only alphanumeric allowed",
-
-  //     visibleWhen: () => true,
-  //   }, {
-  //     label: "Repository",
-  //     name: "title",
-  //     type: "text",
-  //     ui: "mui",
-
-  //     required: true,
-  //     dataType: "string",
-
-  //     apiKey: "Title",
-
-  //     pattern: "^[A-Za-z0-9 ]+$",
-  //     errorMessage: "Only alphanumeric allowed",
-
-  //     visibleWhen: () => true,
-  //   },
 ];

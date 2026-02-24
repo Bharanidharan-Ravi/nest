@@ -22,11 +22,11 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",
     // invalidateKeys: config.invalidateKeys || [],
-    // onSuccess: () => {
-    //   if (config.redirectTo) {
-    //     navigate(config.redirectTo);
-    //   }
-    // },
+    onSuccess: () => {
+      if (config.redirectTo) {
+        navigate(config.redirectTo);
+      }
+    },
   });
 
   const handleEditorFileDelete = async (deletedUrl) => {
@@ -54,8 +54,6 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
           setTempFiles((prev) =>
             prev.filter((f) => f.PublicUrl !== deletedUrl),
           );
-
-          
         } catch (error) {
           console.error("Failed to call delete API:", error);
         }
@@ -84,12 +82,12 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
   };
 
   const uploadFile = async (file) => {
-    const formData = new FormData();
-
+    const formDataPayload = new FormData();
+    formDataPayload.append("files", file);
     const response = await executeApi({
       url: "Attachment/tempUpload",
       method: "POST",
-      payload: formData,
+      payload: formDataPayload,
       // 2. Wrap headers inside 'config' so your executor picks them up
       config: {
         headers: {
@@ -107,7 +105,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     return data.PublicUrl;
   };
 
-const theme = config.theme || {};
+  const theme = config.theme || {};
 
   return (
     <div className={`wg-form-container ${theme.formContainer || ""}`}>
@@ -132,7 +130,11 @@ const theme = config.theme || {};
           disabled={isPending}
           className={`wg-btn-primary ${theme.submitBtn || ""}`}
         >
-          {isPending ? (mode === "Create" ? "Creating..." : "updating..."): `${mode} ${module}`}
+          {isPending
+            ? mode === "Create"
+              ? "Creating..."
+              : "updating..."
+            : `${mode} ${module}`}
         </button>
       </div>
     </div>

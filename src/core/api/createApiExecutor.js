@@ -1,6 +1,8 @@
 export function createApiExecutor(apiClient) {
   return async function executeApi(options) {
     const { url, method = "GET", payload, params, config } = options
+    console.log("options :", options);
+    
 
     switch (method) {
       case "GET":

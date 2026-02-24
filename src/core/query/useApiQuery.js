@@ -8,21 +8,21 @@ export const useApiQuery = ({
   payload,
   params,
   source,
+  queryFn,
   options = {},
 }) => {
+  console.log("queryFn :", queryFn);
+  
   return useQuery({
     queryKey,
     queryFn: async () => {
-      const res = await executeApi({
-        url,
-        method,
-        payload,
-        params,
-      });
-      if (source && res && typeof res === "object") {
-        return res[source];
-      }
+      const res = queryFn 
+        ? await queryFn() 
+        : await executeApi({ url, method, payload, params });
 
+      if (source && res?.Res?.[source]) {
+        return res.Res[source].Data; // 👈 Standardize extraction for your .NET JSON
+      }
       return res;
     },
     ...options,
