@@ -43,20 +43,32 @@ export const useEntityForm = (config, context = {}) => {
   }, [formData, config.fields, masterData, context]);
 
   // 🔥 Handle initial value injection
-  useEffect(() => {
-    processedFields.forEach((field) => {
-      if (field.initValueResolver) {
-        const initialValue = field.initValueResolver(context, masterData);
-        if (initialValue) {
-          setFormData((prev) => ({
-            ...prev,
-            [field.name]: initialValue,
-          }));
-        }
-      }
-    });
-  }, [masterData]);
+useEffect(() => {
+    setFormData((prev) => {
+      let hasUpdates = false;
+      const nextData = { ...prev };
 
+      // 1. Use config.fields instead of processedFields so we don't miss hidden fields
+      config.fields.forEach((field) => {
+        if (field.initValueResolver) {
+          const initialValue = field.initValueResolver(context, masterData);
+          // 2. Only apply the initial value if it exists AND the field is currently empty in formData
+          // This prevents overwriting user input if masterData refreshes in the background
+          if (
+            initialValue !== null && 
+            initialValue !== undefined && 
+            nextData[field.name] === undefined
+          ) {
+            nextData[field.name] = initialValue;
+            hasUpdates = true;
+          }
+        }
+      });
+
+      // 3. Batch the update: only trigger a re-render if we actually added new initial values
+      return hasUpdates ? nextData : prev;
+    });
+  }, [masterData, context, config.fields]);
   const handleChange = (name, value, metadata = {}) => {    
     setFormData((prev) => {
       const next = {

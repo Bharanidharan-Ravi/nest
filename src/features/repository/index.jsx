@@ -12,6 +12,7 @@ import RepositoryPage from "./pages/RepositoryPage"
 import ProjectPage from "../project/pages/ProjectPage"
 import RepoCreate from "./pages/RepoCreate"
 import ProjectCreate from "../project/pages/CreateProject"
+import { fetchProjectList } from "../project/hooks/useProjectData"
 
 export const RepositoryFeature = {
   name: "repository",
@@ -73,20 +74,12 @@ export const RepositoryFeature = {
         {
           path: "p",
           element: ProjectPage,
-          prefetch: ({ params }) => [
-            {
-              queryKey: queryKeys.project.list(params.repoId),
-              queryFn: () =>
-                executeApi({
-                  url: "/sync/v2",
-                  method: "POST",
-                  payload: buildSyncPayload({
-                    configKey: "ProjectList",
-                    repoId: params.repoId,
-                  })
-                })
-            }
-          ]
+          // prefetch: ({ params }) => [
+          //   {
+          //     queryKey: queryKeys.project.list(params.repoId),
+          //     queryFn: () => fetchProjectList(params.repoId)
+          //   }
+          // ]
         },
         {
           path: "p/create",

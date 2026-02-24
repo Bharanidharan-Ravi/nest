@@ -10,7 +10,7 @@ export default function RepositoryLayout() {
   }
 
   return (
-    <div>
+    <div className="flex flex-col h-full pb-2">
       {/* Nav Tabs */}
       <div style={{ display: "flex", gap: 20 }}>
         <NavLink to={`/repository/${repoId}/overview`}>
