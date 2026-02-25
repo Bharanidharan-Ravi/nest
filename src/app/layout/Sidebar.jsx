@@ -40,6 +40,11 @@ export default function Sidebar({ isOpen, onClose }) {
             <div>
               <Link to="/projects" onClick={onClose}>Projects</Link>
             </div>
+            <div>
+              <Link to="/projects" onClick={onClose}>Labels</Link>
+            </div><div>
+              <Link to="/projects" onClick={onClose}>Employee master</Link>
+            </div>
           </div>
           <hr />
           

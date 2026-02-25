@@ -43,12 +43,12 @@ import MentionList from "./MentionList/MentionList";
 const FileAttachmentComponent = ({ node }) => {
   // ... (Keep existing FileAttachmentComponent code) ...
   return (
-    <NodeViewWrapper as="span" className="file-wrapper">
+    <NodeViewWrapper as="span" className="file-wrapper" contentEditable={false}>
       <a
         href={node.attrs.src}
         target="_blank"
         rel="noopener noreferrer"
-        className="file-chip"
+        className="file-chip bg-blue-100 text-blue-800 px-2 py-1 rounded inline-flex items-center gap-1 no-underline hover:bg-blue-200 cursor-pointer"
       >
         📎 {node.attrs.fileName}
       </a>
@@ -188,23 +188,25 @@ const AdvancedEditor = ({
   userList = [],
   labelList = [],
   resetKey,
-  theme
+  theme = {}
 }) => {
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(false);
-  // 🔥 NEW: State to remember cursor position before clicking upload button
   const [selectionBeforeUpload, setSelectionBeforeUpload] = useState(null);
+
+  // FIX 2: State for Image Modal
+  const [modalImage, setModalImage] = useState(null);
+
   const previousMediaRef = useRef([]);
   const listsRef = useRef({ users: userList, labels: labelList });
 
   useEffect(() => {
     listsRef.current = { users: userList, labels: labelList };
   }, [userList, labelList]);
-  // 🔥 3. Helper to extract all image/file URLs from the current editor state
+
   const extractMediaUrls = (editorInstance) => {
     const urls = [];
     editorInstance.state.doc.descendants((node) => {
-      // 🔥 2. Remove the console.log from here to stop the console spam
       if (node.type.name === "image" || node.type.name === "fileAttachment") {
         if (node.attrs.src) urls.push(node.attrs.src);
       }
@@ -323,6 +325,14 @@ const AdvancedEditor = ({
         return false;
       },
     },
+
+    handleClick: (view, pos, event) => {
+      if (event.target && event.target.tagName === 'IMG') {
+        setModalImage(event.target.src);
+        return true; // Tells TipTap we handled this click
+      }
+      return false;
+    }
   });
   /* ===================================================
      RESET SUPPORT
@@ -370,50 +380,51 @@ const AdvancedEditor = ({
   // 1. A helper function to keep the button code clean
   const ToolbarButton = ({ onClick, isActive, disabled, children, title, customClass = "" }) => (
     <button
+      type="button"
+      onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${
-        isActive
-          ? "bg-gray-300 text-gray-900"
-          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 bg-transparent"
-      } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${customClass}`}
+      className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${isActive
+        ? "bg-gray-300 text-gray-900"
+        : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 bg-transparent"
+        } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${customClass}`}
     >
       {children}
     </button>
   );
   return (
-   <div className={theme.editorContainer || "border border-gray-300 rounded-md"}>
+    <div className={theme.editorContainer || "border border-gray-300 rounded-md"}>
       {/* GitHub Style Toolbar: Transparent background, bottom border, flex layout */}
       <div className={theme.editorToolbar || "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"}>
         {/* ... (Keep existing toolbar buttons: bold, italic, etc.) ... */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
-          className={editor.isActive("bold") ? "is-active" : ""}
+          isActive={editor.isActive("bold")}
         >
           <FaBold />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={editor.isActive("italic") ? "is-active" : ""}
+          isActive={editor.isActive("italic")}
         >
           <FaItalic />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={editor.isActive("underline") ? "is-active" : ""}
+          isActive={editor.isActive("underline")}
         >
           <FaUnderline />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={editor.isActive("bulletList") ? "is-active" : ""}
+          isActive={editor.isActive("bulletList")}
         >
           <FaListUl />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          className={editor.isActive("orderedList") ? "is-active" : ""}
+          isActive={editor.isActive("orderedList")}
         >
           <FaListOl />
         </ToolbarButton>
@@ -431,34 +442,6 @@ const AdvancedEditor = ({
           <FaTable /> Insert
         </ToolbarButton>
         <div className="w-px h-5 bg-gray-300 mx-1"></div>
-        {/* {editor.isActive("table") && ( */}
-        {/* // <>
-          //   <button
-          //     onClick={() => editor.chain().focus().addColumnBefore().run()}
-          //   >
-          //     Add Col Before
-          //   </button>
-          //   <button
-          //     onClick={() => editor.chain().focus().addColumnAfter().run()}
-          //   >
-          //     Add Col After
-          //   </button>
-          //   <button onClick={() => editor.chain().focus().deleteColumn().run()}>
-          //     Del Col
-          //   </button>
-          //   <button onClick={() => editor.chain().focus().addRowBefore().run()}>
-          //     Add Row Before
-          //   </button>
-          //   <button onClick={() => editor.chain().focus().addRowAfter().run()}>
-          //     Add Row After
-          //   </button>
-          //   <button onClick={() => editor.chain().focus().deleteRow().run()}>
-          //     Del Row
-          //   </button>
-          //   <button onClick={() => editor.chain().focus().deleteTable().run()}>
-          //     Del Table
-          //   </button>
-          // </> */}
 
         {editor.isActive("table") ? (
           // Show simplified table controls when active
@@ -525,7 +508,15 @@ const AdvancedEditor = ({
         </ToolbarButton>
       </div>
 
-      <div className="p-3 min-h-[150px] text-sm text-ghText">
+      <div
+        className="p-3 min-h-[150px] text-sm text-ghText"
+        onClick={(e) => {
+          // If the clicked element is an image, open the modal
+          if (e.target && e.target.tagName === 'IMG') {
+            setModalImage(e.target.src);
+          }
+        }}
+      >
         {preview ? (
           <div
             className="preview-mode ProseMirror"
@@ -543,6 +534,25 @@ const AdvancedEditor = ({
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
+      {modalImage && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-80 cursor-pointer"
+          onClick={() => setModalImage(null)}
+        >
+          <img
+            src={modalImage}
+            alt="Expanded view"
+            className="max-w-[90vw] max-h-[90vh] object-contain shadow-2xl rounded"
+          />
+          {/* Close Button */}
+          <button
+            className="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300"
+            onClick={() => setModalImage(null)}
+          >
+            &times;
+          </button>
+        </div>
+      )}
     </div>
   );
 };
