@@ -10,17 +10,17 @@ export const DashboardFeature = {
     {
       path: "",
       element: Dashboard,
-      prefetch: () => [
-        {
-          queryKey: queryKeys.repo.list(),
-          queryFn: () =>
-            executeApi({
-              url: "/sync/v",
-              method: "POST",
+      // prefetch: () => [
+      //   {
+      //     queryKey: queryKeys.repo.list(),
+      //     queryFn: () =>
+      //       executeApi({
+      //         url: "/sync/v",
+      //         method: "POST",
               
-            }),
-        },
-      ],
+      //       }),
+      //   },
+      // ],
     },
   ],
   sidebar: [

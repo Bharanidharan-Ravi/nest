@@ -11,7 +11,7 @@ export const ProjFieldConfig = () => [
     required: true,
     dataType: "string",
 
-    apiKey: "Title",
+    apiKey: "Repo_Id",
     masterKey: "RepoList",
 
     // 🔥 Build dropdown options
@@ -70,7 +70,7 @@ export const ProjFieldConfig = () => [
     required: true,
     dataType: "string",
 
-    apiKey: "Title",
+    apiKey: "Responsible",
     masterKey: "RepoList",
     // colSpan:,
     // 🔥 Build dropdown options

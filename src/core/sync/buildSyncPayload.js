@@ -1,26 +1,35 @@
+/**
+ * Generates a sync payload for the API.
+ * Supports repoId, legacy idKey/Value pairs, and any additional custom parameters.
+ */
 export const buildSyncPayload = ({
   configKey,
   repoId,
   idKey,
-  idValue
+  idValue,
+  customParams = {} // This allows you to pass { FromDate: '...', ToDate: '...' }
 }) => {
   const payload = {
     ConfigKeys: [configKey]
-  }
+  };
 
-  if (repoId || idValue) {
+  // We only create the Params object if there is actually data to send
+  const hasParams = repoId || (idKey && idValue) || Object.keys(customParams).length > 0;
+
+  if (hasParams) {
     payload.Params = {
-      [configKey]: {}
-    }
-
-    if (repoId) {
-      payload.Params[configKey].repoId = repoId
-    }
-
-    if (idKey && idValue) {
-      payload.Params[configKey][idKey] = idValue
-    }
+      [configKey]: {
+        // Add repoId if it exists
+        ...(repoId && { repoId }),
+        
+        // Add idKey/Value pair if they both exist (Legacy support)
+        ...(idKey && idValue && { [idKey]: idValue }),
+        
+        // Spread any other params (like FromDate and ToDate) directly into the object
+        ...customParams 
+      }
+    };
   }
 
-  return payload
-}
+  return payload;
+};

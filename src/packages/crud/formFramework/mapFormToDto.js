@@ -11,6 +11,7 @@
 
 export const mapFormToDto = (formData = {}, fields = []) => {
   const dto = {};
+console.log("formData :", formData);
 
   const processField = (field, sourceData, target) => {
     // ----------------------------------------
@@ -99,8 +100,9 @@ const extractValue = (value) => {
   if (value == null) return null;
 
   if (typeof value === "object") {
+    console.log("value :", value);
     if ("value" in value) {
-      return value.value;
+      return value.value.id;
     }
   }
 

@@ -57,7 +57,7 @@ const ProjectPage = () => {
     ],
     onItemClick: (item) => {
       // Navigate exactly where you need to go using the item's ID
-      navigate(`/project/${item.id}`);
+      navigate(`/projects/${item.id}`);
     },
   };
   return (
