@@ -22,6 +22,7 @@ export default function Breadcrumbs() {
     if (value === "t") return "Tickets";
     if (value === "p") return "Projects";
     if (value === "overview") return "Overview";
+    if (value === "projects") return "Projects";  
 
     if (value === repoId) {
       if (!data?.RepoList) return "Loading...";

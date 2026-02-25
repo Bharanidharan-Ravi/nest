@@ -7,7 +7,7 @@ export const projectFormConfig = {
 
   invalidateKeys: [queryKeys.project.list()],
 
-  redirectTo: "/p",
+  // redirectTo: "/p",
 
   fields: ProjFieldConfig(),
 };

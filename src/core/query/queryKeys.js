@@ -14,5 +14,8 @@ export const queryKeys = {
     all: ["project"],
     list: (repoId) => [...queryKeys.project.all, "list", repoId],
     detail: (id) => [...queryKeys.project.all, "detail", id]
+  },
+  dashboard: {
+    all: ["dashboard"]
   }
 }
