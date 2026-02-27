@@ -6,10 +6,23 @@ import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { repoListConfig } from "../config/Ticket.Config";
 
 export default function TicketsPage() {
-  const { repoId } = useParams();
+  const { repoId, projectId, projId } = useParams();
   const navigate = useNavigate();
+  const activeProjectId = projectId ?? projId;
 
-  const { data, isLoading } = useTicketMaster(repoId);
+  const { data, isLoading } = useTicketMaster({
+    repoId,
+    projectId: activeProjectId,
+  });
+
+  const ticketList = Array.isArray(data)
+    ? data
+    : Array.isArray(data?.Data)
+    ? data.Data
+    : Array.isArray(data?.TicketsList?.Data)
+    ? data.TicketsList.Data
+    : [];
+
   const isRepoScoped = !!repoId;
   //  const data = queryClient.getQueryData(queryKeys.ticket.list(repoId));
   const handleCreate = () => {
@@ -50,13 +63,13 @@ export default function TicketsPage() {
         </div> */}
 
         <div className="flex-1 min-h-0">
-          <ListProvider config={repoListConfig} data={data?.Data || []}>
+          <ListProvider config={repoListConfig} data={ticketList}>
             <ListLayout />
           </ListProvider>
         </div>
         <ul className="ticket-list">
-          {data?.Data && data.Data.length > 0 ? (
-            data.Data.map((ticket) => (
+          {ticketList.length > 0 ? (
+            ticketList.map((ticket) => (
               <li
                 key={ticket.Issue_Id}
                 className={`ticket ${ticket.Status}`}

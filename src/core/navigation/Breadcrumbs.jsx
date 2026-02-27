@@ -1,22 +1,21 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation, useParams } from "react-router-dom";
-import { queryKeys } from "../query/queryKeys";
 import { useTicketMaster } from "../../features/tickets/hooks/useTicketMaster";
-import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
 import "./Breadcrumbs.css";
 import { useMasterData } from "../master/useMasterData";
 
 export default function Breadcrumbs() {
   const location = useLocation();
-  const { repoId, ticketId } = useParams();
+  const { repoId, ticketId, projId } = useParams();
+
 
   const pathnames = location.pathname.split("/").filter(Boolean);
   // const { data: repoList } = useRepoMaster();
   // const { data: ticketList } = useTicketMaster(repoId);
-  const { data, isLoading } = useMasterData();
+  const { data } = useMasterData();
   const { data: ticketList } = useTicketMaster(repoId, {
     enabled: !!ticketId,
   });
+
   const getLabel = (value) => {
     if (value === "repository") return "Repository";
     if (value === "t") return "Tickets";
@@ -34,6 +33,13 @@ export default function Breadcrumbs() {
       if (!ticketList) return "Loading...";
       const ticket = ticketList?.find((t) => t.Issue_Id === value);
       return ticket?.Issue_Title || "Unknown Ticket";
+    }
+
+    
+    if (value === projId) {
+      if (!data?.ProjectList) return "Loading...";
+      const ticket = data?.ProjectList?.find((t) => t.Id === value);
+      return ticket?.Project_Name || "Unknown Project";
     }
     return value;
   };

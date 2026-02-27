@@ -1,13 +1,9 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import Login from "../features/auth/pages/login";
 import AuthGuard from "../core/auth/AuthGuard";
 import RouteRenderer from "../core/routing/RouteRenderer";
-import { bootstrapApp } from "./bootstrap";
 import { useEffect } from "react";
 import "./App.css";
 
-import Dashboard from "../features/dashboard/pages/Dashboard";
-import { useRef } from "react";
 import LoginPage from "../features/auth/pages/loginPage";
 import MainLayout from "./layout/MainLayout";
 import RouteDataLoader from "../core/routing/RouteDataLoader";
@@ -19,21 +15,39 @@ import {
 } from "../core/realtime/realtimeManager";
 import { decryptUserInfo } from "./shared/decryption/Decryption";
 import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
+import { GlobalUI } from "./shared/GlobalUI/GlobalUI";
 
 function App() {
   const queryClient = useQueryClient();
+
   useEffect(() => {
     const user = sessionStorage.getItem("user");
     if (!user) return;
 
-    const userdata = decryptUserInfo(JSON.parse(user));
+    try {
+      const parsedUser = JSON.parse(user);
+      const userData = decryptUserInfo(parsedUser);
+      const jwtToken = Array.isArray(userData)
+        ? userData[0]?.JwtToken
+        : userData?.JwtToken;
 
-    connectSignalR(userdata[0].JwtToken, (message) => {
-      handleRealtimeMessage(queryClient, message);
-    });
-  }, []);
+      if (!jwtToken) return;
+
+      connectSignalR(jwtToken, (message) => {
+        handleRealtimeMessage(queryClient, message);
+      });
+
+      return () => {
+        disconnectSignalR();
+      };
+    } catch (error) {
+      console.error("Realtime bootstrap failed:", error);
+    }
+  }, [queryClient]);
+
   return (
     <BrowserRouter>
+      <GlobalUI />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 

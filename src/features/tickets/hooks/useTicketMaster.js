@@ -1,25 +1,34 @@
 import { useApiQuery } from "../../../core/query/useApiQuery";
 import { queryKeys } from "../../../core/query/queryKeys";
 
-export const useTicketMaster = (repoId, options = {}) => {
-  // Build payload dynamically
-  const payload = repoId
-    ? {
-        ConfigKeys: ["TicketsList"],
-        Params: {
-          TicketsList: {
-            repoId: repoId,
+export const useTicketMaster = (scope = {}, options = {}) => {
+  const isScopeObject = scope && typeof scope === "object";
+
+  const repoId = isScopeObject ? scope.repoId : scope;
+  const projectId = isScopeObject ? scope.projectId ?? scope.projId : null;
+
+  const hasRepoId = Boolean(repoId);
+  const hasProjectId = Boolean(projectId);
+
+  const payload = {
+    ConfigKeys: ["TicketsList"],
+    ...(hasRepoId || hasProjectId
+      ? {
+          Params: {
+            TicketsList: {
+              ...(hasRepoId ? { repoId } : {}),
+              ...(hasProjectId ? { projectId } : {}),
+            },
           },
-        },
-      }
-    : {
-        ConfigKeys: ["TicketsList"],
-      };
+        }
+      : {}),
+  };
 
   return useApiQuery({
-    queryKey: repoId
-      ? queryKeys.ticket.list(repoId)
-      : queryKeys.ticket.list("global"),
+    queryKey: queryKeys.ticket.list({
+      repoId: hasRepoId ? repoId : "global",
+      projectId: hasProjectId ? projectId : "all",
+    }),
 
     url: "/sync/v2",
     method: "POST",

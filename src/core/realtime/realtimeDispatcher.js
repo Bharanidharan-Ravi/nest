@@ -13,7 +13,6 @@ const getValueCaseInsensitive = (obj, key) => {
   const actualKey = Object.keys(obj).find(
     (k) => k.toLowerCase() === key.toLowerCase()
   );
-  console.log("actualKey :", actualKey);
   
   return actualKey ? obj[actualKey] : undefined;
 };
@@ -41,7 +40,6 @@ export const handleRealtimeMessage = (queryClient, message) => {
   }
 
   queryClient.setQueryData(masterKeys.multi(keys), (oldData) => {
-console.log("voldDataoldData :", oldData, message);
 
     if (!oldData) return oldData;
 
@@ -60,7 +58,6 @@ console.log("voldDataoldData :", oldData, message);
 
       if (action === "Create") {
         if (list.some(match)) return list;
-        console.log("match :", list, targetVal);
         // Insert the formatted payload so the UI doesn't break
         return [formattedPayload, ...list];
       }

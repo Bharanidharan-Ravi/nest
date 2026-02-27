@@ -11,8 +11,13 @@ const ProjectPage = () => {
   const { data } = useMasterData();
   const { data: projects } = useProjectData(repoId);
 
-  const rawList = repoId ? projects?.ProjectList?.Data : data?.ProjectList;
-  console.log("rawList :", rawList, projects?.ProjectList.Data, data);
+  const scopedProjects = Array.isArray(projects)
+    ? projects
+    : Array.isArray(projects?.ProjectList?.Data)
+      ? projects.ProjectList.Data
+      : [];
+
+  const rawList = repoId ? scopedProjects : data?.ProjectList;
 
   const normalizeProj = (proj) => ({
     id: proj.Id,
@@ -24,9 +29,11 @@ const ProjectPage = () => {
     CreatedBy: proj.CreatedBy,
     repoId: proj.Repo_Id,
     repoName: proj.Repo_Name,
+    repoKey: proj.RepoKey,
     UpdatedAt: proj.UpdatedAt,
     UpdatedBy: proj.UpdatedBy,
   });
+
   const repos = rawList?.map(normalizeProj) || [];
 
   const employeeFilterOptions = [
@@ -36,6 +43,7 @@ const ProjectPage = () => {
       value: user.UserName, // We use UserName because 'owner' contains the name
     })) || []),
   ];
+
   const repoFilterOptions = [
     { label: "All Repositories", value: "" },
     ...(data?.RepoList?.map((repo) => ({
@@ -43,23 +51,41 @@ const ProjectPage = () => {
       value: repo.Repo_Id, // What the system uses to filter the cards
     })) || []),
   ];
+
   const listConfigWithNav = {
     ...ProjUIConfig,
     filters: [
-      ...(!repoId ? [{
-        key: "repoId", 
-        options: repoFilterOptions,
-      }] : []),
+      ...(!repoId
+        ? [
+            {
+              key: "repoId",
+              view: "Repo",
+              options: repoFilterOptions,
+            },
+          ]
+        : []),
       {
         key: "owner", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Emp",
         options: employeeFilterOptions,
       },
     ],
+    onSelectionChange: (item, isChecked) => {
+      console.log(
+        `Item ${item.id} is now ${isChecked ? "selected" : "unselected"}`,
+      );
+      // Update your selectedIds state here
+    },
+    onEditClick: (item) => {
+      console.log(`Triggering edit modal for ${item.id}`);
+      // Open edit modal or navigate to edit route here
+    },
     onItemClick: (item) => {
       // Navigate exactly where you need to go using the item's ID
       navigate(`/projects/${item.id}`);
     },
   };
+
   return (
     <>
       <div className="flex justify-between items-center mb-3 flex-none">
@@ -74,7 +100,7 @@ const ProjectPage = () => {
 
       <div className="flex-1 min-h-0">
         <ListProvider config={listConfigWithNav} data={repos}>
-          <ListLayout />
+          <ListLayout className="h-50" />
         </ListProvider>
       </div>
     </>

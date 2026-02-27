@@ -5,8 +5,8 @@ export const masterKeys = {
 
   repo: () => ["master", "repo"],
   project: () => ["master", "project"],
-//   employee: () => ["master", "employee"],
-//   label: () => ["master", "label"],
+  employee: () => ["master", "employee"],
+  label: () => ["master", "label"],
 
   multi: (keys) => ["master", keys],
 };

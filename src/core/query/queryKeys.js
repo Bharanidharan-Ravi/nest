@@ -6,7 +6,14 @@ export const queryKeys = {
   },
   ticket: {
     all: ["ticket"],
-    list: (repoId) => [...queryKeys.ticket.all, "list", repoId],
+    list: (scope) => {
+      if (scope && typeof scope === "object") {
+        const { repoId = "global", projectId = "all" } = scope;
+        return [...queryKeys.ticket.all, "list", repoId, projectId];
+      }
+
+      return [...queryKeys.ticket.all, "list", scope ?? "global", "all"];
+    },
     detail: (id) => [...queryKeys.ticket.all, "detail", id],
     thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId]
   },

@@ -7,6 +7,7 @@ export const useApiMutation = ({
   invalidateKeys = [],
   onSuccess,
   onError,
+  silent = false,
   ...rest
 }) => {
   const queryClient = useQueryClient();
@@ -17,6 +18,7 @@ export const useApiMutation = ({
         url,
         method,
         payload,
+        config: { _silent: silent }
       });
 
       // Optional business validation

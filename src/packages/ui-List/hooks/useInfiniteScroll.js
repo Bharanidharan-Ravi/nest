@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 
-export function useInfiniteScroll(callback, hasMore) {
+export function useInfiniteScroll(callback, hasMore, enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
+
     const handleScroll = (e) => {
       // e.target could be the document (if the whole page scrolls) 
       // or the specific layout div (if overflow-y: auto is used)
@@ -24,5 +26,5 @@ export function useInfiniteScroll(callback, hasMore) {
     window.addEventListener("scroll", handleScroll, true);
     
     return () => window.removeEventListener("scroll", handleScroll, true);
-  }, [callback, hasMore]);
+  }, [callback, hasMore, enabled]);
 }

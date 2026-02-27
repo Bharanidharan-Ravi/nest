@@ -5,7 +5,10 @@ import { fetchMasterData } from "./masterService";
 import { masterKeys } from "./masterKeys";
 
 export const useMasterData = (configKeys) => {
-  const keys = ["RepoList", "ProjectList", "EmployeeList", "LabelMaster"];
+  const defaultKeys = ["RepoList", "ProjectList", "EmployeeList", "LabelMaster"];
+  const keys = Array.isArray(configKeys) && configKeys.length > 0
+    ? configKeys
+    : defaultKeys;
  
   return useQuery({
     queryKey: masterKeys.multi(keys),

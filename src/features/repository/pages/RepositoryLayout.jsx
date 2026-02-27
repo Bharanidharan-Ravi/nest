@@ -1,7 +1,7 @@
 import { useParams, NavLink, Outlet, Navigate, useLocation } from "react-router-dom"
 
 export default function RepositoryLayout() {
-  const { repoId,ticketId } = useParams()
+  const { repoId } = useParams()
   const location = useLocation()
   
   // If user lands exactly on /repository/:repoId → redirect to tickets tab

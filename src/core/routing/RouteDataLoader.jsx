@@ -1,12 +1,11 @@
 import { Outlet, useLocation, matchRoutes } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { getAllFeatures } from "../registry/featureRegistry";
 
 export default function RouteDataLoader() {
   const location = useLocation();
   const queryClient = useQueryClient();
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const features = getAllFeatures();
@@ -23,13 +22,14 @@ export default function RouteDataLoader() {
 
     // 2. Now matchRoutes has the full absolute path (e.g. "/repository/:repoId")
     // and can correctly match against the URL
-    const matches = matchRoutes(routeConfigs, location);
+    const matches = matchRoutes(routeConfigs, location.pathname);
 
     const runPrefetch = async () => {
       if (!matches) {
-        setLoading(false);
         return;
       }
+
+      const prefetchCalls = [];
 
       for (const match of matches) {
         const route = match.route;
@@ -43,21 +43,23 @@ export default function RouteDataLoader() {
             : route.prefetch || [];
 
           for (const task of tasks) {
-            await queryClient.ensureQueryData({
-              queryKey: task.queryKey,
-              queryFn: task.queryFn,
-            });
+            prefetchCalls.push(
+              queryClient.ensureQueryData({
+                queryKey: task.queryKey,
+                queryFn: task.queryFn,
+              })
+            );
           }
         }
       }
 
-      setLoading(false);
+      if (prefetchCalls.length > 0) {
+        await Promise.all(prefetchCalls);
+      }
     };
 
     runPrefetch();
-  }, [location.pathname]);
-
-  // if (loading) return <div>Loading...</div>;
+  }, [location.pathname, queryClient]);
 
   return <Outlet />;
 }

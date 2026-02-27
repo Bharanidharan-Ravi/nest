@@ -1,12 +1,12 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
-import { repoListConfig, RepoUIConfig } from "../config/RepoUI.config";
+import { repoListConfig } from "../config/RepoUI.config";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 
 export default function RepositoryPage() {
   // const { data, isLoading } = useRepoMaster();
-  const { data, isLoading } = useMasterData();
+  const { data } = useMasterData();
   const navigate = useNavigate();
   const normalizeRepo = (repo) => ({
     id: repo.Repo_Id,

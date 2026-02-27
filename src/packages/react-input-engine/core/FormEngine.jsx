@@ -52,6 +52,7 @@ const FormEngine = ({
                 value={values[field.name]}
                 error={errors[field.name]}
                 options={field.options}
+                multiple={field.multiple} 
                 fields={field.fields}
                 onChange={onChange}
                 required={field.required}

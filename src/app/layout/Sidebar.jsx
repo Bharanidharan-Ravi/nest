@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
-import { useRepoMaster } from "../../features/repository/hooks/useRepoMaster";
 import "../css/sideBar.css"; // Ensure you import the CSS file created above
 import { useMasterData } from "../../core/master/useMasterData";
 
 export default function Sidebar({ isOpen, onClose }) {
   // const { data, isLoading } = useRepoMaster();
-   const { data, isLoading } = useMasterData();
+   const { data } = useMasterData();
 
   return (
     <>

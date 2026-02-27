@@ -32,7 +32,6 @@ export function ListFilters() {
     if (value) {
       otherFilters.push(`${key}:${value}`);
     }
-
     const newQuery = [...otherFilters, parsed.text].filter(Boolean).join(" ");
     setQuery(newQuery);
     setOpenDropdownKey(null); // Close after selection
