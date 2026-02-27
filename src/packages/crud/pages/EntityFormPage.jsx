@@ -14,10 +14,6 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     context,
   );
   const [tempFiles, setTempFiles] = useState([]);
-  const mutation = useApiMutation({
-    url: config.api,
-    method: mode === "Update" ? "PUT" : "POST",
-  });
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",

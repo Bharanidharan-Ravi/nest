@@ -15,9 +15,12 @@ dayjs.extend(relativeTime);
 export const ProjUIConfig = {
   defaultView: "card",
   pageSize:10,
+  infinite:true,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,
+  enableSelection: true,
+  enableEdit: true,
   // allowViewSwitch: true,
   filters: [
     {

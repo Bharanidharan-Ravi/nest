@@ -7,8 +7,7 @@ export function ListProvider({ config, data, children }) {
   const state = useListState(config, data)
   useUrlSync(state)
 
-  // if (config.infinite)
-    useInfiniteScroll(state.loadMore, state.hasMore)
+  useInfiniteScroll(state.loadMore, state.hasMore, Boolean(config?.infinite))
 
   return (
     <ListContext.Provider value={state}>

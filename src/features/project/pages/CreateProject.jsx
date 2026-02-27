@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
-import { repositoryFormConfig } from "../../repository/config/repositoryForm.Config";
 import { projectFormConfig } from "../config/ProjectForm.config";
 
 const ProjectCreate = () => {

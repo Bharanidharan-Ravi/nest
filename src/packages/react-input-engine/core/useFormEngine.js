@@ -1,7 +1,7 @@
 // core/useFormEngine.js
 import { applyValueMapping } from "./valueMapper";
 
-export const useFormEngine = ({ fields, values, setValues }) => {
+export const useFormEngine = ({ setValues }) => {
 
   const handleChange = (name, value) => {
     setValues(prev => ({ ...prev, [name]: value }));

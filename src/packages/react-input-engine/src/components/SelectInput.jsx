@@ -1,7 +1,4 @@
-import { useRef } from "react";
-import { useEffect } from "react";
-import { useState } from "react";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const SelectInput = ({ field, value, error, onChange }) => {
     const [open, setOpen] = useState(false);
@@ -24,8 +21,7 @@ const SelectInput = ({ field, value, error, onChange }) => {
             document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-
-    const options = field.options || [];
+    const options = useMemo(() => field.options || [], [field.options]);
 
     const filtered = useMemo(() => {
         if (!search) return options;

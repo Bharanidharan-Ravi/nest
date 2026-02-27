@@ -1,10 +1,12 @@
 // HtmlTextInput.jsx
-const HtmlTextInput = ({ name, label, value, error, onChange }) => (
+const HtmlTextInput = ({ name, label, value, error, onChange, theme = {} }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-1">
       {label}
     </label>
     <input
+      name={name}
+      id={name}
       type="text"
       value={value}
       onChange={onChange}

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { TextField, Popover, IconButton, InputAdornment } from "@mui/material";
 import { DateCalendar } from "@mui/x-date-pickers/DateCalendar";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -15,21 +15,23 @@ const MuiDateInput = ({
   required,
   theme = {},
 }) => {
-  const [inputText, setInputText] = useState("");
+  const formattedValue = useMemo(() => {
+    if (value && dayjs(value).isValid()) {
+      return dayjs(value).format("MM/DD/YYYY");
+    }
+
+    return "";
+  }, [value]);
+
+  const [inputText, setInputText] = useState(formattedValue);
+  const [isEditing, setIsEditing] = useState(false);
   const [anchorEl, setAnchorEl] = useState(null);
   const isOpen = Boolean(anchorEl);
 
-  useEffect(() => {
-    if (value && dayjs(value).isValid()) {
-      setInputText(dayjs(value).format("MM/DD/YYYY"));
-    } else if (!value) {
-      setInputText("");
-    }
-  }, [value]);
-
-  // THE SMART PARSER
   const handleSmartInput = (text) => {
     if (!text) {
+      setInputText("");
+      setIsEditing(false);
       onChange(name, "", "");
       return;
     }
@@ -37,15 +39,11 @@ const MuiDateInput = ({
     const str = text.trim().toLowerCase();
     let newDate = null;
 
-    // RULE 1: Letters only (t, today, now) or exactly "0" -> Today
     if (/^[a-z]+$/.test(str) || str === "0") {
       newDate = dayjs();
-    }
-    // RULE 2: Math Shortcuts (Sign is now OPTIONAL!)
-    // Matches: +10, -5, 10, 2m, -1y, etc.
-    else if (/^([+-]?)(\d+)([dmyw]?)$/.test(str)) {
+    } else if (/^([+-]?)(\d+)([dmyw]?)$/.test(str)) {
       const match = str.match(/^([+-]?)(\d+)([dmyw]?)$/);
-      const sign = match[1] || "+"; // 🔥 Default to + if they just typed "10"
+      const sign = match[1] || "+";
       const amount = parseInt(match[2], 10);
       const unitChar = match[3] || "d";
       const unitMap = { d: "day", m: "month", y: "year", w: "week" };
@@ -54,40 +52,37 @@ const MuiDateInput = ({
         sign === "+"
           ? dayjs().add(amount, unitMap[unitChar])
           : dayjs().subtract(amount, unitMap[unitChar]);
-    }
-    // RULE 3: Strict Date Parsing
-    else {
-      // 🔥 Only allow numbers, slashes, dashes, and dots. Blocks "sfd"!
-      if (/^[\d\/\-\.]+$/.test(str)) {
-        const parsed = dayjs(str);
-        // Ensure it's a valid date and the year makes sense (e.g., > 1000)
-        if (parsed.isValid() && parsed.year() > 1000) {
-          newDate = parsed;
-        }
+    } else if (/^[\d/.-]+$/.test(str)) {
+      const parsed = dayjs(str);
+      if (parsed.isValid() && parsed.year() > 1000) {
+        newDate = parsed;
       }
     }
 
-    // RULE 4: Apply the valid date, OR revert if they typed garbage
     if (newDate && newDate.isValid()) {
-      setInputText(newDate.format("MM/DD/YYYY"));
+      const formattedDisplay = newDate.format("MM/DD/YYYY");
       const formattedApi = newDate.format("YYYY-MM-DD");
+      setInputText(formattedDisplay);
+      setIsEditing(false);
       onChange(name, formattedApi, formattedApi);
-    } else {
-      // 🔥 INVALID INPUT FALLBACK:
-      // If they type "10/10/2026sfd", we revert the text box back to the last known valid date.
-      if (value && dayjs(value).isValid()) {
-        setInputText(dayjs(value).format("MM/DD/YYYY"));
-      } else {
-        setInputText("");
-        onChange(name, "", "");
-      }
+      return;
     }
+
+    if (formattedValue) {
+      setInputText(formattedValue);
+    } else {
+      setInputText("");
+      onChange(name, "", "");
+    }
+    setIsEditing(false);
   };
 
   const handleCalendarSelect = (newValue) => {
     if (newValue && newValue.isValid()) {
-      setInputText(newValue.format("MM/DD/YYYY"));
+      const formattedDisplay = newValue.format("MM/DD/YYYY");
       const formattedApi = newValue.format("YYYY-MM-DD");
+      setInputText(formattedDisplay);
+      setIsEditing(false);
       onChange(name, formattedApi, formattedApi);
       setAnchorEl(null);
     }
@@ -104,10 +99,12 @@ const MuiDateInput = ({
         helperText={error}
         className={`${theme.input || "wg-mui-input"}`}
         InputLabelProps={{ shrink: true }}
-        // 🔥 Added Placeholder
         placeholder="MM/DD/YYYY"
-        value={inputText}
-        onChange={(e) => setInputText(e.target.value)}
+        value={isEditing ? inputText : formattedValue}
+        onChange={(e) => {
+          setInputText(e.target.value);
+          setIsEditing(true);
+        }}
         onBlur={(e) => handleSmartInput(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
@@ -115,15 +112,15 @@ const MuiDateInput = ({
             setAnchorEl(null);
           }
         }}
-        // 🔥 Opens calendar when clicking the text field
         onClick={(e) => setAnchorEl(e.currentTarget)}
-        // 🔥 Auto-selects all text when the field gains focus
-        onFocus={(e) => e.target.select()}
+        onFocus={(e) => {
+          setIsEditing(true);
+          e.target.select();
+        }}
         InputProps={{
           endAdornment: (
             <InputAdornment position="end">
               <IconButton
-                // We can keep this for the icon click as well, or rely entirely on the text field click
                 onClick={(e) =>
                   setAnchorEl(e.currentTarget.closest(".MuiFormControl-root"))
                 }

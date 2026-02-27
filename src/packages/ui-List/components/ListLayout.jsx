@@ -7,12 +7,13 @@ import { ListSearchBar } from "./ListSearchBar";
 import { ListTabs } from "./ListTabs";
 import { ListFilters } from "./ListFilters";
 
-export function ListLayout() {
+export function ListLayout({className}) {
   const { view, config } = useList();
-
+  const layoutClasses =
+    className || config.theme?.layout || "flex flex-col h-full overflow-hidden";
   return (
-  // 1. Container fills height (h-full) and manages internal scrolling
-    <div className="border border-gray-200 rounded-lg bg-white shadow-sm flex flex-col h-full overflow-hidden wg-scrollbar">
+    // 1. Container fills height (h-full) and manages internal scrolling
+ <div className={`border border-gray-200 rounded-lg bg-white shadow-sm wg-scrollbar ${layoutClasses}`}>
       {/* 2. FIXED TOP SECTION (Search + Toolbar) */}
       <div className="flex-none z-10 bg-white">
         {config.enableSearch && <ListSearchBar />}

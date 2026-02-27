@@ -1,6 +1,6 @@
 // import { TextField } from "@mui/material";
 import Bowser from "bowser";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import "./loginPage.css";
 import {
   Avatar,
@@ -19,7 +19,7 @@ import { useAppStore } from "../../../core/state/useAppStore";
 import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
 
-const YellowButton = styled(Button)(({ theme }) => ({
+const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
   color: "#000",
   fontWeight: "bold",
@@ -29,7 +29,7 @@ const YellowButton = styled(Button)(({ theme }) => ({
   },
 }));
 
-const LoginPage = ({ onLogin }) => {
+const LoginPage = () => {
   const [formData, setFormData] = useState({
     username: "",
     password: "",

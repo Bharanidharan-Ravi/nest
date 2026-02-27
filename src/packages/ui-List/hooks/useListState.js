@@ -4,25 +4,36 @@ import { parseQuery } from "./useQueryParser";
 
 export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
-
+const isUrlSyncEnabled = config.syncUrl !== false;
   /* --------------------------
      INITIAL STATE (Run once)
   -------------------------- */
   const initialQuery = useMemo(() => {
+
+    // 🔥 NEW: If child list, ignore URL and load default config
+    if (!isUrlSyncEnabled) {
+      const defaultTab = config.tabConfig?.[0]?.key;
+      return defaultTab ? `is:${defaultTab} ` : "";
+    }
+
     const urlQ = searchParams.get("q");
     if (urlQ) return urlQ;
     
     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
     return urlTab ? `is:${urlTab} ` : "";
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); 
+  }, [isUrlSyncEnabled]); 
 
   /* --------------------------
      STATES
   -------------------------- */
   const [query, setQuery] = useState(initialQuery);
-  const [sortField, setSortField] = useState(searchParams.get("sort") || config.defaultSort?.field || "updatedAt");
-  const [sortOrder, setSortOrder] = useState(searchParams.get("order") || config.defaultSort?.order || "desc");
+  const [sortField, setSortField] = useState(
+    (isUrlSyncEnabled ? searchParams.get("sort") : null) || config.defaultSort?.field || "updatedAt"
+  );
+  const [sortOrder, setSortOrder] = useState(
+    (isUrlSyncEnabled ? searchParams.get("order") : null) || config.defaultSort?.order || "desc"
+  );
   const [filters, setFilters] = useState({});
   const [view, setView] = useState(config.defaultView || "table");
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);

@@ -1,7 +1,7 @@
 import { useList } from "../context/ListContext"
 
 export function ListPagination() {
-  const { page, setPage } = useList()
+  const { setPage } = useList()
 
   return (
     <div className="flex justify-center gap-3 p-4">

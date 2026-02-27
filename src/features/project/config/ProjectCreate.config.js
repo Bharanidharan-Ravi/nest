@@ -66,7 +66,6 @@ export const ProjFieldConfig = () => [
     name: "responsible",
     type: "select",
     ui: "mui",
-
     required: true,
     dataType: "string",
 

@@ -5,6 +5,8 @@ export function useUrlSync(state) {
   const [, setParams] = useSearchParams()
 
   useEffect(() => {
+    if (state.config.syncUrl === false) return;
+    
     const params = {}
 
     if (state.query) params.q = state.query.trim()
@@ -27,6 +29,7 @@ export function useUrlSync(state) {
     state.sortOrder,
     state.statusTab,
     state.filters,
+    state.config.syncUrl,
     setParams
   ])
 }

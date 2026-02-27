@@ -7,24 +7,37 @@ const decryptUserInfo = (encryptedUserInfo) => {
         console.warn("No encrypted user info provided");
         return null;
     }
-    const keyBytes = CryptoJS.enc.Utf8.parse(encryptionKey);
-    const encrypt = encryptedUserInfo ? encryptedUserInfo : ""
-    const encryptedData = CryptoJS.enc.Base64.parse(encrypt);
 
-    // Extract the IV from the encrypted message
-    const iv = CryptoJS.lib.WordArray.create(encryptedData.words.slice(0, 4)); // IV is the first 16 bytes (128 bits)
-    const encryptedMessage = CryptoJS.lib.WordArray.create(encryptedData.words.slice(4)); // The rest is the encrypted message
+    if (!encryptionKey) {
+        console.warn("Missing encryption key");
+        return null;
+    }
 
-    // Decrypt
-    const decrypted = CryptoJS.AES.decrypt({ ciphertext: encryptedMessage }, keyBytes, {
-        iv: iv,
-        mode: CryptoJS.mode.CBC,
-        padding: CryptoJS.pad.Pkcs7
-    });
+    try {
+        const keyBytes = CryptoJS.enc.Utf8.parse(encryptionKey);
+        const encrypt = encryptedUserInfo ? encryptedUserInfo : ""
+        const encryptedData = CryptoJS.enc.Base64.parse(encrypt);
 
-    // Parse decrypted data
-    const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
-    return JSON.parse(jsonString);
+        // Extract the IV from the encrypted message
+        const iv = CryptoJS.lib.WordArray.create(encryptedData.words.slice(0, 4)); // IV is the first 16 bytes (128 bits)
+        const encryptedMessage = CryptoJS.lib.WordArray.create(encryptedData.words.slice(4)); // The rest is the encrypted message
+
+        // Decrypt
+        const decrypted = CryptoJS.AES.decrypt({ ciphertext: encryptedMessage }, keyBytes, {
+            iv: iv,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7
+        });
+
+        // Parse decrypted data
+        const jsonString = decrypted.toString(CryptoJS.enc.Utf8);
+        if (!jsonString) return null;
+
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.warn("Failed to decrypt user info", error);
+        return null;
+    }
 };
 
 export { decryptUserInfo };

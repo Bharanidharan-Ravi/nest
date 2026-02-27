@@ -5,9 +5,10 @@ export function ListSortDropdown() {
   const { config, sortField, setSortField, sortOrder, setSortOrder } = useList();
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  if (!config.enableSort) return null;
 
   useEffect(() => {
+    if (!config.enableSort) return;
+
     function handleClickOutside(e) {
       if (ref.current && !ref.current.contains(e.target)) {
         setOpen(false);
@@ -15,7 +16,9 @@ export function ListSortDropdown() {
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [config.enableSort]);
+
+  if (!config.enableSort) return null;
 
   const fieldLabel = config.sortFields.find(f => f.key === sortField)?.label || "Sort";
   const orderLabel = config.sortOrders.find(o => o.key === sortOrder)?.label || "Newest";

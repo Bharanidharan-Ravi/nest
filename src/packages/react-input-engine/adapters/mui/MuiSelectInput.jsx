@@ -10,34 +10,45 @@ const MuiSelectInput = ({
   clearable = true,
   disabled = false,
   required,
-  theme={}
+  theme = {},
+  multiple = false,
 }) => {
   // const selected = options.find((o) => o.value === value?.value) ?? null;
-  const selected = options.find((o) => o.value?.id === value?.value.id) ?? null;
+  // const selected = options.find((o) => o.value?.id === value?.value?.id) ?? null;
+  const handleChange = (_, selected, reason) => {
+    if (multiple) {
+      // MULTI SELECT
+      const values =
+        selected?.map((o) => ({
+          value: o.value,
+          label: o.label,
+        })) || [];
 
+      onChange(name, values);
+      return;
+    }
+
+    // SINGLE SELECT
+    if (!selected) {
+      onChange(name, null, { cleared: true });
+      return;
+    }
+
+    onChange(name, {
+      value: selected.value,
+      label: selected.label,
+    });
+  };
   return (
     <Autocomplete
+      multiple={multiple}
       options={options}
-      value={selected}
-      // isOptionEqualToValue={(o, v) => o.value === v.value}
-      isOptionEqualToValue={(o, v) => o.value?.id === (v?.value?.id ?? v?.id)}
-      disableClearable={!clearable}
       disabled={disabled}
-      onChange={(_, option, reason) => {
-        // ✅ CLEAR CASE
-        if (option === null) {
-          onChange(name, "", {
-            cleared: true,
-          });
-          return;
-        }
-
-        // ✅ SELECT CASE
-        onChange(name, option.value, {
-          label: option.label,
-          raw: option,
-        });
-      }}
+      disableClearable={!clearable && !multiple}
+      value={value || (multiple ? [] : null)}
+      isOptionEqualToValue={(o, v) => o.value === v.value}
+      getOptionLabel={(option) => option?.label || ""}
+      onChange={handleChange}
       clearOnEscape
       renderInput={(params) => (
         <TextField

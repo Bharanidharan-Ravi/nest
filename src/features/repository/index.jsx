@@ -74,12 +74,12 @@ export const RepositoryFeature = {
         {
           path: "p",
           element: ProjectPage,
-          // prefetch: ({ params }) => [
-          //   {
-          //     queryKey: queryKeys.project.list(params.repoId),
-          //     queryFn: () => fetchProjectList(params.repoId)
-          //   }
-          // ]
+          prefetch: ({ params }) => [
+            {
+              queryKey: queryKeys.project.list(params.repoId),
+              queryFn: () => fetchProjectList(params.repoId)
+            }
+          ]
         },
         {
           path: "p/create",

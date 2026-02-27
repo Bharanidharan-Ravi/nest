@@ -1,5 +1,20 @@
 import { useQuery } from "@tanstack/react-query";
 import { executeApi } from "../api/executor";
+import { queryClient } from "../api/queryClient";
+
+const extractSourceData = (res, source) => {
+  const section = res?.Res?.[source] ?? res?.[source];
+
+  if (section === undefined) {
+    return undefined;
+  }
+
+  if (section && typeof section === "object" && "Data" in section) {
+    return section.Data;
+  }
+
+  return section;
+};
 
 export const useApiQuery = ({
   queryKey,
@@ -9,20 +24,34 @@ export const useApiQuery = ({
   params,
   source,
   queryFn,
+  silent = false,
   options = {},
 }) => {
-  console.log("queryFn :", queryFn);
-  
   return useQuery({
     queryKey,
     queryFn: async () => {
-      const res = queryFn 
-        ? await queryFn() 
-        : await executeApi({ url, method, payload, params });
+      const cachedData = queryClient.getQueryData(queryKey);
 
-      if (source && res?.Res?.[source]) {
-        return res.Res[source].Data; // 👈 Standardize extraction for your .NET JSON
+      // If we have cached data, this is a background refetch -> make it silent!
+      // (Unless the developer explicitly passed silent: false to force a loader)
+      const isSilent = silent !== undefined ? silent : !!cachedData;
+
+      const res = queryFn
+        ? await queryFn({ _silent: isSilent })
+        : await executeApi({
+            url,
+            method,
+            payload,
+            params,
+            config: { _silent: isSilent }, // Pass down to Axios interceptor
+          });
+      if (source) {
+        const extracted = extractSourceData(res, source);
+        if (extracted !== undefined) {
+          return extracted;
+        }
       }
+
       return res;
     },
     ...options,

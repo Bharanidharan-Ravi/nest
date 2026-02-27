@@ -1,6 +1,7 @@
 // core/master/masterSignalRUpdater.js
 
 import { queryClient } from "../api/queryClient";
+import { queryKeys } from "../query/queryKeys";
 import { masterKeys } from "./masterKeys";
 
 export const updateMasterCache = (type, updatedItem) => {
