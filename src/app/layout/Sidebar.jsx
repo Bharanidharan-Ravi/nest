@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import "../css/sideBar.css"; // Ensure you import the CSS file created above
-import { useMasterData } from "../../core/master/useMasterData";
+// import { Link } from "react-router-dom";
+// import "../css/sideBar.css"; // Ensure you import the CSS file created above
+// import { useMasterData } from "../../core/master/useMasterData";
 
 export default function Sidebar({ isOpen, onClose }) {
   // const { data, isLoading } = useRepoMaster();
@@ -69,3 +69,30 @@ export default function Sidebar({ isOpen, onClose }) {
 }
 
 
+// src/components/Sidebar/Sidebar.jsx
+
+import { NavLink } from 'react-router-dom';
+import { ROUTES } from '../../core/routing/routeConfig';
+
+// Define which routes appear in sidebar
+const SIDEBAR_ROUTES = ['dashboard', 'repositories', 'projects'];
+
+export const Sidebar = () => {
+  return (
+    <nav className="sidebar">
+      {SIDEBAR_ROUTES.map((routeKey) => {
+        const route = ROUTES[routeKey];
+        return (
+          <NavLink
+            key={routeKey}
+            to={route.path}
+            className={({ isActive }) => isActive ? 'active' : ''}
+          >
+            {/* <Icon name={route.icon} /> */}
+            {route.title}
+          </NavLink>
+        );
+      })}
+    </nav>
+  );
+};

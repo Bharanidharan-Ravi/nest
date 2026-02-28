@@ -3,7 +3,7 @@ import { IoMenu } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import "./Header.css";
 import { useAppStore } from "../../../core/state/useAppStore";
-import Breadcrumbs from "../../../core/navigation/Breadcrumbs";
+import { Breadcrumbs } from "../../../core/navigation/Breadcrumbs";
 import workglowlogo from "../../../assets/WORKGLOWLOGO.png";
 
 const Header = ({ toggleMobileMenu }) => {

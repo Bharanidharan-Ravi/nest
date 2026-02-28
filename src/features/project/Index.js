@@ -5,7 +5,7 @@ import ProjectOverview from "./pages/ProjectOverview";
 import ProjectPage from "./pages/ProjectPage";
 
 export const ProjectFeature = {
-  name: "projec",
+  name: "project",
   basePath: "/projects",
   routes: [
     {

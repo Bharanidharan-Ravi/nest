@@ -7,6 +7,7 @@ export const DashboardFeature = {
     {
       path: "",
       element: Dashboard,
+      allowedRoles: [1,2,3],
       // prefetch: () => [
       //   {
       //     queryKey: queryKeys.repo.list(),
