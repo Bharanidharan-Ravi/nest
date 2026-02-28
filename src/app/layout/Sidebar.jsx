@@ -1,98 +1,329 @@
+import { NavLink } from "react-router-dom";
+import { useSmartNavigation } from "../../core/navigation/useSmartNavigation";
+import { useMasterData } from "../../core/master/useMasterData";
+import { buildPath } from "../../core/routing/routeRegistry";
+import { useCurrentUser } from "../../core/auth/useCurrentUser";
+import { PERMISSIONS } from "../../core/auth/permissions";
+
+export const Sidebar = ({ isOpen, onClose }) => {
+  const { data } = useMasterData();
+   const { getSidebarRoutes } = useSmartNavigation();
+   const { can } = useCurrentUser();
+console.log("can :", can(PERMISSIONS.REPO_CREATE));
+
+  // Called on every render — filtered by user's role automatically
+  const sidebarRoutes = getSidebarRoutes();
+  const repos = data?.RepoList || [];
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        className={[
+          "fixed inset-0 bg-black/40 z-20 transition-opacity duration-300",
+          isOpen ? "opacity-100 visible" : "opacity-0 invisible",
+        ].join(" ")}
+      />
+
+      {/* Sidebar */}
+      <nav
+        className={[
+          "fixed top-0 left-0 h-screen w-[260px] bg-white border-r border-gray-200 z-30",
+          "flex flex-col gap-1 p-3",
+          "transform transition-transform duration-300 ease-in-out",
+          isOpen ? "translate-x-0" : "-translate-x-full",
+        ].join(" ")}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-2 py-2 mb-2">
+          <h5 className="font-bold text-gray-700 m-0">Menu</h5>
+          <button
+            className="text-gray-500 hover:text-gray-800 text-2xl leading-none"
+            onClick={onClose}
+          >
+            &times;
+          </button>
+        </div>
+
+        {/* Main Routes */}
+        {sidebarRoutes.map((route) => (
+          <NavLink
+            key={route.key}
+            to={route.fullPath}
+            onClick={onClose}
+            className={({ isActive }) =>
+              [
+                "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:bg-gray-100",
+                isActive
+                  ? "bg-brand-yellow text-black"
+                  : "text-gray-700 hover:none",
+              ].join(" ")
+            }
+          >
+            {route.title}
+          </NavLink>
+        ))}
+
+        {/* Repo Section */}
+        {can(PERMISSIONS.REPO_CREATE) && (
+        <div className="mt-4 pt-3 border-t border-gray-200 flex flex-col">
+          <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Repositories
+          </div>
+
+          <div className="mt-2 flex flex-col gap-1 max-h-[40vh] overflow-y-auto">
+            {repos.map((repo) => (
+              <NavLink
+                key={repo.Repo_Id}
+                to={`/repository/${repo.Repo_Id}`}
+                onClick={onClose}
+                className={({ isActive }) =>
+                  [
+                    "flex items-center px-3 py-2 font-semibold rounded-md text-sm transition-colors hover:bg-gray-100",
+                    isActive
+                      ? "bg-brand-yellow text-black"
+                      : "text-gray-600 hover:none",
+                  ].join(" ")
+                }
+              >
+                {repo.Title}
+              </NavLink>
+            ))}
+          </div>
+        </div>
+        )}
+      </nav>
+    </>
+  );
+};
+///////////////Gemini code//////////////////
+// // src/components/Sidebar/Sidebar.jsx
+// import React, { Fragment } from "react";
+// import { NavLink } from "react-router-dom";
+// import { useSmartNavigation } from "../../core/navigation/useSmartNavigation";
+// import { useMasterData } from "../../core/master/useMasterData";
+
+// export const Sidebar = ({ isOpen, onClose }) => {
+//   const { getSidebarRoutes } = useSmartNavigation();
+//   const sidebarRoutes = getSidebarRoutes();
+
+//   // Bring back the dynamic data fetch
+//   const { data } = useMasterData();
+
+//   // Helper to keep the base NavLink classes DRY
+//   const getBaseLinkClass = ({ isActive }) =>
+//     [
+//       "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+//       isActive
+//         ? "bg-brand-yellow text-white"
+//         : "text-gray-700 hover:bg-gray-100",
+//     ].join(" ");
+
+//   return (
+//     <>
+//       {/* Mobile overlay */}
+//       {isOpen && (
+//         <div
+//           className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+//           onClick={onClose}
+//         />
+//       )}
+
+//       <nav
+//         className={[
+//           "flex flex-col gap-1 p-3 bg-white border-r border-gray-200 z-30 min-w-[200px] h-full overflow-y-auto",
+//           "transition-transform duration-200 fixed lg:static top-0 left-0 bottom-0",
+//           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+//         ].join(" ")}
+//       >
+//         {/* Mobile Header with Close Button (Restored from old UI) */}
+//         <div className="flex items-center justify-between px-2 py-2 mb-2 lg:hidden">
+//           <h5 className="font-bold text-gray-700 m-0">Menu</h5>
+//           <button
+//             className="text-gray-500 hover:text-gray-800 text-2xl leading-none"
+//             onClick={onClose}
+//           >
+//             &times;
+//           </button>
+//         </div>
+
+//         {/* Map through the smart routes but intercept specific items for layout control */}
+//         {sidebarRoutes.map((route) => (
+//           <Fragment key={route.key}>
+//             {/* 1. Render the main route link */}
+//             <NavLink
+//               to={route.fullPath}
+//               onClick={onClose}
+//               className={getBaseLinkClass}
+//             >
+//               {route.title}
+//             </NavLink>
+
+//             {/* 2. Inject <hr /> separators to recreate your UI blocks */}
+//             {(route.title === "Dashboard" || route.title === "Employee master") && (
+//               <hr className="my-2 border-gray-200" />
+//             )}
+
+//             {/* 3. Inject Dynamic Repo List right under the Repositories link */}
+//             {route.title === "Repositories" && data?.RepoList && (
+//               <div className="flex flex-col gap-1 mt-1 pl-3 ml-2 border-l-2 border-gray-100">
+//                 {data.RepoList.map((repo) => (
+//                   <NavLink
+//                     key={repo.Repo_Id}
+//                     to={`/repository/${repo.Repo_Id}`}
+//                     onClick={onClose}
+//                     className={({ isActive }) =>
+//                       [
+//                         "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+//                         isActive
+//                           ? "bg-gray-100 text-gray-900 font-semibold" // Subtle active state for sub-links
+//                           : "text-gray-500 hover:bg-gray-100 hover:text-gray-900",
+//                       ].join(" ")
+//                     }
+//                   >
+//                     {repo.Title}
+//                   </NavLink>
+//                 ))}
+//               </div>
+//             )}
+//           </Fragment>
+//         ))}
+//       </nav>
+//     </>
+//   );
+// };
+
 // import { Link } from "react-router-dom";
 // import "../css/sideBar.css"; // Ensure you import the CSS file created above
 // import { useMasterData } from "../../core/master/useMasterData";
 
-export default function Sidebar({ isOpen, onClose }) {
-  // const { data, isLoading } = useRepoMaster();
-   const { data } = useMasterData();
+// export default function Sidebar({ isOpen, onClose }) {
+//   // const { data, isLoading } = useRepoMaster();
+//    const { data } = useMasterData();
 
-  return (
-    <>
-      {/* 1. The Overlay (Clicking this closes the sidebar) */}
-      <div 
-        className={`sidebar-overlay ${isOpen ? "open" : ""}`} 
-        onClick={onClose} 
-      />
+//   return (
+//     <>
+//       {/* 1. The Overlay (Clicking this closes the sidebar) */}
+//       <div
+//         className={`sidebar-overlay ${isOpen ? "open" : ""}`}
+//         onClick={onClose}
+//       />
 
-      {/* 2. The Sidebar Drawer */}
-      <div className={`sidebar-container ${isOpen ? "open" : ""}`}>
-        
-        {/* Header with Close Button */}
-        <div className="sidebar-header">
-          <h5 style={{ margin: 0 }}>Menu</h5>
-          <button className="close-btn" onClick={onClose}>
-            &times; {/* This is an 'X' symbol */}
-          </button>
-        </div>
+//       {/* 2. The Sidebar Drawer */}
+//       <div className={`sidebar-container ${isOpen ? "open" : ""}`}>
 
-        {/* Content */}
-        <div className="sidebar-content">
-          <div>
-            <Link to="/dashboard" onClick={onClose}>Dashboard</Link>
-          </div>
+//         {/* Header with Close Button */}
+//         <div className="sidebar-header">
+//           <h5 style={{ margin: 0 }}>Menu</h5>
+//           <button className="close-btn" onClick={onClose}>
+//             &times; {/* This is an 'X' symbol */}
+//           </button>
+//         </div>
 
-          <hr />
-          <div className="d-flex flex-column gap-2">
-            <div>
-              <Link to="/tickets" onClick={onClose}>Tickets</Link>
-            </div>
-            <div>
-              <Link to="/projects" onClick={onClose}>Projects</Link>
-            </div>
-            <div>
-              <Link to="/projects" onClick={onClose}>Labels</Link>
-            </div><div>
-              <Link to="/projects" onClick={onClose}>Employee master</Link>
-            </div>
-          </div>
-          <hr />
-          
-          <div>
-            <Link to="/repository" onClick={onClose}>Repositories</Link>
-          </div>
+//         {/* Content */}
+//         <div className="sidebar-content">
+//           <div>
+//             <Link to="/dashboard" onClick={onClose}>Dashboard</Link>
+//           </div>
 
-          {/* {isLoading && <p>Loading...</p>} */}
+//           <hr />
+//           <div className="d-flex flex-column gap-2">
+//             <div>
+//               <Link to="/tickets" onClick={onClose}>Tickets</Link>
+//             </div>
+//             <div>
+//               <Link to="/projects" onClick={onClose}>Projects</Link>
+//             </div>
+//             <div>
+//               <Link to="/projects" onClick={onClose}>Labels</Link>
+//             </div><div>
+//               <Link to="/projects" onClick={onClose}>Employee master</Link>
+//             </div>
+//           </div>
+//           <hr />
 
-          <div className="d-flex flex-column gap-2 mt-2">
-            {data?.RepoList?.map((repo) => (
-              <div key={repo.Repo_Id}>
-                <Link to={`/repository/${repo.Repo_Id}`} onClick={onClose}>
-                  {repo.Title}
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
+//           <div>
+//             <Link to="/repository" onClick={onClose}>Repositories</Link>
+//           </div>
 
+//           {/* {isLoading && <p>Loading...</p>} */}
+
+//           <div className="d-flex flex-column gap-2 mt-2">
+//             {data?.RepoList?.map((repo) => (
+//               <div key={repo.Repo_Id}>
+//                 <Link to={`/repository/${repo.Repo_Id}`} onClick={onClose}>
+//                   {repo.Title}
+//                 </Link>
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       </div>
+//     </>
+//   );
+// }
 
 // src/components/Sidebar/Sidebar.jsx
+/**
+ * src/app/layout/Sidebar.jsx
+ *
+ * Sidebar links are driven entirely by routes with inSidebar: true.
+ * No hardcoded list to maintain — add a route to a feature with inSidebar: true
+ * and it appears here automatically.
+ */
 
-import { NavLink } from 'react-router-dom';
-import { ROUTES } from '../../core/routing/routeConfig';
+/**
+ * src/app/layout/Sidebar.jsx
+ *
+ * Sidebar links come from routes with inSidebar: true in the nav registry.
+ * No hardcoded list to maintain — set inSidebar: true in a route's nav object
+ * and it appears here automatically.
+ */
 
-// Define which routes appear in sidebar
-const SIDEBAR_ROUTES = ['dashboard', 'repositories', 'projects'];
+////////////////////////// new code////////////////////////////////////////
+// import { NavLink } from "react-router-dom";
+// import { useSmartNavigation } from "../../core/navigation/useSmartNavigation";
 
-export const Sidebar = () => {
-  return (
-    <nav className="sidebar">
-      {SIDEBAR_ROUTES.map((routeKey) => {
-        const route = ROUTES[routeKey];
-        return (
-          <NavLink
-            key={routeKey}
-            to={route.path}
-            className={({ isActive }) => isActive ? 'active' : ''}
-          >
-            {/* <Icon name={route.icon} /> */}
-            {route.title}
-          </NavLink>
-        );
-      })}
-    </nav>
-  );
-};
+// export const Sidebar = ({ isOpen, onClose }) => {
+//   const { getSidebarRoutes } = useSmartNavigation();
+//   const sidebarRoutes = getSidebarRoutes();
+
+//   return (
+//     <>
+//       {/* Mobile overlay */}
+//       {isOpen && (
+//         <div
+//           className="fixed inset-0 bg-black/40 z-20 lg:hidden"
+//           onClick={onClose}
+//         />
+//       )}
+
+//       <nav
+//         className={[
+//           "flex flex-col gap-1 p-3 bg-white border-r border-gray-200 z-30 min-w-[200px]",
+//           "transition-transform duration-200",
+//           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+//         ].join(" ")}
+//       >
+//         {sidebarRoutes.map((route) => (
+//           <NavLink
+//             key={route.key}
+//             to={route.fullPath}
+//             onClick={onClose}
+//             className={({ isActive }) =>
+//               [
+//                 "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+//                 isActive
+//                   ? "bg-brand-yellow text-white"
+//                   : "text-gray-700 hover:bg-gray-100",
+//               ].join(" ")
+//             }
+//           >
+//             {route.title}
+//           </NavLink>
+//         ))}
+//       </nav>
+//     </>
+//   );
+// };
