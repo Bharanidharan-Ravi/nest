@@ -1,0 +1,81 @@
+/**
+ * src/core/routing/paths.js
+ *
+ * ╔══════════════════════════════════════════════════════════╗
+ * ║  SINGLE SOURCE OF TRUTH — all route keys + URL patterns ║
+ * ╚══════════════════════════════════════════════════════════╝
+ *
+ * Zero imports. Just plain strings.
+ *
+ * ROUTE_KEYS  → stable IDs used by goTo(), getBreadcrumbs(), canCreate() etc.
+ * PATHS       → React Router URL patterns (may contain :params)
+ *
+ * Adding a new route  → add one pair here + wire in feature index
+ * Renaming a URL      → change PATHS here only, nothing else
+ */
+
+export const ROUTE_KEYS = {
+  // ── App shell ─────────────────────────────────────────────
+  DASHBOARD:         "app.dashboard",
+
+  // ── Repository ────────────────────────────────────────────
+  REPO_LIST:         "repository.list",
+  REPO_CREATE:       "repository.create",
+  REPO_DETAIL:       "repository.detail",
+  REPO_OVERVIEW:     "repository.overview",
+
+    // ── Tickets (standalone) ───────────────────────────────
+  TICKET_LIST:       "tickets.list",
+  TICKET_CREATE:     "ticket.create",
+  TICKET_DETAIL:     "ticket.detail",
+
+  // ── Tickets (inside a repo) ───────────────────────────────
+  REPO_TICKET_LIST:       "repository.tickets",
+  REPO_TICKET_CREATE:     "repository.ticket.create",
+  REPO_TICKET_DETAIL:     "repository.ticket.detail",
+
+  // ── Projects (inside a repo) ──────────────────────────────
+  REPO_PROJ_LIST:    "repository.projects",
+  REPO_PROJ_CREATE:  "repository.project.create",
+  REPO_PROJ_DETAIL:  "repository.project.detail",
+
+  // ── Projects (standalone /projects) ──────────────────────
+  PROJ_LIST:         "project.list",
+  PROJ_CREATE:       "project.create",
+  PROJ_DETAIL:       "project.detail",
+  PROJ_OVERVIEW:     "project.overview",
+  PROJ_TICKET_LIST:  "project.tickets",
+};
+
+export const PATHS = {
+  // ── App shell ─────────────────────────────────────────────
+  DASHBOARD:         "/dashboard",
+
+  // ── Repository ────────────────────────────────────────────
+  REPO_LIST:         "/repository",
+  REPO_CREATE:       "/repository/create",
+  REPO_DETAIL:       "/repository/:repoId",
+  REPO_OVERVIEW:     "/repository/:repoId/overview",
+
+  // ── Tickets (standalone) ───────────────────────────────
+  TICKET_LIST:       "/tickets",
+  TICKET_CREATE:     "/tickets/create",
+  TICKET_DETAIL:     "/tickets/:ticketId",
+
+  // ── Tickets (inside a repo) ───────────────────────────────
+  REPO_TICKET_LIST:       "/repository/:repoId/t",
+  REPO_TICKET_CREATE:     "/repository/:repoId/t/create",
+  REPO_TICKET_DETAIL:     "/repository/:repoId/t/:ticketId",
+
+  // ── Projects (inside a repo) ──────────────────────────────
+  REPO_PROJ_LIST:    "/repository/:repoId/p",
+  REPO_PROJ_CREATE:  "/repository/:repoId/p/create",
+  REPO_PROJ_DETAIL:  "/repository/:repoId/p/:projId",
+
+  // ── Projects (standalone /projects) ──────────────────────
+  PROJ_LIST:         "/projects",
+  PROJ_CREATE:       "/projects/create",
+  PROJ_DETAIL:       "/projects/:projId",
+  PROJ_OVERVIEW:     "/projects/:projId/overview",
+  PROJ_TICKET_LIST:  "/projects/:projId/t",
+};

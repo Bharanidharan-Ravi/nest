@@ -1,101 +1,125 @@
-// src/hooks/useSmartNavigation.js
+/**
+ * src/core/routing/useSmartNavigation.js
+ *
+ * Key change: getSidebarRoutes() now filters by the current user's role.
+ * Role 3 will only see sidebar items whose allowedRoles includes 3.
+ */
 
-import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { ROUTES, getRouteByPath} from '../routing/routeConfig';
+import { useNavigate, useLocation, useParams } from "react-router-dom";
+import {
+  matchNavRoute,
+  getNavRoute,
+  buildPath,
+  tryBuildPath,
+  getAllNavRoutes,
+} from "../routing/routeRegistry";
+import { readUserFromSession } from "../auth/useCurrentUser";
 
 export const useSmartNavigation = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const params = useParams();
+  const navigate    = useNavigate();
+  const location    = useLocation();
+  const routeParams = useParams();
 
-  // Get current route info
-  const getCurrentRoute = () => {
-    const result = getRouteByPath(location.pathname);
-    return result ? { key: result[0], ...result[1] } : null;
+  // ─── Current route ────────────────────────────────────────────────────
+
+  const getCurrentRoute = () => matchNavRoute(location.pathname);
+
+  // ─── Path building ────────────────────────────────────────────────────
+
+  const getPath = (key, extraParams = {}) =>
+    buildPath(key, { ...routeParams, ...extraParams });
+
+  // ─── Navigation ───────────────────────────────────────────────────────
+
+  const goTo = (key, extraParams = {}, options = {}) => {
+    navigate(getPath(key, extraParams), options);
   };
 
-  // Navigate BACK (to parent)
   const goBack = () => {
     const current = getCurrentRoute();
-    if (current?.parent) {
-      const parentRoute = ROUTES[current.parent];
-      // Handle dynamic parent paths
-      if (parentRoute.generatePath && params.id) {
-        navigate(parentRoute.generatePath(params.id));
-      } else {
-        navigate(parentRoute.path);
-      }
-    }
+    if (current?.parent) goTo(current.parent);
   };
 
-  // Navigate FORWARD (to first child or specified child)
-  const goForward = (childKey = null) => {
+  const goForward = (childKey) => {
     const current = getCurrentRoute();
-    if (current?.children?.length > 0) {
-      const targetKey = childKey || current.children[0];
-      const childRoute = ROUTES[targetKey];
-      if (childRoute.generatePath && params.id) {
-        navigate(childRoute.generatePath(params.id));
-      } else {
-        navigate(childRoute.path);
-      }
-    }
+    if (!current?.children?.length) return;
+    goTo(childKey ?? current.children[0]);
   };
 
-  // Navigate to CREATE page
   const goToCreate = () => {
     const current = getCurrentRoute();
-    if (current?.create) {
-      const createRoute = ROUTES[current.create];
-      navigate(createRoute.path);
-    }
+    if (current?.create) goTo(current.create);
   };
 
-  // Navigate to specific route by key
-  const goTo = (routeKey, params = {}) => {
-    const route = ROUTES[routeKey];
-    if (route) {
-      if (route.generatePath && Object.keys(params).length > 0) {
-        navigate(route.generatePath(params.id));
-      } else {
-        navigate(route.path);
-      }
-    }
-  };
+  // ─── Availability checks ──────────────────────────────────────────────
 
-  // Get breadcrumb trail
-  const getBreadcrumbs = () => {
-    const breadcrumbs = [];
-    let current = getCurrentRoute();
-    
+  const canGoBack    = () => !!getCurrentRoute()?.parent;
+  const canGoForward = () => (getCurrentRoute()?.children?.length ?? 0) > 0;
+  const canCreate    = () => !!getCurrentRoute()?.create;
+
+  // ─── Breadcrumbs ──────────────────────────────────────────────────────
+
+  const getBreadcrumbs = (titleResolver) => {
+    const crumbs = [];
+    let current  = getCurrentRoute();
+
     while (current) {
-      breadcrumbs.unshift({
-        key: current.key,
-        title: current.title,
-        path: current.generatePath && params.id 
-          ? current.generatePath(params.id) 
-          : current.path,
-      });
-      current = current.parent ? { key: current.parent, ...ROUTES[current.parent] } : null;
+      const resolvedTitle = titleResolver?.(current.key) ?? current.title;
+      const path = tryBuildPath(current.key, routeParams) ?? current.fullPath;
+      crumbs.unshift({ key: current.key, title: resolvedTitle, path });
+      current = current.parent ? getNavRoute(current.parent) : null;
     }
-    
-    return breadcrumbs;
+
+    return crumbs;
   };
 
-  // Check navigation availability
-  const canGoBack = () => !!getCurrentRoute()?.parent;
-  const canGoForward = () => getCurrentRoute()?.children?.length > 0;
-  const canCreate = () => !!getCurrentRoute()?.create;
+  // ─── Sidebar — filtered by current user's role ────────────────────────
+
+  /**
+   * Returns only the sidebar routes the current user is allowed to see.
+   *
+   * How it works on every render / navigation:
+   *   1. Reads the user role from sessionStorage (fresh every render)
+   *   2. Filters to inSidebar: true routes
+   *   3. Filters to routes where allowedRoles includes the user's role
+   *      (or allowedRoles is empty = open to everyone)
+   *
+   * Result for Role 3:
+   *   Dashboard  → allowedRoles [1,2,3] ✅ shown
+   *   Repository → allowedRoles [1,2]   ❌ hidden
+   *   Projects   → allowedRoles [1,2,3] ✅ shown
+   */
+  const getSidebarRoutes = () => {
+    const user        = readUserFromSession();
+    const userRole    = user?.role ?? null;
+    const allRoutes   = getAllNavRoutes();
+
+    return allRoutes.filter((route) => {
+      if (!route.inSidebar) return false;
+
+      // No restriction = show to everyone
+      if (!route.allowedRoles || route.allowedRoles.length === 0) return true;
+
+      // No session = hide everything
+      if (userRole == null) return false;
+
+      return route.allowedRoles.includes(userRole);
+    });
+  };
+
+  // ─── Public API ───────────────────────────────────────────────────────
 
   return {
+    goTo,
     goBack,
     goForward,
     goToCreate,
-    goTo,
+    getPath,
     getCurrentRoute,
-    getBreadcrumbs,
     canGoBack,
     canGoForward,
     canCreate,
+    getBreadcrumbs,
+    getSidebarRoutes,
   };
 };

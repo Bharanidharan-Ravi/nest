@@ -7,7 +7,6 @@
 //   const location = useLocation();
 //   const { repoId, ticketId, projId } = useParams();
 
-
 //   const pathnames = location.pathname.split("/").filter(Boolean);
 //   // const { data: repoList } = useRepoMaster();
 //   // const { data: ticketList } = useTicketMaster(repoId);
@@ -21,7 +20,7 @@
 //     if (value === "t") return "Tickets";
 //     if (value === "p") return "Projects";
 //     if (value === "overview") return "Overview";
-//     if (value === "projects") return "Projects";  
+//     if (value === "projects") return "Projects";
 
 //     if (value === repoId) {
 //       if (!data?.RepoList) return "Loading...";
@@ -35,7 +34,6 @@
 //       return ticket?.Issue_Title || "Unknown Ticket";
 //     }
 
-    
 //     if (value === projId) {
 //       if (!data?.ProjectList) return "Loading...";
 //       const ticket = data?.ProjectList?.find((t) => t.Id === value);
@@ -102,27 +100,102 @@
 
 // src/components/Breadcrumbs/Breadcrumbs.jsx
 
-import { Link } from 'react-router-dom';
-import { useSmartNavigation } from './useSmartNavigation';
+/**
+ * src/core/routing/Breadcrumbs.jsx
+ *
+ * Breadcrumbs derived from the route registry's parent chain.
+ * Dynamic labels (repo name, ticket title) resolved from React Query cache
+ * — no extra API calls, no prop drilling.
+ *
+ * To add a dynamic label for a new route:
+ *   Add a case to `titleResolver` below.
+ */
+/**
+ * src/core/routing/Breadcrumbs.jsx
+ *
+ * Breadcrumb trail from root → current page.
+ * Dynamic labels (real repo name, ticket title) pulled from React Query cache —
+ * no extra API calls, no prop drilling.
+ *
+ * To add a dynamic label for a new route:
+ *   Add a case to titleResolver() below.
+ */
+
+import { Link, useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSmartNavigation } from "./useSmartNavigation";
+import { queryKeys } from "../query/queryKeys";
+import { masterKeys } from "../master/masterKeys";
+import { ROUTE_KEYS } from "../routing/paths";
+import { useMasterData } from "../master/useMasterData";
 
 export const Breadcrumbs = () => {
   const { getBreadcrumbs } = useSmartNavigation();
-  const breadcrumbs = getBreadcrumbs();
+  const { repoId, ticketId, projId } = useParams();
+  const queryClient = useQueryClient();
+  const { data } = useMasterData();
+
+  /**
+   * Return a human-readable label for dynamic route segments.
+   * Data is already in cache (prefetched by RouteDataLoader).
+   * Return null to fall back to the static route.title from paths.js.
+   */
+  const titleResolver = (key) => {
+    switch (key) {
+      case ROUTE_KEYS.REPO_DETAIL: {
+        if (!data?.RepoList) return "Loading...";
+        const master = data?.RepoList;
+        console.log("projId :", master, repoId);
+        return (
+          master?.find((r) => r.Repo_Id === repoId)?.Title ?? null
+        );
+      }
+      case ROUTE_KEYS.TICKET_DETAIL: {
+        if (!ticketId) return null;
+        const tickets = queryClient.getQueryData(
+          queryKeys.ticket.list({ repoId }),
+        );
+        return (
+          tickets?.find((t) => t.Issue_Id === ticketId)?.Issue_Title ?? null
+        );
+      }
+      case ROUTE_KEYS.PROJ_DETAIL: {
+        if (!data?.ProjectList) return "Loading...";
+        const projs = data?.ProjectList;
+        return projs?.find((t) => t.Id === projId)?.Project_Name ?? null;
+      }
+      default:
+        return null;
+    }
+  };
+
+  const breadcrumbs = getBreadcrumbs(titleResolver);
 
   return (
-    <nav className="breadcrumbs">
-      {breadcrumbs.map((crumb, index) => (
-        <span key={crumb.key}>
-          {index < breadcrumbs.length - 1 ? (
-            <>
-              <Link to={crumb.path}>{crumb.title}</Link>
-              <span className="separator"> / </span>
-            </>
-          ) : (
-            <span className="current">{crumb.title}</span>
-          )}
-        </span>
-      ))}
+    <nav
+      aria-label="breadcrumb"
+      className="flex items-center gap-1 text-sm text-gray-500"
+    >
+      {breadcrumbs.map((crumb, index) => {
+        const isLast = index === breadcrumbs.length - 1;
+        return (
+          <span key={crumb.key} className="flex items-center gap-1">
+            {index > 0 && <span className="text-gray-300 select-none">/</span>}
+            {isLast ? (
+              <span className="text-gray-900 font-medium" aria-current="page">
+                {crumb.title}
+              </span>
+            ) : (
+              <Link
+                to={crumb.path}
+                className="hover:text-gray-900 transition-colors"
+              >
+                {crumb.title}
+              </Link>
+            )}
+          </span>
+        );
+      })}
     </nav>
   );
 };

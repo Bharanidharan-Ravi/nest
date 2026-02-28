@@ -1,37 +1,41 @@
+/**
+ * src/core/auth/RoleGuard.jsx
+ *
+ * Checks the user's role on EVERY render (= every page navigation).
+ * buildRoutes.jsx wraps every single route element with this component,
+ * so it re-evaluates automatically on every URL change.
+ *
+ * allowedRoles = []  → open to any authenticated user (no check)
+ * role IN list       → render the page
+ * role NOT IN list   → redirect to /login
+ * no session         → redirect to /login
+ */
+
 import { Navigate } from "react-router-dom";
-import { decryptUserInfo } from "../../app/shared/decryption/Decryption";
+import { readUserFromSession } from "./useCurrentUser";
 
 export default function RoleGuard({ allowedRoles = [], children }) {
-  // If no roles are specified, assume the route is open to any authenticated user
+  // No restriction declared — pass through
   if (!allowedRoles || allowedRoles.length === 0) {
     return children;
   }
 
-  const userData = sessionStorage.getItem("user");
-  let userRoles = [];
+  // Read fresh from sessionStorage on every render
+  // (not a hook — plain function call so it runs synchronously on every render)
+  const user = readUserFromSession();
 
-  try {
-    const parsedUser = JSON.parse(userData);
-    const decryptedUser = decryptUserInfo(parsedUser);
-    
-    // Assuming your decrypted user object holds an array of roles or a single role string
-    const rolesData = Array.isArray(decryptedUser) 
-        ? decryptedUser[0]?.Role 
-        : decryptedUser?.Role;
-
-    userRoles = Array.isArray(rolesData) ? rolesData : [rolesData];
-    console.log("User Roles:", userRoles, "Allowed Roles:", allowedRoles, "decryptedUser[0]:", decryptedUser[0]);
-    
-  } catch (error) {
-    console.error("Failed to parse roles for authorization", error);
+  if (!user || isNaN(user.role)) {
+    console.warn("[RoleGuard] No valid session — redirecting to /login");
     return <Navigate to="/login" replace />;
   }
 
-  const hasAccess = allowedRoles.some((role) => userRoles.includes(role));
+  const hasAccess = allowedRoles.includes(user.role);
 
   if (!hasAccess) {
-    // Redirect to a 403 Forbidden page, or back to dashboard
-    return <Navigate to="/" replace />; 
+    console.warn(
+      `[RoleGuard] Role ${user.role} not in [${allowedRoles.join(", ")}] — redirecting to /login`
+    );
+    return <Navigate to="/login" replace />;
   }
 
   return children;
