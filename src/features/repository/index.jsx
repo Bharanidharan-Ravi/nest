@@ -30,21 +30,6 @@ export const RepositoryFeature = {
     {
       path: "/:repoId",
       element: RepositoryLayout,
-      // prefetch: () => [
-      //   {
-      //     queryKey: queryKeys.repo.list(),
-      //     queryFn: () =>
-      //       executeApi({
-      //         url: "/sync/v2",
-      //         method: "POST",
-      //         payload: buildSyncPayload({
-      //           configKey: "RepoList",
-      //           // idKey: "repoId",
-      //           // idValue: params.repoId
-      //         })
-      //       })
-      //   }
-      // ],
       children: [
         { path: "overview", element: RepoOverview },
         {

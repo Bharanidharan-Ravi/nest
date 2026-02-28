@@ -1,9 +1,10 @@
 import { Route, Navigate } from "react-router-dom"
 import { getAllFeatures } from "../registry/featureRegistry"
+import RoleGuard from "../auth/RoleGuard";
 
 const renderRoutes = (routes, basePath = "") => {
   return routes.map((route, index) => {
-const fullPath = basePath 
+    const fullPath = basePath 
       ? `${basePath}/${route.path}`.replace(/\/+/g, "/") 
       : route.path
 
@@ -20,13 +21,20 @@ const fullPath = basePath
       )
     }
 
+    // Wrap the component in the RoleGuard
+    const ProtectedComponent = Component ? (
+      <RoleGuard allowedRoles={route.allowedRoles}>
+        <Component />
+      </RoleGuard>
+    ) : undefined;
+
     // 📦 Route With Children
     if (route.children) {
       return (
         <Route
           key={index}
           path={fullPath}
-          element={Component ? <Component /> : undefined}
+          element={ProtectedComponent}
         >
           {renderRoutes(route.children)}
         </Route>
@@ -39,12 +47,11 @@ const fullPath = basePath
         <Route
           key={index}
           path={fullPath}
-          element={<Component />}
+          element={ProtectedComponent}
         />
       )
     }
 
-    // ⚠️ If no element and no children, skip
     return null
   })
 }
@@ -56,19 +63,3 @@ export const buildRoutes = () => {
     renderRoutes(feature.routes, feature.basePath)
   )
 }
-
-
-
-
-// // import { getAllFeatures } from "../registry/featureRegistry"
-
-// // export const buildRoutes = () => {
-// //   const features = getAllFeatures()
-
-// //   return features.flatMap(feature =>
-// //     feature.routes.map(route => ({
-// //       path: feature.basePath + route.path,
-// //       Component: route.element
-// //     }))
-// //   )
-// // }
