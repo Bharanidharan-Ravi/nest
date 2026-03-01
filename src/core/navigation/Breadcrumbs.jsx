@@ -145,7 +145,6 @@ export const Breadcrumbs = () => {
       case ROUTE_KEYS.REPO_DETAIL: {
         if (!data?.RepoList) return "Loading...";
         const master = data?.RepoList;
-        console.log("projId :", master, repoId);
         return (
           master?.find((r) => r.Repo_Id === repoId)?.Title ?? null
         );

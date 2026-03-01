@@ -12,6 +12,7 @@ const apiClient = axios.create({
   timeout: 100000,
   headers: {
     "Content-Type": "application/json",
+    
   },
 });
 
@@ -64,7 +65,8 @@ apiClient.interceptors.request.use(
     const parsedUserData = userData ? JSON.parse(userData) : null;
 
     if (parsedUserData) {
-      config.headers["wg_token"] = parsedUserData;
+      // config.headers["wg_token"] = parsedUserData;
+       config.headers.Authorization = `Bearer ${parsedUserData}`;
     }
     // config.headers['wg_token'] = "x8m0nLLDf7Yc7AK7k/RocuFxxeNs5zN9KYZFwfoBZGr2N76UxEkMbjTc8JgI+ACdbCRBtWfUMOfG599LFMJZmbVyv1zS8NOXqM2PM69aOCOJ6/9DAAHtZvGBZqJaH+nLjkkvZnG9Gsf+oYpubRAZWtjsoPuaH94jkHj2f503eHJxnTWWJ4Lf6cCMct3/+8fIjsNbGb/yGIgaBbmSCXdUgKcRBIG0zOcFVs3HvxIjQS4gvAob1A/5/y7w0KPY7Y7ivVS/VGRv+lNafeQsDrnhBy620xICH2RwT6EfJmkpJ8UaigTmbOeU4uJ5F1iK0BRhRcxtYRcl33u1vlHPhtsw/4JvrluKxn0WHtI7/CmhGrrZTZJ1eYpISjUrs3K6GNJRxK/M/TddFFa4fCyzBQNqivs2a1dfIAHvW7rVpECOKfUijQ4qr74AAO1QIax8rzxm7mR2BPCUOFbcSxbxF7p0RztqvetN4px2p2ANjFnEoxIRpx78apCh4ZFqylbFV67gE+DEu73pqVz6E9BiHi/q3B6JjepJpble4NI+Tgte/lZCILgssO1M17wp6fxz8lXJgL9C1++yojQ8xgRMXZ1njIIbrP8R8r0yHJTi9ciZ7Tav9ohtAt9tLl2plFmEDD07"
     return config;
@@ -86,7 +88,7 @@ apiClient.interceptors.response.use(
     const respData = response?.data ?? {};
     const code = respData.code ?? 200;
     const message = respData.message ?? "";
-    const data = respData.Res ?? (respData.Res || null) ?? (respData || null); // fallback to either Data or data
+    const data = respData.Res ?? (respData.Res || null) ?? (respData.Data || null); // fallback to either Data or data
 
     const method = response?.config?.method?.toUpperCase();
     // console.log("response data :", response, data, respData);

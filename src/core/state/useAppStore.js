@@ -12,12 +12,12 @@ export const useAppStore = create((set) => ({
       isAuthenticated: true,
     });
   },
-  logout: () => {
-    sessionStorage.removeItem("user");
-    set({
-      //   user: null,
-      token: null,
-      isAuthenticated: false,
-    });
-  },
+  // logout: () => {
+  //   sessionStorage.removeItem("user");
+  //   set({
+  //     //   user: null,
+  //     token: null,
+  //     isAuthenticated: false,
+  //   });
+  // },
 }));

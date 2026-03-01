@@ -1,5 +1,4 @@
 import { Navigate, Outlet } from "react-router-dom";
-import { decryptUserInfo } from "../../app/shared/decryption/Decryption";
 import { isTokenExpired, logoutUser } from "./authUtils";
 
 export default function AuthGuard() {
@@ -11,12 +10,12 @@ export default function AuthGuard() {
 
   try {
     const parsedUser = JSON.parse(userData);
-    const decryptedUser = decryptUserInfo(parsedUser);
-    const jwtToken = Array.isArray(decryptedUser)
-      ? decryptedUser[0]?.JwtToken
-      : decryptedUser?.JwtToken;
+      // const decryptedUser = decryptUserInfo(parsedUser);
+      // const jwtToken = Array.isArray(decryptedUser)
+      //   ? decryptedUser[0]?.JwtToken
+      //   : decryptedUser?.JwtToken;
 
-    if (!jwtToken || isTokenExpired(jwtToken)) {
+    if (!parsedUser || isTokenExpired(parsedUser)) {
       logoutUser();
       return null; // Prevents flashing content before redirect
     }

@@ -38,6 +38,7 @@ export const ROUTE_KEYS = {
   REPO_PROJ_LIST:    "repository.projects",
   REPO_PROJ_CREATE:  "repository.project.create",
   REPO_PROJ_DETAIL:  "repository.project.detail",
+  REPO_PROJ_EDIT:    "repository.project.edit",
 
   // ── Projects (standalone /projects) ──────────────────────
   PROJ_LIST:         "project.list",
@@ -45,6 +46,7 @@ export const ROUTE_KEYS = {
   PROJ_DETAIL:       "project.detail",
   PROJ_OVERVIEW:     "project.overview",
   PROJ_TICKET_LIST:  "project.tickets",
+  PROJ_EDIT:         "project.edit",
 };
 
 export const PATHS = {
@@ -71,6 +73,7 @@ export const PATHS = {
   REPO_PROJ_LIST:    "/repository/:repoId/p",
   REPO_PROJ_CREATE:  "/repository/:repoId/p/create",
   REPO_PROJ_DETAIL:  "/repository/:repoId/p/:projId",
+  REPO_PROJ_EDIT:    "/repository/:repoId/p/:projId/edit",
 
   // ── Projects (standalone /projects) ──────────────────────
   PROJ_LIST:         "/projects",
@@ -78,4 +81,5 @@ export const PATHS = {
   PROJ_DETAIL:       "/projects/:projId",
   PROJ_OVERVIEW:     "/projects/:projId/overview",
   PROJ_TICKET_LIST:  "/projects/:projId/t",
+  PROJ_EDIT:         "/projects/:projId/edit",
 };

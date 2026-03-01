@@ -66,8 +66,8 @@ const LoginPage = () => {
   };
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-    onSuccess: (data) => {
-      loginStore(data.Data); // store token
+    onSuccess: (data) => {      
+      loginStore(data); // store token
       navigate("/dashboard");
     },
   });

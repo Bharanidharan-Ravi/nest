@@ -9,49 +9,35 @@
  */
 
 import { useMemo } from "react";
-import { decryptUserInfo } from "../../app/shared/decryption/Decryption";
-
+import { jwtDecode } from "jwt-decode";
 // ─── Raw session reader (runs outside React — used by RoleGuard too) ──────────
 
 export function readUserFromSession() {
   try {
-    const raw = sessionStorage.getItem("user");
-    if (!raw) return null;
+    const token = sessionStorage.getItem("user");
+    if (!token) return null;
 
-    const parsed    = JSON.parse(raw);
-    const decrypted = decryptUserInfo(parsed);
 
-    // decryptUserInfo returns an array (confirmed by AuthGuard usage)
-    const user = Array.isArray(decrypted) ? decrypted[0] : decrypted;
+    const decoded = jwtDecode(token);
+      const role =
+      decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
 
-    if (!user) return null;
+    const name =
+      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
 
-    // ── DEBUG: log the FULL user object so you can see every field name ──
-    // Check the console after login and find your Role field name.
-    // Common names: Role, RoleId, Role_Id, UserRole, role
-    console.log("=== [useCurrentUser] Full decrypted user object ===", user);
-    console.log("=== [useCurrentUser] All keys ===", Object.keys(user));
-
-    // Try common role field names — whichever is non-null is yours
-    const roleValue =
-      user.Role      ??
-      user.RoleId    ??
-      user.Role_Id   ??
-      user.UserRole  ??
-      user.role      ??
-      null;
-
-    console.log("=== [useCurrentUser] Role value found ===", roleValue);
+    const userId =
+      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
 
     return {
-      raw:      user,
-      role:     Number(roleValue),   // normalise to number
-      token:    user.JwtToken,
-      name:     user.UserName ?? user.Name ?? user.FullName ?? "",
-      email:    user.Email ?? user.EmailId ?? "",
+      token,
+      role: Number(role) || 0,
+      name: name || "",
+      userId: userId || null,
+      dbName: decoded.DbName || "",
+      exp: decoded.exp || null
     };
   } catch (err) {
-    console.error("[useCurrentUser] Failed to read session:", err);
+    console.error("Failed to decode JWT:", err);
     return null;
   }
 }
@@ -71,7 +57,6 @@ export function useCurrentUser() {
   // sessionStorage doesn't change during a session so this is correct.
   // On navigation React mounts a new component instance → fresh read.
   const user = useMemo(() => readUserFromSession(), []);
-
   const can = (allowedRoles) => {
     if (!allowedRoles?.length) return true;           // no restriction = open
     if (!user || isNaN(user.role)) return false;      // no session = no access

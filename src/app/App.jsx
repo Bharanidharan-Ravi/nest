@@ -13,7 +13,6 @@ import {
   connectSignalR,
   disconnectSignalR,
 } from "../core/realtime/realtimeManager";
-import { decryptUserInfo } from "./shared/decryption/Decryption";
 import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
 import { GlobalUI } from "./shared/GlobalUI/GlobalUI";
 
@@ -26,14 +25,14 @@ function App() {
 
     try {
       const parsedUser = JSON.parse(user);
-      const userData = decryptUserInfo(parsedUser);
-      const jwtToken = Array.isArray(userData)
-        ? userData[0]?.JwtToken
-        : userData?.JwtToken;
+          // const userData = decryptUserInfo(parsedUser);
+          // const jwtToken = Array.isArray(userData)
+          //   ? userData[0]?.JwtToken
+          //   : userData?.JwtToken;
 
-      if (!jwtToken) return;
+      if (!parsedUser) return;
 
-      connectSignalR(jwtToken, (message) => {
+      connectSignalR(parsedUser, (message) => {
         handleRealtimeMessage(queryClient, message);
       });
 

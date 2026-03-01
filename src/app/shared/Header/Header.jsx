@@ -2,14 +2,16 @@ import React, { useState } from "react";
 import { IoMenu } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import "./Header.css";
-import { useAppStore } from "../../../core/state/useAppStore";
 import { Breadcrumbs } from "../../../core/navigation/Breadcrumbs";
 import workglowlogo from "../../../assets/WORKGLOWLOGO.png";
+import { logoutUser } from "../../../core/auth/authUtils";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
-  const logout = useAppStore((s) => s.logout);
-  const UserName = "Test";
+  const user = readUserFromSession();
+  
+  const UserName = user?.name || "Test";
   const [dropdownVisible, setDropdownVisible] = useState(false);
 
   const handleIconClick = () => {
@@ -17,7 +19,7 @@ const Header = ({ toggleMobileMenu }) => {
   };
 
   const handleLogout = () => {
-    logout();
+    logoutUser();
     navigate("/");
   };
 

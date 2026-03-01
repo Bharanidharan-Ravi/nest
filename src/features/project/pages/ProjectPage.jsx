@@ -27,6 +27,9 @@ const ProjectPage = () => {
       : [];
 
   const rawList = repoId ? scopedProjects : data?.ProjectList;
+  const editRouteKey = repoId
+    ? ROUTE_KEYS.REPO_PROJ_EDIT
+    : ROUTE_KEYS.PROJ_EDIT;
 
   const normalizeProj = (proj) => ({
     id: proj.Id,
@@ -66,9 +69,9 @@ const ProjectPage = () => {
     ? ROUTE_KEYS.REPO_PROJ_CREATE
     : ROUTE_KEYS.PROJ_CREATE;
 
-  const detailRouteKey = repoId
-    ? ROUTE_KEYS.REPO_PROJ_LIST // no individual proj detail from repo context yet
-    : ROUTE_KEYS.PROJ_DETAIL;
+  // const detailRouteKey = repoId
+  //   ? ROUTE_KEYS.REPO_PROJ_LIST // no individual proj detail from repo context yet
+  //   : ROUTE_KEYS.PROJ_DETAIL;
 
   const listConfigWithNav = {
     ...ProjUIConfig,
@@ -84,7 +87,7 @@ const ProjectPage = () => {
       );
     },
     onEditClick: (item) => {
-      console.log(`Triggering edit modal for ${item.id}`);
+      goTo(editRouteKey, { projId: item.id });
     },
     onItemClick: (item) => {
       goTo(ROUTE_KEYS.PROJ_DETAIL, {
@@ -110,7 +113,7 @@ const ProjectPage = () => {
 
       <div className="flex-1 min-h-0">
         <ListProvider config={listConfigWithNav} data={repos}>
-          <ListLayout  />
+          <ListLayout />
         </ListProvider>
       </div>
     </>

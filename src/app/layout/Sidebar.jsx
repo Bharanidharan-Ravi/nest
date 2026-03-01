@@ -9,7 +9,6 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const { data } = useMasterData();
    const { getSidebarRoutes } = useSmartNavigation();
    const { can } = useCurrentUser();
-console.log("can :", can(PERMISSIONS.REPO_CREATE));
 
   // Called on every render — filtered by user's role automatically
   const sidebarRoutes = getSidebarRoutes();
