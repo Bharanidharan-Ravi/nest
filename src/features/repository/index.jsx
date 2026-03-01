@@ -11,80 +11,80 @@
  * Zero cross-feature index imports (only elements — safe lazy wrappers).
  */
 
-import { ROUTE_KEYS }       from "../../core/routing/paths";
-import * as RepoEl          from "./elements";
-import * as TicketEl        from "../tickets/elements";
-import * as ProjectEl       from "../project/elements";
+import { ROUTE_KEYS } from "../../core/routing/paths";
+import * as RepoEl from "./elements";
+import * as TicketEl from "../tickets/elements";
+import * as ProjectEl from "../project/elements";
 
 import { buildSyncPayload } from "../../core/sync/buildSyncPayload";
-import { queryKeys }        from "../../core/query/queryKeys";
-import { executeApi }       from "../../core/api/executor";
+import { queryKeys } from "../../core/query/queryKeys";
+import { executeApi } from "../../core/api/executor";
 import { fetchProjectList } from "../project/hooks/useProjectData";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 
 export const RepositoryFeature = {
-  name:     "repository",
+  name: "repository",
   basePath: "/repository",
 
   routes: [
     // ── /repository ────────────────────────────────────────────────────
     {
-      path:    "",
+      path: "",
       element: RepoEl.RepositoryPage,
       allowedRoles: ROUTE_ROLES.REPO_LIST,
       nav: {
-        key:       ROUTE_KEYS.REPO_LIST,
-        title:     "Repositories",
-        parent:    ROUTE_KEYS.DASHBOARD,
-        create:    ROUTE_KEYS.REPO_CREATE,
+        key: ROUTE_KEYS.REPO_LIST,
+        title: "Repositories",
+        parent: ROUTE_KEYS.DASHBOARD,
+        create: ROUTE_KEYS.REPO_CREATE,
         inSidebar: true,
       },
     },
 
     // ── /repository/create ─────────────────────────────────────────────
     {
-      path:         "/create",
-      element:      RepoEl.RepoCreate,
+      path: "/create",
+      element: RepoEl.RepoCreate,
       allowedRoles: ROUTE_ROLES.REPO_CREATE,
       nav: {
-        key:    ROUTE_KEYS.REPO_CREATE,
-        title:  "Create Repository",
+        key: ROUTE_KEYS.REPO_CREATE,
+        title: "Create Repository",
         parent: ROUTE_KEYS.REPO_LIST,
       },
     },
 
     // ── /repository/:repoId  (layout — renders <Outlet />) ─────────────
     {
-      path:    "/:repoId",
+      path: "/:repoId",
       element: RepoEl.RepositoryLayout,
       allowedRoles: ROUTE_ROLES.REPO_DETAIL,
       nav: {
-        key:    ROUTE_KEYS.REPO_DETAIL,
-        title:  "Repository",          // resolved dynamically in Breadcrumbs
+        key: ROUTE_KEYS.REPO_DETAIL,
+        title: "Repository",          // resolved dynamically in Breadcrumbs
         parent: ROUTE_KEYS.REPO_LIST,
       },
       children: [
 
         // ── /repository/:repoId/overview ───────────────────────────────
         {
-          path:    "overview",
+          path: "overview",
           element: RepoEl.RepoOverview,
           allowedRoles: ROUTE_ROLES.REPO_OVERVIEW,
           nav: {
-            key:    ROUTE_KEYS.REPO_OVERVIEW,
-            title:  "Overview",
+            key: ROUTE_KEYS.REPO_OVERVIEW,
+            title: "Overview",
             parent: ROUTE_KEYS.REPO_DETAIL,
           },
         },
 
         // ── /repository/:repoId/t ──────────────────────────────────────
         {
-          path:    "t",
+          path: "t",
           element: TicketEl.TicketsPage,
           allowedRoles: ROUTE_ROLES.TICKET_LIST,
           nav: {
-            key:    ROUTE_KEYS.REPO_TICKET_LIST,
-            title:  "Tickets",
+            key: ROUTE_KEYS.REPO_TICKET_LIST,
+            title: "Tickets",
             parent: ROUTE_KEYS.REPO_DETAIL,
             create: ROUTE_KEYS.REPO_TICKET_CREATE,
           },
@@ -92,37 +92,37 @@ export const RepositoryFeature = {
 
         // ── /repository/:repoId/t/create ───────────────────────────────
         {
-          path:    "t/create",
+          path: "t/create",
           element: TicketEl.TicketCreatePage,
           allowedRoles: ROUTE_ROLES.TICKET_CREATE,
           nav: {
-            key:    ROUTE_KEYS.REPO_TICKET_CREATE,
-            title:  "Create Ticket",
+            key: ROUTE_KEYS.REPO_TICKET_CREATE,
+            title: "Create Ticket",
             parent: ROUTE_KEYS.REPO_TICKET_LIST,
           },
         },
 
         // ── /repository/:repoId/t/:ticketId ───────────────────────────
         {
-          path:    "t/:ticketId",
+          path: "t/:ticketId",
           element: TicketEl.TicketDetailPage,
           allowedRoles: ROUTE_ROLES.TICKET_DETAIL,
           nav: {
-            key:    ROUTE_KEYS.TICKET_DETAIL,
-            title:  "Ticket",
+            key: ROUTE_KEYS.TICKET_DETAIL,
+            title: "Ticket",
             parent: ROUTE_KEYS.REPO_TICKET_LIST,
           },
           prefetch: ({ params }) => [
             {
               queryKey: queryKeys.ticket.detail(params.ticketId),
-              queryFn:  () => executeApi({
-                url:     "/sync/v2",
-                method:  "POST",
+              queryFn: () => executeApi({
+                url: "/sync/v2",
+                method: "POST",
                 payload: buildSyncPayload({
                   configKey: "TicketDetail",
-                  repoId:    params.repoId,
-                  idKey:     "ticketId",
-                  idValue:   params.ticketId,
+                  repoId: params.repoId,
+                  idKey: "ticketId",
+                  idValue: params.ticketId,
                 }),
               }),
             },
@@ -131,48 +131,58 @@ export const RepositoryFeature = {
 
         // ── /repository/:repoId/p ──────────────────────────────────────
         {
-          path:    "p",
+          path: "p",
           element: ProjectEl.ProjectPage,
           allowedRoles: ROUTE_ROLES.REPO_PROJ_LIST,
           nav: {
-            key:    ROUTE_KEYS.REPO_PROJ_LIST,
-            title:  "Projects",
+            key: ROUTE_KEYS.REPO_PROJ_LIST,
+            title: "Projects",
             parent: ROUTE_KEYS.REPO_DETAIL,
             create: ROUTE_KEYS.REPO_PROJ_CREATE,
           },
           prefetch: ({ params }) => [
             {
               queryKey: queryKeys.project.list(params.repoId),
-              queryFn:  () => fetchProjectList(params.repoId),
+              queryFn: () => fetchProjectList(params.repoId),
             },
           ],
         },
 
         // ── /repository/:repoId/p/create ──────────────────────────────
         {
-          path:    "p/create",
+          path: "p/create",
           element: ProjectEl.ProjectCreate,
           allowedRoles: ROUTE_ROLES.REPO_PROJ_CREATE,
           nav: {
-            key:    ROUTE_KEYS.REPO_PROJ_CREATE,
-            title:  "Create Project",
+            key: ROUTE_KEYS.REPO_PROJ_CREATE,
+            title: "Create Project",
             parent: ROUTE_KEYS.REPO_PROJ_LIST,
           },
           prefetch: ({ params }) => [
             {
               queryKey: queryKeys.project.list(params.repoId),
-              queryFn:  () => executeApi({
-                url:     "/sync/v2",
-                method:  "POST",
+              queryFn: () => executeApi({
+                url: "/sync/v2",
+                method: "POST",
                 payload: buildSyncPayload({
                   configKey: "ProjectList",
-                  repoId:    params.repoId,
+                  repoId: params.repoId,
                 }),
               }),
             },
           ],
         },
-
+        // ── /repository/:repoId/p/edit ──────────────────────────────
+        {
+          path: "p/:projId/edit",
+          element: ProjectEl.ProjectCreate,
+          allowedRoles: ROUTE_ROLES.REPO_PROJ_CREATE,
+          nav: {
+            key: ROUTE_KEYS.REPO_PROJ_EDIT,
+            title: "Edit Project",
+            parent: ROUTE_KEYS.REPO_PROJ_LIST,
+          },
+        },
       ],
     },
   ],

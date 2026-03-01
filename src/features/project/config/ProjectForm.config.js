@@ -1,5 +1,6 @@
 import { queryKeys } from "../../../core/query/queryKeys";
 import { ProjFieldConfig } from "./ProjectCreate.config";
+
   export const projectFormConfig = {
     key: "project",
     title: "Project",
@@ -7,7 +8,7 @@ import { ProjFieldConfig } from "./ProjectCreate.config";
 
     invalidateKeys: [queryKeys.project.list()],
 
-    // redirectTo: "/p",
+    redirectTo: ({ goBack }) => goBack(),
 
     fields: ProjFieldConfig(),
   };

@@ -190,6 +190,8 @@ const AdvancedEditor = ({
   resetKey,
   theme = {}
 }) => {
+  console.log("value :", value);
+
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(false);
   const [selectionBeforeUpload, setSelectionBeforeUpload] = useState(null);
@@ -337,7 +339,15 @@ const AdvancedEditor = ({
   /* ===================================================
      RESET SUPPORT
   =================================================== */
-
+  useEffect(() => {
+    if (editor && value) {
+      // Check if the editor's current content is different from the incoming value.
+      // This prevents the cursor from jumping to the end of the line while the user is actively typing.
+      if (editor.getHTML() !== value) {
+        editor.commands.setContent(value);
+      }
+    }
+  }, [editor, value]);
   useEffect(() => {
     if (editor && resetKey !== undefined) {
       editor.commands.setContent("");

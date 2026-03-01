@@ -5,9 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { executeApi } from "../../../core/api/executor";
 import { useState } from "react";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 
 export default function EntityFormPage({ config, mode, context = {}, module }) {
   const navigate = useNavigate();
+  const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
   const { formData, fields, handleChange, validate, buildDto } = useEntityForm(
     config,
@@ -19,9 +21,15 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     method: mode === "Update" ? "PUT" : "POST",
     // invalidateKeys: config.invalidateKeys || [],
     onSuccess: () => {
-      if (config.redirectTo) {
-        navigate(config.redirectTo);
+      if (!config.redirectTo) return;
+      if (typeof config.redirectTo === "function") {
+        config.redirectTo(smartNav);   // 👈 pass navigation API
+      } else {
+        smartNav.goTo(config.redirectTo);
       }
+      // if (config.redirectTo) {
+      //   navigate(config.redirectTo);
+      // }
     },
   });
 
@@ -92,7 +100,8 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
       },
     });
     // The backend returns the Tempdata object: { FileName, PublicUrl, LocalPath }
-    const data = response.Data;
+    const data = response;
+console.log("Uploaded file data:", data, response);
 
     // 🔥 2. Save the full temp data object into our React state
     setTempFiles((prev) => [...prev, data]);
@@ -102,6 +111,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
   };
 
   const theme = config.theme || {};
+console.log("formData :", formData);
 
   return (
     <div className={`wg-form-container ${theme.formContainer || ""}`}>

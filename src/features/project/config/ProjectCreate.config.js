@@ -25,17 +25,24 @@ export const ProjFieldConfig = () => [
       })) || [],
 
     // 🔥 Disable when repoId param exists
-    disableWhen: (context) => Boolean(context?.params?.repoId),
+    disableWhen: (context) => Boolean(context?.params?.repoId || context?.entityData?.Repo_Id),
 
-    // 🔥 Initial value when repoId param exists
+    // 🔥 Smart initial value resolver
     initValueResolver: (context, masterData) => {
-      const repoId = context?.params?.repoId;
-      if (!repoId) return null;
+      // 1. Get the ID from entityData if editing, otherwise get it from the URL params
+      const targetRepoId = context?.isEdit
+        ? context?.entityData?.Repo_Id
+        : context?.params?.repoId;
 
-      const repo = masterData?.RepoList?.find((r) => r.Repo_Id === repoId);
+      // If neither exists, leave the dropdown empty
+      if (!targetRepoId) return null;
+
+      // 2. Find the exact repo object in your master data list
+      const repo = masterData?.RepoList?.find((r) => r.Repo_Id === targetRepoId);
 
       if (!repo) return null;
 
+      // 3. Return the exact object structure MUI expects
       return {
         label: repo.Title,
         value: {
@@ -58,7 +65,7 @@ export const ProjFieldConfig = () => [
 
     pattern: "^[A-Za-z0-9 ]+$",
     errorMessage: "Only alphanumeric allowed",
-
+    initValueResolver: (context) => context.isEdit ? context.entityData?.Project_Name : "",
     visibleWhen: () => true,
   },
   {
@@ -81,6 +88,25 @@ export const ProjFieldConfig = () => [
           name: user.UserName,
         },
       })) || [],
+    initValueResolver: (context, masterData) => {
+      if (context.isEdit && context.entityData?.EmployeeName) {
+        const empId = context.entityData?.Responsible;
+        if (!empId) return null;
+
+        const emp = masterData?.EmployeeList?.find((e) => e.UserID === empId);
+        if (!emp) return null;
+        console.log("masterData :", emp);
+
+        return {
+          label: emp.UserName,
+          value: {
+            id: emp.UserID,
+            name: emp.UserName,
+          },
+        };
+      }
+      return "";
+    },
   },
   {
     label: "Start Date",
@@ -92,6 +118,7 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "StartDate",
+    initValueResolver: (context) => context.isEdit ? context.entityData?.StartDate : "",
   },
   {
     label: "Due Date",
@@ -103,6 +130,7 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "DueDate",
+    initValueResolver: (context) => context.isEdit ? context.entityData?.DueDate : "",
   },
   {
     label: "Description",
@@ -114,6 +142,11 @@ export const ProjFieldConfig = () => [
     dataType: "string",
 
     apiKey: "Description",
+    initValueResolver: (context) => {
+      if (!context.isEdit || !context.entityData) return "";
+
+      return context.entityData.HtmlDesc || context.entityData.Description || "";
+    },
     visibleWhen: () => true,
   },
 ];

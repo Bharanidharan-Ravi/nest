@@ -37,6 +37,17 @@ export const ProjectFeature = {
       },
     },
 
+    // ── /projects/edit ───────────────────────────────────────────────
+    {
+      path:    "/:projId/edit",
+      element: El.ProjectCreate,
+      nav: {
+        key:    ROUTE_KEYS.PROJ_EDIT,
+        title:  "Edit Project",
+        parent: ROUTE_KEYS.PROJ_LIST,
+      },
+    },
+
     // ── /projects/:projId  (layout) ────────────────────────────────────
     {
       path:    "/:projId",

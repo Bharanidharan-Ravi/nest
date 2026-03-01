@@ -49,6 +49,7 @@ export default function RepositoryLayout() {
   );
 
   const activeCreate = activeTab ? createConfig[activeTab.key] : null;
+  const isActionRoute = location.pathname.endsWith('/create') || location.pathname.endsWith('/edit');
   return (
     <div className="flex flex-col h-full pb-2">
       {/* Tab bar */}
@@ -72,7 +73,7 @@ export default function RepositoryLayout() {
           ))}
         </div>
         {/* Dynamic Create Button */}
-        {activeCreate && (
+        {activeCreate && !isActionRoute && (
           <button
             onClick={() => goTo(activeCreate.route, { repoId })}
             className="bg-brand-yellow text-white px-4 py-1.5 rounded-md text-sm font-medium hover:bg-yellow-500 transition-colors"
