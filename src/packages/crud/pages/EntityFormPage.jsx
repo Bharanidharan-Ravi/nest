@@ -74,6 +74,8 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     if (!validate()) return;
 
     const dto = buildDto();
+    console.log("DTO being sent:", dto, formData, fields);
+    
     if (tempFiles.length > 0) {
       dto.temp = {
         Delete: "all", // Optional: Send "all" if your backend expects it for cleanup logic

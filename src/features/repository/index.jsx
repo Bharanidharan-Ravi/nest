@@ -112,21 +112,21 @@ export const RepositoryFeature = {
             title: "Ticket",
             parent: ROUTE_KEYS.REPO_TICKET_LIST,
           },
-          prefetch: ({ params }) => [
-            {
-              queryKey: queryKeys.ticket.detail(params.ticketId),
-              queryFn: () => executeApi({
-                url: "/sync/v2",
-                method: "POST",
-                payload: buildSyncPayload({
-                  configKey: "TicketDetail",
-                  repoId: params.repoId,
-                  idKey: "ticketId",
-                  idValue: params.ticketId,
-                }),
-              }),
-            },
-          ],
+          // prefetch: ({ params }) => [
+          //   {
+          //     queryKey: queryKeys.ticket.detail(params.ticketId),
+          //     queryFn: () => executeApi({
+          //       url: "/sync/v2",
+          //       method: "POST",
+          //       payload: buildSyncPayload({
+          //         configKey: "TicketDetail",
+          //         repoId: params.repoId,
+          //         idKey: "ticketId",
+          //         idValue: params.ticketId,
+          //       }),
+          //     }),
+          //   },
+          // ],
         },
 
         // ── /repository/:repoId/p ──────────────────────────────────────

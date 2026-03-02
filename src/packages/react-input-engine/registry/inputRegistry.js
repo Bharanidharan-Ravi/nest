@@ -6,6 +6,7 @@ import HtmlSelectInput from "../adapters/html/HtmlSelectInput";
 import HtmlTextInput from "../adapters/html/HtmlTextInput";
 import HtmlTimeInput from "../adapters/html/HtmlTimeInput";
 import MuiDateInput from "../adapters/mui/MuiDateInput";
+import MuiFlexibleHoursInput from "../adapters/mui/MuiFlexibleTimeInput";
 import MuiGroupInput from "../adapters/mui/MuiGroupInput";
 import MuiSelectInput from "../adapters/mui/MuiSelectInput";
 import MuiTextInput from "../adapters/mui/MuiTextInput";
@@ -17,7 +18,8 @@ export const inputRegistry = {
     select: MuiSelectInput,
     date: MuiDateInput,
     time: MuiTimeInput,
-    group: MuiGroupInput 
+    group: MuiGroupInput,
+    flexHours: MuiFlexibleHoursInput 
   },
   html: {
     text: HtmlTextInput,

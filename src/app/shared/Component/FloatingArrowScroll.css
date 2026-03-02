@@ -1,0 +1,18 @@
+.floating-arrow {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    font-size: 1rem;
+    cursor: pointer;
+    z-index: 999;
+    transition: opacity 0.3s, transform 0.3s;
+    background-color:#ffb300;
+    color: black;
+    padding: 10px;
+    border-radius: 50px;
+  }
+  
+  .floating-arrow.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }

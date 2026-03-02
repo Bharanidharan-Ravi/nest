@@ -1,0 +1,70 @@
+.card {
+    padding: 5px;
+    width: 8rem;
+    height: 9rem;
+    border-radius: 10px; 
+    background-color: #f4cf79;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .tab-container {
+   justify-items: center;
+    margin-top: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #f9f3f3;
+  }
+ .tab-container-data{
+    justify-items: center;
+    margin-top: 40px;
+    font-size: 20px;
+    font-weight: bold;
+    color: blue;
+    
+ }
+ .div-1{
+  display: flex;
+  position: relative;
+  gap: 6rem;
+ }
+ .date-range-picker{
+  right: 10px;
+  position: absolute;
+  bottom: 0px;
+  z-index:99 ;
+ }
+ .div-2 {
+    margin-top: 10px;
+    display: flex;
+    gap: 20px;
+   
+    
+  }
+
+  .ticketList,
+  .Timesheet_data {
+    flex: 1 1 30%; 
+    
+   
+  }
+  
+
+  .ticketList {
+    background-color: #e9f0f7;
+   
+  }
+  
+  .Timesheet_data {
+    background-color: #f8f9fc;
+  
+
+  }
+
+  /* @media (min-width: 1200px) {
+    .div-2 {
+      height: 30rem;
+      gap: 40px; 
+    }
+  }
+   */
