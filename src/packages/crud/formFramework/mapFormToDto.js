@@ -48,6 +48,39 @@ console.log("formDataformData:", formData, fields);
       return;
     }
 
+    if (field.type === "group" && field.isMulti) {
+      const groupArray = Array.isArray(rawValue)
+        ? rawValue
+        : [];
+
+      target[field.apiKey] = groupArray.map(item => {
+        const groupObject = {};
+
+        field.fields?.forEach(subField => {
+          processField(subField, item, groupObject);
+        });
+
+        return groupObject;
+      });
+
+      return;
+    }
+
+
+     if (field.type === "select" && field.multiple) {
+      const groupArray = Array.isArray(rawValue)
+        ? rawValue
+        : [];
+
+      target[field.apiKey] = groupArray.map((item)=> {
+        if (item && item.value && item.value.id !== undefined) {
+          return {id:item.value.id};
+        }
+        return null;
+      }).filter(item=> item !== null);
+      return;
+    }
+    
     // ----------------------------------------
     // 3️⃣ Extract Value
     // ----------------------------------------
@@ -123,6 +156,16 @@ const convertType = (value, type) => {
       return Boolean(value);
 
     case "date":
+      return new Date(value).toISOString();
+
+      case "dateTime":
+      if (typeof value === "string" && value.match(/^\d{2}:\d{2}$/)) {
+        const today = new Date().toISOString().split('T')[0];
+        const dateTimeString = `${today}T${value}:00`;
+        const localDate = new Date(dateTimeString);
+        const isoDateString = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString();
+        return isoDateString;
+      }
       return new Date(value).toISOString();
 
     case "string":

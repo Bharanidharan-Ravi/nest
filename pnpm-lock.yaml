@@ -25,7 +25,7 @@ importers:
         version: 7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@mui/x-date-pickers':
         specifier: ^8.27.2
-        version: 8.27.2(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@mui/material@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(dayjs@1.11.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+        version: 8.27.2(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@mui/material@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(date-fns@4.1.0)(dayjs@1.11.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/query-sync-storage-persister':
         specifier: ^5.90.22
         version: 5.90.22
@@ -68,6 +68,9 @@ importers:
       react:
         specifier: ^18.3.1
         version: 18.3.1
+      react-datepicker:
+        specifier: ^9.1.0
+        version: 9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       react-dom:
         specifier: ^18.3.1
         version: 18.3.1(react@18.3.1)
@@ -467,6 +470,27 @@ packages:
   '@eslint/plugin-kit@0.4.1':
     resolution: {integrity: sha512-43/qtrDUokr7LJqoF2c3+RInu/t4zfrpYdoSDfYyhg52rwLV6TnOvdG4fXm7IkSB3wErkcmJS9iEhjVtOSEjjA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+
+  '@floating-ui/core@1.7.4':
+    resolution: {integrity: sha512-C3HlIdsBxszvm5McXlB8PeOEWfBhcGBTZGkGlWc2U0KFY5IwG5OQEuQ8rq52DZmcHDlPLd+YFBK+cZcytwIFWg==}
+
+  '@floating-ui/dom@1.7.5':
+    resolution: {integrity: sha512-N0bD2kIPInNHUHehXhMke1rBGs1dwqvC9O9KYMyyjK7iXt7GAhnro7UlcuYcGdS/yYOlq0MAVgrow8IbWJwyqg==}
+
+  '@floating-ui/react-dom@2.1.7':
+    resolution: {integrity: sha512-0tLRojf/1Go2JgEVm+3Frg9A3IW8bJgKgdO0BN5RkF//ufuz2joZM63Npau2ff3J6lUVYgDSNzNkR+aH3IVfjg==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  '@floating-ui/react@0.27.18':
+    resolution: {integrity: sha512-xJWJxvmy3a05j643gQt+pRbht5XnTlGpsEsAPnMi5F5YTOEEJymA90uZKBD8OvIv5XvZ1qi4GcccSlqT3Bq44Q==}
+    peerDependencies:
+      react: '>=17.0.0'
+      react-dom: '>=17.0.0'
+
+  '@floating-ui/utils@0.2.10':
+    resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
 
   '@humanfs/core@0.19.1':
     resolution: {integrity: sha512-5DyQ4+1JEUzejeK1JGICcideyfUbGixgS9jNgex5nqkW+cY7WZhxBigmieN5Qnw9ZosSNVC9KQKyb+GUaGyKUA==}
@@ -1048,6 +1072,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
 
   dayjs@1.11.19:
     resolution: {integrity: sha512-t5EcLVS6QPBNqM2z8fakk/NKel+Xzshgt8FFKAn+qwlD1pzZWxh0nVCrvFK7ZDb6XucZeF9z8C7CBWTRIVApAw==}
@@ -1653,6 +1680,16 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
+  react-datepicker@9.1.0:
+    resolution: {integrity: sha512-lOp+m5bc+ttgtB5MHEjwiVu4nlp4CvJLS/PG1OiOe5pmg9kV73pEqO8H0Geqvg2E8gjqTaL9eRhSe+ZpeKP3nA==}
+    peerDependencies:
+      date-fns-tz: ^3.0.0
+      react: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+      react-dom: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+    peerDependenciesMeta:
+      date-fns-tz:
+        optional: true
+
   react-dom@18.3.1:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
     peerDependencies:
@@ -1797,6 +1834,9 @@ packages:
   supports-preserve-symlinks-flag@1.0.0:
     resolution: {integrity: sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w==}
     engines: {node: '>= 0.4'}
+
+  tabbable@6.4.0:
+    resolution: {integrity: sha512-05PUHKSNE8ou2dwIxTngl4EzcnsCDZGJ/iCLtDflR/SHB/ny14rXc+qU5P4mG9JkusiV7EivzY9Mhm55AzAvCg==}
 
   tailwindcss@3.4.19:
     resolution: {integrity: sha512-3ofp+LL8E+pK/JuPLPggVAIaEuhvIz4qNcf3nA1Xn2o/7fb7s/TYpHhwGDv1ZU3PkBluUVaF8PyCHcm48cKLWQ==}
@@ -2342,6 +2382,31 @@ snapshots:
       '@eslint/core': 0.17.0
       levn: 0.4.1
 
+  '@floating-ui/core@1.7.4':
+    dependencies:
+      '@floating-ui/utils': 0.2.10
+
+  '@floating-ui/dom@1.7.5':
+    dependencies:
+      '@floating-ui/core': 1.7.4
+      '@floating-ui/utils': 0.2.10
+
+  '@floating-ui/react-dom@2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@floating-ui/dom': 1.7.5
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
+  '@floating-ui/react@0.27.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+    dependencies:
+      '@floating-ui/react-dom': 2.1.7(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@floating-ui/utils': 0.2.10
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+      tabbable: 6.4.0
+
+  '@floating-ui/utils@0.2.10': {}
+
   '@humanfs/core@0.19.1': {}
 
   '@humanfs/node@0.16.7':
@@ -2471,7 +2536,7 @@ snapshots:
     optionalDependencies:
       '@types/react': 18.3.28
 
-  '@mui/x-date-pickers@8.27.2(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@mui/material@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(dayjs@1.11.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@mui/x-date-pickers@8.27.2(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@mui/material@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(@mui/system@7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(date-fns@4.1.0)(dayjs@1.11.19)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@babel/runtime': 7.28.6
       '@mui/material': 7.3.8(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@emotion/styled@11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -2487,6 +2552,7 @@ snapshots:
     optionalDependencies:
       '@emotion/react': 11.14.0(@types/react@18.3.28)(react@18.3.1)
       '@emotion/styled': 11.14.1(@emotion/react@11.14.0(@types/react@18.3.28)(react@18.3.1))(@types/react@18.3.28)(react@18.3.1)
+      date-fns: 4.1.0
       dayjs: 1.11.19
     transitivePeerDependencies:
       - '@types/react'
@@ -2885,6 +2951,8 @@ snapshots:
   cssesc@3.0.0: {}
 
   csstype@3.2.3: {}
+
+  date-fns@4.1.0: {}
 
   dayjs@1.11.19: {}
 
@@ -3452,6 +3520,14 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
+  react-datepicker@9.1.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1):
+    dependencies:
+      '@floating-ui/react': 0.27.18(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      clsx: 2.1.1
+      date-fns: 4.1.0
+      react: 18.3.1
+      react-dom: 18.3.1(react@18.3.1)
+
   react-dom@18.3.1(react@18.3.1):
     dependencies:
       loose-envify: 1.4.0
@@ -3605,6 +3681,8 @@ snapshots:
       has-flag: 4.0.0
 
   supports-preserve-symlinks-flag@1.0.0: {}
+
+  tabbable@6.4.0: {}
 
   tailwindcss@3.4.19:
     dependencies:
