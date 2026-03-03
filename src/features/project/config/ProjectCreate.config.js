@@ -95,7 +95,6 @@ export const ProjFieldConfig = () => [
 
         const emp = masterData?.EmployeeList?.find((e) => e.UserID === empId);
         if (!emp) return null;
-        console.log("masterData :", emp);
 
         return {
           label: emp.UserName,

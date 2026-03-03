@@ -34,7 +34,6 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 // }
 
 export const fetchThreadList = (issueId) => {
-  console.log("issueId",issueId);
   
   return executeApi({
     url: "/sync/v2",

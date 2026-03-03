@@ -3,8 +3,6 @@ const RepoOverview = () => {
 
 //   function TicketContent() {
 //     const { view } = useList()
-// console.log(" view: ", view);
-
 //     return (
 //       <>
 //         <ListToolbar />

@@ -11,7 +11,6 @@
 
 export const mapFormToDto = (formData = {}, fields = []) => {
   const dto = {};
-console.log("formDataformData:", formData, fields);
 
   const processField = (field, sourceData, target) => {
     // ----------------------------------------

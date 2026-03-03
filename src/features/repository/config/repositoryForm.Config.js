@@ -1,4 +1,5 @@
 import { masterKeys } from "../../../core/master/masterKeys";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { RepoFieldConfig } from "./CreateRepo.Config";
 export const repositoryFormConfig = {
   key: "repo",
@@ -7,7 +8,7 @@ export const repositoryFormConfig = {
 
   invalidateKeys: [masterKeys.multi(["RepoList"])],
 
-  redirectTo: "/repository",
+  redirectTo: ROUTE_KEYS.REPO_LIST,
 
   fields: RepoFieldConfig(),
 

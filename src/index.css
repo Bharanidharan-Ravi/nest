@@ -17,13 +17,28 @@ body {
   }
 
   /* 2. Responsive Headings */
-  h1,
-  h2,
-  h3,
-  h4,
-  h5,
+  h1 {
+    @apply text-4xl font-semibold;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold;
+  }
+
+  h4 {
+    @apply text-xl font-semibold;
+  }
+
+  h5 {
+    @apply text-lg font-semibold;
+  }
+
   h6 {
-    @apply font-semibold text-brand-black mb-2;
+    @apply text-base font-semibold;
   }
 
   h1 {

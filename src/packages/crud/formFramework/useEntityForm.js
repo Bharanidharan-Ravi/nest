@@ -41,7 +41,7 @@ export const useEntityForm = (config, context = {}) => {
       let newField = { ...field };
 
       if (field.optionsResolver && masterData) {
-        newField.options = field.optionsResolver(masterData);
+        newField.options = field.optionsResolver(masterData, context);
       }
 
       if (field.disableWhen) {
@@ -83,14 +83,17 @@ export const useEntityForm = (config, context = {}) => {
         ...prev,
         [name]: metadata?.raw ?? value,
       };
-  
+
       (config.fields || []).forEach((field) => {
-        if (field.effectResolver && (field.effectDependencies || []).includes(name)) {
+        if (
+          field.effectResolver &&
+          (field.effectDependencies || []).includes(name)
+        ) {
           const Hours = field.effectResolver(next);
           if (Hours != null) next[field.name] = Hours;
         }
       });
-  
+
       const field = config.fields.find((f) => f.name === name);
       if (field?.effects && metadata?.raw) {
         Object.entries(field.effects).forEach(([target, path]) => {
@@ -102,7 +105,7 @@ export const useEntityForm = (config, context = {}) => {
       return next;
     });
   };
-  
+
   const validate = () => {
     const validationErrors = validateForm(mergedFormData, config.fields);
     setErrors(validationErrors);
@@ -111,7 +114,10 @@ export const useEntityForm = (config, context = {}) => {
   };
 
   const buildDto = () => mapFormToDto(mergedFormData, config.fields);
-
+  const reset = () => {
+    setFormData({});
+    setErrors({});
+  };
   return {
     formData: mergedFormData,
     errors,
@@ -120,5 +126,6 @@ export const useEntityForm = (config, context = {}) => {
     validate,
     buildDto,
     setFormData,
+    reset,
   };
 };

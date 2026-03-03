@@ -4,7 +4,6 @@ import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
 export const fetchDashboard = (fromdate, todate) => {
-  console.log("🚀 API Call Triggered for Repo:", fromdate, todate);
   return executeApi({
     url: "/DashBoardData/GetDashBoardData",
     method: "POST",
@@ -23,7 +22,6 @@ export const fetchDashboard = (fromdate, todate) => {
 
 
 export const useDashboardData = (employeeId = null) => {
-  console.log(" API Call Triggered for dashboard:", employeeId);
   return useApiQuery({
     queryKey: ["dashboard", "list", employeeId ?? "none"],
     // Pass the same query function used in prefetch

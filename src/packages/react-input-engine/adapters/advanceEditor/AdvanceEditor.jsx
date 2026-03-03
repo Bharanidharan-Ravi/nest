@@ -188,10 +188,8 @@ const AdvancedEditor = ({
   userList = [],
   labelList = [],
   resetKey,
-  theme = {}
+  theme = {},
 }) => {
-  console.log("value :", value);
-
   const fileInputRef = useRef(null);
   const [preview, setPreview] = useState(false);
   const [selectionBeforeUpload, setSelectionBeforeUpload] = useState(null);
@@ -329,30 +327,47 @@ const AdvancedEditor = ({
     },
 
     handleClick: (view, pos, event) => {
-      if (event.target && event.target.tagName === 'IMG') {
+      if (event.target && event.target.tagName === "IMG") {
         setModalImage(event.target.src);
         return true; // Tells TipTap we handled this click
       }
       return false;
-    }
+    },
   });
   /* ===================================================
      RESET SUPPORT
   =================================================== */
+  // useEffect(() => {
+  //   if (editor && value) {
+  //     // Check if the editor's current content is different from the incoming value.
+  //     // This prevents the cursor from jumping to the end of the line while the user is actively typing.
+  //     if (editor.getHTML() !== value) {
+  //       editor.commands.setContent(value);
+  //     }
+  //   }
+  // }, [editor, value]);
+  // useEffect(() => {
+  //   if (editor && resetKey !== undefined) {
+  //     editor.commands.setContent("");
+  //   }
+  // }, [resetKey]);
   useEffect(() => {
-    if (editor && value) {
-      // Check if the editor's current content is different from the incoming value.
-      // This prevents the cursor from jumping to the end of the line while the user is actively typing.
-      if (editor.getHTML() !== value) {
-        editor.commands.setContent(value);
+    if (!editor) return;
+
+    // 1. Handle Form Reset: If value is empty/undefined, clear the editor
+    if (!value) {
+      if (!editor.isEmpty) {
+        editor.commands.setContent("");
       }
+      return;
+    }
+
+    // 2. Handle External Updates (e.g., loading saved data):
+    // Only update if the content actually differs from what is currently in the editor
+    if (editor.getHTML() !== value) {
+      editor.commands.setContent(value);
     }
   }, [editor, value]);
-  useEffect(() => {
-    if (editor && resetKey !== undefined) {
-      editor.commands.setContent("");
-    }
-  }, [resetKey]);
 
   /* ===================================================
      🔥 UPDATED: File Select Upload (Button Click)
@@ -388,25 +403,40 @@ const AdvancedEditor = ({
   if (!editor) return null;
   // const theme = theme.theme || {};
   // 1. A helper function to keep the button code clean
-  const ToolbarButton = ({ onClick, isActive, disabled, children, title, customClass = "" }) => (
+  const ToolbarButton = ({
+    onClick,
+    isActive,
+    disabled,
+    children,
+    title,
+    customClass = "",
+  }) => (
     <button
       type="button"
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
       disabled={disabled}
       title={title}
-      className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${isActive
-        ? "bg-gray-300 text-gray-900"
-        : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 bg-transparent"
-        } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${customClass}`}
+      className={`p-1.5 rounded-md flex items-center justify-center transition-colors ${
+        isActive
+          ? "bg-gray-300 text-gray-900"
+          : "text-gray-600 hover:bg-gray-200 hover:text-gray-900 bg-transparent"
+      } ${disabled ? "opacity-50 cursor-not-allowed" : ""} ${customClass}`}
     >
       {children}
     </button>
   );
   return (
-    <div className={theme.editorContainer || "border border-gray-300 rounded-md"}>
+    <div
+      className={theme.editorContainer || "border border-gray-300 rounded-md"}
+    >
       {/* GitHub Style Toolbar: Transparent background, bottom border, flex layout */}
-      <div className={theme.editorToolbar || "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"}>
+      <div
+        className={
+          theme.editorToolbar ||
+          "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"
+        }
+      >
         {/* ... (Keep existing toolbar buttons: bold, italic, etc.) ... */}
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -522,7 +552,7 @@ const AdvancedEditor = ({
         className="p-3 min-h-[150px] text-sm text-ghText"
         onClick={(e) => {
           // If the clicked element is an image, open the modal
-          if (e.target && e.target.tagName === 'IMG') {
+          if (e.target && e.target.tagName === "IMG") {
             setModalImage(e.target.src);
           }
         }}

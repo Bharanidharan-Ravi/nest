@@ -1,4 +1,5 @@
 import { masterKeys } from "../../../core/master/masterKeys";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { ThreadFieldConfig } from "./Thread.config";
 
 export const ThreadFormConfig = {
@@ -6,8 +7,8 @@ export const ThreadFormConfig = {
   title: "Thread",
   api: "/Thread/CreateThread",
 
-  invalidateKeys: [masterKeys.multi(["ThreadList"])],
-  redirectTo: "/tickets",
+  // invalidateKeys: [masterKeys.multi(["ThreadList"])],
+  redirectTo:ROUTE_KEYS.TICKET_DETAIL,
   fields: ThreadFieldConfig(),
 
   theme: {

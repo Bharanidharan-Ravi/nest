@@ -1,3 +1,9 @@
+import dayjs from "dayjs";
+import relativeTime from 'dayjs/plugin/relativeTime';
+import RepoCardList from "../Components/RepoCard";
+
+dayjs.extend(relativeTime);
+
 export const RepoUIConfig = {
   data: [],
   columns: [
@@ -73,11 +79,5 @@ export const repoListConfig = {
       filterValue: "Inactive",
     },
   ],
-  cardRenderer: (item) => (
-    <div className="flex flex-col gap-1">
-      <h3 className="text-ghBlue font-semibold text-base m-0">{item.title}</h3>
-      {/* <p className="text-ghMuted text-sm">{item.owner}</p> */}
-      <p className="text-xs text-ghMuted ">Updated: {item.createdAt}</p>
-    </div>
-  ),
+  cardRenderer: (item) => <RepoCardList item={item} />
 };

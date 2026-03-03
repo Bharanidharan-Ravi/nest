@@ -21,8 +21,6 @@ export const useTicketMaster = (scope = {}, options = {}) => {
     repoId,
     ...(projectId && { idKey: "projectId", idValue: projectId})
   })
-  console.log("payload :", payload);
-  
   // const payload = {
   //   ConfigKeys: ["TicketsList"],
   //   repoId,

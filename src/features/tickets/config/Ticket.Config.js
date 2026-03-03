@@ -1,4 +1,3 @@
-
 export const TicketFieldConfig = () => [
   /* --------------------------------------------------
      Repository Title
@@ -24,7 +23,7 @@ export const TicketFieldConfig = () => [
     name: "label",
     type: "select",
     ui: "mui",
-    multiple:true, 
+    multiple: true,
     required: false,
     dataType: "string",
     optionsResolver: (masterData) =>
@@ -60,8 +59,57 @@ export const TicketFieldConfig = () => [
 
     apiKey: "RepoId",
 
-    // pattern: "^[A-Za-z0-9 ]+$",
-    // errorMessage: "Only alphanumeric allowed",
+    // 🔥 Disable if repoId OR projid is in the URL/Edit Data
+    disableWhen: (context) =>
+      Boolean(
+        context?.params?.repoId ||
+        context?.params?.projId ||
+        context?.entityData?.RepoId,
+      ),
+
+    // 🔥 Smart Initial Value (Looks up Repo ID via Project Master)
+    initValueResolver: (context, masterData) => {
+      // 1. Check if we have an explicit Repo ID first
+      let targetRepoId = context?.isEdit
+        ? context?.entityData?.RepoId
+        : context?.params?.repoId;
+      // const targetId =
+      //   context?.params?.projId ||
+      //   context?.entityData?.Project_Id ||
+      //   context?.params?.repoId ||
+      //   context?.entityData?.RepoId;
+
+      // 2. If no explicit Repo ID, but we have a Project ID, look inside Project Master!
+      if (!targetRepoId) {
+        const targetProjId =
+          context?.params?.projId || context?.entityData?.Project_Id;
+
+        if (targetProjId) {
+          const project = masterData?.ProjectList?.find(
+            (p) => p.Id === targetProjId,
+          );
+          // ⚠️ IMPORTANT: Change 'Repo_Id' below to the exact key your Project uses for the repository
+          targetRepoId = project?.Repo_Id;
+        }
+      }
+
+      // If we still don't have a Repo ID, leave blank
+      if (!targetRepoId) return null;
+
+      // 3. Find the exact repo object
+      const repo = masterData?.RepoList?.find(
+        (r) => r.Repo_Id === targetRepoId,
+      );
+      if (!repo) return null;
+
+      return {
+        label: repo.Title,
+        value: {
+          id: repo.Repo_Id,
+          name: repo.Title,
+        },
+      };
+    },
 
     visibleWhen: () => true,
   },
@@ -70,21 +118,71 @@ export const TicketFieldConfig = () => [
     name: "project",
     type: "select",
     ui: "mui",
-    optionsResolver: (masterData) =>
-      masterData?.ProjectList?.map((project) => ({
+    optionsResolver: (masterData, context) => {
+      let projects = masterData?.ProjectList || [];
+
+      // Look for a Project ID first, then fall back to a Repo ID
+      // (Checks both URL params and existing edit data)
+      const targetId =
+        context?.params?.projId ||
+        context?.entityData?.Project_Id ||
+        context?.params?.repoId ||
+        context?.entityData?.RepoId;
+
+      if (targetId) {
+        // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
+        projects = projects.filter(
+          (p) => p.Id === targetId || p.Repo_Id === targetId,
+        );
+      }
+
+      return projects.map((project) => ({
         label: project.Project_Name,
         value: {
           id: project.Id,
           name: project.Project_Name,
         },
-      })) || [],
+      }));
+    },
+    // optionsResolver: (masterData) =>
+    //   masterData?.ProjectList?.map((project) => ({
+    //     label: project.Project_Name,
+    //     value: {
+    //       id: project.Id,
+    //       name: project.Project_Name,
+    //     },
+    //   })) || [],
     required: true,
     dataType: "string",
+    // Disable field if Project ID exists
+    disableWhen: (context) =>
+      Boolean(context?.params?.projid || context?.entityData?.Project_Id),
 
     apiKey: "Project_Id",
+    // 🔥 Disable if projid is passed (locking the specific project)
+    disableWhen: (context) =>
+      Boolean(context?.params?.projId || context?.entityData?.Project_Id),
 
-    // pattern: "^[A-Za-z0-9 ]+$",
-    // errorMessage: "Only alphanumeric allowed",
+    // 🔥 Smart Initial Value (Sets project if projid exists)
+    initValueResolver: (context, masterData) => {
+      const targetProjId =
+        context?.params?.projId || context?.entityData?.Project_Id;
+
+      if (!targetProjId) return null;
+
+      const project = masterData?.ProjectList?.find(
+        (p) => p.Id === targetProjId,
+      );
+      if (!project) return null;
+
+      return {
+        label: project.Project_Name,
+        value: {
+          id: project.Id,
+          name: project.Project_Name,
+        },
+      };
+    },
 
     visibleWhen: () => true,
   },
@@ -103,7 +201,7 @@ export const TicketFieldConfig = () => [
       })) || [],
     required: true,
     dataType: "string",
-    multiple:false, 
+    multiple: false,
     apiKey: "Assignee_Id",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
@@ -123,7 +221,7 @@ export const TicketFieldConfig = () => [
 
     visibleWhen: () => true,
   },
-    {
+  {
     name: "repoKey",
     apiKey: "RepoKey",
     hidden: true,
@@ -143,10 +241,8 @@ export const TicketFieldConfig = () => [
     // errorMessage: "Only alphanumeric allowed",
     visibleWhen: () => true,
   },
-  
 
-  
-    /* --------------------------------------------------
+  /* --------------------------------------------------
      Description
   -------------------------------------------------- */
   {
@@ -160,5 +256,4 @@ export const TicketFieldConfig = () => [
 
     apiKey: "Description",
   },
-
 ];
