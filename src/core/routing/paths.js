@@ -45,8 +45,11 @@ export const ROUTE_KEYS = {
   PROJ_CREATE:       "project.create",
   PROJ_DETAIL:       "project.detail",
   PROJ_OVERVIEW:     "project.overview",
-  PROJ_TICKET_LIST:  "project.tickets",
   PROJ_EDIT:         "project.edit",
+  
+  PROJ_TICKET_LIST:  "project.tickets",
+  PROJ_TICKET_CREATE:  "project.ticket.create",
+  PROJ_TICKET_EDIT:  "project.ticket.edit",  
 };
 
 export const PATHS = {
@@ -80,6 +83,9 @@ export const PATHS = {
   PROJ_CREATE:       "/projects/create",
   PROJ_DETAIL:       "/projects/:projId",
   PROJ_OVERVIEW:     "/projects/:projId/overview",
-  PROJ_TICKET_LIST:  "/projects/:projId/t",
   PROJ_EDIT:         "/projects/:projId/edit",
+
+  PROJ_TICKET_LIST:  "/projects/:projId/t",
+  PROJ_TICKET_CREATE: "/projects/:projId/t/create",
+  PROJ_TICKET_EDIT:   "/projects/:projId/t/:ticketId/edit",
 };
