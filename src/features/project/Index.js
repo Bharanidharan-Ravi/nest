@@ -76,6 +76,23 @@ export const ProjectFeature = {
             parent: ROUTE_KEYS.PROJ_DETAIL,
           },
         },
+        {
+          path:    "t/create",
+          element: TicketEl.TicketCreatePage,
+          nav: {
+            key:    ROUTE_KEYS.PROJ_TICKET_CREATE,
+            title:  "Create Ticket",
+            parent: ROUTE_KEYS.PROJ_DETAIL,
+          },
+        },{
+          path:    "t/:ticketId/edit",
+          element: TicketEl.TicketCreatePage,
+          nav: {
+            key:    ROUTE_KEYS.PROJ_TICKET_EDIT,
+            title:  "Edit Ticket",
+            parent: ROUTE_KEYS.PROJ_DETAIL,
+          },
+        },
       ],
     },
   ],
