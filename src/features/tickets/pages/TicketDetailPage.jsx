@@ -15,17 +15,16 @@ import FloatingArrowScroll from "../../../app/shared/Component/FloatingArrowScro
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-  console.log("ticketId",ticketId)
   const navigate = useNavigate();
   const { data: ThreadsList } = useThreadMaster(ticketId);
   const { data: ticketMasterData } = useTicketMaster();
-  console.log("ticketMasterData",ticketMasterData);
   
+console.log("Ticket Detail Page Data:", { ThreadsList });
 
   const threads = ThreadsList?.ThreadsList?.Data || [];
   const normalizeThread = (thread) => ({
-    Id: thread.Issue_Id,
-    ThreadId: thread.ThreadId,
+    Id: thread.ThreadId,
+    Issue_Id: thread.Issue_Id,
     description: thread.HtmlDesc,
     Hours: thread.Hours,
     createdAt: thread.CreatedAt,
@@ -35,12 +34,12 @@ const TicketDetailPage = () => {
   });
 
   const rawList = threads.map(normalizeThread);
+console.log("raw list after ", rawList);
 
   // Prepare UI data for the parent (issue)
   const IssueParentData = React.useMemo(() => {
     if (!ticketMasterData) return [];
     const parent = ticketMasterData.find(issue => issue.Issue_Id === ticketId);
-    console.log("parent",parent);
     
     return parent ? [{
       id: parent.Issue_Id,
@@ -56,7 +55,6 @@ const TicketDetailPage = () => {
       UpdatedBy: parent.UpdatedBy,
     }] : [];
   }, [ticketMasterData]);
-  console.log("IssueParentData",IssueParentData);
  const listConfigWithEdit ={...ThreadListConfig,
   onEditClick:(item)=>{
     // navigate(`/tickets`);
@@ -74,7 +72,8 @@ const TicketDetailPage = () => {
       {/* Display Threads List */}
       <div className="mb-8">
         <ListProvider config={listConfigWithEdit} data={rawList}>
-          <ListLayout />
+          {/* <ListLayout /> */}
+          <ListCardView />
         </ListProvider>
       </div>
 

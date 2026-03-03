@@ -11,19 +11,22 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
-  const { formData, fields, handleChange, validate, buildDto } = useEntityForm(
-    config,
-    context,
-  );
+  const { formData, fields, handleChange, errors, validate, buildDto, reset } =
+    useEntityForm(config, context);
   const [tempFiles, setTempFiles] = useState([]);
+  const handleFormReset = () => {
+    reset();
+    setTempFiles([]);
+  };
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",
-    // invalidateKeys: config.invalidateKeys || [],
-    onSuccess: () => {
+    invalidateKeys: config.invalidateKeys || [],
+    onSuccess: (data) => {
+      handleFormReset();
       if (!config.redirectTo) return;
       if (typeof config.redirectTo === "function") {
-        config.redirectTo(smartNav);   // 👈 pass navigation API
+        config.redirectTo(smartNav); // 👈 pass navigation API
       } else {
         smartNav.goTo(config.redirectTo);
       }
@@ -74,8 +77,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     if (!validate()) return;
 
     const dto = buildDto();
-    console.log("DTO being sent:", dto, formData, fields);
-    
+
     if (tempFiles.length > 0) {
       dto.temp = {
         Delete: "all", // Optional: Send "all" if your backend expects it for cleanup logic
@@ -103,7 +105,6 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     });
     // The backend returns the Tempdata object: { FileName, PublicUrl, LocalPath }
     const data = response;
-console.log("Uploaded file data:", data, response);
 
     // 🔥 2. Save the full temp data object into our React state
     setTempFiles((prev) => [...prev, data]);
@@ -113,7 +114,6 @@ console.log("Uploaded file data:", data, response);
   };
 
   const theme = config.theme || {};
-console.log("formData :", formData);
 
   return (
     <div className={`wg-form-container ${theme.formContainer || ""}`}>
@@ -124,6 +124,7 @@ console.log("formData :", formData);
             values={formData}
             onChange={handleChange}
             master={masterData}
+            errors={errors}
             uploadFile={uploadFile}
             onFileDelete={handleEditorFileDelete}
             globalTheme={theme} // 🔥 Pass the theme down!

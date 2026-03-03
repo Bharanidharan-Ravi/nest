@@ -10,7 +10,6 @@ import '../css/TicketListCard.css';
 dayjs.extend(relativeTime);
 
 const TicketListCard = ({ item }) => {
-    console.log("its card trigger", item, typeof item.assginedTo);
     // const labels = item.label ? JSON.parse(item.label) : [];
     const { data: projects } = useProjectData();
     const projectDetails = projects?.find((project) => project.Id === item.project); // Match by 'Id' or use any other property

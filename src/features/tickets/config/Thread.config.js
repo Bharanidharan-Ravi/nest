@@ -48,7 +48,6 @@ export const ThreadFieldConfig = (ticketId) => [
     defaultValue: null,
     effectResolver: (formData) => {
       const hours = calcHHMM(formData.fromTime, formData.toTime);
-      console.log("formData", formData);
       return hours;
     },
     effectDependencies: ["fromTime", "toTime"], 

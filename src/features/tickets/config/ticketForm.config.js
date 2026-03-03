@@ -1,5 +1,6 @@
 import { masterKeys } from "../../../core/master/masterKeys";
 import { queryKeys } from "../../../core/query/queryKeys";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { TicketFieldConfig } from "./Ticket.Config";
 
 export const TicketFormConfig = {
@@ -9,7 +10,7 @@ export const TicketFormConfig = {
 
   invalidateKeys: [masterKeys.multi(["TicketsList"])],
 
-  redirectTo: "/tickets",
+  redirectTo: ROUTE_KEYS.TICKET_LIST,
 
   fields: TicketFieldConfig(),
 

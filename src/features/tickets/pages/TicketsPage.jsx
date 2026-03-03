@@ -6,18 +6,20 @@ import { ListProvider } from "../../../packages/ui-List/components/ListProvider"
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { TicketListConfig } from "../config/TicketUI.config";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
   const navigate = useNavigate();
-  const { data:Master } = useMasterData();
+  const { data: Master } = useMasterData();
   const activeProjectId = projId;
+  const { goTo } = useSmartNavigation();
 
   const { data, isLoading } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
   });
-
   // const ticketList = Array.isArray(data)
   //   ? data
   //   : Array.isArray(data?.Data)
@@ -31,21 +33,21 @@ export default function TicketsPage() {
     id: ticket.Issue_Id,
     title: ticket.Title,
     status: ticket.Status,
-    description:ticket.HtmlDesc || ticket.Description,
+    description: ticket.HtmlDesc || ticket.Description,
     assginedTo: ticket.Assignee_Name,
-    estimateHours:ticket.hours,
+    estimateHours: ticket.hours,
     createdAt: ticket.CreatedAt,
-    updatedAt:ticket.UpdatedAt,
+    updatedAt: ticket.UpdatedAt,
     // repoId: ticket.Repo_Id,
-    project :ticket. Project_Id,
-    RepoKey:ticket.RepoKey,
-    label:ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : []
+    project: ticket.Project_Id,
+    RepoKey: ticket.RepoKey,
+    label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
   });
   const employeeFilterOptions = [
     { label: "All Employees", value: "" },
     ...(Master?.EmployeeList?.map((user) => ({
       label: user.UserName,
-      value: user.UserName, 
+      value: user.UserName,
     })) || []),
   ];
 
@@ -75,11 +77,15 @@ export default function TicketsPage() {
   const listConfigWithNav = {
     ...TicketListConfig,
     filters: [
-      ...(!repoId ? [{
-        key: "repoId", 
-        view: "Repo", 
-        options: repoFilterOptions,
-      }] : []),
+      ...(!repoId
+        ? [
+            {
+              key: "repoId",
+              view: "Repo",
+              options: repoFilterOptions,
+            },
+          ]
+        : []),
       {
         key: "assginedTo", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Assignee",
@@ -90,23 +96,20 @@ export default function TicketsPage() {
         view: "Project",
         options: projectFilterOptions,
       },
-       {
+      {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Label",
         options: LabelFilterOptions,
       },
     ],
     onItemClick: (item) => {
-      navigate(`${location.pathname}/${item.id}`); 
+      navigate(`${location.pathname}/${item.id}`);
     },
-    onEditClick:(item)=>{
-      console.log("item",item);
+    onEditClick: (item) => {
       navigate(`/tickets/create`);
-      
-    }
+    },
   };
   const TicketList = data?.map(normalizeTicket) || [];
-  console.log("ticketList",TicketList);
 
   return (
     <div>
@@ -114,14 +117,25 @@ export default function TicketsPage() {
 
       {/* 🔥 Create Button */}
       {/* <button onClick={handleCreate}>Create Ticket</button> */}
+      {(!repoId && !projId) && (
+        <div className="flex justify-between items-center mb-3 flex-none">
+          <h2>Tickets</h2>
 
-      {/* <hr /> */}
-      {/* <div className="tickets-container container"> */}
-        <div className="flex-1 min-h-0">
-          <ListProvider config={listConfigWithNav} data={TicketList}>
-            <ListLayout />
-          </ListProvider>
+          <button
+            onClick={() => goTo(ROUTE_KEYS.TICKET_CREATE)}
+            className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
+          >
+            Create New Tickets
+          </button>
         </div>
+      )}
+
+      {/* <div className="tickets-container container"> */}
+      <div className="flex-1 min-h-0">
+        <ListProvider config={listConfigWithNav} data={TicketList}>
+          <ListLayout />
+        </ListProvider>
+      </div>
       {/* </div> */}
     </div>
   );

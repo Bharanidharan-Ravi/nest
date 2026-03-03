@@ -5,13 +5,11 @@
 // const ThreadParent = ({ item }) => {
 //   // Retrieve the ticket data using the custom hook
 //   // const { data } = useTicketMaster();
-//   console.log("data", item);
 
 //   // Find the matching ThreadParent using the Issue_Id from `item`
 //   // const ThreadParent = data?.find((thr) => thr.id === item.Id);
 // //   const labels = ThreadParent.Labels_JSON ? JSON.parse(ThreadParent.Labels_JSON ) : [];
 // //   // Log ThreadParent to inspect data
-// //   console.log("ThreadParent", ThreadParent);
 
 
 //   return (

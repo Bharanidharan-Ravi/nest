@@ -25,8 +25,6 @@ export const formatDate = (dateString) => {
   // calculation - Hours
 
   export const calcHHMM = (from, to)=>{
-    console.log("from",from);
-    console.log("to",to);
     if (!from || !to) return null;
     const [fh,fm] = from.split(":").map(Number);
     const [th,tm] = to.split(":").map(Number);

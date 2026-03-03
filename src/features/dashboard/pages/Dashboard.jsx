@@ -38,7 +38,6 @@ export default function Dashboard() {
   
   const { data } = useDashboardData(user.userId);
   const { data: TimeSheet } = useDashboardTimesheetData(user.userId, fromDate, toDate);
-  console.log("timesheetData", TimeSheet);
 
   // Normalize dashboard ticket count
   const normalizeCount = (count) => ({

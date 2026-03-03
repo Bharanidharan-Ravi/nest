@@ -15,7 +15,6 @@ const ProjectCreate = () => {
   const entityData = isEdit && Array.isArray(projectListWrapper) && projectListWrapper.length > 0
     ? projectListWrapper[0]
     : null;
-  console.log("entityData:", entityData);
 
   const statusOptions = [
     { label: "Active", value: { id: 1, name: "Active" } },
