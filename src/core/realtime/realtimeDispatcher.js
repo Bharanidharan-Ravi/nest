@@ -149,7 +149,7 @@ console.log("formattedPayload:", formattedPayload);
         const timeB = dateStringB ? new Date(dateStringB).getTime() : 0;
 
         // Descending order (newest first)
-        return timeB - timeA;
+        return timeA - timeB;
       });
 
       console.log("UPDATED LIST AFTER SORTING:", updatedDataList);

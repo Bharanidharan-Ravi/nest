@@ -20,13 +20,15 @@ export default function TicketsPage() {
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
   });
-  // const ticketList = Array.isArray(data)
-  //   ? data
-  //   : Array.isArray(data?.Data)
-  //   ? data.Data
-  //   : Array.isArray(data?.TicketsList?.Data)
-  //   ? data.TicketsList.Data
-  //   : [];
+  const editRouteKey = projId
+    ? ROUTE_KEYS.PROJ_TICKET_EDIT
+    : ROUTE_KEYS.TICKET_EDIT;
+
+  const createRouteKey = repoId
+    ? ROUTE_KEYS.REPO_TICKET_CREATE
+    : projId
+    ? ROUTE_KEYS.PROJ_TICKET_CREATE
+    : ROUTE_KEYS.TICKET_CREATE;
 
   const isRepoScoped = !!repoId;
   const normalizeTicket = (ticket) => ({
@@ -106,23 +108,23 @@ export default function TicketsPage() {
       navigate(`${location.pathname}/${item.id}`);
     },
     onEditClick: (item) => {
-      navigate(`/tickets/create`);
+      goTo(editRouteKey, { ticketId: item.id, repoId, projId });
     },
   };
   const TicketList = data?.map(normalizeTicket) || [];
 
   return (
-    <div>
+    <>
       {/* <h3>{isRepoScoped ? `Tickets for Repo ${repoId}` : "All Tickets"}</h3> */}
 
       {/* 🔥 Create Button */}
       {/* <button onClick={handleCreate}>Create Ticket</button> */}
-      {(!repoId && !projId) && (
+      {(!repoId && !projId )&& (
         <div className="flex justify-between items-center mb-3 flex-none">
           <h2>Tickets</h2>
 
           <button
-            onClick={() => goTo(ROUTE_KEYS.TICKET_CREATE)}
+            onClick={() => goTo(createRouteKey, { repoId, projId })}
             className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
           >
             Create New Tickets
@@ -137,6 +139,6 @@ export default function TicketsPage() {
         </ListProvider>
       </div>
       {/* </div> */}
-    </div>
+    </>
   );
 }
