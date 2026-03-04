@@ -27,6 +27,7 @@ export const ROUTE_KEYS = {
     // ── Tickets (standalone) ───────────────────────────────
   TICKET_LIST:       "tickets.list",
   TICKET_CREATE:     "ticket.create",
+  TICKET_EDIT:       "ticket.edit",
   TICKET_DETAIL:     "ticket.detail",
 
   // ── Tickets (inside a repo) ───────────────────────────────
@@ -66,6 +67,7 @@ export const PATHS = {
   TICKET_LIST:       "/tickets",
   TICKET_CREATE:     "/tickets/create",
   TICKET_DETAIL:     "/tickets/:ticketId",
+  TICKET_EDIT:       "/tickets/:ticketId/edit",
 
   // ── Tickets (inside a repo) ───────────────────────────────
   REPO_TICKET_LIST:       "/repository/:repoId/t",

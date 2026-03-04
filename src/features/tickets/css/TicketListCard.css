@@ -4,3 +4,10 @@
     border-radius: 5px;      
     color: white;               
   }
+
+
+.profile {
+  @apply border border-brand-yellow;
+  padding: 6px;
+  border-radius: 50%;
+}

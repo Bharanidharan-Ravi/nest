@@ -1,70 +1,92 @@
+.dashview {
+  font-family: 'Poppins', sans-serif;
+  color: #333;
+  padding: 20px;
+  background-color: #f7f9fc;
+}
+
 .card {
-    padding: 5px;
-    width: 8rem;
-    height: 9rem;
-    border-radius: 10px; 
-    background-color: #f4cf79;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    overflow: hidden;
-  }
-  
-  .tab-container {
-   justify-items: center;
-    margin-top: 10px;
-    font-size: 15px;
-    font-weight: bold;
-    color: #f9f3f3;
-  }
- .tab-container-data{
-    justify-items: center;
-    margin-top: 40px;
-    font-size: 20px;
-    font-weight: bold;
-    color: blue;
-    
- }
- .div-1{
+  padding: 15px;
+  width: 300px;
+  height: 160px;
+  border-radius: 12px;
+  color: black;
+  background: rgba(254, 251, 244, 0.767);
+  border: 3px solid #ffb300;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.tab-container {
+  font-size: 20px;
+  font-weight: 400;
+  color: orange;
+  text-align: center;
+  padding: 30px;
+  transition: all 0.3s ease;
+}
+
+.tab-container-data {
+  font-size: 56px;
+  font-weight: 800;
+  color: #2e3b4e;
+  margin-top: 15px;
+  text-align: center;
+  letter-spacing: 2px;
+}
+
+.div-1 {
   display: flex;
-  position: relative;
-  gap: 6rem;
- }
- .date-range-picker{
-  right: 10px;
-  position: absolute;
-  bottom: 0px;
-  z-index:99 ;
- }
- .div-2 {
-    margin-top: 10px;
-    display: flex;
-    gap: 20px;
-   
-    
-  }
+  gap: 1.5rem;
+  flex-wrap: wrap;
+}
 
-  .ticketList,
-  .Timesheet_data {
-    flex: 1 1 30%; 
-    
-   
-  }
-  
+.div-2 {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
 
-  .ticketList {
-    background-color: #e9f0f7;
-   
-  }
-  
-  .Timesheet_data {
-    background-color: #f8f9fc;
-  
+.date-range-picker-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+  width: 100%;
+}
 
-  }
+.date-range-picker {
+  width: 215px;
+  z-index: 99;
+}
 
-  /* @media (min-width: 1200px) {
-    .div-2 {
-      height: 30rem;
-      gap: 40px; 
-    }
-  }
-   */
+.ticketList,
+.Timesheet_data {
+  flex: 1 1 45%;
+  background-color: #fff;
+  box-shadow: 0 8px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ticketList {
+  background-color: rgba(254, 251, 244, 0.767);
+}
+
+.Timesheet_data {
+  background-color: rgba(254, 251, 244, 0.767);
+}
+
+.listWrapper {
+  overflow-x: auto;
+}
+
+.table-view {
+  max-height: 500px;
+  margin-bottom: 20px;
+}
+
+.card, .ticketList, .Timesheet_data {
+  transition: all 0.3s ease-in-out;
+}

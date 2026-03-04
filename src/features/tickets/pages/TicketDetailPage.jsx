@@ -15,7 +15,6 @@ import FloatingArrowScroll from "../../../app/shared/Component/FloatingArrowScro
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-  const navigate = useNavigate();
   const { data: ThreadsList } = useThreadMaster(ticketId);
   const { data: ticketMasterData } = useTicketMaster();
   
@@ -27,6 +26,8 @@ console.log("Ticket Detail Page Data:", { ThreadsList });
     Issue_Id: thread.Issue_Id,
     description: thread.HtmlDesc,
     Hours: thread.Hours,
+    fromTime: thread.From_Time,
+    toTime: thread.To_Time,
     createdAt: thread.CreatedAt,
     CreatedBy: thread.CreatedBy,
     UpdatedAt: thread.UpdatedAt,

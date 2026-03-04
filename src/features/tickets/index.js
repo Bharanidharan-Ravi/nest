@@ -50,6 +50,17 @@ export const TicketsFeature = {
           parent: ROUTE_KEYS.TICKET_LIST,
         },
       },
+
+       // ── /:ticketId/edit  (layout) ────────────────────────────────────
+      {
+        path:    "/:ticketId/edit",
+        element: El.TicketCreatePage,
+        nav: {
+          key:    ROUTE_KEYS.TICKET_EDIT,
+          title:  "Ticket",
+          parent: ROUTE_KEYS.TICKET_LIST,
+        },
+      },
     ],
   };
 
