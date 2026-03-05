@@ -24,5 +24,10 @@ export const queryKeys = {
   },
   dashboard: {
     all: ["dashboard"]
-  }
+  },
+   label: {
+    all:    ["label"],
+    list:   ()   => [...queryKeys.label.all, "list"],
+    detail: (id) => [...queryKeys.label.all, "detail", id]
+  },
 }
