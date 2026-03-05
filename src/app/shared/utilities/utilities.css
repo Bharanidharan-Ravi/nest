@@ -5,11 +5,23 @@
     object-fit: contain; 
   }
 
-  .file-highlight {
-    background-color: #fff3cd;
-    color: #856404;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 500;
-    display: inline-block;
-  }
+.highlight-pill{
+  display: inline-flex;
+  align-items: center;
+  background-color: #f1f3f4;
+  border: 1px solid #dce0e4;
+  border-radius: 6px;
+  padding: 0px 12px;
+  font-size: 10px;
+  color: #3c4043;
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+.highlight-pill:hover {
+  background-color: orange;
+}
+
+.highlight-pill .file-icon{
+  margin-right:8px;
+  font-size: 10px;
+}

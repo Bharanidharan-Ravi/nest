@@ -26,6 +26,14 @@ export const ThreadFieldConfig = (ticketId) => [
     required: true,
     dataType: "dateTime",
     apiKey: "From_Time",
+    customValidator:(value,data)=>{
+      if (!value || !data.toTime) return null;
+      const [fh, fm] = value.split(":").map(Number);
+      const[th,tm]= data.toTime.split(":").map(Number);
+      return fh * 60 + fm >= th * 60 + tm
+      ? "From-time must be earlier than To-time"
+      : null; 
+    }
     // errorMessage: "Only alphanumeric allowed", 
   
   },
@@ -38,6 +46,14 @@ export const ThreadFieldConfig = (ticketId) => [
     dataType: "dateTime",
     apiKey: "To_Time",
     errorMessage: "To-time cannot be earlier than From-time", 
+    customValidator:(value,data)=>{
+      if (!value || !data.fromTime) return null;
+      const [fh, fm] = data.fromTime.split(":").map(Number);
+      const[th,tm]= value.split(":").map(Number);
+      return th * 60 + tm <= fh * 60 + fm
+      ? "To-time must be later than From-time"
+      : null; 
+    }
   },
 
   {

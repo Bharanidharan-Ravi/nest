@@ -17,8 +17,6 @@ const TicketDetailPage = () => {
   const { ticketId } = useParams();
   const { data: ThreadsList } = useThreadMaster(ticketId);
   const { data: ticketMasterData } = useTicketMaster();
-  
-console.log("Ticket Detail Page Data:", { ThreadsList });
 
   const threads = ThreadsList?.ThreadsList?.Data || [];
   const normalizeThread = (thread) => ({
@@ -35,7 +33,6 @@ console.log("Ticket Detail Page Data:", { ThreadsList });
   });
 
   const rawList = threads.map(normalizeThread);
-console.log("raw list after ", rawList);
 
   // Prepare UI data for the parent (issue)
   const IssueParentData = React.useMemo(() => {

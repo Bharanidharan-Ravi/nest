@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useList } from "../context/ListContext"
-import { parseQuery } from "../hooks/useQueryParser"
+import { useList } from "../context/ListContext";
+import { parseQuery } from "../hooks/useQueryParser";
 import { useRef } from "react";
 import { useEffect } from "react";
 
 export function ListFilters() {
   const { query, setQuery, config } = useList();
   // Track which specific filter dropdown is currently open
+  const [searchQuery, setSearchQuery] = useState("");
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
   const ref = useRef(null);
 
@@ -38,19 +39,23 @@ export function ListFilters() {
   };
 
   const theme = config.theme || {};
-  const buttonClasses = theme.filterButton || "px-3 py-1.5 text-sm font-medium border border-ghBorder rounded-md bg-white text-ghText hover:border-gray-300 transition-colors flex items-center gap-1";
+  const buttonClasses =
+    theme.filterButton ||
+    "px-3 py-1.5 text-sm font-medium border border-ghBorder rounded-md bg-white text-ghText hover:border-gray-300 transition-colors flex items-center gap-1";
 
   return (
     <div className="flex gap-2 items-center" ref={ref}>
-      {config.filters.map(filter => {
+      {config.filters.map((filter) => {
         // Find the currently selected option for this filter
         const currentValue = parsed.filters[filter.key] || "";
-        const activeOption = filter.options.find(opt => opt.value === currentValue) || filter.options[0];
+        const activeOption =
+          filter.options.find((opt) => opt.value == currentValue) ||
+          filter.options[0];
         const isOpen = openDropdownKey === filter.key;
 
         return (
           <div key={filter.key} className="relative">
-            <button 
+            <button
               onClick={() => setOpenDropdownKey(isOpen ? null : filter.key)}
               className={buttonClasses}
             >
@@ -58,16 +63,33 @@ export function ListFilters() {
             </button>
 
             {isOpen && (
-              <div className="absolute left-0 mt-2 w-48 bg-white border border-ghBorder rounded-md shadow-lg z-50 py-1">
-                {filter.options.map(opt => {
-                  const isSelected = currentValue === opt.value;
+              <div
+                className="absolute left-0 mt-2 w-48 bg-white border border-ghBorder rounded-md shadow-lg z-50 py-1"
+                style={{
+                  maxHeight: "400px",
+                  overflowY: "auto",
+                }}
+              >
+                <div className = "px-4 py-2">
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="w-full p-1 border border-gray-300 rounded-md text-sm focus:outline-none"
+                    onChange={(e)=> setSearchQuery(e.target.value)}
+                  />
+                </div>
+                {filter.options
+                .filter(opt=>opt.label.toLowerCase().includes(searchQuery.toLowerCase()))
+                .map((opt) => {
+                  const isSelected = currentValue === opt.value  ;
+  
                   return (
                     <div
                       key={opt.value}
                       onClick={() => updateQuery(filter.key, opt.value)}
                       className={`px-4 py-2 text-sm cursor-pointer flex items-center gap-2 transition-colors ${
-                        isSelected 
-                          ? "font-semibold text-brand-yellow bg-brand-yhover" 
+                        isSelected
+                          ? "font-semibold text-brand-yellow bg-brand-yhover"
                           : "text-ghText hover:bg-gray-50"
                       }`}
                     >
@@ -86,7 +108,6 @@ export function ListFilters() {
     </div>
   );
 }
-
 
 // import { useList } from "../context/ListContext";
 

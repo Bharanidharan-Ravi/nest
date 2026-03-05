@@ -8,8 +8,6 @@ export function ListCardView() {
   
   const containerClasses = theme.cardContainer || "flex flex-col w-full";
   const itemClasses = theme.cardItem || "p-1.5 border-b border-ghBorder bg-white hover:bg-ghHover transition-colors duration-150 last:border-b-0 w-full overflow-hidden break-words relative cursor-pointer";
-console.log("acrd view:", data);
-
 return (
     <div className={containerClasses}>
       {data.map(item => (

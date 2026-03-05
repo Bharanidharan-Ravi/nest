@@ -118,6 +118,22 @@ export const ProjFieldConfig = () => [
     colSpan: 3,
     apiKey: "StartDate",
     initValueResolver: (context) => context.isEdit ? context.entityData?.StartDate : "",
+    customValidator:(value,data)=>{
+      if (!value) return null;
+      const startDate = new Date(value);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      if(startDate < today){
+        return "Start Date cannot be in the past";
+      }
+      if(data.dueDate) {
+        const dueDate = new Date(data.dueDate);
+        if (startDate > dueDate) {
+          return "Start Date cannot be after Due Date";
+        }
+      }
+      return null;
+    }
   },
   {
     label: "Due Date",
@@ -130,6 +146,15 @@ export const ProjFieldConfig = () => [
     colSpan: 3,
     apiKey: "DueDate",
     initValueResolver: (context) => context.isEdit ? context.entityData?.DueDate : "",
+    customValidator:(value,data)=>{
+      if(!value || !data.startDate) return null;
+      const startDate = new Date(data.startDate);
+      const dueDate = new Date(value);
+      if (dueDate < startDate) {
+        return "Due Date cannot be before Start Date";
+      }
+      return null;
+    }
   },
   {
     label: "Description",

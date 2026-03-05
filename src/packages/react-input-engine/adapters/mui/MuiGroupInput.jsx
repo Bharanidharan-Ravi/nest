@@ -14,7 +14,8 @@ const MuiGroupInput = ({
   onChange,
   fields = [],
   disabled = false,
-  theme={}
+  theme = {},
+  error = {},
 }) => {
   const values =
     Array.isArray(value) && value.length > 0
@@ -40,6 +41,8 @@ const MuiGroupInput = ({
     onChange(name, updated);
   };
 
+  const getFieldError = (rowIndex, fieldName) =>
+    Array.isArray(error) ? error[rowIndex]?.[fieldName] : null;
   return (
     <div>
       <h4>{label}</h4>
@@ -53,18 +56,26 @@ const MuiGroupInput = ({
             marginBottom: "10px",
           }}
         >
-          {fields.map((subField) => (
-            <TextField
-              key={`${name}-${idx}-${subField.name}`} // 🔥 UNIQUE KEY
-              label={subField.label}
-              value={item[subField.name] || ""}
-              variant="outlined"
-              className={theme.input || "wg-mui-input"}
-              onChange={(e) => handleChange(idx, subField.name, e.target.value)}
-              disabled={disabled}
-              size="small"
-            />
-          ))}
+          {fields.map((subField) => {
+            const fieldError = getFieldError(idx, subField.name);
+            return (
+              <TextField
+                key={`${name}-${idx}-${subField.name}`} // 🔥 UNIQUE KEY
+                label={subField.label}
+                value={item[subField.name] || ""}
+                variant="outlined"
+                required={subField.required}
+                className={theme.input || "wg-mui-input"}
+                onChange={(e) =>
+                  handleChange(idx, subField.name, e.target.value)
+                }
+                disabled={disabled}
+                size="small"
+                error={!!fieldError}
+                helperText={fieldError || ""}
+              />
+            );
+          })}
 
           {!disabled && idx > 0 && (
             <Button color="error" onClick={() => handleRemove(idx)}>

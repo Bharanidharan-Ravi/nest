@@ -24,6 +24,8 @@ export const fetchLabelList = (config = {}, labelId = null) => {
 }
 
 export const useLabelData = (labelId = null) => {
+  console.log("labelId :", labelId);
+  
   return useApiQuery({
     queryKey: labelId
       ? queryKeys.label.detail(labelId)
@@ -33,7 +35,7 @@ export const useLabelData = (labelId = null) => {
     source: "LabelMaster",
 
     options: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: 0,
       enabled: true,   // always enabled — no param dependency
     },
   })

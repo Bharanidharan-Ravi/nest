@@ -188,6 +188,7 @@ const AdvancedEditor = ({
   userList = [],
   labelList = [],
   resetKey,
+  error,
   theme = {},
 }) => {
   const fileInputRef = useRef(null);
@@ -324,8 +325,23 @@ const AdvancedEditor = ({
         }
         return false;
       },
-    },
 
+      handlePaste: (view, event) => {
+        const items = Array.from(event.clipboardData?.items || []);
+        const fileItems = items.filter((item) => item.kind === "file");
+        if (fileItems.length === 0) return false; // Let TipTap handle it if there are no files
+
+        if (fileItems.length > 0) {
+          event.preventDefault();
+          const files = fileItems
+            .map((item) => item.getAsFile())
+            .filter(Boolean);
+          const insertPos = view.state.selection.anchor;
+          processAndInsertFiles(files, insertPos);
+          return true; // We handled the paste event
+        }
+      },
+    },
     handleClick: (view, pos, event) => {
       if (event.target && event.target.tagName === "IMG") {
         setModalImage(event.target.src);
@@ -427,87 +443,54 @@ const AdvancedEditor = ({
     </button>
   );
   return (
-    <div
-      className={theme.editorContainer || "border border-gray-300 rounded-md"}
-    >
-      {/* GitHub Style Toolbar: Transparent background, bottom border, flex layout */}
+    <>
       <div
         className={
-          theme.editorToolbar ||
-          "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"
+          error
+            ? `border rounded-md border-red-300`
+            : theme.editorContainer || "border border-gray-300 rounded-md"
         }
       >
-        {/* ... (Keep existing toolbar buttons: bold, italic, etc.) ... */}
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          isActive={editor.isActive("bold")}
-        >
-          <FaBold />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          isActive={editor.isActive("italic")}
-        >
-          <FaItalic />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          isActive={editor.isActive("underline")}
-        >
-          <FaUnderline />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          isActive={editor.isActive("bulletList")}
-        >
-          <FaListUl />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          isActive={editor.isActive("orderedList")}
-        >
-          <FaListOl />
-        </ToolbarButton>
-
-        {/* Table Module */}
-        <ToolbarButton
-          onClick={() =>
-            editor
-              .chain()
-              .focus()
-              .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
-              .run()
+        {/* GitHub Style Toolbar: Transparent background, bottom border, flex layout */}
+        <div
+          className={
+            theme.editorToolbar ||
+            "flex flex-wrap items-center gap-1 p-2 border-b bg-gray-50"
           }
         >
-          <FaTable /> Insert
-        </ToolbarButton>
-        <div className="w-px h-5 bg-gray-300 mx-1"></div>
+          {/* ... (Keep existing toolbar buttons: bold, italic, etc.) ... */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            isActive={editor.isActive("bold")}
+          >
+            <FaBold />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            isActive={editor.isActive("italic")}
+          >
+            <FaItalic />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            isActive={editor.isActive("underline")}
+          >
+            <FaUnderline />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            isActive={editor.isActive("bulletList")}
+          >
+            <FaListUl />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            isActive={editor.isActive("orderedList")}
+          >
+            <FaListOl />
+          </ToolbarButton>
 
-        {editor.isActive("table") ? (
-          // Show simplified table controls when active
-          <div className="flex items-center gap-1 text-xs font-medium text-ghMuted">
-            <button
-              onClick={() => editor.chain().focus().addColumnBefore().run()}
-              className="hover:text-ghText"
-            >
-              Add Col
-            </button>
-            <span className="text-gray-300">|</span>
-            <button
-              onClick={() => editor.chain().focus().addRowAfter().run()}
-              className="hover:text-ghText"
-            >
-              Add Row
-            </button>
-            <span className="text-gray-300">|</span>
-            <button
-              onClick={() => editor.chain().focus().deleteTable().run()}
-              className="text-red-500 hover:text-red-700"
-            >
-              Del Table
-            </button>
-          </div>
-        ) : (
+          {/* Table Module */}
           <ToolbarButton
             onClick={() =>
               editor
@@ -516,84 +499,124 @@ const AdvancedEditor = ({
                 .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
                 .run()
             }
-            title="Insert Table"
           >
-            <FaTable size={14} />
+            <FaTable /> Insert
           </ToolbarButton>
-        )}
-        <div className="w-px h-5 bg-gray-300 mx-1"></div>
-        {/* 🔥 UPDATED: Use triggerFileUpload instead of direct click */}
-        <ToolbarButton onClick={triggerFileUpload}>
-          <FaPaperclip />
-        </ToolbarButton>
-        <ToolbarButton onClick={triggerFileUpload}>
-          <FaImage />
-        </ToolbarButton>
+          <div className="w-px h-5 bg-gray-300 mx-1"></div>
 
-        {/* ... (Keep Undo/Redo/Preview buttons) ... */}
-        <ToolbarButton
-          onClick={() => editor.chain().focus().undo().run()}
-          disabled={!editor.can().undo()}
-        >
-          <FaUndo />
-        </ToolbarButton>
-        <ToolbarButton
-          onClick={() => editor.chain().focus().redo().run()}
-          disabled={!editor.can().redo()}
-        >
-          <FaRedo />
-        </ToolbarButton>
-        <ToolbarButton onClick={() => setPreview(!preview)}>
-          {preview ? "Edit" : "Preview"}
-        </ToolbarButton>
-      </div>
+          {editor.isActive("table") ? (
+            // Show simplified table controls when active
+            <div className="flex items-center gap-1 text-xs font-medium text-ghMuted">
+              <button
+                onClick={() => editor.chain().focus().addColumnBefore().run()}
+                className="hover:text-ghText"
+              >
+                Add Col
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => editor.chain().focus().addRowAfter().run()}
+                className="hover:text-ghText"
+              >
+                Add Row
+              </button>
+              <span className="text-gray-300">|</span>
+              <button
+                onClick={() => editor.chain().focus().deleteTable().run()}
+                className="text-red-500 hover:text-red-700"
+              >
+                Del Table
+              </button>
+            </div>
+          ) : (
+            <ToolbarButton
+              onClick={() =>
+                editor
+                  .chain()
+                  .focus()
+                  .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+                  .run()
+              }
+              title="Insert Table"
+            >
+              <FaTable size={14} />
+            </ToolbarButton>
+          )}
+          <div className="w-px h-5 bg-gray-300 mx-1"></div>
+          {/* 🔥 UPDATED: Use triggerFileUpload instead of direct click */}
+          <ToolbarButton onClick={triggerFileUpload}>
+            <FaPaperclip />
+          </ToolbarButton>
+          <ToolbarButton onClick={triggerFileUpload}>
+            <FaImage />
+          </ToolbarButton>
 
-      <div
-        className="p-3 min-h-[150px] text-sm text-ghText"
-        onClick={(e) => {
-          // If the clicked element is an image, open the modal
-          if (e.target && e.target.tagName === "IMG") {
-            setModalImage(e.target.src);
-          }
-        }}
-      >
-        {preview ? (
-          <div
-            className="preview-mode ProseMirror"
-            dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
-          />
-        ) : (
-          <EditorContent editor={editor} />
-        )}
-      </div>
+          {/* ... (Keep Undo/Redo/Preview buttons) ... */}
+          <ToolbarButton
+            onClick={() => editor.chain().focus().undo().run()}
+            disabled={!editor.can().undo()}
+          >
+            <FaUndo />
+          </ToolbarButton>
+          <ToolbarButton
+            onClick={() => editor.chain().focus().redo().run()}
+            disabled={!editor.can().redo()}
+          >
+            <FaRedo />
+          </ToolbarButton>
+          <ToolbarButton onClick={() => setPreview(!preview)}>
+            {preview ? "Edit" : "Preview"}
+          </ToolbarButton>
+        </div>
 
-      <input
-        type="file"
-        multiple
-        ref={fileInputRef}
-        style={{ display: "none" }}
-        onChange={handleFileChange}
-      />
-      {modalImage && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-80 cursor-pointer"
-          onClick={() => setModalImage(null)}
+          className="p-3 min-h-[150px] text-sm text-ghText"
+          onClick={(e) => {
+            // If the clicked element is an image, open the modal
+            if (e.target && e.target.tagName === "IMG") {
+              setModalImage(e.target.src);
+            }
+          }}
         >
-          <img
-            src={modalImage}
-            alt="Expanded view"
-            className="max-w-[90vw] max-h-[90vh] object-contain shadow-2xl rounded"
-          />
-          {/* Close Button */}
-          <button
-            className="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300"
+          {preview ? (
+            <div
+              className="preview-mode ProseMirror"
+              dangerouslySetInnerHTML={{ __html: editor.getHTML() }}
+            />
+          ) : (
+            <EditorContent editor={editor} />
+          )}
+        </div>
+
+        <input
+          type="file"
+          multiple
+          ref={fileInputRef}
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+        {modalImage && (
+          <div
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-80 cursor-pointer"
             onClick={() => setModalImage(null)}
           >
-            &times;
-          </button>
-        </div>
-      )}
-    </div>
+            <img
+              src={modalImage}
+              alt="Expanded view"
+              className="max-w-[90vw] max-h-[90vh] object-contain shadow-2xl rounded"
+            />
+            {/* Close Button */}
+            <button
+              className="absolute top-4 right-4 text-white text-4xl font-bold hover:text-gray-300"
+              onClick={() => setModalImage(null)}
+            >
+              &times;
+            </button>
+          </div>
+        )}
+      </div>
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+    </>
   );
 };
 
