@@ -5,6 +5,7 @@ import HtmlDateInput from "../adapters/html/HtmlDateInput";
 import HtmlSelectInput from "../adapters/html/HtmlSelectInput";
 import HtmlTextInput from "../adapters/html/HtmlTextInput";
 import HtmlTimeInput from "../adapters/html/HtmlTimeInput";
+import MuiColorInput from "../adapters/mui/MuiColorInput";
 import MuiDateInput from "../adapters/mui/MuiDateInput";
 import MuiFlexibleHoursInput from "../adapters/mui/MuiFlexibleTimeInput";
 import MuiGroupInput from "../adapters/mui/MuiGroupInput";
@@ -19,7 +20,8 @@ export const inputRegistry = {
     date: MuiDateInput,
     time: MuiTimeInput,
     group: MuiGroupInput,
-    flexHours: MuiFlexibleHoursInput 
+    flexHours: MuiFlexibleHoursInput,
+    color:  MuiColorInput,   
   },
   html: {
     text: HtmlTextInput,

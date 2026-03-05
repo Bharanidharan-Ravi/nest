@@ -13,6 +13,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
   // Called on every render — filtered by user's role automatically
   const sidebarRoutes = getSidebarRoutes();
   const repos = data?.RepoList || [];
+console.log("sidebarRoutes", sidebarRoutes);
 
   return (
     <>
