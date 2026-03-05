@@ -49,7 +49,7 @@ export const TicketListConfig = {
         key: "closed",
         label: "Closed",
         field: "status",
-        filterValue: "Inactive",
+        filterValue: "InActive",
       },
     ],
     cardRenderer: (item) => <TicketListCard item ={item}/>

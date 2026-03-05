@@ -15,7 +15,8 @@ export const TicketFieldConfig = () => [
 
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
-
+    initValueResolver: (context) =>
+      context.isEdit ? context.entityData?.title : "",
     visibleWhen: () => true,
   },
   {
@@ -35,6 +36,26 @@ export const TicketFieldConfig = () => [
         },
       })) || [],
     apiKey: "labelId",
+
+    initValueResolver: (context) => {
+      // ✅ Corrected: Only map if we ARE editing and the data actually exists
+      if (
+        context.isEdit &&
+        context.entityData &&
+        Array.isArray(context.entityData.label)
+      ) {
+        return context.entityData.label.map((l) => ({
+          label: l.LABEL_TITLE,
+          value: {
+            id: l.LABEL_ID,
+            name: l.LABEL_TITLE,
+          },
+        }));
+      }
+
+      // Return an empty array (or null) if there's no data, so the form field starts empty
+      return [];
+    },
 
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
@@ -125,7 +146,7 @@ export const TicketFieldConfig = () => [
       // (Checks both URL params and existing edit data)
       const targetId =
         context?.params?.projId ||
-        context?.entityData?.Project_Id ||
+        context?.entityData?.project ||
         context?.params?.repoId ||
         context?.entityData?.RepoId;
 
@@ -156,17 +177,18 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     // Disable field if Project ID exists
     disableWhen: (context) =>
-      Boolean(context?.params?.projid || context?.entityData?.Project_Id),
+      Boolean(context?.params?.projid || context?.entityData?.project),
 
     apiKey: "Project_Id",
     // 🔥 Disable if projid is passed (locking the specific project)
     disableWhen: (context) =>
-      Boolean(context?.params?.projId || context?.entityData?.Project_Id),
+      Boolean(context?.params?.projId || context?.entityData?.project),
 
     // 🔥 Smart Initial Value (Sets project if projid exists)
     initValueResolver: (context, masterData) => {
       const targetProjId =
-        context?.params?.projId || context?.entityData?.Project_Id;
+        context?.params?.projId  ||
+        context?.entityData?.project;
 
       if (!targetProjId) return null;
 
@@ -199,6 +221,22 @@ export const TicketFieldConfig = () => [
           name: emp.UserName,
         },
       })) || [],
+    initValueResolver: (context, masterData) => {
+      // ✅ 1. Check if we are editing and actually have the ID
+      if (context.isEdit && context.entityData?.Assignee_Id) {
+        // ✅ 2. Return the constructed object immediately
+        return {
+          label: context.entityData.assginedTo || "Unknown",
+          value: {
+            id: context.entityData.Assignee_Id,
+            name: context.entityData.assginedTo || "Unknown",
+          },
+        };
+      }
+
+      // ✅ 3. Always return null if not editing, so the dropdown starts empty
+      return null;
+    },
     required: true,
     dataType: "string",
     multiple: false,
@@ -212,6 +250,8 @@ export const TicketFieldConfig = () => [
     name: "dueDate",
     type: "date",
     ui: "mui",
+    initValueResolver: (context) =>
+      context.isEdit ? context.entityData?.DueDate : "",
     required: true,
     dataType: "string",
     apiKey: "Due_Date",
@@ -220,6 +260,16 @@ export const TicketFieldConfig = () => [
     // errorMessage: "Only alphanumeric allowed",
 
     visibleWhen: () => true,
+    customValidator:(value)=>{
+      if(!value) return "Due Date is required";
+      const dueDate = new Date(value);
+      const today = new Date();
+      today.setHours(0,0,0,0);
+      if(dueDate < today) {
+        return "Due Date cannot be in the past";
+      }
+      return null;
+    }
   },
   {
     name: "repoKey",
@@ -237,6 +287,8 @@ export const TicketFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "Hours",
+    initValueResolver: (context) =>
+      context.isEdit ? context.entityData?.estimateHours : "",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
     visibleWhen: () => true,
@@ -253,7 +305,8 @@ export const TicketFieldConfig = () => [
 
     required: true,
     dataType: "string",
-
+    initValueResolver: (context) =>
+      context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
   },
 ];

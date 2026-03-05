@@ -42,10 +42,7 @@ const DateRangePickerComponent = ({ value, onChange }) => {
   };
 
   return (
-    <Paper elevation={0} sx={{ p: 2, borderRadius: 3 }}>
-      <Typography variant="body1" gutterBottom>
-        Select Date Range
-      </Typography>
+    <Paper elevation={0} sx={{ p: 0, m: 0, borderRadius: 3, backgroundColor: 'transparent' }}>
       <Box  >
         <DatePicker 
           selected={startDate}

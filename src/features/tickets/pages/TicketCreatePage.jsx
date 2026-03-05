@@ -5,17 +5,41 @@ import { queryKeys } from "../../../core/query/queryKeys";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 const TicketCreatePage = () => {
   const params = useParams();
-  const { data: TicketWrapper } = useTicketMaster({ticketId: params.ticketId});
-  
+  const { data: TicketWrapper } = useTicketMaster({
+    ticketId: params.ticketId,
+  });
+
   const isEdit = !!params.ticketId;
-  const entityData = isEdit && Array.isArray(TicketWrapper) && TicketWrapper.length > 0
-    ? TicketWrapper[0]
-    : null;
+
+  const normalizeTicket = (ticket) => ({
+    id: ticket.Issue_Id,
+    title: ticket.Title,
+    Status: ticket.Status,
+    description: ticket.HtmlDesc || ticket.Description,
+    assginedTo: ticket.Assignee_Name,
+    Assignee_Id: ticket.Assignee_Id,
+    estimateHours: ticket.Hours,
+    createdAt: ticket.CreatedAt,
+    updatedAt: ticket.UpdatedAt,
+    DueDate: ticket.Due_Date,
+    
+    // repoId: ticket.Repo_Id,
+    project: ticket.Project_Id,
+    RepoKey: ticket.RepoKey,
+    RepoId: ticket.RepoId,
+    label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
+  });
+  const entityData =
+    isEdit && Array.isArray(TicketWrapper) && TicketWrapper.length > 0
+      ? TicketWrapper.map(normalizeTicket)[0]
+      : null;
+
+  console.log("TicketWrapper :", TicketWrapper, entityData);
 
   const statusOptions = [
     { label: "Active", value: { id: 1, name: "Active" } },
-    { label: "Inactive", value: { id: 2, name: "Inactive" } },
-    { label: "Hold", value: { id: 3, name: "Hold" } }
+    { label: "InActive", value: { id: 2, name: "InActive" } },
+    // { label: "Hold", value: { id: 3, name: "Hold" } },
   ];
 
   // 2. Define the Status field that only appears during editing
@@ -28,7 +52,6 @@ const TicketCreatePage = () => {
     options: statusOptions,
     required: true,
     initValueResolver: (context) => {
-      
       // 1. If creating, default to Active
       if (!context.isEdit || !context.entityData) {
         return statusOptions[0]; // Returns the whole { label, value: { id, name } } object
@@ -38,12 +61,12 @@ const TicketCreatePage = () => {
 
       // 2. Find the matching option based on either the ID or the Label
       const matchedOption = statusOptions.find(
-        (opt) => opt.value.id === apiStatus || opt.label === apiStatus
+        (opt) => opt.value.id === apiStatus || opt.label === apiStatus,
       );
 
       // 3. Return the full object so MUI recognizes it
       return matchedOption || statusOptions[0];
-    }
+    },
   };
 
   const dynamicConfig = {
@@ -51,7 +74,7 @@ const TicketCreatePage = () => {
     api: isEdit ? `Ticket/${params.ticketId}` : TicketFormConfig.api,
     fields: isEdit
       ? [...TicketFormConfig.fields, statusField] // Add status field on edit
-      : TicketFormConfig.fields
+      : TicketFormConfig.fields,
   };
   return (
     <div className="max-w-7xl mx-auto w-full">
@@ -59,10 +82,12 @@ const TicketCreatePage = () => {
         <h2 className="text-2xl font-semibold text-ghText">Create Ticket</h2>
       </div>
 
-      <EntityFormPage mode={isEdit ? "Update" : "create"}
+      <EntityFormPage
+        mode={isEdit ? "Update" : "create"}
         config={dynamicConfig}
         module="Ticket"
-        context={{ params, isEdit, entityData }} />
+        context={{ params, isEdit, entityData }}
+      />
     </div>
   );
 };

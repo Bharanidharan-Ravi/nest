@@ -57,7 +57,7 @@ const MuiSelectInput = ({
           error={!!error}
           variant="outlined"
           size="small"
-          className={theme.input || "wg-mui-input"}
+          className={theme.input || "wg-mui-input w-full"}
           helperText={error}
           required={required}
         />

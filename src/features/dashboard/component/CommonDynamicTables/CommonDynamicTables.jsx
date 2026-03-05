@@ -67,7 +67,6 @@ const CommonDynamicTables = ({
   //       const rowDate = new Date(row.date);  // Assuming each row has a `date` property
   //       return rowDate >= fromDate && rowDate <= toDate;
   //     });
-  //     console.log("Filtered Data By Date:", filteredByDate);  // Debugging
   //     return filteredByDate;
   //   }
   //   return data;  // If no date range, return all data

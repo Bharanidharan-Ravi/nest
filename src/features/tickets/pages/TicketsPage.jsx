@@ -40,7 +40,7 @@ export default function TicketsPage() {
     estimateHours: ticket.hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
-    // repoId: ticket.Repo_Id,
+    repoId: ticket.RepoId,
     project: ticket.Project_Id,
     RepoKey: ticket.RepoKey,
     label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
@@ -102,6 +102,8 @@ export default function TicketsPage() {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Label",
         options: LabelFilterOptions,
+        filterType: "array",
+        filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
     ],
     onItemClick: (item) => {

@@ -32,6 +32,23 @@ const syncKeyCasing = (sourceObj, referenceObj) => {
   return synced;
 };
 
+const sortListByCreatedAt = (list, direction = "desc") => {
+  if (!Array.isArray(list)) return [];
+
+  return [...list].sort((a, b) => {
+    const dateStringA = getValueCaseInsensitive(a, "UpdatedAt");
+    const dateStringB = getValueCaseInsensitive(b, "UpdatedAt");
+
+    const timeA = dateStringA ? new Date(dateStringA).getTime() : 0;
+    const timeB = dateStringB ? new Date(dateStringB).getTime() : 0;
+
+    if (direction === "asc") {
+      return timeA - timeB; // Ascending (Oldest first)
+    }
+    return timeB - timeA; // Descending (Newest first - Default)
+  });
+};
+
 export const handleRealtimeMessage = (queryClient, message) => {
   // const { entity, action, payload, keyField, issueId } = message;
   const entity = message.Entity ?? message.entity;
@@ -48,9 +65,11 @@ export const handleRealtimeMessage = (queryClient, message) => {
 
   queryClient.setQueryData(masterKeys.multi(keys), (oldData) => {
     if (!oldData) return oldData;
-console.log("oldData masterKeys.multi(keys):", oldData);
+    console.log("oldData masterKeys.multi(keys):", oldData);
 
     const updateList = (list) => {
+      console.log("list :", list);
+
       if (!Array.isArray(list)) return [];
 
       // 1. Safely extract the target value case-insensitively from the payload
@@ -62,23 +81,38 @@ console.log("oldData masterKeys.multi(keys):", oldData);
       // 2. Normalize payload casing (camelCase -> PascalCase) based on the first item in the list
       const formattedPayload =
         list.length > 0 ? syncKeyCasing(payload, list[0]) : payload;
-console.log("formattedPayload:", formattedPayload);
+      console.log("formattedPayload:", formattedPayload);
 
+      // if (action === "Create") {
+      //   if (list.some(match)) return list;
+      //   // Insert the formatted payload so the UI doesn't break
+      //   return [formattedPayload, ...list];
+      // }
+
+      // if (action === "Update") {
+      //   return list.map((x) => (match(x) ? { ...x, ...formattedPayload } : x));
+      // }
+
+      // if (action === "Delete") {
+      //   return list.filter((x) => !match(x));
+      // }
+      let updatedList = [...list];
+
+      // Handle Actions
       if (action === "Create") {
-        if (list.some(match)) return list;
-        // Insert the formatted payload so the UI doesn't break
-        return [formattedPayload, ...list];
+        if (!list.some(match)) {
+          updatedList = [formattedPayload, ...list];
+        }
+      } else if (action === "Update") {
+        updatedList = list.map((x) =>
+          match(x) ? { ...x, ...formattedPayload } : x,
+        );
+      } else if (action === "Delete") {
+        updatedList = list.filter((x) => !match(x));
       }
 
-      if (action === "Update") {
-        return list.map((x) => (match(x) ? { ...x, ...formattedPayload } : x));
-      }
-
-      if (action === "Delete") {
-        return list.filter((x) => !match(x));
-      }
-
-      return list;
+      // 🔥 Sort DESCENDING (Newest first) for all master lists
+      return sortListByCreatedAt(updatedList, "desc");
     };
 
     switch (entity) {
@@ -139,19 +173,7 @@ console.log("formattedPayload:", formattedPayload);
       }
 
       // 🔥 5. BULLETPROOF SORTING (Newest First)
-      updatedDataList.sort((a, b) => {
-        // Find the date properties safely
-        const dateStringA = getValueCaseInsensitive(a, "createdAt");
-        const dateStringB = getValueCaseInsensitive(b, "createdAt");
-
-        // Convert to numerical timestamps, fallback to 0 if invalid
-        const timeA = dateStringA ? new Date(dateStringA).getTime() : 0;
-        const timeB = dateStringB ? new Date(dateStringB).getTime() : 0;
-
-        // Descending order (newest first)
-        return timeA - timeB;
-      });
-
+      updatedDataList = sortListByCreatedAt(updatedDataList, "asc");
       console.log("UPDATED LIST AFTER SORTING:", updatedDataList);
 
       // 6. Return the constructed state matching the EXACT structure your page expects
@@ -162,6 +184,91 @@ console.log("formattedPayload:", formattedPayload);
           Data: updatedDataList,
         },
       };
+    });
+  }
+  if (entity === "Ticket") {
+    // Make sure queryKeys is imported at the top of your file!
+    queryClient.setQueriesData({ queryKey: ["ticket", "list"] }, (oldData) => {
+      console.log("oldData ticket BEFORE :", oldData);
+
+      // 1. Defensively grab the existing data array. If nothing exists, it's an empty array.
+      let currentList = [];
+      if (Array.isArray(oldData)) {
+        currentList = oldData;
+      } else if (
+        oldData?.TicketsList?.Data &&
+        Array.isArray(oldData.TicketsList.Data)
+      ) {
+        currentList = oldData.TicketsList.Data;
+      } else if (oldData?.Data && Array.isArray(oldData.Data)) {
+        currentList = oldData.Data;
+      }
+
+      // 2. Setup matching logic using your existing helpers
+      const targetVal = normalize(getValueCaseInsensitive(payload, keyField));
+      const match = (x) =>
+        normalize(getValueCaseInsensitive(x, keyField)) === targetVal;
+
+      // Fix casing so the new item matches the existing list structure
+      const formattedPayload =
+        currentList.length > 0
+          ? syncKeyCasing(payload, currentList[0])
+          : payload;
+      let updatedDataList = [...currentList];
+
+      // 3. Handle the specific actions
+      if (action === "Create") {
+        if (!currentList.some(match)) {
+          // 🔥 SMART SCOPE CHECK FOR CREATE:
+          // Because this updates ALL cached lists, we don't want to accidentally push a
+          // 'Project B' ticket into the cached list for 'Project A'.
+          // We check the first item in the list to see what project this list belongs to.
+          if (currentList.length > 0) {
+            const sampleTicket = currentList[0];
+            const sampleProject = normalize(
+              getValueCaseInsensitive(sampleTicket, "project") ||
+                getValueCaseInsensitive(sampleTicket, "projectId"),
+            );
+            const payloadProject = normalize(
+              getValueCaseInsensitive(payload, "project") ||
+                getValueCaseInsensitive(payload, "projectId"),
+            );
+
+            // If this cached list is for a specific project, and it doesn't match our new ticket, skip it!
+            if (
+              sampleProject &&
+              payloadProject &&
+              sampleProject !== payloadProject
+            ) {
+              return oldData;
+            }
+          }
+
+          updatedDataList = [formattedPayload, ...currentList]; // Add new ticket to top
+        }
+      } else if (action === "Update") {
+        updatedDataList = currentList.map((x) =>
+          match(x) ? { ...x, ...formattedPayload } : x,
+        );
+      } else if (action === "Delete") {
+        updatedDataList = currentList.filter((x) => !match(x));
+      }
+
+      // 4. Sort Tickets (Newest First)
+      updatedDataList = sortListByCreatedAt(updatedDataList, "desc");
+      console.log("UPDATED TICKET LIST AFTER SORTING:", updatedDataList);
+
+      // 5. Return the data exactly in the structure it originally came in
+      if (Array.isArray(oldData)) {
+        return updatedDataList;
+      } else if (oldData?.TicketsList?.Data) {
+        return {
+          ...oldData,
+          TicketsList: { ...oldData.TicketsList, Data: updatedDataList },
+        };
+      } else {
+        return { ...oldData, Data: updatedDataList };
+      }
     });
   }
 };

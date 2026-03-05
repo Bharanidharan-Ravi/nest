@@ -17,7 +17,7 @@ const MuiDateInput = ({
 }) => {
   const formattedValue = useMemo(() => {
     if (value && dayjs(value).isValid()) {
-      return dayjs(value).format("MM/DD/YYYY");
+      return dayjs(value).format("DD/MM/YYYY");
     }
 
     return "";
@@ -60,7 +60,7 @@ const MuiDateInput = ({
     }
 
     if (newDate && newDate.isValid()) {
-      const formattedDisplay = newDate.format("MM/DD/YYYY");
+      const formattedDisplay = newDate.format("DD/MM/YYYY");
       const formattedApi = newDate.format("YYYY-MM-DD");
       setInputText(formattedDisplay);
       setIsEditing(false);
@@ -79,7 +79,7 @@ const MuiDateInput = ({
 
   const handleCalendarSelect = (newValue) => {
     if (newValue && newValue.isValid()) {
-      const formattedDisplay = newValue.format("MM/DD/YYYY");
+      const formattedDisplay = newValue.format("DD/MM/YYYY");
       const formattedApi = newValue.format("YYYY-MM-DD");
       setInputText(formattedDisplay);
       setIsEditing(false);
@@ -99,7 +99,7 @@ const MuiDateInput = ({
         helperText={error}
         className={`${theme.input || "wg-mui-input"}`}
         InputLabelProps={{ shrink: true }}
-        placeholder="MM/DD/YYYY"
+        placeholder="DD/MM/YYYY"
         value={isEditing ? inputText : formattedValue}
         onChange={(e) => {
           setInputText(e.target.value);
@@ -142,6 +142,7 @@ const MuiDateInput = ({
         <DateCalendar
           value={value ? dayjs(value) : null}
           onChange={handleCalendarSelect}
+          minDate={dayjs()}
         />
       </Popover>
     </LocalizationProvider>

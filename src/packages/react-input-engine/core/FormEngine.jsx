@@ -18,6 +18,19 @@ const FormEngine = ({
     4: "col-span-12 md:col-span-4",
     3: "col-span-12 md:col-span-2",
   };
+
+  const getErrors = (field) => {
+    const err = errors[field.name];
+    if (typeof err === "string") return err;
+    if (Array.isArray(err)) return err.join(", ");
+    return null;
+  };
+  const getError = (field) => {
+    const err = errors[field.name];
+    if (!err) return null;
+    if (field.type === "group" && field.isMulti) return err;
+    return err;
+  };
   return (
     // 1. CSS Grid: 1 column on mobile/small spaces, 2 columns when space allows
     <div className="grid grid-cols-12 gap-x-6 gap-y-5">
@@ -27,6 +40,8 @@ const FormEngine = ({
 
           if (!Component) return null;
           const fieldTheme = field.theme || globalTheme || {};
+          const fielderrors = getErrors(field);
+          const fielderror = getError(field);
 
           // 3. Determine the column span for this specific field
           let currentSpan = field.colSpan || 6; // Default to 6 (50% width)
@@ -50,9 +65,9 @@ const FormEngine = ({
                 name={field.name}
                 label={field.label}
                 value={values[field.name]}
-                error={errors[field.name]}
+                error={fielderror}
                 options={field.options}
-                multiple={field.multiple} 
+                multiple={field.multiple}
                 fields={field.fields}
                 onChange={onChange}
                 required={field.required}

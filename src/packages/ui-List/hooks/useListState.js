@@ -80,7 +80,17 @@ const isUrlSyncEnabled = config.syncUrl !== false;
         return; 
       }
 
+      const filterConfig = config.filters?.find((f)=>f.key === key);
+      if(filterConfig?.filterType === "array"){
+        data = data.filter((item)=>
+        Array.isArray(item[key]) &&
+      item[key].some((entry)=>{
+        return entry [filterConfig.filterKey] ==value;
+      })
+    );
+   } else{
       data = data.filter((item) => item[key] === value);
+   }
     });
 
     // Text search

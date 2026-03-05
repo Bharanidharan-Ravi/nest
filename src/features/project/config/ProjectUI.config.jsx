@@ -33,13 +33,13 @@ export const ProjUIConfig = {
     },
   ],
   defaultSort: {
-    field: "updatedAt", // default field
+    field: "UpdatedAt", // default field
     order: "desc", // default newest
   },
 
   sortFields: [
-    { key: "createdAt", label: "Created on" },
-    { key: "updatedAt", label: "Last updated" },
+    { key: "CreatedAt", label: "Created on" },
+    { key: "UpdatedAt", label: "Last updated" },
   ],
 
   sortOrders: [
@@ -58,7 +58,7 @@ export const ProjUIConfig = {
       key: "closed",
       label: "Closed",
       field: "status",
-      filterValue: "Inactive",
+      filterValue: "InActive",
     },
   ],
  cardRenderer: (item) => <ProjectCard item={item} />,

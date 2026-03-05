@@ -5,27 +5,35 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 export const useTicketMaster = (scope = {}, options = {}) => {
   const repoId = scope.repoId ?? null;
   const projectId = scope.projectId ?? null;
+  // 🔥 1. Extract ticketId
+  const ticketId = scope.ticketId ?? null; 
+  
+  console.log("scope :", scope);
 
   ///- Query key- unique per scope -------------------
-  // master: ["ticket", "list", "global","all"]
-  // by repo: ["ticket", "list", "repo-Id","all"]
-  // byt project: ["ticket", "list", "repo-id","proj-id"]
+  // master: ["ticket", "list", "global", "all", "all"]
+  // by repo: ["ticket", "list", "repo-Id", "all", "all"]
+  // by project: ["ticket", "list", "repo-id", "proj-id", "all"]
+  // by ticket: ["ticket", "list", "repo-id", "proj-id", "ticket-id"]
 
+  // 🔥 2. Add ticketId to the query key so it caches separately from the list
   const queryKey = queryKeys.ticket.list({
     repoId: repoId ?? "global",
-    projectId: projectId ?? "all"
-  })
+    projectId: projectId ?? "all",
+    ticketId: ticketId ?? "all" 
+  });
 
+  // 🔥 3. Prioritize ticketId in the payload
   const payload = buildSyncPayload({
     configKey: "TicketsList",
     repoId,
-    ...(projectId && { idKey: "projectId", idValue: projectId})
-  })
-  // const payload = {
-  //   ConfigKeys: ["TicketsList"],
-  //   repoId,
-  //   ...(projectId && { idKey: "projectId", idValue: projectId})
-  // };
+    ...(ticketId 
+      ? { idKey: "IssueId", idValue: ticketId } // Use whatever parameter name your GetIssuesByID SP expects (e.g., "IssuesId" or "Id")
+      : projectId 
+        ? { idKey: "projectId", idValue: projectId } 
+        : {}
+    )
+  });
 
   return useApiQuery({
     queryKey,
@@ -35,14 +43,14 @@ export const useTicketMaster = (scope = {}, options = {}) => {
     source: "TicketsList",  
     options: {
       staleTime: 5 * 60 * 1000,
-      // 2. Merge the passed options.
-      // If 'enabled' is passed in options, use it; otherwise default to true.
       enabled: 
         options.enabled !== undefined 
           ? options.enabled 
-          : projectId 
-            ? Boolean(repoId || projectId)
-            : true,
+          : ticketId // 🔥 4. Update enabled logic for ticketId
+            ? Boolean(ticketId) 
+            : projectId 
+              ? Boolean(repoId || projectId)
+              : true,
       ...options,
     },
   });
