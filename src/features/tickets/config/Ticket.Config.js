@@ -268,7 +268,7 @@ export const TicketFieldConfig = () => [
       if(dueDate < today) {
         return "Due Date cannot be in the past";
       }
-      return null;
+      return true;
     }
   },
   {

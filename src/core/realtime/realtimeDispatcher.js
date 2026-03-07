@@ -188,87 +188,99 @@ export const handleRealtimeMessage = (queryClient, message) => {
   }
   if (entity === "Ticket") {
     // Make sure queryKeys is imported at the top of your file!
-    queryClient.setQueriesData({ queryKey: ["ticket", "list"] }, (oldData) => {
-      console.log("oldData ticket BEFORE :", oldData);
+    queryClient.setQueriesData(
+      { queryKey: queryKeys.ticket.list() },
+      (oldData) => {
+        console.log("oldData ticket BEFORE :", oldData);
 
-      // 1. Defensively grab the existing data array. If nothing exists, it's an empty array.
-      let currentList = [];
-      if (Array.isArray(oldData)) {
-        currentList = oldData;
-      } else if (
-        oldData?.TicketsList?.Data &&
-        Array.isArray(oldData.TicketsList.Data)
-      ) {
-        currentList = oldData.TicketsList.Data;
-      } else if (oldData?.Data && Array.isArray(oldData.Data)) {
-        currentList = oldData.Data;
-      }
-
-      // 2. Setup matching logic using your existing helpers
-      const targetVal = normalize(getValueCaseInsensitive(payload, keyField));
-      const match = (x) =>
-        normalize(getValueCaseInsensitive(x, keyField)) === targetVal;
-
-      // Fix casing so the new item matches the existing list structure
-      const formattedPayload =
-        currentList.length > 0
-          ? syncKeyCasing(payload, currentList[0])
-          : payload;
-      let updatedDataList = [...currentList];
-
-      // 3. Handle the specific actions
-      if (action === "Create") {
-        if (!currentList.some(match)) {
-          // 🔥 SMART SCOPE CHECK FOR CREATE:
-          // Because this updates ALL cached lists, we don't want to accidentally push a
-          // 'Project B' ticket into the cached list for 'Project A'.
-          // We check the first item in the list to see what project this list belongs to.
-          if (currentList.length > 0) {
-            const sampleTicket = currentList[0];
-            const sampleProject = normalize(
-              getValueCaseInsensitive(sampleTicket, "project") ||
-                getValueCaseInsensitive(sampleTicket, "projectId"),
-            );
-            const payloadProject = normalize(
-              getValueCaseInsensitive(payload, "project") ||
-                getValueCaseInsensitive(payload, "projectId"),
-            );
-
-            // If this cached list is for a specific project, and it doesn't match our new ticket, skip it!
-            if (
-              sampleProject &&
-              payloadProject &&
-              sampleProject !== payloadProject
-            ) {
-              return oldData;
-            }
-          }
-
-          updatedDataList = [formattedPayload, ...currentList]; // Add new ticket to top
+        // 1. Defensively grab the existing data array. If nothing exists, it's an empty array.
+        let currentList = [];
+        if (Array.isArray(oldData)) {
+          currentList = oldData;
+        } else if (
+          oldData?.TicketsList?.Data &&
+          Array.isArray(oldData.TicketsList.Data)
+        ) {
+          currentList = oldData.TicketsList.Data;
+        } else if (oldData?.Data && Array.isArray(oldData.Data)) {
+          currentList = oldData.Data;
         }
-      } else if (action === "Update") {
-        updatedDataList = currentList.map((x) =>
-          match(x) ? { ...x, ...formattedPayload } : x,
+        console.log("currentList :", currentList);
+
+        // 2. Setup matching logic using your existing helpers
+        const targetVal = normalize(getValueCaseInsensitive(payload, keyField));
+        const match = (x) =>
+          normalize(getValueCaseInsensitive(x, keyField)) === targetVal;
+
+        // Fix casing so the new item matches the existing list structure
+        const formattedPayload =
+          currentList.length > 0
+            ? syncKeyCasing(payload, currentList[0])
+            : payload;
+        let updatedDataList = [...currentList];
+        console.log(
+          "targetVal :",
+          targetVal,
+          "formattedPayload :",
+          formattedPayload,
         );
-      } else if (action === "Delete") {
-        updatedDataList = currentList.filter((x) => !match(x));
-      }
 
-      // 4. Sort Tickets (Newest First)
-      updatedDataList = sortListByCreatedAt(updatedDataList, "desc");
-      console.log("UPDATED TICKET LIST AFTER SORTING:", updatedDataList);
+        // 3. Handle the specific actions
+        if (action === "Create") {
+          if (!currentList.some(match)) {
+            // 🔥 SMART SCOPE CHECK FOR CREATE:
+            // Because this updates ALL cached lists, we don't want to accidentally push a
+            // 'Project B' ticket into the cached list for 'Project A'.
+            // We check the first item in the list to see what project this list belongs to.
+            if (currentList.length > 0) {
+              const sampleTicket = currentList[0];
 
-      // 5. Return the data exactly in the structure it originally came in
-      if (Array.isArray(oldData)) {
-        return updatedDataList;
-      } else if (oldData?.TicketsList?.Data) {
-        return {
-          ...oldData,
-          TicketsList: { ...oldData.TicketsList, Data: updatedDataList },
-        };
-      } else {
-        return { ...oldData, Data: updatedDataList };
-      }
-    });
+              const sampleProject = normalize(
+                getValueCaseInsensitive(sampleTicket, "project") ||
+                  getValueCaseInsensitive(sampleTicket, "projectId"),
+              );
+              const payloadProject = normalize(
+                getValueCaseInsensitive(payload, "project") ||
+                  getValueCaseInsensitive(payload, "projectId"),
+              );
+
+              // If this cached list is for a specific project, and it doesn't match our new ticket, skip it!
+              if (
+                sampleProject &&
+                payloadProject &&
+                sampleProject !== payloadProject
+              ) {
+                return oldData;
+              }
+            }
+            console.log("sampleTicket :", currentList);
+            updatedDataList = [formattedPayload, ...currentList]; // Add new ticket to top
+          }
+        } else if (action === "Update") {
+          updatedDataList = currentList.map((x) =>
+            match(x) ? { ...x, ...formattedPayload } : x,
+          );
+        } else if (action === "Delete") {
+          updatedDataList = currentList.filter((x) => !match(x));
+        }
+console.log("updatedDataList :", updatedDataList);
+
+        // 4. Sort Tickets (Newest First)
+        updatedDataList = sortListByCreatedAt(updatedDataList, "desc");
+        console.log("UPDATED TICKET LIST AFTER SORTING:", updatedDataList);
+
+        // 5. Return the data exactly in the structure it originally came in
+        if (Array.isArray(oldData)) {
+          return updatedDataList;
+        } else if (oldData?.TicketsList?.Data) {
+          return {
+            ...oldData,
+            TicketsList: { ...oldData.TicketsList, Data: updatedDataList },
+          };
+        } else {
+          return { ...oldData, Data: updatedDataList };
+        }
+      },
+    );
   }
 };

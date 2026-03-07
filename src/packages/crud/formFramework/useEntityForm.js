@@ -223,6 +223,7 @@ const handleChange = (name, value, metadata = {}) => {
   const validate = () => {
     const validationErrors = validateForm(mergedFormData, config.fields);
     setErrors(validationErrors);
+console.log("validationErrors :", validationErrors, mergedFormData, config.fields);
 
     return Object.keys(validationErrors).length === 0;
   };

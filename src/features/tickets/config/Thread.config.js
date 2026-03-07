@@ -30,9 +30,10 @@ export const ThreadFieldConfig = (ticketId) => [
       if (!value || !data.toTime) return null;
       const [fh, fm] = value.split(":").map(Number);
       const[th,tm]= data.toTime.split(":").map(Number);
+      console.log("validator :", value, data.toTime);
       return fh * 60 + fm >= th * 60 + tm
       ? "From-time must be earlier than To-time"
-      : null; 
+      : true; 
     }
     // errorMessage: "Only alphanumeric allowed", 
   
@@ -52,7 +53,7 @@ export const ThreadFieldConfig = (ticketId) => [
       const[th,tm]= value.split(":").map(Number);
       return th * 60 + tm <= fh * 60 + fm
       ? "To-time must be later than From-time"
-      : null; 
+      : true; 
     }
   },
 

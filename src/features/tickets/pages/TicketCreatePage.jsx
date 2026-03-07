@@ -3,6 +3,7 @@ import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { TicketFormConfig } from "../config/ticketForm.config";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { useTicketMaster } from "../hooks/useTicketMaster";
+import { useMemo } from "react";
 const TicketCreatePage = () => {
   const params = useParams();
   const { data: TicketWrapper } = useTicketMaster({
@@ -22,18 +23,22 @@ const TicketCreatePage = () => {
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
     DueDate: ticket.Due_Date,
-    
+
     // repoId: ticket.Repo_Id,
     project: ticket.Project_Id,
     RepoKey: ticket.RepoKey,
     RepoId: ticket.RepoId,
     label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
   });
-  const entityData =
-    isEdit && Array.isArray(TicketWrapper) && TicketWrapper.length > 0
-      ? TicketWrapper.map(normalizeTicket)[0]
-      : null;
+  const entityData = useMemo(() => {
+    if (!isEdit) return null;
 
+    if (!Array.isArray(TicketWrapper) || TicketWrapper.length === 0) {
+      return null;
+    }
+
+    return normalizeTicket(TicketWrapper[0]);
+  }, [TicketWrapper, isEdit]);
   console.log("TicketWrapper :", TicketWrapper, entityData);
 
   const statusOptions = [

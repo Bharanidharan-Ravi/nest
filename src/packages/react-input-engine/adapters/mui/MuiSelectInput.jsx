@@ -46,9 +46,10 @@ const MuiSelectInput = ({
       disabled={disabled}
       disableClearable={!clearable && !multiple}
       value={value || (multiple ? [] : null)}
-      isOptionEqualToValue={(o, v) => o.value === v.value}
+      isOptionEqualToValue={(o, v) => o.value.id === v.value.id}
       getOptionLabel={(option) => option?.label || ""}
       onChange={handleChange}
+      filterSelectedOptions = {multiple}
       clearOnEscape
       renderInput={(params) => (
         <TextField

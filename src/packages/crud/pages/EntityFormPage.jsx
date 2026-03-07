@@ -74,6 +74,8 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
     }
   };
   const handleSubmit = () => {
+    console.log("ites tigger", validate());
+    
     if (!validate()) return;
 
     const dto = buildDto();

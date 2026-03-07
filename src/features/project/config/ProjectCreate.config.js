@@ -1,3 +1,4 @@
+
 export const ProjFieldConfig = () => [
   /* --------------------------------------------------
      Repository Title
@@ -132,7 +133,7 @@ export const ProjFieldConfig = () => [
           return "Start Date cannot be after Due Date";
         }
       }
-      return null;
+      return true;
     }
   },
   {
@@ -153,7 +154,7 @@ export const ProjFieldConfig = () => [
       if (dueDate < startDate) {
         return "Due Date cannot be before Start Date";
       }
-      return null;
+      return true;
     }
   },
   {

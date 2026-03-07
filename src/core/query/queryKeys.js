@@ -4,18 +4,30 @@ export const queryKeys = {
     list: () => [...queryKeys.repo.all, "list"],
     detail: (id) => [...queryKeys.repo.all, "detail", id]
   },
-  ticket: {
+   ticket: {
     all: ["ticket"],
-    list: (scope) => {
-      if (scope && typeof scope === "object") {
-        const { repoId = "global", projectId = "all" } = scope;
-        return [...queryKeys.ticket.all, "list", repoId, projectId];
-      }
 
-      return [...queryKeys.ticket.all, "list", scope ?? "global", "all"];
-    },
-    detail: (id) => [...queryKeys.ticket.all, "detail", id],
-    thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId]
+    // Ticket list
+    list: ({ repoId = "global", projectId = "all" } = {}) => [
+      ...queryKeys.ticket.all,
+      "list",
+      repoId,
+      projectId
+    ],
+
+    // Single ticket
+    detail: (ticketId) => [
+      ...queryKeys.ticket.all,
+      "detail",
+      ticketId
+    ],
+
+    // Ticket thread/comments
+    thread: (ticketId) => [
+      ...queryKeys.ticket.all,
+      "thread",
+      ticketId
+    ]
   },
   project: {
     all: ["project"],
