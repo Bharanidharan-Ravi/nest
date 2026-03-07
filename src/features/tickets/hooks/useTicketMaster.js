@@ -6,8 +6,8 @@ export const useTicketMaster = (scope = {}, options = {}) => {
   const repoId = scope.repoId ?? null;
   const projectId = scope.projectId ?? null;
   // 🔥 1. Extract ticketId
-  const ticketId = scope.ticketId ?? null; 
-  
+  const ticketId = scope.ticketId ?? null;
+
   console.log("scope :", scope);
 
   ///- Query key- unique per scope -------------------
@@ -17,45 +17,50 @@ export const useTicketMaster = (scope = {}, options = {}) => {
   // by ticket: ["ticket", "list", "repo-id", "proj-id", "ticket-id"]
 
   // 🔥 2. Add ticketId to the query key so it caches separately from the list
-  const queryKey = queryKeys.ticket.list({
-    repoId: repoId ?? "global",
-    projectId: projectId ?? "all",
-    ticketId: ticketId ?? "all" 
-  });
+  // const queryKey = queryKeys.ticket.list({
+  //   repoId: repoId ?? "global",
+  //   projectId: projectId ?? "all",
+  //   ticketId: ticketId ?? "all"
+  // });
+
+  const queryKey = ticketId
+    ? queryKeys.ticket.detail(ticketId)
+    : queryKeys.ticket.list({
+        repoId: repoId ?? "global",
+        projectId: projectId ?? "all",
+      });
 
   // 🔥 3. Prioritize ticketId in the payload
   const payload = buildSyncPayload({
     configKey: "TicketsList",
     repoId,
-    ...(ticketId 
+    ...(ticketId
       ? { idKey: "IssueId", idValue: ticketId } // Use whatever parameter name your GetIssuesByID SP expects (e.g., "IssuesId" or "Id")
-      : projectId 
-        ? { idKey: "projectId", idValue: projectId } 
-        : {}
-    )
+      : projectId
+        ? { idKey: "projectId", idValue: projectId }
+        : {}),
   });
-
+  const staleTime = ticketId ? 0 : 1000 * 60 * 3;
   return useApiQuery({
     queryKey,
     url: "/sync/v2",
     method: "POST",
     payload,
-    source: "TicketsList",  
+    source: "TicketsList",
     options: {
-      staleTime: 5 * 60 * 1000,
-      enabled: 
-        options.enabled !== undefined 
-          ? options.enabled 
+      staleTime,
+      enabled:
+        options.enabled !== undefined
+          ? options.enabled
           : ticketId // 🔥 4. Update enabled logic for ticketId
-            ? Boolean(ticketId) 
-            : projectId 
+            ? Boolean(ticketId)
+            : projectId
               ? Boolean(repoId || projectId)
               : true,
       ...options,
     },
   });
 };
-
 
 // export const useTicketMaster = (scope = {}, options = {}) => {
 //   const isScopeObject = scope && typeof scope === "object";
@@ -89,7 +94,7 @@ export const useTicketMaster = (scope = {}, options = {}) => {
 //     url: "/sync/v2",
 //     method: "POST",
 //     payload,
-//     source: "TicketsList",  
+//     source: "TicketsList",
 //     options: {
 //       staleTime: 5 * 60 * 1000,
 //       // 2. Merge the passed options.

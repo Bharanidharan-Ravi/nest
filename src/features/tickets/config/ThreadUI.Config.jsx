@@ -30,8 +30,12 @@ export const ThreadListConfig = {
   //   order: "desc", // default newest
   // },
 
+  // theme: {
+  //   layout: "h-auto",
+  // },
   theme: {
-    layout: "h-auto",
+    layout: "h-auto overflow-visible shadow-none border-none", // Remove constraints
+    cardItem: "w-full overflow-visible relative", // MUST remove overflow-hidden here
   },
   cardRenderer: (item) => <ThreadListCard item={item} />,
 };

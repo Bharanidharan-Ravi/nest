@@ -152,10 +152,12 @@ export const Breadcrumbs = () => {
       case ROUTE_KEYS.TICKET_DETAIL: {
         if (!ticketId) return null;
         const tickets = queryClient.getQueryData(
-          queryKeys.ticket.list({ repoId }),
+          queryKeys.ticket.list(),
         );
+        console.log("tickets :", tickets);
+        
         return (
-          tickets?.find((t) => t.Issue_Id === ticketId)?.Issue_Title ?? null
+          tickets?.find((t) => t.Issue_Id === ticketId)?.Title ?? null
         );
       }
       case ROUTE_KEYS.PROJ_DETAIL: {
@@ -169,6 +171,7 @@ export const Breadcrumbs = () => {
   };
 
   const breadcrumbs = getBreadcrumbs(titleResolver);
+    console.log("breadcrumbs :", breadcrumbs);
 
   return (
     <nav

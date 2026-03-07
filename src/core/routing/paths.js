@@ -50,7 +50,8 @@ export const ROUTE_KEYS = {
   
   PROJ_TICKET_LIST:  "project.tickets",
   PROJ_TICKET_CREATE:  "project.ticket.create",
-  PROJ_TICKET_EDIT:  "project.ticket.edit", 
+  PROJ_TICKET_EDIT:   "project.ticket.edit", 
+  PROJ_TICKET_DETAIL:    "project.ticket.detail",
   
   LABEL_LIST:   "label-list",
   LABEL_CREATE: "label-create",
@@ -94,6 +95,7 @@ export const PATHS = {
   PROJ_TICKET_LIST:  "/projects/:projId/t",
   PROJ_TICKET_CREATE: "/projects/:projId/t/create",
   PROJ_TICKET_EDIT:   "/projects/:projId/t/:ticketId/edit",
+  PROJ_TICKET_DETAIL: "/projects/:projId/t/:ticketId",
 
   LABEL_LIST:   "/labels",
   LABEL_CREATE: "/labels/create",
