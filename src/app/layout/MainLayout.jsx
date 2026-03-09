@@ -20,11 +20,12 @@ export default function MainLayout() {
       {/* 3. Middle section takes up remaining space */}
       <div className="flex flex-1 overflow-hidden">
         <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
-
-        {/* 4. The main content area is now a flex container that passes height down */}
-        <main className="flex-1 flex flex-col overflow-auto p-3">
-          <Outlet />
-        </main>
+        <div className="container mx-auto bg-white flex flex-col h-screen shadow-lg overflow-hidden relative">
+          {/* 4. The main content area is now a flex container that passes height down */}
+          <main className="flex-1 flex flex-col overflow-auto wg-scrollbar p-3">
+            <Outlet />
+          </main>
+        </div>
       </div>
 
       {/* 5. Footer stays fixed at bottom */}

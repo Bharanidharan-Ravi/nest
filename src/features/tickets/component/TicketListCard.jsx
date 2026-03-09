@@ -87,8 +87,8 @@ const TicketListCard = ({ item }) => {
           <p className="mr-4">
             <Tooltip title={projectDetails.Repo_Name} arrow>
               <span className="repo-key">
-                {projectDetails.Repo_Name.split(" ")
-                  .map((word) => word[0].toUpperCase())
+                {projectDetails?.Repo_Name.split(" ")
+                  .map((word) => word[0]?.toUpperCase())
                   .join("")}
               </span>
             </Tooltip>

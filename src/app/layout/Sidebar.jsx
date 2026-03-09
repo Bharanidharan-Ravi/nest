@@ -5,14 +5,46 @@ import { buildPath } from "../../core/routing/routeRegistry";
 import { useCurrentUser } from "../../core/auth/useCurrentUser";
 import { PERMISSIONS } from "../../core/auth/permissions";
 
+import { useState, useMemo } from "react";
+
 export const Sidebar = ({ isOpen, onClose }) => {
   const { data } = useMasterData();
-   const { getSidebarRoutes } = useSmartNavigation();
-   const { can } = useCurrentUser();
+  const { getSidebarRoutes } = useSmartNavigation();
+  const { can } = useCurrentUser();
 
-  // Called on every render — filtered by user's role automatically
+  // State for Search and Sort
+  const [searchQuery, setSearchQuery] = useState("");
+  // Defaulting to recently updated is often good UX for repos, but you can change it back to "asc"
+  const [sortOrder, setSortOrder] = useState("asc"); 
+
   const sidebarRoutes = getSidebarRoutes();
   const repos = data?.RepoList || [];
+
+  // Filter and Sort Logic
+  const filteredAndSortedRepos = useMemo(() => {
+    // 1. Filter based on search query
+    let processedRepos = repos.filter((repo) =>
+      repo.Title.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    // 2. Sort based on the selected order
+    processedRepos.sort((a, b) => {
+      if (sortOrder === "asc") {
+        return a.Title.localeCompare(b.Title);
+      } else if (sortOrder === "desc") {
+        return b.Title.localeCompare(a.Title);
+      } else if (sortOrder === "recent-updated") {
+        // Ensure "UpdatedAt" matches your actual API data property
+        return new Date(b.UpdatedAt || 0) - new Date(a.UpdatedAt || 0);
+      } else if (sortOrder === "recent-created") {
+        // Ensure "CreatedAt" matches your actual API data property
+        return new Date(b.CreatedAt || 0) - new Date(a.CreatedAt || 0);
+      }
+      return 0;
+    });
+
+    return processedRepos;
+  }, [repos, searchQuery, sortOrder]);
 
   return (
     <>
@@ -66,31 +98,61 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
         {/* Repo Section */}
         {can(PERMISSIONS.REPO_CREATE) && (
-        <div className="mt-4 pt-3 border-t border-gray-200 flex flex-col">
-          <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
-            Repositories
-          </div>
+          <div className="mt-4 pt-3 border-t border-gray-200 flex flex-col min-h-0">
+            <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              Repositories
+            </div>
 
-          <div className="mt-2 flex flex-col gap-1 max-h-[40vh] overflow-y-auto">
-            {repos.map((repo) => (
-              <NavLink
-                key={repo.Repo_Id}
-                to={`/repository/${repo.Repo_Id}`}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  [
-                    "flex items-center px-3 py-2 font-semibold rounded-md text-sm transition-colors hover:bg-gray-100",
-                    isActive
-                      ? "bg-brand-yellow text-black"
-                      : "text-gray-600 hover:none",
-                  ].join(" ")
-                }
+            {/* Search and Sort Controls */}
+            <div className="px-3 mt-2 mb-1 flex gap-2">
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full text-sm px-2 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:border-gray-500 transition-colors"
+              />
+              <select
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                className="text-sm px-1 py-1.5 border border-gray-300 rounded-md bg-white focus:outline-none focus:border-gray-500 cursor-pointer max-w-[100px]"
+                title="Sort repositories"
               >
-                {repo.Title}
-              </NavLink>
-            ))}
+                <option value="recent-updated">Updated</option>
+                <option value="recent-created">Created</option>
+                <option value="asc">A-Z</option>
+                <option value="desc">Z-A</option>
+              </select>
+            </div>
+
+            {/* Repository List */}
+            <div className="mt-1 flex flex-col gap-1 max-h-[40vh] overflow-y-auto overflow-x-hidden">
+              {filteredAndSortedRepos.length > 0 ? (
+                filteredAndSortedRepos.map((repo) => (
+                  <NavLink
+                    key={repo.Repo_Id}
+                    to={`/repository/${repo.Repo_Id}`}
+                    onClick={onClose}
+                    className={({ isActive }) =>
+                      [
+                        "flex items-center px-3 py-2 font-semibold rounded-md text-sm transition-colors hover:bg-gray-100 truncate",
+                        isActive
+                          ? "bg-brand-yellow text-black"
+                          : "text-gray-600 hover:none",
+                      ].join(" ")
+                    }
+                    title={repo.Title}
+                  >
+                    {repo.Title}
+                  </NavLink>
+                ))
+              ) : (
+                <div className="px-3 py-4 text-sm text-gray-400 italic text-center">
+                  No repositories found.
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         )}
       </nav>
     </>
