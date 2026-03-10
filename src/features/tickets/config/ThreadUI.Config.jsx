@@ -19,11 +19,12 @@ export const ThreadParentConfig = {
 
 export const ThreadListConfig = {
   defaultView: "card",
-  pageSize: 10,
+  pageSize: 15,
   enableSearch: false,
   enableTabs: false,
   enableSort: false,
   // enableEdit:true,
+  infinite:true,
   hideTabs: true,
   // defaultSort: {
   //   field: "updatedAt", // default field

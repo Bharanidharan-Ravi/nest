@@ -18,11 +18,11 @@ export default function MainLayout() {
       </div>
 
       {/* 3. Middle section takes up remaining space */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
         <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
-        <div className="container mx-auto bg-white flex flex-col h-screen shadow-lg overflow-hidden relative">
+        <div className="container mx-auto bg-white flex flex-col h-full w-full shadow-lg overflow-hidden relative">
           {/* 4. The main content area is now a flex container that passes height down */}
-          <main className="flex-1 flex flex-col overflow-auto wg-scrollbar p-3">
+          <main id="main-scroll-container" className="flex-1 overflow-y-auto bg-brand-gray-light wg-scrollbar relative">
             <Outlet />
           </main>
         </div>

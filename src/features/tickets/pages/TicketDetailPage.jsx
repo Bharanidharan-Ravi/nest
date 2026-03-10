@@ -2,9 +2,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { ListCardView } from "../../../packages/ui-List/components/ListCardView";
-import {
-  ThreadListConfig
-} from "../config/ThreadUI.Config";
+import { ThreadListConfig } from "../config/ThreadUI.Config";
 import { ThreadFieldConfig } from "../config/Thread.config";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../config/ThreadForm.config";
@@ -69,23 +67,67 @@ const TicketDetailPage = () => {
     UpdatedAt: thread.UpdatedAt,
     UpdatedBy: thread.UpdatedBy,
   }));
-console.log("user :",user);
+  console.log("user :", user);
 
-  const listConfigWithEdit = {
+  const listConfig = {
     ...ThreadListConfig,
     // enableEdit: true,
     cardRenderer: (item) => (
-      <ThreadListCard 
-        item={item} 
-        currentUser={user?.name} 
+      <ThreadListCard
+        item={item}
+        currentUser={user?.name}
         onEdit={() => {
           console.log("Editing thread:", item.Id);
           // Add your edit navigation or modal logic here!
-        }} 
+        }}
       />
     ),
   };
+  // --- Calculate Time Totals ---
+  // --- Calculate Time Totals ---
+  const timeStats = React.useMemo(() => {
+    let totalMinutes = 0;
+    let myMinutes = 0;
 
+    rawList.forEach((thread) => {
+      // 1. Ensure thread.Hours exists and is actually a string
+      if (thread.Hours && typeof thread.Hours === "string") {
+        // 2. Trim whitespace and split
+        const cleanHours = thread.Hours.trim();
+        const parts = cleanHours.split(":");
+
+        // 3. FORCE base-10 parsing using the ", 10" parameter!
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+
+        // 4. Convert completely to minutes
+        const mins = h * 60 + m;
+
+        totalMinutes += mins;
+
+        // 5. Track your own hours
+        if (thread.UpdatedBy === user?.userId) {
+          myMinutes += mins;
+        }
+      }
+    });
+
+    // Helper to format total minutes perfectly back to "HH:mm"
+    const formatTime = (totalMins) => {
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      return `${String(hrs).padStart(2, "0")}:${String(mins).padStart(2, "0")}`;
+    };
+
+    return {
+      total: formatTime(totalMinutes),
+      mine: formatTime(myMinutes),
+    };
+  }, [rawList, user]);
+  console.log(
+    "Logged Thread Hours:",
+    rawList.map((t) => t.Hours),
+  );
   // --- 2. Parent Ticket Processing ---
   const parentTicket = React.useMemo(() => {
     if (!ticketMasterData) return null;
@@ -115,46 +157,50 @@ console.log("user :",user);
   }, [ticketMasterData, ticketId, data]);
 
   if (!parentTicket) return null;
-  console.log("parentTicket :", parentTicket, ticketMasterData);
+  console.log("parentTicket :", parentTicket, rawList, timeStats);
 
   const labels = parentTicket.Labels_JSON
     ? JSON.parse(parentTicket.Labels_JSON)
     : [];
   const formattedDueDate = formatDate(parentTicket.Due_Date);
- 
   return (
-    <div className="flex flex-col relative w-full pb-10">
-      {/* INVISIBLE SENTINEL FOR STICKY HEADER */}
-      <div ref={sentinelRef} className="h-[1px] w-full invisible" />
-
-      {/* CLEAN STICKY HEADER */}
+    // Clean w-full container with white background
+    <div className="flex flex-col relative w-full pb-10 wg-scrollbar bg-white">
+      {/* Sentinel is now absolutely positioned at the top so it never messes with the layout */}
       <div
-        className={`sticky top-[-12px] z-40 transition-all duration-200 bg-white border-b border-gray-200 shadow-sm ${
-          isStuck ? "pt-3 pb-4 -mx-3 px-3" : "pb-4"
+        ref={sentinelRef}
+        className="absolute top-0 h-[1px] w-full invisible"
+      />
+
+      {/* ========================================================
+          FULL WIDTH STICKY HEADER
+          Using top-0 ensures it never scrolls out of view.
+          Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
+          ======================================================== */}
+      <div
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+          isStuck
+            ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
+            : "py-4 px-4 sm:px-6 bg-white border-transparent"
         }`}
       >
-        <div className="flex justify-between px-3 items-start w-full">
+        <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1">
-            {/* Title Row */}
             <div className="flex items-center gap-3">
-              <h3 className="text-2xl text-gray-800 font-semibold leading-tight tracking-tight">
-                {parentTicket.Title}{" "}
-                <span className="text-gray-400 font-light text-2xl">
+              <h3 className="text-2xl text-gray-900 font-bold tracking-tight">
+                {parentTicket.Title}
+                <span className="text-gray-400 font-light ml-2">
                   #{parentTicket.Issue_Code}
                 </span>
               </h3>
 
-              {/* Labels beside title */}
-              {labels.length > 0 && (
-                <div className="flex gap-1.5 flex-wrap">
-                  {labels.map((label) => (
+              {parentTicket?.labels?.length > 0 && (
+                <div className="flex gap-1.5 mt-1">
+                  {parentTicket.labels.map((label) => (
                     <span
                       key={label.LABEL_ID}
-                      className="text-xs font-medium px-2.5 py-0.5 rounded-full border border-transparent"
-                      style={{
-                        backgroundColor: label.LABEL_COLOR,
-                        color: "#fff",
-                      }}
+                      className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm text-white"
+                      style={{ backgroundColor: label.LABEL_COLOR }}
                     >
                       {label.LABEL_TITLE}
                     </span>
@@ -163,308 +209,316 @@ console.log("user :",user);
               )}
             </div>
 
-            {/* Subtitle Row (Project / Repo info) */}
             <div className="text-sm text-gray-500 flex items-center gap-2">
               <span className="font-medium">{parentTicket.Repo_Name}</span>
-              <span>•</span>
+              <span className="opacity-40">•</span>
               <span>{parentTicket.Project_Name}</span>
             </div>
           </div>
-
-          {/* Right side actions */}
-          <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md">
-              <FaCalendarAlt className="text-gray-400" />
-              <span className="font-medium">Due: {formattedDueDate}</span>
+          <div className="flex flex-col items-end gap-2">
+            
+            {/* Top Row: Date & Edit Button */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg text-xs text-gray-600">
+                <FaCalendarAlt className="text-blue-500" size={13} />
+                <span className="font-medium">
+                  Due: {formatDate(parentTicket.Due_Date)}
+                </span>
+              </div>
+              <button
+                onClick={() => navigate(`/tickets/edit/${ticketId}`)}
+                className=" text-gray-500 hover:text-blue-600  hover:bg-gray-50  rounded-lg transition-all"
+                title="Edit Ticket"
+              >
+                <FaEdit size={20} />
+              </button>
             </div>
-            <button
-              onClick={() => navigate(`/tickets/edit/${ticketId}`)}
-              className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-md transition-all"
-            >
-              <FaEdit size={16} />
-            </button>
+
+            {/* Bottom Row: Compact Time Tracking Stats */}
+            <div className="flex items-center gap-3 text-xs font-medium bg-gray-50/80 border border-gray-200/60 shadow-sm rounded-lg px-3 py-1">
+              
+              {/* Estimated */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">Estimated</span>
+                <span className="text-gray-700 leading-none">{parentTicket.Hours || "00:00"}</span>
+              </div>
+              
+              <div className="w-px h-5 bg-gray-300"></div>
+              
+              {/* Total Logged */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">Total Logged</span>
+                <span className="text-blue-600 leading-none">{timeStats.total}</span>
+              </div>
+              
+              <div className="w-px h-5 bg-gray-300"></div>
+              
+              {/* My Contribution */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">My Hours</span>
+                <span className="text-brand-yellow drop-shadow-sm leading-none">{timeStats.mine}</span>
+              </div>
+
+            </div>
           </div>
         </div>
       </div>
 
-      {/* THE TIMELINE CONTAINER */}
-      {/* ml-5 pushes the whole conversation right. We draw the vertical line absolutely inside it. */}
-      <div className="relative mt-2">
-        {/* 🚀 THE MAGIC VERTICAL LINE */}
-        <div className="absolute top-0 bottom-0 left-[20px] w-0.5 bg-gray-200 -z-10"></div>
-
-        {/* Parent Ticket Description (Styled like the first comment) */}
-        <div className="pt-2 flex flex-col gap-6">
-          {/* Parent Ticket Description (Clean block, no OP avatar) */}
-          <div className="bg-white  px-5 py-3 border-b border-gray-200 shadow-sm text-sm text-gray-800 leading-relaxed min-h-[100px]">
-            <HtmlRenderer
-              html={parentTicket.HtmlDesc || parentTicket.Description}
-            />
-          </div>
-
-          {/* THE TIMELINE CONTAINER (Only surrounds the threads now) */}
-          <div className="relative ml-4 mt-2">
-            {/* The vertical timeline line */}
-            <div className="absolute top-0 bottom-0 left-[20px] w-0.5 bg-gray-200 -z-10"></div>
-
-            {/* Threads List */}
-            <ListProvider config={listConfigWithEdit} data={rawList}>
-              <ListCardView />
-            </ListProvider>
-          </div>
-
-          {/* Thread Form */}
-          <div id="bottomSection" className="mt-4">
-            <EntityFormPage
-              mode="Create"
-              config={{
-                ...ThreadFormConfig,
-                fields: ThreadFieldConfig(ticketId),
-              }}
-              module="Thread"
-            />
-          </div>
+      {/* ========================================================
+          SCROLLING CONTENT
+          We apply the same px-4 sm:px-6 here so it lines up with the header!
+          ======================================================== */}
+      <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6">
+        {/* Parent Description */}
+        <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
+          <HtmlRenderer
+            html={parentTicket.HtmlDesc || parentTicket.Description}
+          />
         </div>
-      </div>
 
+        {/* Conversation Threads */}
+        <div className="space-y-2">
+          <ListProvider config={listConfig} data={rawList}>
+            <ListCardView />
+          </ListProvider>
+        </div>
+
+        {/* Reply Form */}
+        {/* <div className="mt-4"> */}
+        <div className=" rounded-3xl p-2">
+          <EntityFormPage
+            mode="Create"
+            config={{
+              ...ThreadFormConfig,
+              fields: ThreadFieldConfig(ticketId),
+            }}
+            module="Thread"
+          />
+        </div>
+        {/* </div> */}
+      </div>
+      <div id="bottomSection"></div>
       <FloatingArrowScroll targetId="bottomSection" />
     </div>
   );
-  // return (
-  //   // We use relative positioning here, NO overflow-hidden, allowing the <main> tag to handle the scrolling
-  //   <div className="flex flex-col relative w-full pb-10">
-  //     {/* ========================================================
-  //         GITHUB-STYLE STICKY HEADER
-  //         Using top-[-12px] counteracts the p-3 padding from your
-  //         MainLayout so it docks perfectly flush with the top edge.
-  //         ======================================================== */}
-  //     {/* <div className="sticky top-[-12px] z-40 bg-brand-gray-light pt-3 pb-4 -mx-3 px-3 border-b border-gray-300 shadow-sm"> */}
-  //     {/* <div ref={sentinelRef} className="absolute w-full h-[1px] top-[-13px] pointer-events-none opacity-0" /> */}
-  //     {/* 1. INVISIBLE TRIGGER ELEMENT */}
-  //     <div ref={sentinelRef} className="h-[1px] w-full invisible" />
-
-  //     {/* 2. DYNAMIC STICKY HEADER */}
-  //     <div
-  //       className={`sticky top-[-12px] z-40 transition-all duration-200 bg-white border-b border-gray-200 shadow-sm ${
-  //         isStuck ? "pt-3 pb-4 -mx-3 px-3" : "pb-4"
-  //       }`}
-  //     >
-  //       <div className="flex justify-between items-center w-full">
-  //         <div className="flex flex-col md:flex-row gap-3 md:gap-6 items-start md:items-center">
-  //           {/* Title */}
-  //           <h3 className="text-2xl text-gray-800 font-bold leading-tight">
-  //             {parentTicket.Title}{" "}
-  //             <span className="text-gray-400 font-light text-xl">
-  //               #{parentTicket.Issue_Code}
-  //             </span>
-  //           </h3>
-
-  //           {/* Labels */}
-  //           {labels.length > 0 && (
-  //             <div className="flex gap-2 flex-wrap">
-  //               {labels.map((label) => (
-  //                 <span
-  //                   key={label.LABEL_ID}
-  //                   className="text-xs font-medium text-white px-3 py-1 rounded-full"
-  //                   style={{ backgroundColor: label.LABEL_COLOR }}
-  //                 >
-  //                   {label.LABEL_TITLE}
-  //                 </span>
-  //               ))}
-  //             </div>
-  //           )}
-  //         </div>
-
-  //         <div className="flex items-center gap-4 text-sm text-gray-600 font-medium">
-  //           <div className="flex items-center gap-2">
-  //             <FaCalendarAlt className="text-ghBlue" />
-  //             <span>Due Date: {formattedDueDate}</span>
-  //           </div>
-
-  //           {/* Parent Edit Button */}
-  //           <button
-  //             onClick={() => navigate(`/tickets/edit/${ticketId}`)}
-  //             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-md transition-all"
-  //             title="Edit Ticket"
-  //           >
-  //             <FaEdit size={18} />
-  //           </button>
-  //         </div>
-  //       </div>
-  //       <div>
-  //         <Tooltip title={parentTicket.Repo_Name} arrow>
-  //           <span>{parentTicket.RepoKey}</span>.
-  //           <span>{getInitials(parentTicket.Repo_Name)}</span>
-  //         </Tooltip>
-  //         {" - "}
-  //         <Tooltip title={parentTicket.Project_Name} arrow>
-  //           <span>{parentTicket.Project_Name}</span>
-  //         </Tooltip>
-  //       </div>
-  //     </div>
-  //     {/* ========================================================
-  //         SCROLLING BODY (Description + Threads)
-  //         This starts below the header and scrolls normally.
-  //         ======================================================== */}
-  //     <div className="pt-2 flex flex-col gap-6">
-  //       {/* Parent Ticket Description */}
-  //       <div className="bg-white p-5 border-b border-gray-200 shadow-sm text-sm text-gray-700">
-  //         <HtmlRenderer
-  //           html={parentTicket.HtmlDesc || parentTicket.Description}
-  //         />
-  //       </div>
-
-  //       {/* Threads List */}
-  //       <div>
-  //         <ListProvider config={listConfigWithEdit} data={rawList}>
-  //           <ListCardView />
-  //         </ListProvider>
-  //       </div>
-
-  //       {/* Thread Form */}
-  //       <div id="bottomSection">
-  //         <EntityFormPage
-  //           mode="Create"
-  //           config={{
-  //             ...ThreadFormConfig,
-  //             fields: ThreadFieldConfig(ticketId),
-  //           }}
-  //           module="Thread"
-  //         />
-  //       </div>
-  //     </div>
-
-  //     <FloatingArrowScroll targetId="bottomSection" />
-  //   </div>
-  // );
 };
 
-export default TicketDetailPage;
-// const TicketDetailPage = () => {
-//   const { ticketId } = useParams();
-//   const { data: ThreadsList } = useThreadMaster(ticketId);
-//   const { data: ticketMasterData } = useTicketMaster();
-
-//   const threads = ThreadsList?.ThreadsList?.Data || [];
-//   const normalizeThread = (thread) => ({
-//     Id: thread.ThreadId,
-//     Issue_Id: thread.Issue_Id,
-//     description: thread.HtmlDesc,
-//     Hours: thread.Hours,
-//     fromTime: thread.From_Time,
-//     toTime: thread.To_Time,
-//     createdAt: thread.CreatedAt,
-//     CreatedBy: thread.CreatedBy,
-//     UpdatedAt: thread.UpdatedAt,
-//     UpdatedBy: thread.UpdatedBy,
-//   });
-
-//   const rawList = threads.map(normalizeThread);
-
-//   // Prepare UI data for the parent (issue)
-//   const IssueParentData = React.useMemo(() => {
-//     if (!ticketMasterData) return [];
-//     const parent = ticketMasterData.find(
-//       (issue) => issue.Issue_Id === ticketId,
-//     );
-
-//     return parent
-//       ? [
-//           {
-//             id: parent.Issue_Id,
-//             title: parent.Title,
-//             description: parent.HtmlDesc || parent.Description,
-//             label: parent.Labels_JSON,
-//             project: parent.Project_Id,
-//             assginedTo: parent.Assignee_Name,
-//             estimateHours: parent.hours,
-//             status: parent.Status,
-//             DueDate: parent.Due_Date,
-//             UpdatedAt: parent.UpdatedAt,
-//             UpdatedBy: parent.UpdatedBy,
-//           },
-//         ]
-//       : [];
-//   }, [ticketMasterData]);
-//  // 1. Tag the data with a _type so we can differentiate them
-//   const combinedData = useMemo(() => {
-//     const parentData = IssueParentData.map(p => ({ ...p, _type: 'parent' }));
-//     const threadData = rawList.map(t => ({ ...t, _type: 'thread' }));
-
-//     // Parent is always first, followed by all threads
-//     return [...parentData, ...threadData];
-//   }, [IssueParentData, rawList]);
-
-//   // 2. Create a Unified Config
-//   const unifiedListConfig = {
-//     ...ThreadListConfig,
-//     enableEdit: true, // Enables the edit icon for all items
-
-//     // Conditionally trigger the right edit function
-//     onEditClick: (item) => {
-//       if (item._type === 'parent') {
-//         navigate(`/tickets/edit/${item.id}`); // Or use your goTo navigation here
-//       } else {
-//         // Handle thread edit here
-//         console.log("Editing thread:", item.Id);
-//       }
-//     },
-
-//     // Conditionally render the correct component
-//     cardRenderer: (item) => {
-//       if (item._type === 'parent') {
-//         return <ThreadParent item={item} />; // Renders the big parent card
-//       }
-//       return <ThreadListCard item={item} />; // Renders the smaller thread cards
-//     }
-//   };
 //   return (
-//     <>
-//       <div className="mb-8 overflow-visible">
-//         {/* We now only need ONE ListProvider and ONE ListCardView! */}
-//         <ListProvider config={unifiedListConfig} data={combinedData}>
+//     <div className="flex flex-col relative w-full pb-10">
+//       {/* INVISIBLE SENTINEL FOR STICKY HEADER */}
+//       <div ref={sentinelRef} className="h-[1px] w-full invisible" />
+
+//       {/* CLEAN STICKY HEADER */}
+//       <div
+//         className={`sticky top-[-12px] z-40 transition-all duration-200 bg-white border-b border-gray-200 shadow-sm ${
+//           isStuck ? "pt-3 pb-4 -mx-3 px-3" : "pb-4"
+//         }`}
+//       >
+//         <div className="flex justify-between px-3 items-start w-full">
+//           <div className="flex flex-col gap-1">
+//             {/* Title Row */}
+//             <div className="flex items-center gap-3">
+//               <h3 className="text-2xl text-gray-800 font-semibold leading-tight tracking-tight">
+//                 {parentTicket.Title}{" "}
+//                 <span className="text-gray-400 font-light text-2xl">
+//                   #{parentTicket.Issue_Code}
+//                 </span>
+//               </h3>
+
+//               {/* Labels beside title */}
+//               {labels.length > 0 && (
+//                 <div className="flex gap-1.5 flex-wrap">
+//                   {labels.map((label) => (
+//                     <span
+//                       key={label.LABEL_ID}
+//                       className="text-xs font-medium px-2.5 py-0.5 rounded-full border border-transparent"
+//                       style={{
+//                         backgroundColor: label.LABEL_COLOR,
+//                         color: "#fff",
+//                       }}
+//                     >
+//                       {label.LABEL_TITLE}
+//                     </span>
+//                   ))}
+//                 </div>
+//               )}
+//             </div>
+
+//             {/* Subtitle Row (Project / Repo info) */}
+//             <div className="text-sm text-gray-500 flex items-center gap-2">
+//               <span className="font-medium">{parentTicket.Repo_Name}</span>
+//               <span>•</span>
+//               <span>{parentTicket.Project_Name}</span>
+//             </div>
+//           </div>
+
+//           {/* Right side actions */}
+//           <div className="flex items-center gap-4 text-sm text-gray-600 mt-1">
+//             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-md">
+//               <FaCalendarAlt className="text-gray-400" />
+//               <span className="font-medium">Due: {formattedDueDate}</span>
+//             </div>
+//             <button
+//               onClick={() => navigate(`/tickets/edit/${ticketId}`)}
+//               className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-md transition-all"
+//             >
+//               <FaEdit size={16} />
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* THE TIMELINE CONTAINER */}
+//       {/* ml-5 pushes the whole conversation right. We draw the vertical line absolutely inside it. */}
+//       <div className="relative mt-2">
+//         {/* 🚀 THE MAGIC VERTICAL LINE */}
+//         <div className="absolute top-0 bottom-0 left-[20px] w-0.5 bg-gray-200 -z-10"></div>
+
+//         {/* Parent Ticket Description (Styled like the first comment) */}
+//         <div className="pt-2 flex flex-col gap-6">
+//           {/* Parent Ticket Description (Clean block, no OP avatar) */}
+//           <div className="bg-white  px-5 py-3 border-b border-gray-200 shadow-sm text-sm text-gray-800 leading-relaxed min-h-[100px]">
+//             <HtmlRenderer
+//               html={parentTicket.HtmlDesc || parentTicket.Description}
+//             />
+//           </div>
+
+//           {/* THE TIMELINE CONTAINER (Only surrounds the threads now) */}
+//           <div className="relative ml-4 mt-2">
+//             {/* The vertical timeline line */}
+//             <div className="absolute top-0 bottom-0 left-[20px] w-0.5 bg-gray-200 -z-10"></div>
+
+//             {/* Threads List */}
+//             <ListProvider config={listConfigWithEdit} data={rawList}>
+//               <ListCardView />
+//             </ListProvider>
+//           </div>
+
+//           {/* Thread Form */}
+//           <div id="bottomSection" className="mt-4">
+//             <EntityFormPage
+//               mode="Create"
+//               config={{
+//                 ...ThreadFormConfig,
+//                 fields: ThreadFieldConfig(ticketId),
+//               }}
+//               module="Thread"
+//             />
+//           </div>
+//         </div>
+//       </div>
+
+//       <FloatingArrowScroll targetId="bottomSection" />
+//     </div>
+//   );
+// };
+
+export default TicketDetailPage;
+
+// return (
+//   // We use relative positioning here, NO overflow-hidden, allowing the <main> tag to handle the scrolling
+//   <div className="flex flex-col relative w-full pb-10">
+//     {/* ========================================================
+//         GITHUB-STYLE STICKY HEADER
+//         Using top-[-12px] counteracts the p-3 padding from your
+//         MainLayout so it docks perfectly flush with the top edge.
+//         ======================================================== */}
+//     {/* <div className="sticky top-[-12px] z-40 bg-brand-gray-light pt-3 pb-4 -mx-3 px-3 border-b border-gray-300 shadow-sm"> */}
+//     {/* <div ref={sentinelRef} className="absolute w-full h-[1px] top-[-13px] pointer-events-none opacity-0" /> */}
+//     {/* 1. INVISIBLE TRIGGER ELEMENT */}
+//     <div ref={sentinelRef} className="h-[1px] w-full invisible" />
+
+//     {/* 2. DYNAMIC STICKY HEADER */}
+//     <div
+//       className={`sticky top-[-12px] z-40 transition-all duration-200 bg-white border-b border-gray-200 shadow-sm ${
+//         isStuck ? "pt-3 pb-4 -mx-3 px-3" : "pb-4"
+//       }`}
+//     >
+//       <div className="flex justify-between items-center w-full">
+//         <div className="flex flex-col md:flex-row gap-3 md:gap-6 items-start md:items-center">
+//           {/* Title */}
+//           <h3 className="text-2xl text-gray-800 font-bold leading-tight">
+//             {parentTicket.Title}{" "}
+//             <span className="text-gray-400 font-light text-xl">
+//               #{parentTicket.Issue_Code}
+//             </span>
+//           </h3>
+
+//           {/* Labels */}
+//           {labels.length > 0 && (
+//             <div className="flex gap-2 flex-wrap">
+//               {labels.map((label) => (
+//                 <span
+//                   key={label.LABEL_ID}
+//                   className="text-xs font-medium text-white px-3 py-1 rounded-full"
+//                   style={{ backgroundColor: label.LABEL_COLOR }}
+//                 >
+//                   {label.LABEL_TITLE}
+//                 </span>
+//               ))}
+//             </div>
+//           )}
+//         </div>
+
+//         <div className="flex items-center gap-4 text-sm text-gray-600 font-medium">
+//           <div className="flex items-center gap-2">
+//             <FaCalendarAlt className="text-ghBlue" />
+//             <span>Due Date: {formattedDueDate}</span>
+//           </div>
+
+//           {/* Parent Edit Button */}
+//           <button
+//             onClick={() => navigate(`/tickets/edit/${ticketId}`)}
+//             className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 border border-transparent hover:border-blue-200 rounded-md transition-all"
+//             title="Edit Ticket"
+//           >
+//             <FaEdit size={18} />
+//           </button>
+//         </div>
+//       </div>
+//       <div>
+//         <Tooltip title={parentTicket.Repo_Name} arrow>
+//           <span>{parentTicket.RepoKey}</span>.
+//           <span>{getInitials(parentTicket.Repo_Name)}</span>
+//         </Tooltip>
+//         {" - "}
+//         <Tooltip title={parentTicket.Project_Name} arrow>
+//           <span>{parentTicket.Project_Name}</span>
+//         </Tooltip>
+//       </div>
+//     </div>
+//     {/* ========================================================
+//         SCROLLING BODY (Description + Threads)
+//         This starts below the header and scrolls normally.
+//         ======================================================== */}
+//     <div className="pt-2 flex flex-col gap-6">
+//       {/* Parent Ticket Description */}
+//       <div className="bg-white p-5 border-b border-gray-200 shadow-sm text-sm text-gray-700">
+//         <HtmlRenderer
+//           html={parentTicket.HtmlDesc || parentTicket.Description}
+//         />
+//       </div>
+
+//       {/* Threads List */}
+//       <div>
+//         <ListProvider config={listConfigWithEdit} data={rawList}>
 //           <ListCardView />
 //         </ListProvider>
 //       </div>
 
-//       <div className="mt-2" id="bottomSection">
-//         <EntityFormPage mode="Create" config={{...ThreadFormConfig, fields: ThreadFieldConfig(ticketId)}} module="Thread" />
+//       {/* Thread Form */}
+//       <div id="bottomSection">
+//         <EntityFormPage
+//           mode="Create"
+//           config={{
+//             ...ThreadFormConfig,
+//             fields: ThreadFieldConfig(ticketId),
+//           }}
+//           module="Thread"
+//         />
 //       </div>
-//       <FloatingArrowScroll targetId="bottomSection" />
-//     </>
-//     // <>
-//     //   {/* Display Parent Data List */}
+//     </div>
 
-//     //   <div className="mb-4 overflow-visible">
-//     //     <ListProvider config={ThreadParentConfig} data={IssueParentData}>
-//     //       {/* Pass overflow-visible to override the default "overflow-hidden" in ListLayout */}
-//     //       <ListLayout className="h-auto overflow-visible border-none shadow-none" />
-//     //     </ListProvider>
-//     //   </div>
-//     //   {/* <div className="overflow-auto"> */}
-//     //     {/* Display Threads List */}
-//     //     <div className="mb-8">
-//     //       <ListProvider config={listConfigWithEdit} data={rawList}>
-//     //         {/* <ListLayout /> */}
-//     //         <ListCardView />
-//     //       </ListProvider>
-//     //     </div>
-
-//     //     {/* Thread Form */}
-//     //     <div className="mt-2" id="bottomSection">
-//     //       <EntityFormPage
-//     //         mode="Create"
-//     //         config={{
-//     //           ...ThreadFormConfig,
-//     //           fields: ThreadFieldConfig(ticketId),
-//     //         }}
-//     //         module="Thread"
-//     //       />
-//     //     </div>
-//     //   {/* </div> */}
-//     //   <FloatingArrowScroll targetId="bottomSection" />
-//     // </>
-//   );
-// };
-
-// export default TicketDetailPage;
+//     <FloatingArrowScroll targetId="bottomSection" />
+//   </div>
+// );

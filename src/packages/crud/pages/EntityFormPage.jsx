@@ -35,6 +35,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
       // }
     },
   });
+console.log("config :", config);
 
   const handleEditorFileDelete = async (deletedUrl) => {
     // 1. Only process deletions for files in the temporary folder
@@ -75,7 +76,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
   };
   const handleSubmit = () => {
     console.log("ites tigger", validate());
-    
+
     if (!validate()) return;
 
     const dto = buildDto();
@@ -135,18 +136,51 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
       </div>
 
       <div className={`wg-form-footer ${theme.footer || ""}`}>
-        <button
-          type="button"
-          onClick={handleSubmit}
-          disabled={isPending}
-          className={`wg-btn-primary ${theme.submitBtn || ""}`}
-        >
-          {isPending
-            ? mode === "Create"
-              ? "Creating..."
-              : "updating..."
-            : `${mode} ${module}`}
-        </button>
+        {/* 🔥 UPDATED: Dynamic Action Button Rendering */}
+        {config.actions && config.actions.length > 0 ? (
+          config.actions.map((action, index) => (
+            <button
+              key={index}
+              type="button"
+              disabled={isPending}
+              className={
+                action.className || `wg-btn-primary ${theme.submitBtn || ""}`
+              }
+              onClick={() => {
+                // Standard Submit Button
+                if (action.type === "submit") {
+                  handleSubmit();
+                }
+                // Custom Button (like Commit & Close)
+                else if (action.onClick) {
+                  action.onClick({
+                    formData,
+                    // Pass handleSubmit so they can inject their overrides safely
+                    submitForm: handleSubmit,
+                  });
+                }
+              }}
+            >
+              {isPending && action.type === "submit"
+                ? "Processing..."
+                : action.label}
+            </button>
+          ))
+        ) : (
+          /* Fallback if no config.actions are provided */
+          <button
+            type="button"
+            onClick={() => handleSubmit()}
+            disabled={isPending}
+            className={`wg-btn-primary ${theme.submitBtn || ""}`}
+          >
+            {isPending
+              ? mode === "Create"
+                ? "Creating..."
+                : "Updating..."
+              : `${mode} ${module}`}
+          </button>
+        )}
       </div>
     </div>
   );
