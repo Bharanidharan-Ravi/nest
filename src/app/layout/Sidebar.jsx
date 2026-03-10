@@ -52,7 +52,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
       <div
         onClick={onClose}
         className={[
-          "fixed inset-0 bg-black/40 z-20 transition-opacity duration-300",
+          "fixed inset-0 bg-black/40 z-30 transition-opacity duration-300",
           isOpen ? "opacity-100 visible" : "opacity-0 invisible",
         ].join(" ")}
       />
@@ -60,7 +60,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
       {/* Sidebar */}
       <nav
         className={[
-          "fixed top-0 left-0 h-screen w-[260px] bg-white border-r border-gray-200 z-30",
+          "fixed top-0 left-0 h-screen w-[260px] bg-white border-r border-gray-200 z-50",
           "flex flex-col gap-1 p-3",
           "transform transition-transform duration-300 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full",

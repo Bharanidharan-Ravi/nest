@@ -19,6 +19,8 @@ export const useEntityForm = (config, context = {}) => {
       if (!field.initValueResolver) return;
 
       const initialValue = field.initValueResolver(context, masterData);
+      console.log(`Initial value for ${field.name}:`, initialValue);
+      
       if (initialValue !== null && initialValue !== undefined) {
         initialValues[field.name] = initialValue;
       }
@@ -50,7 +52,7 @@ export const useEntityForm = (config, context = {}) => {
       }
 
       if (field.disableWhen) {
-        newField.disabled = field.disableWhen(context);
+        newField.disabled = field.disableWhen(context, mergedFormData);
       }
 
       return newField;

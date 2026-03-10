@@ -11,7 +11,7 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "CommentText",
   },
 
- {
+  {
     name: "issueId",
     apiKey: "Issue_Id",
     hidden: true,
@@ -26,17 +26,16 @@ export const ThreadFieldConfig = (ticketId) => [
     required: true,
     dataType: "dateTime",
     apiKey: "From_Time",
-    customValidator:(value,data)=>{
+    customValidator: (value, data) => {
       if (!value || !data.toTime) return null;
       const [fh, fm] = value.split(":").map(Number);
-      const[th,tm]= data.toTime.split(":").map(Number);
+      const [th, tm] = data.toTime.split(":").map(Number);
       console.log("validator :", value, data.toTime);
       return fh * 60 + fm >= th * 60 + tm
-      ? "From-time must be earlier than To-time"
-      : true; 
-    }
-    // errorMessage: "Only alphanumeric allowed", 
-  
+        ? "From-time must be earlier than To-time"
+        : true;
+    },
+    // errorMessage: "Only alphanumeric allowed",
   },
   {
     label: "To-time (24h Format)",
@@ -46,15 +45,15 @@ export const ThreadFieldConfig = (ticketId) => [
     required: true,
     dataType: "dateTime",
     apiKey: "To_Time",
-    errorMessage: "To-time cannot be earlier than From-time", 
-    customValidator:(value,data)=>{
+    errorMessage: "To-time cannot be earlier than From-time",
+    customValidator: (value, data) => {
       if (!value || !data.fromTime) return null;
       const [fh, fm] = data.fromTime.split(":").map(Number);
-      const[th,tm]= value.split(":").map(Number);
+      const [th, tm] = value.split(":").map(Number);
       return th * 60 + tm <= fh * 60 + fm
-      ? "To-time must be later than From-time"
-      : true; 
-    }
+        ? "To-time must be later than From-time"
+        : true;
+    },
   },
 
   {
@@ -67,18 +66,97 @@ export const ThreadFieldConfig = (ticketId) => [
       const hours = calcHHMM(formData.fromTime, formData.toTime);
       return hours;
     },
-    effectDependencies: ["fromTime", "toTime"], 
+    effectDependencies: ["fromTime", "toTime"],
+  },
+  {
+    name: "UpdateStatus",
+    label: "Update Status",
+    type: "select",
+    ui: "mui",
+    apiKey: "StreamName",
+    required: true,
+    // Add standard widths so they sit in a neat row
+    className: "col-span-12 md:col-span-4",
+    options: [
+      {
+        label: "In Progress",
+        value: {
+          id: "IN_PROGRESS",
+          value: "IN_PROGRESS",
+        },
+      },
+      {
+        label: "Moved to Testing",
+        value: {
+          id: "TESTING",
+          value: "TESTING",
+        },
+      },
+      {
+        label: "Awaiting Client Response",
+        value: { id: "AWAITING_CLIENT", value: "AWAITING_CLIENT" },
+      },
+      { label: "On Hold", value: { id: "HOLD", value: "HOLD" } },
+    ],
+    initValueResolver: () => {
+      return {
+        label: "In Progress",
+        value: { id: "IN_PROGRESS", value: "IN_PROGRESS" },
+      };
     },
+  },
+  {
+    name: "AssignedTo",
+    label: "Assign To",
+    type: "select",
+    apiKey: "ResourceId",
+    ui: "mui",
+    className: "col-span-12 md:col-span-4",
+    // Pass your Master Data employee list here
+    optionsResolver: (masterData) =>
+      masterData?.EmployeeList?.map((emp) => ({
+        label: emp.UserName,
+        value: {
+          id: emp.UserID,
+          name: emp.UserName,
+        },
+      })) || [],
+    disableWhen: (context, formData) => {
+      const currentStatus = formData?.UpdateStatus?.value;
+
+      // Return true if it should be disabled, false if it should be enabled
+      return (
+        currentStatus === "AWAITING_CLIENT" ||
+        currentStatus === "HOLD" ||
+        currentStatus === "IN_PROGRESS"
+      );
+    },
+  },
+  {
+    name: "CompletionPercentage",
+    label: "% Completed",
+    type: "text",
+    ui: "mui",
+    apiKey: "CompletionPct",
+    colSpan: 3,
+    // Optional: Only show percentage if it's In Progress or Testing
+    disableWhen: (context, formData) => {
+      const currentStatus = formData?.UpdateStatus?.value;
+
+      // Return true if it should be disabled, false if it should be enabled
+      return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
+    },
+  },
 
   //   {
   //   label: "Calculated Hours",
   //   name: "calculatedHours",
   //   type: "text",
-  //   ui: "mui", 
+  //   ui: "mui",
   //   required: false,
   //   dataType: "string",
   //   apiKey: "Hours",
-  //   defaultValue: null, 
+  //   defaultValue: null,
   //   readOnly: true,
   //   effectResolver: (formData) => {
   //     const hours = calcHHMM(formData.fromTime, formData.toTime);

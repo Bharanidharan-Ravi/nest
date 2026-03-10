@@ -122,8 +122,8 @@ export default function TicketsPage() {
       {/* 🔥 Create Button */}
       {/* <button onClick={handleCreate}>Create Ticket</button> */}
       {(!repoId && !projId )&& (
-        <div className="flex justify-between items-center mb-3 flex-none">
-          <h2>Tickets</h2>
+        <div className="flex justify-between items-center mb-4 flex-none px-2">
+          <h2 className="text-2xl font-bold text-gray-800">Tickets</h2>
 
           <button
             onClick={() => goTo(createRouteKey, { repoId, projId })}
@@ -135,7 +135,7 @@ export default function TicketsPage() {
       )}
 
       {/* <div className="tickets-container container"> */}
-      <div className="flex-1 min-h-0">
+      <div className="w-full pb-10">
         <ListProvider config={listConfigWithNav} data={TicketList}>
           <ListLayout />
         </ListProvider>

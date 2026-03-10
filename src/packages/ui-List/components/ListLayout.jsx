@@ -7,15 +7,15 @@ import { ListSearchBar } from "./ListSearchBar";
 import { ListTabs } from "./ListTabs";
 import { ListFilters } from "./ListFilters";
 
-export function ListLayout({className}) {
+export function ListLayout({ className }) {
   const { view, config } = useList();
   const layoutClasses =
-    className || config.theme?.layout || "flex flex-col h-full overflow-hidden";
+    className || config.theme?.layout || "flex flex-col w-full";
   return (
     // 1. Container fills height (h-full) and manages internal scrolling
- <div className={`border border-gray-200 rounded-lg bg-white shadow-sm wg-scrollbar ${layoutClasses}`}>
+    <div className={`rounded-lg bg-white shadow-sm ${layoutClasses}`}>
       {/* 2. FIXED TOP SECTION (Search + Toolbar) */}
-      <div className="flex-none z-10 bg-white">
+      <div className="sticky top-0 z-20 bg-white border border-gray-200 border-b-0 rounded-t-lg">
         {config.enableSearch && <ListSearchBar />}
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border-b border-gray-200 bg-gray-50 gap-4">
@@ -29,7 +29,7 @@ export function ListLayout({className}) {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto bg-white p-0 relative">
+      <div className="flex-1 bg-white p-0 relative border border-gray-200 border-t-0 rounded-b-lg">
         {view === "table" ? <ListTableView /> : <ListCardView />}
       </div>
     </div>
