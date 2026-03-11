@@ -237,12 +237,55 @@ export const TicketFieldConfig = () => [
       // ✅ 3. Always return null if not editing, so the dropdown starts empty
       return null;
     },
-    required: true,
+    // required: true,
     dataType: "string",
     multiple: false,
     apiKey: "Assignee_Id",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
+    visibleWhen: () => true,
+  },
+  {
+    label: "Assignees",
+    name: "assignees",
+    type: "select",
+    ui: "mui",
+    multiple: true,
+    required: false,
+    dataType: "string",
+   optionsResolver: (masterData) =>
+      masterData?.EmployeeList?.map((emp) => ({
+        label: emp.UserName,
+        value: {
+          id: emp.UserID,
+          name: emp.UserName,
+        },
+      })) || [],
+    apiKey: "resourceIds",
+
+    // initValueResolver: (context) => {
+    //   // ✅ Corrected: Only map if we ARE editing and the data actually exists
+    //   if (
+    //     context.isEdit &&
+    //     context.entityData &&
+    //     Array.isArray(context.entityData.label)
+    //   ) {
+    //     return context.entityData.label.map((l) => ({
+    //       label: l.LABEL_TITLE,
+    //       value: {
+    //         id: l.LABEL_ID,
+    //         name: l.LABEL_TITLE,
+    //       },
+    //     }));
+    //   }
+
+    //   // Return an empty array (or null) if there's no data, so the form field starts empty
+    //   return [];
+    // },
+
+    // pattern: "^[A-Za-z0-9 ]+$",
+    // errorMessage: "Only alphanumeric allowed",
+
     visibleWhen: () => true,
   },
   {

@@ -63,7 +63,7 @@ const ProjectPage = () => {
       value: repo.Repo_Id,
     })) || []),
   ];
-
+console.log("ProjectPage repos:", repos);
   // Determine create route key based on context (inside repo vs standalone)
   const createRouteKey = repoId
     ? ROUTE_KEYS.REPO_PROJ_CREATE
