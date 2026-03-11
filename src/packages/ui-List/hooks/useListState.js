@@ -31,9 +31,13 @@ const isUrlSyncEnabled = config.syncUrl !== false;
   const [sortField, setSortField] = useState(
     (isUrlSyncEnabled ? searchParams.get("sort") : null) || config.defaultSort?.field || "updatedAt"
   );
+  console.log("config :", config.defaultSort, config.defaultSort?.order);
+  
   const [sortOrder, setSortOrder] = useState(
     (isUrlSyncEnabled ? searchParams.get("order") : null) || config.defaultSort?.order || "desc"
   );
+  console.log("sortorder :", sortOrder);
+  
   const [filters, setFilters] = useState({});
   const [view, setView] = useState(config.defaultView || "table");
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
@@ -102,13 +106,15 @@ const isUrlSyncEnabled = config.syncUrl !== false;
 
     // Sort
     data.sort((a, b) => {
+      
+      
       const aVal = a?.[sortField];
       const bVal = b?.[sortField];
       if (!aVal || !bVal) return 0;
 
       const aDate = new Date(aVal);
       const bDate = new Date(bVal);
-
+// console.log("sort oredr :", aDate, bDate, sortOrder);
       if (!isNaN(aDate) && !isNaN(bDate)) {
         return sortOrder === "asc" ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
       }

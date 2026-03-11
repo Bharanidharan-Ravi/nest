@@ -22,14 +22,14 @@ export const ThreadListConfig = {
   pageSize: 15,
   enableSearch: false,
   enableTabs: false,
-  enableSort: false,
+  enableSort: true,
   // enableEdit:true,
   infinite:true,
   hideTabs: true,
-  // defaultSort: {
-  //   field: "updatedAt", // default field
-  //   order: "desc", // default newest
-  // },
+  defaultSort: {
+    field: "UpdatedAt", // default field
+    order: "asc", // default newest
+  },
 
   // theme: {
   //   layout: "h-auto",
