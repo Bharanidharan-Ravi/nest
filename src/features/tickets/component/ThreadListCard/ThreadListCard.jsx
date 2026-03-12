@@ -26,66 +26,6 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
 
   // Check if this comment was made by the logged-in user
   const isMe = item.CreatedBy === currentUser;
-
-  //   return (
-  //     // 👉 flex-row-reverse pushes the whole block to the right if isMe is true
-  //     <div className={`relative flex gap-4 w-full mb-6 group ${isMe ? "flex-row-reverse" : "flex-row"}`}>
-
-  //       {/* 1. THE AVATAR */}
-  //       <div className="flex-shrink-0 relative z-10">
-  //         <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ring-4 ring-white ${
-  //           isMe ? "bg-brand-yellow text-white" : "bg-gray-100 text-gray-600 border border-gray-200"
-  //         }`}>
-  //           {getInitials(item.CreatedBy)}
-  //         </div>
-  //       </div>
-
-  //       {/* 2. THE CHAT CARD */}
-  //       {/* max-w-[85%] ensures the chat bubbles don't stretch all the way across the screen */}
-  //       <div className="flex-1 max-w-[100%] border border-gray-200 rounded-md bg-white shadow-sm relative">
-
-  //         {/* The pointer arrow (Flips left or right depending on the user) */}
-  //         <div className={`absolute top-3 w-3 h-3 bg-[#f6f8fa] transform rotate-45 rounded-sm ${
-  //           isMe
-  //             ? "-right-[6px] border-t border-r border-gray-200" // Point right
-  //             : "-left-[6px] border-l border-b border-gray-200"  // Point left
-  //         }`}></div>
-
-  //         {/* Card Header (Gray background) */}
-  //         <div className="bg-[#f6f8fa] border-b border-gray-200 px-4 py-2.5 rounded-t-md flex justify-between items-center text-sm">
-  //           <div className="text-gray-500">
-  //             <strong className="text-gray-900 font-semibold mr-1">
-  //               {isMe ? "You" : item.CreatedBy || "Unknown User"}
-  //             </strong>
-  //             commented {dayjs(item.createdAt).fromNow()}
-  //           </div>
-
-  //           {/* 👉 THE FIX: Dedicated Edit Button placed perfectly in the header */}
-  //           <button
-  //             onClick={onEdit}
-  //             className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded hover:bg-gray-200"
-  //             title="Edit Comment"
-  //           >
-  //             <FaEdit size={14} />
-  //           </button>
-  //         </div>
-
-  //         {/* Card Body */}
-  //         <div className="p-4 text-sm text-gray-800 break-words leading-relaxed">
-  //           <HtmlRenderer html={item.description} />
-  //         </div>
-
-  //         {/* Card Footer */}
-  //         {(item.fromTime || item.Hours) && (
-  //           <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 rounded-b-md flex justify-between text-xs text-gray-500">
-  //             <span>{formatDateRange(item.fromTime, item.toTime)}</span>
-  //             <span className="font-medium">Total Working Hours: {item.Hours || "N/A"}</span>
-  //           </div>
-  //         )}
-  //       </div>
-  //     </div>
-  //   );
-  // };
   return (
     <div
       className={`relative flex gap-4 w-full mb-6 group ${isMe ? "flex-row-reverse" : "flex-row"}`}

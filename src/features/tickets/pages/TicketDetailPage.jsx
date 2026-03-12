@@ -20,6 +20,7 @@ import { useRef } from "react";
 import { useEffect } from "react";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import AssigneesWidget from "../component/AssigneesWidget";
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
@@ -66,7 +67,9 @@ const TicketDetailPage = () => {
     CreatedBy: thread.CreatedBy,
     UpdatedAt: thread.UpdatedAt,
     UpdatedBy: thread.UpdatedBy,
+    All_Assignees: thread.All_Assignees,
   }));
+
   console.log("user :", user);
 
   const listConfig = {
@@ -157,12 +160,14 @@ const TicketDetailPage = () => {
   }, [ticketMasterData, ticketId, data]);
 
   if (!parentTicket) return null;
-  console.log("parentTicket :", parentTicket, rawList, timeStats);
 
   const labels = parentTicket.Labels_JSON
     ? JSON.parse(parentTicket.Labels_JSON)
     : [];
   const formattedDueDate = formatDate(parentTicket.Due_Date);
+  const assigneesJsonString = parentTicket?.All_Assignees || null;
+    console.log("assigneesJsonString :", assigneesJsonString, parentTicket);
+    
   return (
     // Clean w-full container with white background
     <div className="flex flex-col relative w-full pb-10 wg-scrollbar bg-white">
@@ -216,7 +221,6 @@ const TicketDetailPage = () => {
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
-            
             {/* Top Row: Date & Edit Button */}
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-1.5 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg text-xs text-gray-600">
@@ -236,29 +240,39 @@ const TicketDetailPage = () => {
 
             {/* Bottom Row: Compact Time Tracking Stats */}
             <div className="flex items-center gap-3 text-xs font-medium bg-gray-50/80 border border-gray-200/60 shadow-sm rounded-lg px-3 py-1">
-              
               {/* Estimated */}
               <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">Estimated</span>
-                <span className="text-gray-700 leading-none">{parentTicket.Hours || "00:00"}</span>
-              </div>
-              
-              <div className="w-px h-5 bg-gray-300"></div>
-              
-              {/* Total Logged */}
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">Total Logged</span>
-                <span className="text-blue-600 leading-none">{timeStats.total}</span>
-              </div>
-              
-              <div className="w-px h-5 bg-gray-300"></div>
-              
-              {/* My Contribution */}
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">My Hours</span>
-                <span className="text-brand-yellow drop-shadow-sm leading-none">{timeStats.mine}</span>
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
+                  Estimated
+                </span>
+                <span className="text-gray-700 leading-none">
+                  {parentTicket.Hours || "00:00"}
+                </span>
               </div>
 
+              <div className="w-px h-5 bg-gray-300"></div>
+
+              {/* Total Logged */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
+                  Total Logged
+                </span>
+                <span className="text-blue-600 leading-none">
+                  {timeStats.total}
+                </span>
+              </div>
+
+              <div className="w-px h-5 bg-gray-300"></div>
+
+              {/* My Contribution */}
+              <div className="flex flex-col items-center">
+                <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
+                  My Hours
+                </span>
+                <span className="text-brand-yellow drop-shadow-sm leading-none">
+                  {timeStats.mine}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -275,17 +289,23 @@ const TicketDetailPage = () => {
             html={parentTicket.HtmlDesc || parentTicket.Description}
           />
         </div>
-
-        {/* Conversation Threads */}
-        <div className="space-y-2">
-          <ListProvider config={listConfig} data={rawList}>
-            <ListCardView />
-          </ListProvider>
+        <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full">
+          {/* Conversation Threads */}
+          <div className="w-full lg:w-3/4">
+            <ListProvider config={listConfig} data={rawList}>
+              <ListCardView />
+            </ListProvider>
+          </div>
+          {/* RIGHT COLUMN: The Sidebar (Takes up 25% width - Only renders ONCE) */}
+          <div className="w-full lg:w-1/4 flex flex-col gap-6">
+            <AssigneesWidget assigneesJson={assigneesJsonString} />
+            {/* Render Labels Widget Here later */}
+          </div>
         </div>
 
         {/* Reply Form */}
         {/* <div className="mt-4"> */}
-        <div className=" rounded-3xl p-2">
+        <div className=" rounded-3xl p-2 w-full lg:w-3/4">
           <EntityFormPage
             mode="Create"
             config={{
