@@ -22,9 +22,7 @@ export const validateForm = (formData, fields) => {
     }
 
     if (field.customValidator) {
-      const result = field.customValidator(value, data);
-      console.log(`Validation result for ${field.name}:`, result, data, value);
-      
+      const result = field.customValidator(value, data);      
       if (result !== true) {
         errorTarget[field.name] = result;
       }

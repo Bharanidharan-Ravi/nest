@@ -36,14 +36,12 @@ const ProjectCreate = () => {
         return statusOptions[0]; // Returns the whole { label, value: { id, name } } object
       }
 
-      const apiStatus = context.entityData.Status; // e.g., "Active" or 1
-console.log("API Status:", apiStatus);
+      const apiStatus = context.entityData.Status; 
 
       // 2. Find the matching option based on either the ID or the Label
       const matchedOption = statusOptions.find(
         (opt) => opt.value.id === apiStatus || opt.label === apiStatus
       );
-console.log("API matchedOption:", matchedOption);
       // 3. Return the full object so MUI recognizes it
       return matchedOption || statusOptions[0];
     },

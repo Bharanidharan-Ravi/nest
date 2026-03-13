@@ -23,9 +23,7 @@ export const fetchLabelList = (config = {}, labelId = null) => {
   })
 }
 
-export const useLabelData = (labelId = null) => {
-  console.log("labelId :", labelId);
-  
+export const useLabelData = (labelId = null) => {  
   return useApiQuery({
     queryKey: labelId
       ? queryKeys.label.detail(labelId)

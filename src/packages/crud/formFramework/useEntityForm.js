@@ -19,16 +19,10 @@ export const useEntityForm = (config, context = {}) => {
       if (!field.initValueResolver) return;
 
       const initialValue = field.initValueResolver(context, masterData);
-      console.log(`Initial value for ${field.name}:`, initialValue);
       
       if (initialValue !== null && initialValue !== undefined) {
         initialValues[field.name] = initialValue;
       }
-      //  else {
-      //   console.log("field context:", field);
-        
-      //   initialValues[field.name] = context?.entityData?.[field.apiKey] ?? null;
-      // }
     });
 
     return initialValues;
@@ -114,6 +108,8 @@ export const useEntityForm = (config, context = {}) => {
   // };
 
 const handleChange = (name, value, metadata = {}) => {
+  console.log("name  chanege :", name,value, metadata);
+  
     setFormData((prev) => {
       // 1. Calculate the new state for this specific field
       const next = {
@@ -225,7 +221,6 @@ const handleChange = (name, value, metadata = {}) => {
   const validate = () => {
     const validationErrors = validateForm(mergedFormData, config.fields);
     setErrors(validationErrors);
-console.log("validationErrors :", validationErrors, mergedFormData, config.fields);
 
     return Object.keys(validationErrors).length === 0;
   };
@@ -235,6 +230,8 @@ console.log("validationErrors :", validationErrors, mergedFormData, config.field
     setFormData({});
     setErrors({});
   };
+  console.log("entity mergedFormData :", mergedFormData);
+  
   return {
     formData: mergedFormData,
     errors,

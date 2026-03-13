@@ -35,7 +35,6 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
       // }
     },
   });
-console.log("config :", config);
 
   const handleEditorFileDelete = async (deletedUrl) => {
     // 1. Only process deletions for files in the temporary folder
@@ -75,8 +74,6 @@ console.log("config :", config);
     }
   };
   const handleSubmit = () => {
-    console.log("ites tigger", validate());
-
     if (!validate()) return;
 
     const dto = buildDto();

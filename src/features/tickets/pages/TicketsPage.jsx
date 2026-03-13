@@ -8,6 +8,9 @@ import { useMasterData } from "../../../core/master/useMasterData";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { useTicketKeyboardNavigation } from "../hooks/useTicketKeyboardNavigation";
+import ThreadListCard from "../component/ThreadListCard/ThreadListCard";
+import TicketListCard from "../component/TicketListCard";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
@@ -27,21 +30,28 @@ export default function TicketsPage() {
   const createRouteKey = repoId
     ? ROUTE_KEYS.REPO_TICKET_CREATE
     : projId
-    ? ROUTE_KEYS.PROJ_TICKET_CREATE
-    : ROUTE_KEYS.TICKET_CREATE;
+      ? ROUTE_KEYS.PROJ_TICKET_CREATE
+      : ROUTE_KEYS.TICKET_CREATE;
 
   const isRepoScoped = !!repoId;
   const normalizeTicket = (ticket) => ({
     id: ticket.Issue_Id,
     title: ticket.Title,
+    ticketKey: ticket.Issue_Code,
     status: ticket.Status,
     description: ticket.HtmlDesc || ticket.Description,
     assginedTo: ticket.Assignee_Name,
     estimateHours: ticket.hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
+    UpdatedBy: ticket.UpdatedBy,
     repoId: ticket.RepoId,
+    dueDate: ticket.Due_Date,
     project: ticket.Project_Id,
+    priority: ticket.Priority,
+    multiAssignees: ticket.All_Assignees
+      ? JSON.parse(ticket.All_Assignees)
+      : [],
     RepoKey: ticket.RepoKey,
     label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
   });
@@ -75,7 +85,12 @@ export default function TicketsPage() {
       value: labels.Id, // What the system uses to filter the cards
     })) || []),
   ];
-
+  const TicketList = data?.map(normalizeTicket) || [];
+  // const focusedIndex = useTicketKeyboardNavigation(
+  //   TicketList,
+  //   (item) => navigate(`${location.pathname}/${item.id}`),
+  //   (item) => goTo(editRouteKey, { ticketId: item.id, repoId, projId }),
+  // );
   const listConfigWithNav = {
     ...TicketListConfig,
     filters: [
@@ -106,6 +121,13 @@ export default function TicketsPage() {
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
     ],
+    cardRenderer: (item, controls) => (
+      <TicketListCard
+        item={item}
+        controls={controls}
+        // focused={index === focusedIndex}
+      />
+    ),
     onItemClick: (item) => {
       navigate(`${location.pathname}/${item.id}`);
     },
@@ -113,7 +135,8 @@ export default function TicketsPage() {
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });
     },
   };
-  const TicketList = data?.map(normalizeTicket) || [];
+
+  console.log("ticket data :", data);
 
   return (
     <>
@@ -121,7 +144,7 @@ export default function TicketsPage() {
 
       {/* 🔥 Create Button */}
       {/* <button onClick={handleCreate}>Create Ticket</button> */}
-      {(!repoId && !projId )&& (
+      {!repoId && !projId && (
         <div className="flex justify-between items-center mb-4 flex-none px-2">
           <h2 className="text-2xl font-bold text-gray-800">Tickets</h2>
 

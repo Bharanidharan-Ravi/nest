@@ -154,7 +154,6 @@ export const Breadcrumbs = () => {
         const tickets = queryClient.getQueryData(
           queryKeys.ticket.list(),
         );
-        console.log("tickets :", tickets);
         
         return (
           tickets?.find((t) => t.Issue_Id === ticketId)?.Title ?? null
@@ -171,7 +170,6 @@ export const Breadcrumbs = () => {
   };
 
   const breadcrumbs = getBreadcrumbs(titleResolver);
-    console.log("breadcrumbs :", breadcrumbs);
 
   return (
     <nav

@@ -19,6 +19,7 @@ const TicketCreatePage = () => {
     description: ticket.HtmlDesc || ticket.Description,
     assginedTo: ticket.Assignee_Name,
     Assignee_Id: ticket.Assignee_Id,
+    multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
     estimateHours: ticket.Hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
