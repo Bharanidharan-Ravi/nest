@@ -12,6 +12,7 @@ import MuiGroupInput from "../adapters/mui/MuiGroupInput";
 import MuiSelectInput from "../adapters/mui/MuiSelectInput";
 import MuiTextInput from "../adapters/mui/MuiTextInput";
 import MuiTimeInput from "../adapters/mui/MuiTimeInput";
+import PriorityRadioField from "../adapters/mui/PriorityRadioField";
 
 export const inputRegistry = {
   mui: {
@@ -22,6 +23,7 @@ export const inputRegistry = {
     group: MuiGroupInput,
     flexHours: MuiFlexibleHoursInput,
     color:  MuiColorInput,   
+    priority: PriorityRadioField,
   },
   html: {
     text: HtmlTextInput,

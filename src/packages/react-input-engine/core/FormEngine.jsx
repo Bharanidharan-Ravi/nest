@@ -16,7 +16,9 @@ const FormEngine = ({
     8: "col-span-12 md:col-span-8",
     6: "col-span-12 md:col-span-6",
     4: "col-span-12 md:col-span-4",
-    3: "col-span-12 md:col-span-2",
+    3: "col-span-12 md:col-span-3",
+    2: "col-span-12 md:col-span-2",
+    1: "col-span-12 md:col-span-1",
   };
 
   const getErrors = (field) => {

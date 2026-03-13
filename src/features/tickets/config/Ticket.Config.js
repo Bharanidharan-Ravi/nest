@@ -187,8 +187,7 @@ export const TicketFieldConfig = () => [
     // 🔥 Smart Initial Value (Sets project if projid exists)
     initValueResolver: (context, masterData) => {
       const targetProjId =
-        context?.params?.projId  ||
-        context?.entityData?.project;
+        context?.params?.projId || context?.entityData?.project;
 
       if (!targetProjId) return null;
 
@@ -253,7 +252,7 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-   optionsResolver: (masterData) =>
+    optionsResolver: (masterData) =>
       masterData?.EmployeeList?.map((emp) => ({
         label: emp.UserName,
         value: {
@@ -261,31 +260,28 @@ export const TicketFieldConfig = () => [
           name: emp.UserName,
         },
       })) || [],
+    initValueResolver: (context) => {
+      // ✅ Corrected: Only map if we ARE editing and the data actually exists
+      if (
+        context.isEdit &&
+        context.entityData &&
+        Array.isArray(context.entityData.multiAssignees)
+      ) {
+        return context.entityData.multiAssignees
+          .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
+          .map((assignee) => ({
+            label: assignee.Assignee_Name,
+            value: {
+              id: assignee.Assignee_Id,
+              name: assignee.Assignee_Name,
+            },
+          }));
+      }
+
+      // Return an empty array (or null) if there's no data, so the form field starts empty
+      return [];
+    },
     apiKey: "resourceIds",
-
-    // initValueResolver: (context) => {
-    //   // ✅ Corrected: Only map if we ARE editing and the data actually exists
-    //   if (
-    //     context.isEdit &&
-    //     context.entityData &&
-    //     Array.isArray(context.entityData.label)
-    //   ) {
-    //     return context.entityData.label.map((l) => ({
-    //       label: l.LABEL_TITLE,
-    //       value: {
-    //         id: l.LABEL_ID,
-    //         name: l.LABEL_TITLE,
-    //       },
-    //     }));
-    //   }
-
-    //   // Return an empty array (or null) if there's no data, so the form field starts empty
-    //   return [];
-    // },
-
-    // pattern: "^[A-Za-z0-9 ]+$",
-    // errorMessage: "Only alphanumeric allowed",
-
     visibleWhen: () => true,
   },
   {
@@ -297,22 +293,22 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.DueDate : "",
     required: true,
     dataType: "string",
-    apiKey: "Due_Date",
+    apiKey: "DueDate",
 
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
 
     visibleWhen: () => true,
-    customValidator:(value)=>{
-      if(!value) return "Due Date is required";
+    customValidator: (value) => {
+      if (!value) return "Due Date is required";
       const dueDate = new Date(value);
       const today = new Date();
-      today.setHours(0,0,0,0);
-      if(dueDate < today) {
+      today.setHours(0, 0, 0, 0);
+      if (dueDate < today) {
         return "Due Date cannot be in the past";
       }
       return true;
-    }
+    },
   },
   {
     name: "repoKey",
@@ -334,6 +330,18 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.estimateHours : "",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
+    visibleWhen: () => true,
+  },
+  {
+    label: "Priority",
+    name: "priority",
+    type: "priority", // Your custom type
+    ui: "mui", // Tells your engine to look outside MUI
+    required: true,
+    dataType: "string",
+    apiKey: "Priority",
+    initValueResolver: (context) =>
+      context.isEdit ? context.entityData?.Priority : "Medium", // Default to Medium if creating
     visibleWhen: () => true,
   },
 

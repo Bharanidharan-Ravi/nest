@@ -21,6 +21,8 @@ import { useEffect } from "react";
 import { useMasterData } from "../../../core/master/useMasterData";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import AssigneesWidget from "../component/AssigneesWidget";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
@@ -29,6 +31,7 @@ const TicketDetailPage = () => {
   const user = readUserFromSession();
   const { data: ThreadsList } = useThreadMaster(ticketId);
   const { data: ticketMasterData } = useTicketMaster();
+  const { goTo } = useSmartNavigation();
 
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
@@ -69,8 +72,6 @@ const TicketDetailPage = () => {
     UpdatedBy: thread.UpdatedBy,
     All_Assignees: thread.All_Assignees,
   }));
-
-  console.log("user :", user);
 
   const listConfig = {
     ...ThreadListConfig,
@@ -127,10 +128,6 @@ const TicketDetailPage = () => {
       mine: formatTime(myMinutes),
     };
   }, [rawList, user]);
-  console.log(
-    "Logged Thread Hours:",
-    rawList.map((t) => t.Hours),
-  );
   // --- 2. Parent Ticket Processing ---
   const parentTicket = React.useMemo(() => {
     if (!ticketMasterData) return null;
@@ -166,7 +163,6 @@ const TicketDetailPage = () => {
     : [];
   const formattedDueDate = formatDate(parentTicket.Due_Date);
   const assigneesJsonString = parentTicket?.All_Assignees || null;
-    console.log("assigneesJsonString :", assigneesJsonString, parentTicket);
     
   return (
     // Clean w-full container with white background
@@ -230,7 +226,7 @@ const TicketDetailPage = () => {
                 </span>
               </div>
               <button
-                onClick={() => navigate(`/tickets/edit/${ticketId}`)}
+                onClick={() => goTo(ROUTE_KEYS.TICKET_EDIT, { ticketId: parentTicket.Issue_Id })}
                 className=" text-gray-500 hover:text-blue-600  hover:bg-gray-50  rounded-lg transition-all"
                 title="Edit Ticket"
               >
@@ -322,6 +318,8 @@ const TicketDetailPage = () => {
     </div>
   );
 };
+
+export default TicketDetailPage;
 
 //   return (
 //     <div className="flex flex-col relative w-full pb-10">
@@ -433,7 +431,7 @@ const TicketDetailPage = () => {
 //   );
 // };
 
-export default TicketDetailPage;
+
 
 // return (
 //   // We use relative positioning here, NO overflow-hidden, allowing the <main> tag to handle the scrolling

@@ -7,9 +7,6 @@ export const useTicketMaster = (scope = {}, options = {}) => {
   const projectId = scope.projectId ?? null;
   // 🔥 1. Extract ticketId
   const ticketId = scope.ticketId ?? null;
-
-  console.log("scope :", scope);
-
   ///- Query key- unique per scope -------------------
   // master: ["ticket", "list", "global", "all", "all"]
   // by repo: ["ticket", "list", "repo-Id", "all", "all"]
