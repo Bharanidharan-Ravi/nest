@@ -163,7 +163,7 @@ const TicketDetailPage = () => {
     : [];
   const formattedDueDate = formatDate(parentTicket.Due_Date);
   const assigneesJsonString = parentTicket?.All_Assignees || null;
-    
+
   return (
     // Clean w-full container with white background
     <div className="flex flex-col relative w-full pb-10 wg-scrollbar bg-white">
@@ -179,11 +179,10 @@ const TicketDetailPage = () => {
           Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
           ======================================================== */}
       <div
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
-          isStuck
-            ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
-            : "py-4 px-4 sm:px-6 bg-white border-transparent"
-        }`}
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${isStuck
+          ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
+          : "py-4 px-4 sm:px-6 bg-white border-transparent"
+          }`}
       >
         <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1">
@@ -278,41 +277,60 @@ const TicketDetailPage = () => {
           SCROLLING CONTENT
           We apply the same px-4 sm:px-6 here so it lines up with the header!
           ======================================================== */}
-      <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6">
-        {/* Parent Description */}
-        <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
-          <HtmlRenderer
-            html={parentTicket.HtmlDesc || parentTicket.Description}
-          />
-        </div>
-        <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full">
-          {/* Conversation Threads */}
-          <div className="w-full lg:w-3/4">
-            <ListProvider config={listConfig} data={rawList}>
-              <ListCardView />
-            </ListProvider>
-          </div>
-          {/* RIGHT COLUMN: The Sidebar (Takes up 25% width - Only renders ONCE) */}
-          <div className="w-full lg:w-1/4 flex flex-col gap-6">
-            <AssigneesWidget assigneesJson={assigneesJsonString} />
-            {/* Render Labels Widget Here later */}
-          </div>
-        </div>
+     
+      <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
+  {/* Parent Description */}
+  <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
+    <HtmlRenderer
+      html={parentTicket.HtmlDesc || parentTicket.Description}
+    />
+  </div>
 
-        {/* Reply Form */}
-        {/* <div className="mt-4"> */}
-        <div className=" rounded-3xl p-2 w-full lg:w-3/4">
-          <EntityFormPage
-            mode="Create"
-            config={{
-              ...ThreadFormConfig,
-              fields: ThreadFieldConfig(ticketId),
-            }}
-            module="Thread"
-          />
-        </div>
-        {/* </div> */}
+  {/* --- MAIN SPLIT LAYOUT --- */}
+  {/* Removed items-start so both columns stretch to the maximum height */}
+  <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full relative">
+    
+    {/* ========================================= */}
+    {/* LEFT COLUMN (Threads + Editor)            */}
+    {/* ========================================= */}
+    <div className="w-full lg:w-3/4 flex flex-col gap-6">
+      
+      {/* 1. Conversation Threads */}
+      <div className="w-full">
+        <ListProvider config={listConfig} data={rawList}>
+          <ListCardView />
+        </ListProvider>
       </div>
+
+      {/* 2. Reply Form (MOVED INSIDE THE LEFT COLUMN) */}
+      <div className="rounded-3xl p-2">
+        <EntityFormPage
+          mode="Create"
+          config={{
+            ...ThreadFormConfig,
+            fields: ThreadFieldConfig(ticketId),
+          }}
+          module="Thread"
+        />
+      </div>
+
+    </div>
+
+    {/* ========================================= */}
+    {/* RIGHT COLUMN (Sticky Sidebar)             */}
+    {/* ========================================= */}
+    <div className="w-full lg:w-1/4">
+      {/* Changed h-[75vh] to max-h-[calc(100vh-8rem)]
+        This prevents it from getting cut off on small screens while remaining sticky.
+      */}
+      <div className="sticky top-28 max-h-[calc(100vh-8rem)] flex flex-col gap-6">
+        <AssigneesWidget assigneesJson={assigneesJsonString} />
+        {/* Render Labels Widget Here later */}
+      </div>
+    </div>
+
+  </div>
+</div>
       <div id="bottomSection"></div>
       <FloatingArrowScroll targetId="bottomSection" />
     </div>
@@ -320,6 +338,49 @@ const TicketDetailPage = () => {
 };
 
 export default TicketDetailPage;
+//  <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
+//         {/* Parent Description */}
+//         <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
+//           <HtmlRenderer
+//             html={parentTicket.HtmlDesc || parentTicket.Description}
+//           />
+//         </div>
+//         <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full">
+//           {/* Conversation Threads */}
+//           <div className="w-full lg:w-3/4">
+//             <ListProvider config={listConfig} data={rawList}>
+//               <ListCardView />
+//             </ListProvider>
+//           </div>
+//           <div className="w-full lg:w-1/4 ">
+
+//             {/* 🔥 THIS IS THE MAGIC WRAPPER 🔥 */}
+//             {/* sticky: Makes it stick as you scroll */}
+//             {/* top-24: Leaves a little gap under your top header (adjust as needed) */}
+//             {/* h-[75vh]: Forces it to be exactly 75% of the screen height */}
+//             <div className="sticky top-24 h-[75vh] flex flex-col gap-6">
+//               <AssigneesWidget assigneesJson={assigneesJsonString} />
+//               {/* Render Labels Widget Here later */}
+//             </div>
+//           </div>
+//         </div>
+
+//         {/* Reply Form */}
+//         {/* <div className="mt-4"> */}
+//         <div className=" rounded-3xl p-2 w-full lg:w-3/4">
+//           <EntityFormPage
+//             mode="Create"
+//             config={{
+//               ...ThreadFormConfig,
+//               fields: ThreadFieldConfig(ticketId),
+//             }}
+//             module="Thread"
+//           />
+//         </div>
+//         {/* </div> */}
+//       </div>
+
+
 
 //   return (
 //     <div className="flex flex-col relative w-full pb-10">

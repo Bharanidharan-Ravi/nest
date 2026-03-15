@@ -89,7 +89,7 @@ const TicketCreatePage = () => {
       </div>
 
       <EntityFormPage
-        mode={isEdit ? "Update" : "create"}
+        mode={isEdit ? "Update" : "Create"}
         config={dynamicConfig}
         module="Ticket"
         context={{ params, isEdit, entityData }}

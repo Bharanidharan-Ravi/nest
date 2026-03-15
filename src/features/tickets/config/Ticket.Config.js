@@ -293,7 +293,7 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.DueDate : "",
     required: true,
     dataType: "string",
-    apiKey: "DueDate",
+    apiKey: "Due_Date",
 
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",

@@ -1,0 +1,23 @@
+INSERT INTO Status_Master 
+(Status_Code, Status_Name, Description, Is_Active, Sort_Order, CreatedBy, Created_At)
+VALUES
+('NEW','New','Ticket created and waiting for assignment',1,1,'System',GETDATE()),
+('ASS','Assigned','Ticket assigned to developer or consultant',1,2,'System',GETDATE()),
+('ANA','In Analysis','Requirement under analysis by functional team',1,3,'System',GETDATE()),
+('INFO','Awaiting Information','Waiting for additional details from client',1,4,'System',GETDATE()),
+('DEV','In Development','Developer working on the task',1,5,'System',GETDATE()),
+('DEV-C','Development Completed','Development work completed',1,6,'System',GETDATE()),
+('UTEST','Unit Testing','Developer performing unit testing',1,7,'System',GETDATE()),
+('FTEST','Functional Testing','Functional consultant testing',1,8,'System',GETDATE()),
+('QA','QA Testing','Quality assurance testing phase',1,9,'System',GETDATE()),
+('UAT','UAT Testing','User acceptance testing by client',1,10,'System',GETDATE()),
+('ACR','Awaiting Client Response','Waiting for response from client',1,11,'System',GETDATE()),
+('FUNC-C','Functional Fix Completed','Functional configuration or report fix completed',1,12,'System',GETDATE()),
+('TR-C','Transport Created','Transport request created',1,13,'System',GETDATE()),
+('TR-R','Transport Released','Transport released for movement',1,14,'System',GETDATE()),
+('QA-M','Moved to QA','Transport moved to QA environment',1,15,'System',GETDATE()),
+('PRD-M','Moved to Production','Transport moved to production server',1,16,'System',GETDATE()),
+('HLD','On Hold','Ticket temporarily on hold',1,17,'System',GETDATE()),
+('CLS','Closed','Ticket completed and closed',1,18,'System',GETDATE()),
+('CAN','Cancelled','Ticket cancelled',1,19,'System',GETDATE()),
+('INA','Inactive','Status not currently in use',0,20,'System',GETDATE());
