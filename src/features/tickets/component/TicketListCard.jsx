@@ -145,7 +145,7 @@ export default function TicketListCard({ item, controls, focused }) {
             <div className="ticket-repo-info">
               <Tooltip title={ProjectDetails.Repo_Name} arrow>
                 <span className="repo-key">
-                  {ProjectDetails?.Repo_Name.split(" ")
+                  {ProjectDetails?.Repo_Name?.split(" ")
                     .map((word) => word[0]?.toUpperCase())
                     .join("")}
                 </span>

@@ -5,6 +5,7 @@ import HtmlDateInput from "../adapters/html/HtmlDateInput";
 import HtmlSelectInput from "../adapters/html/HtmlSelectInput";
 import HtmlTextInput from "../adapters/html/HtmlTextInput";
 import HtmlTimeInput from "../adapters/html/HtmlTimeInput";
+import BatteryCompletionIndicator from "../adapters/mui/BatteryCompletionIndicator/BatteryCompletionIndicator";
 import MuiColorInput from "../adapters/mui/MuiColorInput";
 import MuiDateInput from "../adapters/mui/MuiDateInput";
 import MuiFlexibleHoursInput from "../adapters/mui/MuiFlexibleTimeInput";
@@ -13,6 +14,7 @@ import MuiSelectInput from "../adapters/mui/MuiSelectInput";
 import MuiTextInput from "../adapters/mui/MuiTextInput";
 import MuiTimeInput from "../adapters/mui/MuiTimeInput";
 import PriorityRadioField from "../adapters/mui/PriorityRadioField";
+import ToggleSwitchField from "../adapters/mui/ToggleSwitchField";
 
 export const inputRegistry = {
   mui: {
@@ -24,6 +26,8 @@ export const inputRegistry = {
     flexHours: MuiFlexibleHoursInput,
     color:  MuiColorInput,   
     priority: PriorityRadioField,
+    battery: BatteryCompletionIndicator,
+    toggle: ToggleSwitchField
   },
   html: {
     text: HtmlTextInput,
