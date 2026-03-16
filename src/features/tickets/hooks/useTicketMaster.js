@@ -7,18 +7,7 @@ export const useTicketMaster = (scope = {}, options = {}) => {
   const projectId = scope.projectId ?? null;
   // 🔥 1. Extract ticketId
   const ticketId = scope.ticketId ?? null;
-  ///- Query key- unique per scope -------------------
-  // master: ["ticket", "list", "global", "all", "all"]
-  // by repo: ["ticket", "list", "repo-Id", "all", "all"]
-  // by project: ["ticket", "list", "repo-id", "proj-id", "all"]
-  // by ticket: ["ticket", "list", "repo-id", "proj-id", "ticket-id"]
-
-  // 🔥 2. Add ticketId to the query key so it caches separately from the list
-  // const queryKey = queryKeys.ticket.list({
-  //   repoId: repoId ?? "global",
-  //   projectId: projectId ?? "all",
-  //   ticketId: ticketId ?? "all"
-  // });
+  const employeeId = scope.employeeId ?? null;
 
   const queryKey = ticketId
     ? queryKeys.ticket.detail(ticketId)
@@ -26,16 +15,20 @@ export const useTicketMaster = (scope = {}, options = {}) => {
         repoId: repoId ?? "global",
         projectId: projectId ?? "all",
       });
+  let dynamicIdParams = {};
 
+  if (ticketId) {
+    dynamicIdParams = { idKey: "IssueId", idValue: ticketId };
+  } else if (employeeId) {
+    dynamicIdParams = { idKey: "EmployeeId", idValue: employeeId };
+  } else if (projectId) {
+    dynamicIdParams = { idKey: "projectId", idValue: projectId };
+  }
   // 🔥 3. Prioritize ticketId in the payload
   const payload = buildSyncPayload({
     configKey: "TicketsList",
     repoId,
-    ...(ticketId
-      ? { idKey: "IssueId", idValue: ticketId } // Use whatever parameter name your GetIssuesByID SP expects (e.g., "IssuesId" or "Id")
-      : projectId
-        ? { idKey: "projectId", idValue: projectId }
-        : {}),
+    ...dynamicIdParams,
   });
   const staleTime = ticketId ? 0 : 1000 * 60 * 3;
   return useApiQuery({

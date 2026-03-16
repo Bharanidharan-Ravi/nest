@@ -24,11 +24,18 @@ import "./Dashboard.css";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import MuiSelectInput from "../../../packages/react-input-engine/adapters/mui/MuiSelectInput";
+import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
+import { TicketListConfig } from "../../tickets/config/TicketUI.config";
+import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
+import ModuleSwitcher from "../component/ModuleSwitcher";
+import { ProjUIConfig } from "../../project/config/ProjectUI.config";
 
 export default function Dashboard() {
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
+  const { data: ProjectList } = useMasterData();
   const storageKey = `dashboard_selected_${user.userId}`;
+  
   const [selectedItems, setSelectedItems] = useState(() => {
     try {
       const saved = localStorage.getItem(storageKey);
@@ -37,228 +44,149 @@ export default function Dashboard() {
       return [];
     }
   });
+  const currentUserName = user?.name;
+  console.log("ProjectList :",currentUserName, user);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(selectedItems));
   }, [selectedItems, storageKey]);
-
   const [fromDate, setFromDate] = useState(dayjs());
   const [toDate, setToDate] = useState(dayjs());
-
-  const { data } = useDashboardData(user.userId);
+  const { data } = useTicketMaster({ employeeId: user.userId });
   const { data: TimeSheet } = useDashboardTimesheetData(
     user.userId,
     fromDate,
     toDate,
   );
-  // for employee list data
-  const {
-    data: EmployeeList,
-    isLoading,
-    error,
-  } = useMasterData(["EmployeeList"]);
-  const [selectedEmployee, setSelectedEmployee] = useState(user.userId);
+  const { data: Master } = useMasterData();
 
-  const handleEmployeeChange = (employeeId) => {
-    setSelectedEmployee(employeeId || user.userId); // Default to current user if no selection
-  };
+  const normalizeTimeData = (data) => ({
+    id: 0,
+  });
 
-  const dynamicConfig = {
-    fields: [
+  const TicketCount = normalizeTimeData(data);
+  // const TimeSheetData = TimeSheet?.map(normalizeTimeData) || [];
+
+  const normalizeTicket = (ticket) => ({
+    id: ticket.Issue_Id,
+    title: ticket.Title,
+    ticketKey: ticket.Issue_Code,
+    status: ticket.Status,
+    description: ticket.HtmlDesc || ticket.Description,
+    assginedTo: ticket.Assignee_Name,
+    estimateHours: ticket.hours,
+    createdAt: ticket.CreatedAt,
+    updatedAt: ticket.UpdatedAt,
+    UpdatedBy: ticket.UpdatedBy,
+    repoId: ticket.RepoId,
+    dueDate: ticket.Due_Date,
+    project: ticket.Project_Id,
+    priority: ticket.Priority,
+    multiAssignees: ticket.All_Assignees
+      ? JSON.parse(ticket.All_Assignees)
+      : [],
+    RepoKey: ticket.RepoKey,
+    label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
+  });
+  const normalizeProj = (proj) => ({
+    id: proj.Id,
+    title: proj.Project_Name,
+    key: proj.ProjectKey,
+    status: proj.Status,
+    owner: proj.EmployeeName,
+    createdAt: proj.CreatedAt,
+    CreatedBy: proj.CreatedBy,
+    repoId: proj.Repo_Id,
+    repoName: proj.Repo_Name,
+    repoKey: proj.RepoKey,
+    UpdatedAt: proj.UpdatedAt,
+    UpdatedBy: proj.UpdatedBy,
+  });
+
+  const Project = ProjectList?.ProjectList?.map(normalizeProj) || [];
+
+  const TicketList = data?.map(normalizeTicket) || [];
+  const employeeFilterOptions = [
+    { label: "All Employees", value: "" },
+    ...(Master?.EmployeeList?.map((user) => ({
+      label: user.UserName,
+      value: user.UserName,
+    })) || []),
+  ];
+  console.log("TicketList :", TicketList, data, TicketCount);
+
+  const listConfigWithNav = {
+    ...TicketListConfig,
+    defaultFilters: {
+      assginedTo: currentUserName,
+    },
+    filters: [
       {
-        label: "Employee List",
-        name: "employee",
-        type: "select",
-        ui: "mui",
-        required: true,
-        dataType: "string",
-        optionsResolver: (masterData) => {
-          if (!masterData?.EmployeeList) return [];
-          return masterData?.EmployeeList?.map((emp) => ({
-            label: emp.UserName,
-            value: emp.UserID,
-          }));
-        },
+        key: "assginedTo", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Assignee",
+        options: employeeFilterOptions,
+        defaultValue: currentUserName,
       },
     ],
   };
-
-  const employeeField = dynamicConfig.fields.find(
-    (field) => field.name === "employee",
-  );
-  const employeeOptions = employeeField
-    ? employeeField.optionsResolver(EmployeeList)
-    : [];
-  const normalizeCount = (count) => ({
-    id: 1,
-    title: count.Total_Count,
-  });
-
-  const normalizeData = (Listdata) => ({
-    id: Listdata.Issue_Id,
-    issueId: Listdata.Issue_Id,
-    issuesNo: Listdata.Issue_Code,
-    title: Listdata.Title,
-    dueDate: Listdata.DueDate,
-    assignee: Listdata.Assigned_By,
-  });
-
-  const normalizeTimeData = (Timedata) => ({
-    id: Timedata.ThreadId,
-    issueId: Timedata.Issue_Id,
-    TicketNo: Timedata.TicketNo,
-    TicketName: Timedata.TicketName,
-    StartTime: Timedata.StartTime,
-    EndTime: Timedata.EndTime,
-    ConsumeTime: Timedata.ConsumeTime,
-    total: Timedata.total,
-  });
-
-  // const normalizeEmploye = (emp) => ({
-  //   id: emp.UserID,
-  //   name: emp.UserName,
-  // });
-
-  const TicketCount = data?.TicketCount.map(normalizeCount) || [];
-  const DashBoardData = data?.DashBoardData.map(normalizeData) || [];
-  const TimeSheetData = TimeSheet?.map(normalizeTimeData) || [];
-  // const employees = EmployeeList?.EmployeeList?.map(normalizeEmploye) || [];
-
-  const handleSelectionChange = (item, ischecked) => {
-    setSelectedItems((prev) => {
-      if (ischecked) {
-        const exists = prev.some((i) => i.id === item.id);
-        if (exists) return prev;
-        return [...prev, item];
-      } else {
-        return prev.filter((i) => i.id !== item.id);
-      }
-    });
-  };
-
-  const selectedIds = useMemo(() => {
-    return selectedItems.map((item) => item.id);
-  }, [selectedItems]);
-
-  const stickTable = {
-    ...DashboardTableUI,
-    onSelectionChange: handleSelectionChange,
-    selectedIds,
-    onItemClick: (item) => {
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId:  item.issueId });
+  const dashboardModules = [
+    {
+      id: "tickets",
+      label: "My Tickets",
+      config: listConfigWithNav,
+      data: TicketList,
     },
-  };
-
-  const FinalTimesheetData = useMemo(() => {
-    const merged = [...TimeSheetData];
-    selectedItems.forEach((ticket) => {
-      const existingIndex = merged.findIndex(
-        (row) => row.issueId === ticket.issueId,
-      );
-
-      if (existingIndex !== -1) {
-        merged[existingIndex] = {
-          ...merged[existingIndex],
-          TicketNo: ticket.issuesNo,
-          TicketName: ticket.title,
-        };
-      } else {
-        merged.push({
-          id: `selected-${ticket.id}`,
-          ticketId:  ticket.issueId || ticket.id,
-          TicketNo: ticket.issuesNo,
-          TicketName: ticket.title,
-          StartTime: "",
-          EndTime: "",
-          total: "",
-        });
-      }
-    });
-    return merged;
-  }, [TimeSheetData, selectedItems]);
-
-  const TimeSheetConfig = {
-    ...DashboardTimesheet,
-    onItemClick: (item) => {
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId });
+    {
+      id: "timesheets",
+      label: "My Timesheets",
+      config: ProjUIConfig,
+      data: Project,
     },
-  };
+    // {
+    //   id: "planner",
+    //   label: "Daily Planner",
+    //   config: PlannerListConfig,
+    //   data: normalizedPlanner,
+    // },
+  ];
   return (
     <div className="dashview">
       <h2>Dashboard</h2>
-      <div className="div-1">
-        <div className="card">
-          <ListProvider data={TicketCount} config={DashboardCardConfig}>
-            <div className="tab-container">
-              Total Tickets
-              <div className="tab-container-data">
-                <ListCardView />
-              </div>
-            </div>
-          </ListProvider>
-        </div>
-
-        <div className="card">
-          <div className="tab-container">
-            Selected Tickets
-            <div className="tab-container-data">{selectedItems.length}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* Employee List */}
-      {/* <div className="employeeList">...
-      </div> */}
-
-      <div className="date-range-picker-container">
-        <div className="emp-list">
-          <MuiSelectInput
-            name={employeeField?.name}
-            label={employeeField?.label}
-            value={employeeOptions.find((o) => o.value === selectedEmployee) || null}
-            options={employeeOptions}
-            onChange={handleEmployeeChange}
-            required={employeeField?.required}
-            clearable={true}
-            disabled={isLoading || !!error}
-            multiple={false}
-          />
-        </div>
-        <div className="date-range-picker">
-          <DateRangePickerComponent
-            value={[fromDate, toDate]}
-            onChange={({ startDate, endDate }) => {
-              setFromDate(startDate);
-              setToDate(endDate);
-            }}
-          />
-        </div>
-      </div>
-
-      <div className="div-2">
-        <div className="ticketList">
-          <ListProvider data={DashBoardData} config={stickTable}>
-            <div className="listWrapper">
-              <div className="table-view">
-                <ListTableView />
-              </div>
-            </div>
-          </ListProvider>
-        </div>
-
-        <div className="Timesheet_data">
-          <div className="getdata">
-            <ListProvider data={FinalTimesheetData} config={TimeSheetConfig}>
-              <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                <ListTableView 
-                onItemClick={(item) => stickTable.onItemClick(item)}
-                />
-              </div>
-            </ListProvider>
-          </div>
-        </div>
-      </div>
+      {/* Pass the master config into your new Switcher component */}
+      <ModuleSwitcher modules={dashboardModules} />
     </div>
+    // <div className="dashview">
+    //   <h2>Dashboard</h2>
+    //   <div className="div-1">
+    //     <div className="card">
+    //       <div className="tab-container">
+    //         Selected Tickets
+    //         <div className="tab-container-data">{selectedItems.length}</div>
+    //       </div>
+    //     </div>
+    //   </div>
+
+    //   <div className="date-range-picker-container">
+    //     <div className="date-range-picker">
+    //       <DateRangePickerComponent
+    //         value={[fromDate, toDate]}
+    //         onChange={({ startDate, endDate }) => {
+    //           setFromDate(startDate);
+    //           setToDate(endDate);
+    //         }}
+    //       />
+    //     </div>
+    //   </div>
+
+    //   <div className="div-2">
+    //     <div className="w-full pb-10">
+    //       <ListProvider config={listConfigWithNav} data={TicketList}>
+    //         <ListLayout />
+    //       </ListProvider>
+    //     </div>
+    //     <div className="Timesheet_data"></div>
+    //   </div>
+    // </div>
   );
 }
 

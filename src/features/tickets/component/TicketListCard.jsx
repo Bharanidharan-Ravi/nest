@@ -21,8 +21,6 @@ export default function TicketListCard({ item, controls, focused }) {
     (e) => e.UserID === item.UpdatedBy,
   );
 
-  console.log("updated :", updated, item);
-
   const { renderCheckbox, renderEdit } = controls || {};
 
   const statusIcon =
