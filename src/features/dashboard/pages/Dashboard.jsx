@@ -45,7 +45,6 @@ export default function Dashboard() {
     }
   });
   const currentUserName = user?.name;
-  console.log("ProjectList :",currentUserName, user);
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(selectedItems));
@@ -113,7 +112,6 @@ export default function Dashboard() {
       value: user.UserName,
     })) || []),
   ];
-  console.log("TicketList :", TicketList, data, TicketCount);
 
   const listConfigWithNav = {
     ...TicketListConfig,

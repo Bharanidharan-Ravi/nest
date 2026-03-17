@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { ListCardView } from "../../../packages/ui-List/components/ListCardView";
@@ -23,16 +23,16 @@ import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import AssigneesWidget from "../component/AssigneesWidget";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { queryKeys } from "../../../core/query/queryKeys";
 
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-  const navigate = useNavigate();
   const { data } = useMasterData();
   const user = readUserFromSession();
-  const { data: ThreadsList } = useThreadMaster(ticketId);
-  const { data: ticketMasterData } = useTicketMaster();
   const { goTo } = useSmartNavigation();
-
+  const [editingItem, setEditingItem] = useState(null);
+  const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
+  const { data: ticketMasterData } = useTicketMaster();
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
 
@@ -75,17 +75,30 @@ const TicketDetailPage = () => {
 
   const listConfig = {
     ...ThreadListConfig,
-    // enableEdit: true,
-    cardRenderer: (item) => (
+    cardRenderer: (item) => {
+      if (editingItem && editingItem.Id === item.Id) {
+        return (
+          <EntityFormPage
+          mode="edit"
+          config={{
+            ...ThreadFormConfig,
+            invalidateKeys: queryKeys.ticket.thread(ticketId),
+            api: `thread/${editingItem?.Id}`
+          }}
+          context={{ isEdit: true, editingItem}}
+          module="Thread"
+          onCancel={() => setEditingItem(null)}
+         />
+        ); 
+    }
+    return (
       <ThreadListCard
         item={item}
         currentUser={user?.name}
-        onEdit={() => {
-          console.log("Editing thread:", item.Id);
-          // Add your edit navigation or modal logic here!
-        }}
+        onEdit={() => setEditingItem(item)}
       />
-    ),
+    );
+  },
   };
   // --- Calculate Time Totals ---
   // --- Calculate Time Totals ---
@@ -162,7 +175,8 @@ const TicketDetailPage = () => {
     ? JSON.parse(parentTicket.Labels_JSON)
     : [];
   const formattedDueDate = formatDate(parentTicket.Due_Date);
-  const assigneesJsonString = parentTicket?.All_Assignees || null;
+  const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees) || null;
+console.log("parentTicket :", assigneesJsonString);
 
   return (
     // Clean w-full container with white background
@@ -179,7 +193,8 @@ const TicketDetailPage = () => {
           Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
           ======================================================== */}
       <div
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${isStuck
+        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+          isStuck
           ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
           : "py-4 px-4 sm:px-6 bg-white border-transparent"
           }`}
@@ -324,7 +339,7 @@ const TicketDetailPage = () => {
         This prevents it from getting cut off on small screens while remaining sticky.
       */}
       <div className="sticky top-28 max-h-[calc(100vh-8rem)] flex flex-col gap-6">
-        <AssigneesWidget assigneesJson={assigneesJsonString} />
+        <AssigneesWidget workStreams={assigneesJsonString} />
         {/* Render Labels Widget Here later */}
       </div>
     </div>

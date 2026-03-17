@@ -7,6 +7,8 @@ import "../css/TicketListCard.css";
 import { useMasterData } from "../../../core/master/useMasterData";
 import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCompletionIndicator/BatteryCompletionIndicator";
 import { FiAlertTriangle, FiClock, FiCheckCircle } from "react-icons/fi";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { tryBuildPath } from "../../../core/routing/routeRegistry";
 
 dayjs.extend(relativeTime);
 
@@ -99,6 +101,16 @@ export default function TicketListCard({ item, controls, focused }) {
       borderColor: isLight ? `${hexColor}80` : `${hexColor}4D`, // Make border slightly darker for light colors
     };
   };
+
+  const openInNewTab = (url) => {
+    const newTab = window.open(url, "_blank");
+    if (newTab) {
+      newTab.opener = null;
+    }
+  };
+
+  const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
+  const ticketUrl = tryBuildPath(createRouteKey, { ticketId: item.id });
   return (
     <div className={`ticket-row ${focused ? "focused-row" : ""}`}>
       {/* LEFT BLOCK: Main Information */}
@@ -113,11 +125,19 @@ export default function TicketListCard({ item, controls, focused }) {
 
           {/* 2. Text and Badges flow together in ONE paragraph-like container */}
           <div className="ticket-title-and-badges">
-            <span className="ticket-id">#{item.ticketKey}</span>
-            <span className="ticket-title" title={item.title}>
-              {item.title}
-            </span>
-
+            <a
+              href={ticketUrl}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                openInNewTab(ticketUrl);
+              }}
+            >
+              <span className="ticket-id">#{item.ticketKey}</span>
+              <span className="ticket-title" title={item.title}>
+                {item.title}
+              </span>
+            </a>
             {/* Badges immediately follow the text */}
             {item.label?.length > 0 &&
               item.label.map((label) => (

@@ -7,6 +7,7 @@ import { ProgressUpdateFormConfig } from "../config/AssigneesWidget/ProgressUpda
 export default function AssigneesWidget({ workStreams = [], currentUser, threads = [] }) {
   // Toggle state for the Form Engine
   const [showUpdateForm, setShowUpdateForm] = useState(false);
+console.log("workStreams :", workStreams,currentUser, threads);
 
   const myLastThread = useMemo(() => {
     if (!threads || !currentUser) return null;
@@ -96,7 +97,7 @@ export default function AssigneesWidget({ workStreams = [], currentUser, threads
                     ) : (
                     <FaSpinner className="text-blue-500 animate-spin-slow" size={14} />
                     )}
-                    <span className="text-sm font-semibold text-gray-800">{ws.ResourceName || 'Assignee'}</span>
+                    <span className="text-sm font-semibold text-gray-800">{ws.Assignee_Name || 'Assignee'}</span>
                 </div>
                 <span className="text-xs font-bold text-gray-600">{ws.CompletionPct || 0}%</span>
                 </div>
@@ -175,7 +176,6 @@ export default function AssigneesWidget({ workStreams = [], currentUser, threads
 //   } catch (error) {
 //     console.error("Failed to parse assignees", error);
 //   }
-//   console.log("assignees :", assignees, assigneesJson);
 
 //   return (
 //     <div className="bg-white p-4 rounded-md border border-gray-200">
