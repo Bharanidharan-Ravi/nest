@@ -15,7 +15,7 @@ export const TicketFieldConfig = () => [
 
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.title : "",
     visibleWhen: () => true,
   },
@@ -27,7 +27,7 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-    optionsResolver: (masterData) =>
+    optionsResolver: ({masterData}) =>
       masterData?.LabelMaster?.map((label) => ({
         label: label.Title,
         value: {
@@ -37,7 +37,7 @@ export const TicketFieldConfig = () => [
       })) || [],
     apiKey: "labelId",
 
-    initValueResolver: (context) => {
+    initValueResolver: ({context}) => {
       // ✅ Corrected: Only map if we ARE editing and the data actually exists
       if (
         context.isEdit &&
@@ -67,7 +67,7 @@ export const TicketFieldConfig = () => [
     name: "repository",
     type: "select",
     ui: "mui",
-    optionsResolver: (masterData) =>
+    optionsResolver: ({masterData}) =>
       masterData?.RepoList?.map((repo) => ({
         label: repo.Title,
         value: {
@@ -89,29 +89,25 @@ export const TicketFieldConfig = () => [
       ),
 
     // 🔥 Smart Initial Value (Looks up Repo ID via Project Master)
-    initValueResolver: (context, masterData) => {
+    initValueResolver: ({context, masterData, formData}) => {
       // 1. Check if we have an explicit Repo ID first
-      let targetRepoId = context?.isEdit
-        ? context?.entityData?.RepoId
-        : context?.params?.repoId;
-      // const targetId =
-      //   context?.params?.projId ||
-      //   context?.entityData?.Project_Id ||
-      //   context?.params?.repoId ||
-      //   context?.entityData?.RepoId;
+      let targetRepoId = null;
+
+      const projectId =
+        formData?.project?.value?.id ||
+        context?.params?.projId ||
+        context?.entityData?.Project_Id;
+
+      if (projectId) {
+        const project = masterData?.ProjectList?.find(
+          (p) => p.Id === projectId,
+        );
+        if (project) targetRepoId = project.Repo_Id;
+      }
 
       // 2. If no explicit Repo ID, but we have a Project ID, look inside Project Master!
       if (!targetRepoId) {
-        const targetProjId =
-          context?.params?.projId || context?.entityData?.Project_Id;
-
-        if (targetProjId) {
-          const project = masterData?.ProjectList?.find(
-            (p) => p.Id === targetProjId,
-          );
-          // ⚠️ IMPORTANT: Change 'Repo_Id' below to the exact key your Project uses for the repository
-          targetRepoId = project?.Repo_Id;
-        }
+        targetRepoId = context?.params?.repoId || context?.entityData?.RepoId;
       }
 
       // If we still don't have a Repo ID, leave blank
@@ -139,7 +135,7 @@ export const TicketFieldConfig = () => [
     name: "project",
     type: "select",
     ui: "mui",
-    optionsResolver: (masterData, context) => {
+    optionsResolver: ({masterData, context, formData}) => {
       let projects = masterData?.ProjectList || [];
 
       // Look for a Project ID first, then fall back to a Repo ID
@@ -148,7 +144,8 @@ export const TicketFieldConfig = () => [
         context?.params?.projId ||
         context?.entityData?.project ||
         context?.params?.repoId ||
-        context?.entityData?.RepoId;
+        context?.entityData?.RepoId ||
+        formData?.repository?.value?.id;
 
       if (targetId) {
         // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
@@ -165,14 +162,6 @@ export const TicketFieldConfig = () => [
         },
       }));
     },
-    // optionsResolver: (masterData) =>
-    //   masterData?.ProjectList?.map((project) => ({
-    //     label: project.Project_Name,
-    //     value: {
-    //       id: project.Id,
-    //       name: project.Project_Name,
-    //     },
-    //   })) || [],
     required: true,
     dataType: "string",
     // Disable field if Project ID exists
@@ -185,22 +174,33 @@ export const TicketFieldConfig = () => [
       Boolean(context?.params?.projId || context?.entityData?.project),
 
     // 🔥 Smart Initial Value (Sets project if projid exists)
-    initValueResolver: (context, masterData) => {
-      const targetProjId =
-        context?.params?.projId || context?.entityData?.project;
+    initValueResolver: ({context, masterData, formData}) => {
+      let targetRepoId = null;
 
-      if (!targetProjId) return null;
+      const projectId =
+        context?.params?.projId ||
+        context?.entityData?.project ||
+        formData?.project?.value?.id;
 
-      const project = masterData?.ProjectList?.find(
-        (p) => p.Id === targetProjId,
+      if (projectId) {
+        const project = masterData?.ProjectList?.find(
+          (p) => p.Id === projectId,
+        );
+        if (project) targetRepoId = project.Repo_Id;
+      }
+
+      if (!targetRepoId) return null;
+
+      const repo = masterData?.RepoList?.find(
+        (r) => r.Repo_Id === targetRepoId,
       );
-      if (!project) return null;
+      if (!repo) return null;
 
       return {
-        label: project.Project_Name,
+        label: repo.Title,
         value: {
-          id: project.Id,
-          name: project.Project_Name,
+          id: repo.Repo_Id,
+          name: repo.Title,
         },
       };
     },
@@ -212,7 +212,7 @@ export const TicketFieldConfig = () => [
     name: "assginedTo",
     type: "select",
     ui: "mui",
-    optionsResolver: (masterData) =>
+    optionsResolver: ({masterData}) =>
       masterData?.EmployeeList?.map((emp) => ({
         label: emp.UserName,
         value: {
@@ -220,7 +220,27 @@ export const TicketFieldConfig = () => [
           name: emp.UserName,
         },
       })) || [],
-    initValueResolver: (context, masterData) => {
+    // optionsResolver: (masterData, context, formData) => {
+    //   let Employee = masterData?.EmployeeList || [];
+
+    //   // Look for a Project ID first, then fall back to a Repo ID
+    //   // (Checks both URL params and existing edit data)
+    //   const targetId = formData?.assginedTo?.value?.id;
+
+    //   if (targetId) {
+    //     // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
+    //     Employee = Employee.filter((p) => p.UserID === targetId);
+    //   }
+
+    //   return Employee.map((emp) => ({
+    //     label: emp.UserName,
+    //     value: {
+    //       id: emp.UserID,
+    //       name: emp.UserName,
+    //     },
+    //   }));
+    // },
+    initValueResolver: ({context, masterData}) => {
       // ✅ 1. Check if we are editing and actually have the ID
       if (context.isEdit && context.entityData?.Assignee_Id) {
         // ✅ 2. Return the constructed object immediately
@@ -236,6 +256,7 @@ export const TicketFieldConfig = () => [
       // ✅ 3. Always return null if not editing, so the dropdown starts empty
       return null;
     },
+
     // required: true,
     dataType: "string",
     multiple: false,
@@ -252,22 +273,43 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-    optionsResolver: (masterData) =>
-      masterData?.EmployeeList?.map((emp) => ({
+    // optionsResolver: (masterData) =>
+    //   masterData?.EmployeeList?.map((emp) => ({
+    //     label: emp.UserName,
+    //     value: {
+    //       id: emp.UserID,
+    //       name: emp.UserName,
+    //     },
+    //   })) || [],
+       optionsResolver: ({masterData, context, formData}) => {
+      let Employee = masterData?.EmployeeList || [];
+
+      // Look for a Project ID first, then fall back to a Repo ID
+      // (Checks both URL params and existing edit data)
+      const targetId = formData?.assginedTo?.value?.id;
+
+      if (targetId) {
+        // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
+        Employee = Employee.filter((p) => p.UserID !== targetId);
+      }
+
+      return Employee.map((emp) => ({
         label: emp.UserName,
         value: {
           id: emp.UserID,
           name: emp.UserName,
         },
-      })) || [],
-    initValueResolver: (context) => {
-      // ✅ Corrected: Only map if we ARE editing and the data actually exists
+      }));
+    },
+    initValueResolver: ({ context, formData }) => {
+
       if (
         context.isEdit &&
         context.entityData &&
         Array.isArray(context.entityData.multiAssignees)
       ) {
-        return context.entityData.multiAssignees
+        
+        const filter = context.entityData.multiAssignees
           .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
           .map((assignee) => ({
             label: assignee.Assignee_Name,
@@ -275,7 +317,10 @@ export const TicketFieldConfig = () => [
               id: assignee.Assignee_Id,
               name: assignee.Assignee_Name,
             },
-          }));
+          })
+        );
+          
+          return filter;
       }
 
       // Return an empty array (or null) if there's no data, so the form field starts empty
@@ -289,7 +334,7 @@ export const TicketFieldConfig = () => [
     name: "dueDate",
     type: "date",
     ui: "mui",
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.DueDate : "",
     required: true,
     dataType: "string",
@@ -326,7 +371,7 @@ export const TicketFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "Hours",
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.estimateHours : "",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
@@ -340,8 +385,11 @@ export const TicketFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "Priority",
-    initValueResolver: (context) =>
-      context.isEdit ? context.entityData?.Priority : "Medium", // Default to Medium if creating
+    initValueResolver: ({context}) => {
+      console.log("context :", context.entityData);
+      
+      return context.isEdit ? context.entityData?.priority : "Medium";
+     }, // Default to Medium if creating
     visibleWhen: () => true,
   },
 
@@ -356,7 +404,7 @@ export const TicketFieldConfig = () => [
 
     required: true,
     dataType: "string",
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
   },

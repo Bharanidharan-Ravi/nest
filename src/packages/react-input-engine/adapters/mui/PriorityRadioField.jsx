@@ -28,7 +28,6 @@ const TripleFlag = ({ color }) => (
 );
 
 export default function PriorityRadioField({ name, value, onChange, error }) {
-    console.log("value :", value);
     
   const priorities = [
     { 

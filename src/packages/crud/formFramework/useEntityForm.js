@@ -18,7 +18,7 @@ export const useEntityForm = (config, context = {}) => {
     (config.fields || []).forEach((field) => {
       if (!field.initValueResolver) return;
 
-      const initialValue = field.initValueResolver(context, masterData);
+      const initialValue = field.initValueResolver({context, masterData, formData});
       
       if (initialValue !== null && initialValue !== undefined) {
         initialValues[field.name] = initialValue;
@@ -26,7 +26,7 @@ export const useEntityForm = (config, context = {}) => {
     });
 
     return initialValues;
-  }, [config.fields, context, masterData]);
+  }, [config.fields, context, masterData, formData]);
 
   const mergedFormData = useMemo(
     () => ({ ...resolvedInitialData, ...formData }),
@@ -42,7 +42,7 @@ export const useEntityForm = (config, context = {}) => {
       let newField = { ...field };
 
       if (field.optionsResolver && masterData) {
-        newField.options = field.optionsResolver(masterData, context);
+        newField.options = field.optionsResolver(masterData, context, formData);
       }
 
       if (field.disableWhen) {
@@ -108,7 +108,6 @@ export const useEntityForm = (config, context = {}) => {
   // };
 
 const handleChange = (name, value, metadata = {}) => {
-  console.log("name  chanege :", name,value, metadata);
   
     setFormData((prev) => {
       // 1. Calculate the new state for this specific field
@@ -230,7 +229,6 @@ const handleChange = (name, value, metadata = {}) => {
     setFormData({});
     setErrors({});
   };
-  console.log("entity mergedFormData :", mergedFormData);
   
   return {
     formData: mergedFormData,

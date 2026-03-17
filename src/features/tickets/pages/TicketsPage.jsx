@@ -136,8 +136,6 @@ export default function TicketsPage() {
     },
   };
 
-  console.log("ticket data :", data);
-
   return (
     <>
       {/* <h3>{isRepoScoped ? `Tickets for Repo ${repoId}` : "All Tickets"}</h3> */}

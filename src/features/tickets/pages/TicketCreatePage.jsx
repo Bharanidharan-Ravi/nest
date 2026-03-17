@@ -19,12 +19,14 @@ const TicketCreatePage = () => {
     description: ticket.HtmlDesc || ticket.Description,
     assginedTo: ticket.Assignee_Name,
     Assignee_Id: ticket.Assignee_Id,
-    multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
+    multiAssignees: ticket.All_Assignees
+      ? JSON.parse(ticket.All_Assignees)
+      : [],
     estimateHours: ticket.Hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
     DueDate: ticket.Due_Date,
-
+    priority: ticket.Priority,
     // repoId: ticket.Repo_Id,
     project: ticket.Project_Id,
     RepoKey: ticket.RepoKey,
@@ -40,7 +42,6 @@ const TicketCreatePage = () => {
 
     return normalizeTicket(TicketWrapper[0]);
   }, [TicketWrapper, isEdit]);
-  console.log("TicketWrapper :", TicketWrapper, entityData);
 
   const statusOptions = [
     { label: "Active", value: { id: 1, name: "Active" } },
@@ -85,7 +86,9 @@ const TicketCreatePage = () => {
   return (
     <div className="max-w-7xl mx-auto w-full">
       <div className="mb-6 pb-2 border-b border-ghBorder">
-        <h2 className="text-2xl font-semibold text-ghText">Create Ticket</h2>
+        <h2 className="text-2xl font-semibold text-ghText">
+          {isEdit ? "Edit" : "Create"} Ticket
+        </h2>
       </div>
 
       <EntityFormPage
