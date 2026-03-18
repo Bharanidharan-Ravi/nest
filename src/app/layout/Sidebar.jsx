@@ -52,7 +52,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
       <div
         onClick={onClose}
         className={[
-          "fixed inset-0 bg-black/40 z-30 transition-opacity duration-300",
+          "fixed inset-0 bg-black/40 z-40 transition-opacity duration-300",
           isOpen ? "opacity-100 visible" : "opacity-0 invisible",
         ].join(" ")}
       />

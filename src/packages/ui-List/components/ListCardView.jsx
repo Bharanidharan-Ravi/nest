@@ -48,7 +48,7 @@ export function ListCardView() {
 
         return (
           <div
-            key={item.id}
+            key={item.Id}
             className={itemClasses}
             onClick={() => config.onItemClick && config.onItemClick(item)}
           >

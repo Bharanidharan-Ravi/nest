@@ -16,10 +16,12 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     // ----------------------------------------
     // 1️⃣ Hidden field (auto inject)
     // ----------------------------------------
+    console.log("field ", field);
+
     if (field.hidden) {
       target[field.apiKey] = convertType(
         field.defaultValue ?? null,
-        field.dataType
+        field.dataType,
       );
       return;
     }
@@ -30,14 +32,12 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     // 2️⃣ Group Field (Nested Multi)
     // ----------------------------------------
     if (field.type === "group" && field.isMulti) {
-      const groupArray = Array.isArray(rawValue)
-        ? rawValue
-        : [];
+      const groupArray = Array.isArray(rawValue) ? rawValue : [];
 
-      target[field.apiKey] = groupArray.map(item => {
+      target[field.apiKey] = groupArray.map((item) => {
         const groupObject = {};
 
-        field.fields?.forEach(subField => {
+        field.fields?.forEach((subField) => {
           processField(subField, item, groupObject);
         });
 
@@ -48,14 +48,12 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     }
 
     if (field.type === "group" && field.isMulti) {
-      const groupArray = Array.isArray(rawValue)
-        ? rawValue
-        : [];
+      const groupArray = Array.isArray(rawValue) ? rawValue : [];
 
-      target[field.apiKey] = groupArray.map(item => {
+      target[field.apiKey] = groupArray.map((item) => {
         const groupObject = {};
 
-        field.fields?.forEach(subField => {
+        field.fields?.forEach((subField) => {
           processField(subField, item, groupObject);
         });
 
@@ -65,21 +63,20 @@ export const mapFormToDto = (formData = {}, fields = []) => {
       return;
     }
 
+    if (field.type === "select" && field.multiple) {
+      const groupArray = Array.isArray(rawValue) ? rawValue : [];
 
-     if (field.type === "select" && field.multiple) {
-      const groupArray = Array.isArray(rawValue)
-        ? rawValue
-        : [];
-
-      target[field.apiKey] = groupArray.map((item)=> {
-        if (item && item.value && item.value.id !== undefined) {
-          return {id:item.value.id};
-        }
-        return null;
-      }).filter(item=> item !== null);
+      target[field.apiKey] = groupArray
+        .map((item) => {
+          if (item && item.value && item.value.id !== undefined) {
+            return { id: item.value.id };
+          }
+          return null;
+        })
+        .filter((item) => item !== null);
       return;
     }
-    
+
     // ----------------------------------------
     // 3️⃣ Extract Value
     // ----------------------------------------
@@ -89,33 +86,22 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     // 4️⃣ Apply Transform (if exists)
     // ----------------------------------------
     if (field.transform) {
-      finalValue = field.transform(
-        finalValue,
-        sourceData
-      );
+      finalValue = field.transform(finalValue, sourceData);
     }
 
     // ----------------------------------------
     // 5️⃣ Multi-map (one field → many API keys)
     // ----------------------------------------
     if (Array.isArray(field.mapTo)) {
-      field.mapTo.forEach(key => {
-        target[key] = convertType(
-          finalValue,
-          field.dataType
-        );
+      field.mapTo.forEach((key) => {
+        target[key] = convertType(finalValue, field.dataType);
       });
     } else {
-      target[field.apiKey] = convertType(
-        finalValue,
-        field.dataType
-      );
+      target[field.apiKey] = convertType(finalValue, field.dataType);
     }
   };
 
-  fields.forEach(field =>
-    processField(field, formData, dto)
-  );
+  fields.forEach((field) => processField(field, formData, dto));
 
   return dto;
 };
@@ -157,12 +143,14 @@ const convertType = (value, type) => {
     case "date":
       return new Date(value).toISOString();
 
-      case "dateTime":
+    case "dateTime":
       if (typeof value === "string" && value.match(/^\d{2}:\d{2}$/)) {
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         const dateTimeString = `${today}T${value}:00`;
         const localDate = new Date(dateTimeString);
-        const isoDateString = new Date(localDate.getTime() - localDate.getTimezoneOffset() * 60000).toISOString();
+        const isoDateString = new Date(
+          localDate.getTime() - localDate.getTimezoneOffset() * 60000,
+        ).toISOString();
         return isoDateString;
       }
       return new Date(value).toISOString();

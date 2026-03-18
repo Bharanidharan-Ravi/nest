@@ -7,7 +7,7 @@ import { executeApi } from "../../../core/api/executor";
 import { useState } from "react";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 
-export default function EntityFormPage({ config, mode, context = {}, module }) {
+export default function EntityFormPage({ config, mode, context = {}, module, onCancel }) {
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
@@ -134,7 +134,7 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
 
       <div className={`wg-form-footer ${theme.footer || ""}`}>
         {/* 🔥 UPDATED: Dynamic Action Button Rendering */}
-        {config.actions && config.actions.length > 0 ? (
+        {config.actions && config.actions.length > 0 && mode !== "Edit" ? (
           config.actions.map((action, index) => (
             <button
               key={index}
@@ -176,6 +176,19 @@ export default function EntityFormPage({ config, mode, context = {}, module }) {
                 ? "Creating..."
                 : "Updating..."
               : `${mode} ${module}`}
+          </button>
+        )}
+
+        {mode === "Edit" && (
+          <button 
+            type="button"
+            onClick={() => {
+              handleFormReset();
+              onCancel?.();
+            }}
+            className={`wg-btn-secondary ${theme.submitBtn || ""} ml-3`}
+          >
+            Cancel
           </button>
         )}
       </div>

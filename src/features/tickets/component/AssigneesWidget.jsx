@@ -1,166 +1,389 @@
 // component/AssigneesWidget.jsx
 import React, { useState, useMemo } from "react";
 import { FaCheckCircle, FaSpinner, FaPlus, FaTimes } from "react-icons/fa";
-import EntityFormPage from "../../../packages/crud/pages/EntityFormPage"; 
-import { ProgressUpdateFormConfig } from "../config/AssigneesWidget/ProgressUpdateForm.config";// 👈 Import your new config
+import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
+import { ProgressUpdateFormConfig } from "../config/AssigneesWidget/ProgressUpdateForm.config"; // 👈 Import your new config
+import { ProgressUpdateConfig } from "../config/AssigneesWidget/ProgressUpdate.config";
 
-export default function AssigneesWidget({ workStreams = [], currentUser, threads = [] }) {
-  // Toggle state for the Form Engine
+export default function AssigneesWidget({
+  workStreams = [],
+  currentUser,
+  threads = [],
+  ticketId,
+  data
+}) {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
-console.log("workStreams :", workStreams,currentUser, threads);
 
   const myLastThread = useMemo(() => {
     if (!threads || !currentUser) return null;
-    // Filter threads by current user, sort descending by date, grab the first one
-    const myThreads = threads.filter(t => t.CreatedBy === currentUser.userId || t.CreatedBy === currentUser.id);
-    return myThreads.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+    const myThreads = threads.filter(
+      (t) =>
+        t.CreatedBy === currentUser.userId || t.CreatedBy === currentUser.id,
+    );
+    return myThreads.sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    )[0];
   }, [threads, currentUser]);
-  // --- 1. Calculate the Roll-up Summary ---
+
   const summary = useMemo(() => {
     if (!workStreams || workStreams.length === 0) {
-      return { total: 0, completed: 0, pending: 0, overallPct: 0, pendingText: "" };
+      return {
+        total: 0,
+        completed: 0,
+        pending: 0,
+        overallPct: 0,
+        pendingText: "",
+      };
     }
-
     const total = workStreams.length;
-    const completed = workStreams.filter(ws => ws.CompletionPct === 100);
-    const pending = workStreams.filter(ws => ws.CompletionPct < 100);
-    
+    const completed = workStreams.filter((ws) => ws.CompletionPct === 100);
+    const pending = workStreams.filter((ws) => ws.CompletionPct < 100);
     const overallPct = Math.round(
-      workStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total
+      workStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total,
     );
-
     const pendingByStatus = pending.reduce((acc, ws) => {
       const statusName = ws.StatusName || `Status ${ws.StreamStatus}`;
       acc[statusName] = (acc[statusName] || 0) + 1;
       return acc;
     }, {});
-
     const pendingText = Object.entries(pendingByStatus)
       .map(([status, count]) => `${status} (${count})`)
       .join(", ");
 
-    return { total, completed: completed.length, pending: pending.length, overallPct, pendingText };
+    return {
+      total,
+      completed: completed.length,
+      pending: pending.length,
+      overallPct,
+      pendingText,
+    };
   }, [workStreams]);
-
+console.log("data?.CompletionPct :", data);
 
   return (
-    // Make sure h-full and overflow-hidden are here so it respects the max-h-[calc(...)] from the parent!
-    <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
-      
-      {/* =========================================
-          SECTION 1: ROLL-UP SUMMARY (Fixed Top)
-          ========================================= */}
-      <div className="p-5 bg-gray-50/50 border-b border-gray-100 shrink-0">
-        <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+    <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col max-h-full overflow-hidden">
+      {/* SECTION 1: ROLL-UP SUMMARY (Compact Padding) */}
+      <div className="p-4 bg-gray-50/50 border-b border-gray-100 shrink-0">
+        <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider mb-2">
           Overall Progress
         </h4>
-        
-        <div className="flex items-center gap-4 mb-3">
-          <div className="text-3xl font-black text-gray-800">{summary.overallPct}%</div>
+        <div className="flex items-center gap-3 mb-2">
+          <div className="text-2xl font-black text-gray-800">
+            {data?.CompletionPct}%
+          </div>
           <div className="flex-1">
-            <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-blue-500 transition-all duration-500" 
-                style={{ width: `${summary.overallPct}%` }}
+            <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-blue-500 transition-all duration-500"
+                style={{ width: `${data?.CompletionPct}%` }}
               />
             </div>
           </div>
         </div>
-
-        <p className="text-sm text-gray-600 leading-relaxed">
-          <span className="font-semibold text-gray-900">{summary.completed} of {summary.total}</span> assignees completed their work.
+        <p className="text-xs text-gray-600">
+          <span className="font-semibold text-gray-900">
+            {summary.completed} of {summary.total}
+          </span>{" "}
+          completed
         </p>
-        {summary.pending > 0 && (
-          <p className="text-[11px] text-orange-600 mt-2 font-medium bg-orange-50 inline-block px-2 py-1 rounded border border-orange-100">
-            Pending: {summary.pendingText}
-          </p>
-        )}
       </div>
 
-      {/* =========================================
-          SECTION 2: ASSIGNEE LIST (Scrollable Middle)
-          ========================================= */}
-      <div className="p-5 flex flex-col gap-4 flex-1 overflow-y-auto wg-scrollbar bg-white">
-        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-            <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+      {/* SECTION 2: ASSIGNEE LIST 
+          Dynamic Height: Shrinks to a max of 25% of the screen if form is open, otherwise takes available space. */}
+      <div
+        className={`p-4 flex flex-col gap-3 overflow-y-auto wg-scrollbar bg-white transition-all duration-300 ${
+          showUpdateForm ? "shrink-0 max-h-[25vh]" : ""
+        }`}
+      >
+        <div className="flex items-center justify-between border-b border-gray-100 pb-1.5">
+          <h4 className="text-[11px] font-bold text-gray-500 uppercase tracking-wider">
             Workstreams ({summary.total})
-            </h4>
+          </h4>
         </div>
-        
-        {workStreams.length > 0 ? (
-            workStreams.map((ws, index) => (
-            <div key={ws.StreamId || index} className="flex flex-col gap-1 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
-                <div className="flex items-center justify-between">
+
+        {workStreams?.length > 0 ? (
+          workStreams?.map((ws, index) => (
+            <div
+              key={ws.StreamId || index}
+              className="flex flex-col gap-1 pb-2 border-b border-gray-50 last:border-0 last:pb-0"
+            >
+              <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    {ws.CompletionPct === 100 ? (
-                    <FaCheckCircle className="text-green-500" size={14} />
-                    ) : (
-                    <FaSpinner className="text-blue-500 animate-spin-slow" size={14} />
-                    )}
-                    <span className="text-sm font-semibold text-gray-800">{ws.Assignee_Name || 'Assignee'}</span>
-                </div>
-                <span className="text-xs font-bold text-gray-600">{ws.CompletionPct || 0}%</span>
-                </div>
-                
-                <div className="flex items-center justify-between mt-1">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
-                      {ws.StatusName || `Status ID: ${ws.StreamStatus}`}
+                  {ws.CompletionPct === 100 ? (
+                    <FaCheckCircle className="text-green-500" size={13} />
+                  ) : (
+                    <FaSpinner
+                      className="text-blue-500 animate-spin-slow"
+                      size={13}
+                    />
+                  )}
+                  <span className="text-[13px] font-semibold text-gray-800">
+                    {ws.Assignee_Name || "Assignee"}
                   </span>
                 </div>
+                <span className="text-[11px] font-bold text-gray-600">
+                  {ws.CompletionPct || 0}%
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                  {ws.StatusName || `Status ID: ${ws.StreamStatus}`}
+                </span>
+              </div>
             </div>
-            ))
+          ))
         ) : (
-            <div className="text-sm text-gray-500 italic text-center py-4">No assignees assigned to this ticket yet.</div>
+          <div className="text-xs text-gray-500 italic text-center py-2">
+            No assignees yet.
+          </div>
         )}
       </div>
 
-      {/* =========================================
-          SECTION 3: UPDATE PROGRESS (Fixed Bottom)
-          ========================================= */}
-      <div className="bg-gray-50 border-t border-gray-200 shrink-0">
+      {/* SECTION 3: UPDATE PROGRESS FORM 
+          Uses min-h-0 to allow internal scrolling of the form without breaking out of the parent. */}
+      <div
+        className={`bg-gray-50 border-t border-gray-200 flex flex-col transition-all duration-300 ${
+          showUpdateForm ? "flex-1 min-h-0" : "shrink-0"
+        }`}
+      >
         {!showUpdateForm ? (
-          // The Trigger Button
-          <div className="p-4">
-            <button 
-                onClick={() => setShowUpdateForm(true)}
-                className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-gray-300 shadow-[0_1px_2px_rgb(0,0,0,0.05)] rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all"
+          <div className="p-3">
+            <button
+              onClick={() => setShowUpdateForm(true)}
+              className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-white border border-gray-300 shadow-sm rounded-lg text-xs font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all"
             >
-                <FaPlus size={12} /> Log My Progress
+              <FaPlus size={10} /> Log My Progress
             </button>
           </div>
         ) : (
-          // The Form Engine Wrapper
-          <div className="p-4 flex flex-col gap-3">
-            <div className="flex items-center justify-between mb-1 border-b border-gray-200 pb-2">
-                <h4 className="text-sm font-bold text-gray-800">Update Status</h4>
-                <button 
-                    onClick={() => setShowUpdateForm(false)}
-                    className="text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-50 rounded p-1.5 transition-colors"
-                    title="Cancel"
-                >
-                    <FaTimes size={12} />
-                </button>
+          <div className="flex flex-col h-full overflow-hidden">
+            {/* Form Header - Sticks to top */}
+            <div className="px-4 py-2 flex items-center justify-between border-b border-gray-200 shrink-0 bg-gray-100">
+              <h4 className="text-[13px] font-bold text-gray-800">
+                Update Status
+              </h4>
+              <button
+                onClick={() => setShowUpdateForm(false)}
+                className="text-gray-400 hover:text-red-500 bg-white border border-gray-200 hover:border-red-200 hover:bg-red-50 rounded p-1 transition-colors"
+              >
+                <FaTimes size={10} />
+              </button>
             </div>
-            
-            {/* 🔥 YOUR EXISTING FORM ENGINE 🔥 */}
-            <div className="-mx-1">
+
+            {/* Form Body - Scrollable Area */}
+            <div className="p-4 pb-12 flex-1 overflow-y-auto wg-scrollbar">
+              <div className="-mx-1">
                 <EntityFormPage
-                    mode="Create"
-                    config={ProgressUpdateFormConfig}
-                    module="Progress"
-                    context={{ lastThread: myLastThread }}
-                    // Optional context if you need to pass down the current user's existing workstream values to pre-fill the form!
-                   
+                  mode="Create"
+                  config={{
+                    ...ProgressUpdateFormConfig,
+                    fields: ProgressUpdateConfig(ticketId),
+                  }}
+                  module="Progress"
+                  context={{ lastThread: myLastThread }}
                 />
+              </div>
             </div>
           </div>
         )}
       </div>
-
     </div>
   );
 }
 
+// export default function AssigneesWidget({
+//   workStreams = [],
+//   currentUser,
+//   threads = [],
+// }) {
+//   // Toggle state for the Form Engine
+//   const [showUpdateForm, setShowUpdateForm] = useState(false);
+//   console.log("workStreams :", workStreams, currentUser, threads);
+
+//   const myLastThread = useMemo(() => {
+//     if (!threads || !currentUser) return null;
+//     // Filter threads by current user, sort descending by date, grab the first one
+//     const myThreads = threads.filter(
+//       (t) =>
+//         t.CreatedBy === currentUser.userId || t.CreatedBy === currentUser.id,
+//     );
+//     return myThreads.sort(
+//       (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+//     )[0];
+//   }, [threads, currentUser]);
+//   // --- 1. Calculate the Roll-up Summary ---
+//   const summary = useMemo(() => {
+//     if (!workStreams || workStreams.length === 0) {
+//       return {
+//         total: 0,
+//         completed: 0,
+//         pending: 0,
+//         overallPct: 0,
+//         pendingText: "",
+//       };
+//     }
+
+//     const total = workStreams.length;
+//     const completed = workStreams.filter((ws) => ws.CompletionPct === 100);
+//     const pending = workStreams.filter((ws) => ws.CompletionPct < 100);
+
+//     const overallPct = Math.round(
+//       workStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total,
+//     );
+
+//     const pendingByStatus = pending.reduce((acc, ws) => {
+//       const statusName = ws.StatusName || `Status ${ws.StreamStatus}`;
+//       acc[statusName] = (acc[statusName] || 0) + 1;
+//       return acc;
+//     }, {});
+
+//     const pendingText = Object.entries(pendingByStatus)
+//       .map(([status, count]) => `${status} (${count})`)
+//       .join(", ");
+
+//     return {
+//       total,
+//       completed: completed.length,
+//       pending: pending.length,
+//       overallPct,
+//       pendingText,
+//     };
+//   }, [workStreams]);
+
+//   const statusList = {
+//     ...ProgressUpdateFormConfig
+//   };
+//   return (
+//     // Make sure h-full and overflow-hidden are here so it respects the max-h-[calc(...)] from the parent!
+//     <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col h-full overflow-hidden">
+//       {/* =========================================
+//           SECTION 1: ROLL-UP SUMMARY (Fixed Top)
+//           ========================================= */}
+//       <div className="p-5 bg-gray-50/50 border-b border-gray-100 shrink-0">
+//         <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
+//           Overall Progress
+//         </h4>
+
+//         <div className="flex items-center gap-4 mb-3">
+//           <div className="text-3xl font-black text-gray-800">
+//             {summary.overallPct}%
+//           </div>
+//           <div className="flex-1">
+//             <div className="h-2 w-full bg-gray-200 rounded-full overflow-hidden">
+//               <div
+//                 className="h-full bg-blue-500 transition-all duration-500"
+//                 style={{ width: `${summary.overallPct}%` }}
+//               />
+//             </div>
+//           </div>
+//         </div>
+
+//         <p className="text-sm text-gray-600 leading-relaxed">
+//           <span className="font-semibold text-gray-900">
+//             {summary.completed} of {summary.total}
+//           </span>{" "}
+//           assignees completed their work.
+//         </p>
+//         {summary.pending > 0 && (
+//           <p className="text-[11px] text-orange-600 mt-2 font-medium bg-orange-50 inline-block px-2 py-1 rounded border border-orange-100">
+//             Pending: {summary.pendingText}
+//           </p>
+//         )}
+//       </div>
+
+//       {/* =========================================
+//           SECTION 2: ASSIGNEE LIST (Scrollable Middle)
+//           ========================================= */}
+//       <div className="p-5 flex flex-col gap-4 flex-1 overflow-y-auto wg-scrollbar bg-white">
+//         <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+//           <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+//             Workstreams ({summary.total})
+//           </h4>
+//         </div>
+
+//         {workStreams.length > 0 ? (
+//           workStreams.map((ws, index) => (
+//             <div
+//               key={ws.StreamId || index}
+//               className="flex flex-col gap-1 pb-3 border-b border-gray-50 last:border-0 last:pb-0"
+//             >
+//               <div className="flex items-center justify-between">
+//                 <div className="flex items-center gap-2">
+//                   {ws.CompletionPct === 100 ? (
+//                     <FaCheckCircle className="text-green-500" size={14} />
+//                   ) : (
+//                     <FaSpinner
+//                       className="text-blue-500 animate-spin-slow"
+//                       size={14}
+//                     />
+//                   )}
+//                   <span className="text-sm font-semibold text-gray-800">
+//                     {ws.Assignee_Name || "Assignee"}
+//                   </span>
+//                 </div>
+//                 <span className="text-xs font-bold text-gray-600">
+//                   {ws.CompletionPct || 0}%
+//                 </span>
+//               </div>
+
+//               <div className="flex items-center justify-between mt-1">
+//                 <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+//                   {ws.StatusName || `Status ID: ${ws.StreamStatus}`}
+//                 </span>
+//               </div>
+//             </div>
+//           ))
+//         ) : (
+//           <div className="text-sm text-gray-500 italic text-center py-4">
+//             No assignees assigned to this ticket yet.
+//           </div>
+//         )}
+//       </div>
+
+//       {/* =========================================
+//           SECTION 3: UPDATE PROGRESS (Fixed Bottom)
+//           ========================================= */}
+//       <div className="bg-gray-50 border-t border-gray-200 shrink-0">
+//         {!showUpdateForm ? (
+//           // The Trigger Button
+//           <div className="p-4">
+//             <button
+//               onClick={() => setShowUpdateForm(true)}
+//               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-white border border-gray-300 shadow-[0_1px_2px_rgb(0,0,0,0.05)] rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 hover:text-blue-600 transition-all"
+//             >
+//               <FaPlus size={12} /> Log My Progress
+//             </button>
+//           </div>
+//         ) : (
+//           // The Form Engine Wrapper
+//           <div className="p-4 flex flex-col gap-3">
+//             <div className="flex items-center justify-between mb-1 border-b border-gray-200 pb-2">
+//               <h4 className="text-sm font-bold text-gray-800">Update Status</h4>
+//               <button
+//                 onClick={() => setShowUpdateForm(false)}
+//                 className="text-gray-400 hover:text-red-500 bg-gray-100 hover:bg-red-50 rounded p-1.5 transition-colors"
+//                 title="Cancel"
+//               >
+//                 <FaTimes size={12} />
+//               </button>
+//             </div>
+
+//             {/* 🔥 YOUR EXISTING FORM ENGINE 🔥 */}
+//             <div className="-mx-1">
+//               <EntityFormPage
+//                 mode="Create"
+//                 config={ProgressUpdateFormConfig}
+//                 module="Progress"
+//                 context={{ lastThread: myLastThread }}
+//                 // Optional context if you need to pass down the current user's existing workstream values to pre-fill the form!
+//               />
+//             </div>
+//           </div>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
 
 //////////////---------------------------------------
 // import React from 'react';

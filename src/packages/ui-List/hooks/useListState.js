@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { parseQuery } from "./useQueryParser";
+import { useMasterData } from "../../../core/master/useMasterData";
 
 export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
@@ -49,6 +50,7 @@ const isUrlSyncEnabled = config.syncUrl !== false;
 
   // 🔥 FIX 1: Derive statusTab directly from the query. No more `useState` or `useEffect` loops!
   const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
+console.log("statusTab :", statusTab);
 
   const setStatusTab = useCallback((tabKey) => {
     const currentParsed = parseQuery(query);
@@ -90,7 +92,16 @@ const isUrlSyncEnabled = config.syncUrl !== false;
         return entry [filterConfig.filterKey] ==value;
       })
     );
-   } else{
+   } 
+  //  else if(filterConfig?.filterType === "api") {
+  //    const  data =  useApiQuery({
+  //        queryKey,
+  //        url:filterConfig.api,
+  //        method: filterConfig.method || 'GET',
+  //        payload,
+  //        source: "TicketsList")}
+  //  } 
+   else{
       data = data.filter((item) => item[key] === value);
    }
     });
