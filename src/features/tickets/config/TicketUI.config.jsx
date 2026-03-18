@@ -44,7 +44,7 @@ export const TicketListConfig = {
       key: "open", // UI key
       label: "Open", // What user sees
       field: "status",
-      filterValue: "Active", // Actual DB value
+      filterValue: "Functional Testing", // Actual DB value
     },
     {
       key: "closed",

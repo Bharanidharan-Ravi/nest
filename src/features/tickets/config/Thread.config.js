@@ -1,4 +1,4 @@
-import { calcHHMM } from "../../../app/shared/utilities/utilities";
+import { calcHHMM, formatTimeHHMM } from "../../../app/shared/utilities/utilities";
 
 export const ThreadFieldConfig = (ticketId) => [
   {
@@ -9,6 +9,7 @@ export const ThreadFieldConfig = (ticketId) => [
     required: true,
     dataType: "string",
     apiKey: "CommentText",
+    initValueResolver: ({context}) => context?.editingItem?.description || "",
   },
 
   {
@@ -17,6 +18,7 @@ export const ThreadFieldConfig = (ticketId) => [
     hidden: true,
     defaultValue: ticketId,
     dataType: "string",
+    initValueResolver: ({context}) => context?.editingItem?.Issue_Id || ticketId,
   },
   {
     label: "From-time (24h Format)",
@@ -27,14 +29,8 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 3,
     dataType: "dateTime",
     apiKey: "From_Time",
-    customValidator: (value, data) => {
-      if (!value || !data.toTime) return true;
-      const [fh, fm] = value.split(":").map(Number);
-      const [th, tm] = data.toTime.split(":").map(Number);
-      return fh * 60 + fm >= th * 60 + tm
-        ? "From-time must be earlier than To-time"
-        : true;
-    },
+    initValueResolver: ({context}) => formatTimeHHMM(context?.editingItem?.fromTime),
+    disableWhen: (context) => Boolean(context?.formData?.hours),
     // errorMessage: "Only alphanumeric allowed",
   },
   {
@@ -47,14 +43,8 @@ export const ThreadFieldConfig = (ticketId) => [
     dataType: "dateTime",
     apiKey: "To_Time",
     errorMessage: "To-time cannot be earlier than From-time",
-    customValidator: (value, data) => {
-      if (!value || !data.fromTime) return true;
-      const [fh, fm] = data.fromTime.split(":").map(Number);
-      const [th, tm] = value.split(":").map(Number);
-      return th * 60 + tm <= fh * 60 + fm
-        ? "To-time must be later than From-time"
-        : true;
-    },
+    initValueResolver: ({context}) => formatTimeHHMM(context?.editingItem?.toTime),
+    disableWhen: (context) => Boolean(context?.formData?.hours)
   },
 
   {
@@ -71,6 +61,21 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     colSpan: 3,
     effectDependencies: ["fromTime", "toTime"],
+    initValueResolver: ({context}) => context?.editingItem?.Hours,
+    effectResolver: (formData) => {
+      if (formData.fromTime && formData.toTime) {
+        const hours = calcHHMM(formData.fromTime, formData.toTime);
+        return hours;
+      }
+
+      if (formData.hours) {
+        formData.fromTime = null;
+        formData.toTime = null;
+      }
+
+      return formData.hours || null;
+    },
+    effectDependencies: ["formTime", "toTime", "hours"],
   },
   // {
   //   name: "UpdateStatus",

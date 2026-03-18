@@ -56,6 +56,32 @@ const TicketDetailPage = () => {
 
     return () => observer.disconnect();
   }, []);
+  const parentTicket = React.useMemo(() => {
+    if (!ticketMasterData) return null;
+
+    // 1. Find the parent ticket first
+    const ticket = ticketMasterData.find(
+      (issue) => issue.Issue_Id === ticketId,
+    );
+
+    // If no ticket is found, exit early
+    if (!ticket) return null;
+
+    // 2. Find the matching project details using the ticket's Project_Id
+    const projectDetails = data?.ProjectList?.find(
+      (project) => project.Id === ticket.Project_Id,
+    );
+
+    // 3. Merge the ticket data with the project details and return it
+    return {
+      ...ticket, // Spread all existing ticket properties
+      Project_Name: projectDetails?.Project_Name || "Unknown Project",
+      projKey: projectDetails?.ProjectKey || "Unknown Repo",
+      Repo_Name: projectDetails?.Repo_Name || "Unknown Repo",
+    };
+
+    // 4. Don't forget to add 'data' to the dependency array!
+  }, [ticketMasterData, ticketId, data]);
 
   // --- 1. Thread Data Processing ---
   const threads = ThreadsList?.ThreadsList?.Data || [];
@@ -79,26 +105,26 @@ const TicketDetailPage = () => {
       if (editingItem && editingItem.Id === item.Id) {
         return (
           <EntityFormPage
-          mode="edit"
-          config={{
-            ...ThreadFormConfig,
-            invalidateKeys: queryKeys.ticket.thread(ticketId),
-            api: `thread/${editingItem?.Id}`
-          }}
-          context={{ isEdit: true, editingItem}}
-          module="Thread"
-          onCancel={() => setEditingItem(null)}
-         />
-        ); 
-    }
-    return (
-      <ThreadListCard
-        item={item}
-        currentUser={user?.name}
-        onEdit={() => setEditingItem(item)}
-      />
-    );
-  },
+            mode="Edit"
+            config={{
+              ...ThreadFormConfig,
+              invalidateKeys: queryKeys.ticket.thread(ticketId),
+              api: `thread/${editingItem?.Id}`,
+            }}
+            context={{ isEdit: true, editingItem }}
+            module="Thread"
+            onCancel={() => setEditingItem(null)}
+          />
+        );
+      }
+      return (
+        <ThreadListCard
+          item={item}
+          currentUser={user?.name}
+          onEdit={() => setEditingItem(item)}
+        />
+      );
+    },
   };
   // --- Calculate Time Totals ---
   // --- Calculate Time Totals ---
@@ -142,41 +168,15 @@ const TicketDetailPage = () => {
     };
   }, [rawList, user]);
   // --- 2. Parent Ticket Processing ---
-  const parentTicket = React.useMemo(() => {
-    if (!ticketMasterData) return null;
-
-    // 1. Find the parent ticket first
-    const ticket = ticketMasterData.find(
-      (issue) => issue.Issue_Id === ticketId,
-    );
-
-    // If no ticket is found, exit early
-    if (!ticket) return null;
-
-    // 2. Find the matching project details using the ticket's Project_Id
-    const projectDetails = data?.ProjectList?.find(
-      (project) => project.Id === ticket.Project_Id,
-    );
-
-    // 3. Merge the ticket data with the project details and return it
-    return {
-      ...ticket, // Spread all existing ticket properties
-      Project_Name: projectDetails?.Project_Name || "Unknown Project",
-      projKey: projectDetails?.ProjectKey || "Unknown Repo",
-      Repo_Name: projectDetails?.Repo_Name || "Unknown Repo",
-    };
-
-    // 4. Don't forget to add 'data' to the dependency array!
-  }, [ticketMasterData, ticketId, data]);
 
   if (!parentTicket) return null;
 
-  const labels = parentTicket.Labels_JSON
-    ? JSON.parse(parentTicket.Labels_JSON)
-    : [];
-  const formattedDueDate = formatDate(parentTicket.Due_Date);
+  // const labels = parentTicket.Labels_JSON
+  //   ? JSON.parse(parentTicket.Labels_JSON)
+  //   : [];
+  // const formattedDueDate = formatDate(parentTicket.Due_Date);
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees) || null;
-console.log("parentTicket :", assigneesJsonString);
+  // console.log("parentTicket :", parentTicket);
 
   return (
     // Clean w-full container with white background
@@ -193,11 +193,11 @@ console.log("parentTicket :", assigneesJsonString);
           Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
           ======================================================== */}
       <div
-        className={`sticky top-0 z-50 w-full transition-all duration-300 ${
+        className={`sticky top-0 z-30 w-full transition-all duration-300 ${
           isStuck
-          ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
-          : "py-4 px-4 sm:px-6 bg-white border-transparent"
-          }`}
+            ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
+            : "py-4 px-4 sm:px-6 bg-white border-transparent"
+        }`}
       >
         <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1">
@@ -240,7 +240,11 @@ console.log("parentTicket :", assigneesJsonString);
                 </span>
               </div>
               <button
-                onClick={() => goTo(ROUTE_KEYS.TICKET_EDIT, { ticketId: parentTicket.Issue_Id })}
+                onClick={() =>
+                  goTo(ROUTE_KEYS.TICKET_EDIT, {
+                    ticketId: parentTicket.Issue_Id,
+                  })
+                }
                 className=" text-gray-500 hover:text-blue-600  hover:bg-gray-50  rounded-lg transition-all"
                 title="Edit Ticket"
               >
@@ -292,60 +296,65 @@ console.log("parentTicket :", assigneesJsonString);
           SCROLLING CONTENT
           We apply the same px-4 sm:px-6 here so it lines up with the header!
           ======================================================== */}
-     
+
       <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
-  {/* Parent Description */}
-  <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
-    <HtmlRenderer
-      html={parentTicket.HtmlDesc || parentTicket.Description}
-    />
-  </div>
+        {/* Parent Description */}
+        <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
+          <HtmlRenderer
+            html={parentTicket.HtmlDesc || parentTicket.Description}
+          />
+        </div>
 
-  {/* --- MAIN SPLIT LAYOUT --- */}
-  {/* Removed items-start so both columns stretch to the maximum height */}
-  <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full relative">
-    
-    {/* ========================================= */}
-    {/* LEFT COLUMN (Threads + Editor)            */}
-    {/* ========================================= */}
-    <div className="w-full lg:w-3/4 flex flex-col gap-6">
-      
-      {/* 1. Conversation Threads */}
-      <div className="w-full">
-        <ListProvider config={listConfig} data={rawList}>
-          <ListCardView />
-        </ListProvider>
-      </div>
+        {/* --- MAIN SPLIT LAYOUT --- */}
+        {/* Removed items-start so both columns stretch to the maximum height */}
+        <div className="flex flex-col lg:flex-row gap-8 mt-6 w-full relative">
+          {/* ========================================= */}
+          {/* LEFT COLUMN (Threads + Editor)            */}
+          {/* ========================================= */}
+          <div className="w-full lg:w-3/4 flex flex-col gap-6">
+            {/* 1. Conversation Threads */}
+            <div className="w-full">
+              <ListProvider config={listConfig} data={rawList}>
+                <ListCardView />
+              </ListProvider>
+            </div>
 
-      {/* 2. Reply Form (MOVED INSIDE THE LEFT COLUMN) */}
-      <div className="rounded-3xl p-2">
-        <EntityFormPage
-          mode="Create"
-          config={{
-            ...ThreadFormConfig,
-            fields: ThreadFieldConfig(ticketId),
-          }}
-          module="Thread"
-        />
-      </div>
+            {/* 2. Reply Form (MOVED INSIDE THE LEFT COLUMN) */}
+            {!editingItem &&
+              (parentTicket.Status !== "Inactive" ||
+                parentTicket.Status !== "Cancelled" ||
+                parentTicket.Status !== "Closed") && (
+                <div className="rounded-3xl p-2">
+                  <EntityFormPage
+                    mode="Create"
+                    config={{
+                      ...ThreadFormConfig,
+                      fields: ThreadFieldConfig(ticketId),
+                    }}
+                    module="Thread"
+                  />
+                </div>
+              )}
+          </div>
 
-    </div>
-
-    {/* ========================================= */}
-    {/* RIGHT COLUMN (Sticky Sidebar)             */}
-    {/* ========================================= */}
-    <div className="w-full lg:w-1/4">
-      {/* Changed h-[75vh] to max-h-[calc(100vh-8rem)]
+          {/* ========================================= */}
+          {/* RIGHT COLUMN (Sticky Sidebar)             */}
+          {/* ========================================= */}
+          <div className="w-full lg:w-1/4">
+            {/* Changed h-[75vh] to max-h-[calc(100vh-8rem)]
         This prevents it from getting cut off on small screens while remaining sticky.
       */}
-      <div className="sticky top-28 max-h-[calc(100vh-8rem)] flex flex-col gap-6">
-        <AssigneesWidget workStreams={assigneesJsonString} />
-        {/* Render Labels Widget Here later */}
+            <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
+              <AssigneesWidget
+                workStreams={assigneesJsonString}
+                data ={parentTicket}
+                ticketId={ticketId}
+              />
+              {/* Render Labels Widget Here later */}
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-
-  </div>
-</div>
       <div id="bottomSection"></div>
       <FloatingArrowScroll targetId="bottomSection" />
     </div>
@@ -353,6 +362,7 @@ console.log("parentTicket :", assigneesJsonString);
 };
 
 export default TicketDetailPage;
+
 //  <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
 //         {/* Parent Description */}
 //         <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
@@ -394,8 +404,6 @@ export default TicketDetailPage;
 //         </div>
 //         {/* </div> */}
 //       </div>
-
-
 
 //   return (
 //     <div className="flex flex-col relative w-full pb-10">
@@ -506,8 +514,6 @@ export default TicketDetailPage;
 //     </div>
 //   );
 // };
-
-
 
 // return (
 //   // We use relative positioning here, NO overflow-hidden, allowing the <main> tag to handle the scrolling

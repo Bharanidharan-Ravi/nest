@@ -128,8 +128,9 @@ export default function TicketsPage() {
         // focused={index === focusedIndex}
       />
     ),
-    onItemClick: (item) => {
-      navigate(`${location.pathname}/${item.id}`);
+    onItemClick: (item) => {      
+       const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
+        goTo(createRouteKey, { ticketId: item.id });
     },
     onEditClick: (item) => {
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });

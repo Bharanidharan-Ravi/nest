@@ -42,7 +42,7 @@ export const useEntityForm = (config, context = {}) => {
       let newField = { ...field };
 
       if (field.optionsResolver && masterData) {
-        newField.options = field.optionsResolver(masterData, context, formData);
+        newField.options = field.optionsResolver({masterData, context, formData});
       }
 
       if (field.disableWhen) {
