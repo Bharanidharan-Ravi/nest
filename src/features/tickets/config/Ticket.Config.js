@@ -175,32 +175,23 @@ export const TicketFieldConfig = () => [
 
     // 🔥 Smart Initial Value (Sets project if projid exists)
     initValueResolver: ({context, masterData, formData}) => {
-      let targetRepoId = null;
-
-      const projectId =
+      const targetProjId =
         context?.params?.projId ||
-        context?.entityData?.project ||
-        formData?.project?.value?.id;
+        context?.entityData?.Project;
+      
+      if (!targetProjId) return null;
 
-      if (projectId) {
         const project = masterData?.ProjectList?.find(
-          (p) => p.Id === projectId,
+          (p) => p.Id === targetProjId,
         );
-        if (project) targetRepoId = project.Repo_Id;
-      }
 
-      if (!targetRepoId) return null;
-
-      const repo = masterData?.RepoList?.find(
-        (r) => r.Repo_Id === targetRepoId,
-      );
-      if (!repo) return null;
+      if (!project) return null;
 
       return {
-        label: repo.Title,
+        label: project.Project_Name,
         value: {
-          id: repo.Repo_Id,
-          name: repo.Title,
+          id: project.Id,
+          name: project.Project_Name,
         },
       };
     },

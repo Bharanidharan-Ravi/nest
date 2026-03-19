@@ -176,7 +176,7 @@ const TicketDetailPage = () => {
   //   : [];
   // const formattedDueDate = formatDate(parentTicket.Due_Date);
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees) || null;
-  // console.log("parentTicket :", parentTicket);
+  console.log("parentTicket :", assigneesJsonString);
 
   return (
     // Clean w-full container with white background
