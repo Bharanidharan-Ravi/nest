@@ -5,17 +5,16 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
-import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
+import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
 import ProjectCard from "../components/ProjectCard";
 
 // Activate the relative time plugin so we get "2 hours ago", "a month ago", etc.
 dayjs.extend(relativeTime);
 
-
 export const ProjUIConfig = {
   defaultView: "card",
-  pageSize:10,
-  infinite:true,
+  pageSize: 10,
+  infinite: true,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,
@@ -49,17 +48,20 @@ export const ProjUIConfig = {
 
   tabConfig: [
     {
-      key: "open", // UI key
-      label: "Open", // What user sees
+      key: "open",
+      label: "Open",
       field: "status",
-      filterValue: "Active", // Actual DB value
+      // Exclude OnHold(13), Closed(14), Cancelled(15), Inactive(16)
+      // Anything NOT in this list will be treated as an Open/Active ticket
+      excludeValues: [13, 14, 15, 16],
     },
     {
       key: "closed",
       label: "Closed",
       field: "status",
-      filterValue: "InActive",
+      // Specifically include these IDs for the Closed tab
+      filterValue: [13, 14, 15, 16],
     },
   ],
- cardRenderer: (item) => <ProjectCard item={item} />,
+  cardRenderer: (item) => <ProjectCard item={item} />,
 };

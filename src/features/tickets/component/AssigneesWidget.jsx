@@ -10,7 +10,7 @@ export default function AssigneesWidget({
   currentUser,
   threads = [],
   ticketId,
-  data
+  data,
 }) {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
 
@@ -25,8 +25,19 @@ export default function AssigneesWidget({
     )[0];
   }, [threads, currentUser]);
 
+   const filteredWorkStreams = useMemo(() => {
+    if (!workStreams) return [];
+    // Note: Checking both Assignee_Type and Assignment_Type just to be safe
+    // based on your older commented code.
+    return workStreams.filter(
+      (ws) =>
+        ws.Assignee_Type !== "Main Assignee" &&
+        ws.Assignment_Type !== "Main Assignee",
+    );
+  }, [workStreams]);
+
   const summary = useMemo(() => {
-    if (!workStreams || workStreams.length === 0) {
+    if (!filteredWorkStreams || filteredWorkStreams.length === 0) {
       return {
         total: 0,
         completed: 0,
@@ -35,11 +46,11 @@ export default function AssigneesWidget({
         pendingText: "",
       };
     }
-    const total = workStreams.length;
-    const completed = workStreams.filter((ws) => ws.CompletionPct === 100);
-    const pending = workStreams.filter((ws) => ws.CompletionPct < 100);
+    const total = filteredWorkStreams.length;
+    const completed = filteredWorkStreams.filter((ws) => ws.CompletionPct === 100);
+    const pending = filteredWorkStreams.filter((ws) => ws.CompletionPct < 100);
     const overallPct = Math.round(
-      workStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total,
+      filteredWorkStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total,
     );
     const pendingByStatus = pending.reduce((acc, ws) => {
       const statusName = ws.StatusName || `Status ${ws.StreamStatus}`;
@@ -57,9 +68,9 @@ export default function AssigneesWidget({
       overallPct,
       pendingText,
     };
-  }, [workStreams]);
-console.log("data?.CompletionPct :", data);
-
+  }, [filteredWorkStreams]);
+  console.log("data?.CompletionPct :", data);
+ 
   return (
     <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col max-h-full overflow-hidden">
       {/* SECTION 1: ROLL-UP SUMMARY (Compact Padding) */}
@@ -101,8 +112,8 @@ console.log("data?.CompletionPct :", data);
           </h4>
         </div>
 
-        {workStreams?.length > 0 ? (
-          workStreams?.map((ws, index) => (
+        {filteredWorkStreams?.length > 0 ? (
+          filteredWorkStreams?.map((ws, index) => (
             <div
               key={ws.StreamId || index}
               className="flex flex-col gap-1 pb-2 border-b border-gray-50 last:border-0 last:pb-0"

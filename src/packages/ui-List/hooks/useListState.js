@@ -5,12 +5,11 @@ import { useMasterData } from "../../../core/master/useMasterData";
 
 export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
-const isUrlSyncEnabled = config.syncUrl !== false;
+  const isUrlSyncEnabled = config.syncUrl !== false;
   /* --------------------------
      INITIAL STATE (Run once)
   -------------------------- */
   const initialQuery = useMemo(() => {
-
     // 🔥 NEW: If child list, ignore URL and load default config
     if (!isUrlSyncEnabled) {
       const defaultTab = config.tabConfig?.[0]?.key;
@@ -19,24 +18,28 @@ const isUrlSyncEnabled = config.syncUrl !== false;
 
     const urlQ = searchParams.get("q");
     if (urlQ) return urlQ;
-    
+
     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
     return urlTab ? `is:${urlTab} ` : "";
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isUrlSyncEnabled]); 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isUrlSyncEnabled]);
 
   /* --------------------------
      STATES
   -------------------------- */
   const [query, setQuery] = useState(initialQuery);
   const [sortField, setSortField] = useState(
-    (isUrlSyncEnabled ? searchParams.get("sort") : null) || config.defaultSort?.field || "updatedAt"
+    (isUrlSyncEnabled ? searchParams.get("sort") : null) ||
+      config.defaultSort?.field ||
+      "updatedAt",
   );
-  
+
   const [sortOrder, setSortOrder] = useState(
-    (isUrlSyncEnabled ? searchParams.get("order") : null) || config.defaultSort?.order || "desc"
+    (isUrlSyncEnabled ? searchParams.get("order") : null) ||
+      config.defaultSort?.order ||
+      "desc",
   );
-  
+
   const [filters, setFilters] = useState({});
   const [view, setView] = useState(config.defaultView || "table");
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
@@ -50,20 +53,23 @@ const isUrlSyncEnabled = config.syncUrl !== false;
 
   // 🔥 FIX 1: Derive statusTab directly from the query. No more `useState` or `useEffect` loops!
   const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
-console.log("statusTab :", statusTab);
+  console.log("statusTab :", statusTab);
 
-  const setStatusTab = useCallback((tabKey) => {
-    const currentParsed = parseQuery(query);
-    const otherFilters = Object.entries(currentParsed.filters)
-      .filter(([k]) => k !== "is")
-      .map(([k, v]) => `${k}:${v}`);
+  const setStatusTab = useCallback(
+    (tabKey) => {
+      const currentParsed = parseQuery(query);
+      const otherFilters = Object.entries(currentParsed.filters)
+        .filter(([k]) => k !== "is")
+        .map(([k, v]) => `${k}:${v}`);
 
-    const newQuery = [`is:${tabKey}`, ...otherFilters, currentParsed.text]
-      .filter(Boolean)
-      .join(" ");
+      const newQuery = [`is:${tabKey}`, ...otherFilters, currentParsed.text]
+        .filter(Boolean)
+        .join(" ");
 
-    setQuery(newQuery.trim() + " ");
-  }, [query]);
+      setQuery(newQuery.trim() + " ");
+    },
+    [query],
+  );
 
   /* --------------------------
      PROCESS DATA
@@ -76,47 +82,68 @@ console.log("statusTab :", statusTab);
       if (!value) return;
 
       // Handle "is" token (Tabs)
+      // if (key === "is" && config.tabConfig) {
+      //   const mapping = config.tabConfig.find((t) => t.key === value);
+      //   if (mapping) {
+      //     data = data.filter((item) => item[mapping.field] === mapping.filterValue);
+      //   }
+      //   return;
+      // }
+
       if (key === "is" && config.tabConfig) {
         const mapping = config.tabConfig.find((t) => t.key === value);
         if (mapping) {
-          data = data.filter((item) => item[mapping.field] === mapping.filterValue);
-        }
-        return; 
-      }
+          data = data.filter((item) => {
+            const itemValue = item[mapping.field];
 
-      const filterConfig = config.filters?.find((f)=>f.key === key);
-      if(filterConfig?.filterType === "array"){
-        data = data.filter((item)=>
-        Array.isArray(item[key]) &&
-      item[key].some((entry)=>{
-        return entry [filterConfig.filterKey] ==value;
-      })
-    );
-   } 
-  //  else if(filterConfig?.filterType === "api") {
-  //    const  data =  useApiQuery({
-  //        queryKey,
-  //        url:filterConfig.api,
-  //        method: filterConfig.method || 'GET',
-  //        payload,
-  //        source: "TicketsList")}
-  //  } 
-   else{
-      data = data.filter((item) => item[key] === value);
-   }
+            // 1. If we provided an array of values to EXCLUDE
+            if (mapping.excludeValues) {
+              return !mapping.excludeValues.includes(itemValue);
+            }
+
+            // 2. If we provided an array of multiple values to INCLUDE
+            if (Array.isArray(mapping.filterValue)) {
+              return mapping.filterValue.includes(itemValue);
+            }
+
+            // 3. Fallback to the original exact match
+            return itemValue === mapping.filterValue;
+          });
+        }
+        return;
+      }
+      const filterConfig = config.filters?.find((f) => f.key === key);
+      if (filterConfig?.filterType === "array") {
+        data = data.filter(
+          (item) =>
+            Array.isArray(item[key]) &&
+            item[key].some((entry) => {
+              return entry[filterConfig.filterKey] == value;
+            }),
+        );
+      }
+      //  else if(filterConfig?.filterType === "api") {
+      //    const  data =  useApiQuery({
+      //        queryKey,
+      //        url:filterConfig.api,
+      //        method: filterConfig.method || 'GET',
+      //        payload,
+      //        source: "TicketsList")}
+      //  }
+      else {
+        data = data.filter((item) => item[key] === value);
+      }
     });
 
     // Text search
     if (text) {
       data = data.filter((item) =>
-        item.title?.toLowerCase().includes(text.toLowerCase())
+        item.title?.toLowerCase().includes(text.toLowerCase()),
       );
     }
 
     // Sort
     data.sort((a, b) => {
-      
-      
       const aVal = a?.[sortField];
       const bVal = b?.[sortField];
       if (!aVal || !bVal) return 0;
@@ -124,7 +151,9 @@ console.log("statusTab :", statusTab);
       const aDate = new Date(aVal);
       const bDate = new Date(bVal);
       if (!isNaN(aDate) && !isNaN(bDate)) {
-        return sortOrder === "asc" ? aDate.getTime() - bDate.getTime() : bDate.getTime() - aDate.getTime();
+        return sortOrder === "asc"
+          ? aDate.getTime() - bDate.getTime()
+          : bDate.getTime() - aDate.getTime();
       }
 
       return sortOrder === "asc"
@@ -133,7 +162,15 @@ console.log("statusTab :", statusTab);
     });
 
     return data;
-  }, [rawData, queryFilters, filters, sortField, sortOrder, text, config.tabConfig]);
+  }, [
+    rawData,
+    queryFilters,
+    filters,
+    sortField,
+    sortOrder,
+    text,
+    config.tabConfig,
+  ]);
 
   const visibleData = processed.slice(0, visibleCount);
 
@@ -142,15 +179,25 @@ console.log("statusTab :", statusTab);
   }, [config.pageSize]);
 
   return {
-    config, query, setQuery, sortField, setSortField, sortOrder, setSortOrder,
-    statusTab, setStatusTab, filters, setFilters, view, setView,
-    data: visibleData, total: processed.length, hasMore: visibleCount < processed.length, loadMore, 
+    config,
+    query,
+    setQuery,
+    sortField,
+    setSortField,
+    sortOrder,
+    setSortOrder,
+    statusTab,
+    setStatusTab,
+    filters,
+    setFilters,
+    view,
+    setView,
+    data: visibleData,
+    total: processed.length,
+    hasMore: visibleCount < processed.length,
+    loadMore,
   };
 }
-
-
-
-
 
 // import { useState, useMemo, useEffect, useCallback } from "react";
 // import { useSearchParams } from "react-router-dom";
@@ -188,7 +235,7 @@ console.log("statusTab :", statusTab);
 //   const [filters, setFilters] = useState({});
 //   const [view, setView] = useState(config.defaultView || "table");
 
-//   // Initial count matches config pageSize 
+//   // Initial count matches config pageSize
 //   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
 
 //   /* --------------------------
@@ -260,7 +307,7 @@ console.log("statusTab :", statusTab);
 //             (item) => item[mapping.field] === mapping.filterValue,
 //           );
 //         }
-//         return; 
+//         return;
 //       }
 
 //       // Default behavior
@@ -320,6 +367,6 @@ console.log("statusTab :", statusTab);
 //     data: visibleData,
 //     total: processed.length,
 //     hasMore: visibleCount < processed.length,
-//     loadMore, 
+//     loadMore,
 //   };
 // }

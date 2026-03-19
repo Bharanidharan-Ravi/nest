@@ -41,23 +41,23 @@ export const TicketListConfig = {
 
   tabConfig: [
     {
-      key: "open", // UI key
-      label: "Open", // What user sees
+      key: "open",
+      label: "Open",
       field: "status",
-      filterValue: "Functional Testing", // Actual DB value
+      // Exclude OnHold(13), Closed(14), Cancelled(15), Inactive(16)
+      // Anything NOT in this list will be treated as an Open/Active ticket
+      excludeValues: [13, 14, 15, 16],
     },
     {
       key: "closed",
       label: "Closed",
       field: "status",
-      filterValue: "InActive",
+      // Specifically include these IDs for the Closed tab
+      filterValue: [13, 14, 15, 16],
     },
   ],
 
   cardRenderer: (item, controls) => (
-    <TicketListCard
-      item={item}
-      controls={controls}
-    />
+    <TicketListCard item={item} controls={controls} />
   ),
 };

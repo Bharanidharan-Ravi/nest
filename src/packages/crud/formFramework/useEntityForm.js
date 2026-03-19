@@ -57,56 +57,6 @@ export const useEntityForm = (config, context = {}) => {
     return updated;
   }, [mergedFormData, config.fields, masterData, context]);
 
-  // const handleChange = (name, value, metadata = {}) => {
-  //   setFormData((prev) => {
-  //     const next = {
-  //       ...prev,
-  //       [name]: metadata?.raw ?? value,
-  //     };
-
-  //     const field = config.fields.find((f) => f.name === name);
-
-  //     if (field?.effects && metadata?.raw) {
-  //       Object.entries(field.effects).forEach(([target, path]) => {
-  //         next[target] = path
-  //           .split(".")
-  //           .reduce((acc, k) => acc?.[k], metadata.raw);
-  //       });
-  //     }
-
-  //     return next;
-  //   });
-  // };
-
-  // const handleChange = (name, value, metadata = {}) => {
-  //   setFormData((prev) => {
-  //     const next = {
-  //       ...prev,
-  //       [name]: metadata?.raw ?? value,
-  //     };
-
-  //     (config.fields || []).forEach((field) => {
-  //       if (
-  //         field.effectResolver &&
-  //         (field.effectDependencies || []).includes(name)
-  //       ) {
-  //         const Hours = field.effectResolver(next);
-  //         if (Hours != null) next[field.name] = Hours;
-  //       }
-  //     });
-
-  //     const field = config.fields.find((f) => f.name === name);
-  //     if (field?.effects && metadata?.raw) {
-  //       Object.entries(field.effects).forEach(([target, path]) => {
-  //         next[target] = path
-  //           .split(".")
-  //           .reduce((acc, k) => acc?.[k], metadata.raw);
-  //       });
-  //     }
-  //     return next;
-  //   });
-  // };
-
 const handleChange = (name, value, metadata = {}) => {
   
     setFormData((prev) => {
