@@ -1,6 +1,6 @@
 // validationEngine.js
 
-export const validateForm = (formData, fields) => {
+export const validateForm = (formData, fields, context = {}) => {
   const errors = {};
 
   const validateField = (field, data, errorTarget) => {
@@ -9,10 +9,18 @@ export const validateForm = (formData, fields) => {
     const value = data[field.name] ?? data[field.key];
 
     if (field.hidden) return;
+    const isRequired = field.requiredWhen
+      ? field.requiredWhen(context, data)
+      : field.required;
 
-    if (field.required && !value) {
-      errorTarget[fieldKey] = `${field.label} is required`;
+    if (isRequired && !value) {
+      console.log("field.name :", field.name);
+      
+      errorTarget[field.name] = `${field.label} is required`;
     }
+    // if (field.required && !value) {
+    //   errorTarget[fieldKey] = `${field.label} is required`;
+    // }
 
     if (field.pattern && value) {
       if (!new RegExp(field.pattern).test(value)) {
@@ -22,7 +30,7 @@ export const validateForm = (formData, fields) => {
     }
 
     if (field.customValidator) {
-      const result = field.customValidator(value, data);      
+      const result = field.customValidator(value, data);
       if (result !== true) {
         errorTarget[field.name] = result;
       }

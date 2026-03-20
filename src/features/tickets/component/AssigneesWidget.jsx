@@ -69,7 +69,6 @@ export default function AssigneesWidget({
       pendingText,
     };
   }, [filteredWorkStreams]);
-  console.log("data?.CompletionPct :", data);
  
   return (
     <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col max-h-full overflow-hidden">

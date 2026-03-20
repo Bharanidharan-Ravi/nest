@@ -18,8 +18,12 @@ export const useEntityForm = (config, context = {}) => {
     (config.fields || []).forEach((field) => {
       if (!field.initValueResolver) return;
 
-      const initialValue = field.initValueResolver({context, masterData, formData});
-      
+      const initialValue = field.initValueResolver({
+        context,
+        masterData,
+        formData,
+      });
+
       if (initialValue !== null && initialValue !== undefined) {
         initialValues[field.name] = initialValue;
       }
@@ -42,23 +46,28 @@ export const useEntityForm = (config, context = {}) => {
       let newField = { ...field };
 
       if (field.optionsResolver && masterData) {
-        newField.options = field.optionsResolver({masterData, context, formData});
+        newField.options = field.optionsResolver({
+          masterData,
+          context,
+          formData,
+        });
       }
 
       if (field.disableWhen) {
         newField.disabled = field.disableWhen(context, mergedFormData);
       }
-
+      if (field.requiredWhen) {
+        newField.required = field.requiredWhen(context, mergedFormData);
+      }
       return newField;
     });
 
-    updated = applyVisibilityRules(mergedFormData, updated);
+    updated = applyVisibilityRules(mergedFormData, updated, context);
 
     return updated;
   }, [mergedFormData, config.fields, masterData, context]);
 
-const handleChange = (name, value, metadata = {}) => {
-  
+  const handleChange = (name, value, metadata = {}) => {
     setFormData((prev) => {
       // 1. Calculate the new state for this specific field
       const next = {
@@ -89,11 +98,11 @@ const handleChange = (name, value, metadata = {}) => {
 
       // 4. REAL-TIME VALIDATION ENGINE
       const currentStateToValidate = { ...resolvedInitialData, ...next };
-      const latestErrors = validateForm(currentStateToValidate, config.fields);
+      const latestErrors = validateForm(currentStateToValidate, config.fields, context);
 
       setErrors((prevErrors) => {
         const updatedErrors = { ...prevErrors };
-        
+
         // Check if the field being changed is a group/array
         const isArrayChange = Array.isArray(next[name]);
 
@@ -121,7 +130,8 @@ const handleChange = (name, value, metadata = {}) => {
               Object.keys(rowErrors).forEach((subFieldKey) => {
                 const val = currentRowValue[subFieldKey];
                 // Determine if user has interacted with this specific sub-field
-                const hasValue = val !== undefined && val !== "" && val !== null;
+                const hasValue =
+                  val !== undefined && val !== "" && val !== null;
                 const hadErrorBefore = prevRowErrors[subFieldKey] !== undefined;
 
                 // Only show the error if they typed something invalid or it already had an error
@@ -155,9 +165,9 @@ const handleChange = (name, value, metadata = {}) => {
 
         // Clean up any other fixed errors across the form (e.g., effects fixing a field)
         Object.keys(updatedErrors).forEach((key) => {
-           if (key !== name && !latestErrors[key]) {
-             delete updatedErrors[key];
-           }
+          if (key !== name && !latestErrors[key]) {
+            delete updatedErrors[key];
+          }
         });
 
         return updatedErrors;
@@ -168,7 +178,7 @@ const handleChange = (name, value, metadata = {}) => {
     });
   };
   const validate = () => {
-    const validationErrors = validateForm(mergedFormData, config.fields);
+    const validationErrors = validateForm(mergedFormData, config.fields, context);
     setErrors(validationErrors);
 
     return Object.keys(validationErrors).length === 0;
@@ -179,7 +189,7 @@ const handleChange = (name, value, metadata = {}) => {
     setFormData({});
     setErrors({});
   };
-  
+
   return {
     formData: mergedFormData,
     errors,
