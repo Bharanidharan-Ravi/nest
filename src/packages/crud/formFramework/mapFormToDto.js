@@ -131,7 +131,7 @@ const extractValue = (value) => {
 // ---------------------------------------------------------
 
 const convertType = (value, type) => {
-  if (value == null) return null;
+  if (value == null || value === "") return null;
 
   switch (type) {
     case "number":

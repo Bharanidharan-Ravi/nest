@@ -6,8 +6,15 @@ import { useMasterData } from "../../../core/master/useMasterData";
 import { executeApi } from "../../../core/api/executor";
 import { useState } from "react";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import SplitButton from "./SplitButton";
 
-export default function EntityFormPage({ config, mode, context = {}, module, onCancel }) {
+export default function EntityFormPage({
+  config,
+  mode,
+  context = {},
+  module,
+  onCancel,
+}) {
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
@@ -73,7 +80,7 @@ export default function EntityFormPage({ config, mode, context = {}, module, onC
       }
     }
   };
-  const handleSubmit = () => {
+  const handleSubmit = (overrides = {}) => {
     if (!validate()) return;
 
     const dto = buildDto();
@@ -86,7 +93,8 @@ export default function EntityFormPage({ config, mode, context = {}, module, onC
     } else {
       dto.temp = null;
     }
-    mutate(dto);
+    const finalDto = { ...dto, ...overrides };
+    mutate(finalDto);
   };
 
   const uploadFile = async (file) => {
@@ -134,53 +142,73 @@ export default function EntityFormPage({ config, mode, context = {}, module, onC
 
       <div className={`wg-form-footer ${theme.footer || ""}`}>
         {/* 🔥 UPDATED: Dynamic Action Button Rendering */}
-        {config.actions && config.actions.length > 0 && mode !== "Edit" ? (
-          config.actions.map((action, index) => (
-            <button
-              key={index}
-              type="button"
-              disabled={isPending}
-              className={
-                action.className || `wg-btn-primary ${theme.submitBtn || ""}`
+        {(() => {
+          // 1. Resolve actions (call it if it's a function, otherwise use as array)
+          const resolvedActions =
+            typeof config.actions === "function"
+              ? config.actions({ formData, context })
+              : config.actions;
+
+          // 2. Map over the resolved array
+          if (
+            resolvedActions &&
+            resolvedActions.length > 0 &&
+            mode !== "Edit"
+          ) {
+            return resolvedActions.map((action, index) => {
+              // 🔥 Render our new GitHub Split Button if requested!
+              if (action.type === "split-button") {
+                return (
+                  <SplitButton
+                    key={index}
+                    action={action}
+                    formData={formData}
+                    handleSubmit={handleSubmit}
+                    isPending={isPending}
+                  />
+                );
               }
-              onClick={() => {
-                // Standard Submit Button
-                if (action.type === "submit") {
-                  handleSubmit();
-                }
-                // Custom Button (like Commit & Close)
-                else if (action.onClick) {
-                  action.onClick({
-                    formData,
-                    // Pass handleSubmit so they can inject their overrides safely
-                    submitForm: handleSubmit,
-                  });
-                }
-              }}
+
+              // Normal Button (Your existing code)
+              return (
+                <button
+                  key={index}
+                  type="button"
+                  disabled={isPending}
+                  className={`wg-btn-primary ${theme.submitBtn || ""} ${action.className || ""}`}
+                  onClick={() => {
+                    if (action.type === "submit") handleSubmit();
+                    else if (action.onClick)
+                      action.onClick({ formData, submitForm: handleSubmit });
+                  }}
+                >
+                  {isPending && action.type === "submit"
+                    ? "Processing..."
+                    : action.label}
+                </button>
+              );
+            });
+          }
+
+          // 3. 🚨 FIX: Added 'return' here so the fallback button actually renders!
+          return (
+            <button
+              type="button"
+              onClick={() => handleSubmit()}
+              disabled={isPending}
+              className={`wg-btn-primary ${theme.submitBtn || ""}`}
             >
-              {isPending && action.type === "submit"
-                ? "Processing..."
-                : action.label}
+              {isPending
+                ? mode === "Create"
+                  ? "Creating..."
+                  : "Updating..."
+                : `${mode} ${module}`}
             </button>
-          ))
-        ) : (
-          /* Fallback if no config.actions are provided */
-          <button
-            type="button"
-            onClick={() => handleSubmit()}
-            disabled={isPending}
-            className={`wg-btn-primary ${theme.submitBtn || ""}`}
-          >
-            {isPending
-              ? mode === "Create"
-                ? "Creating..."
-                : "Updating..."
-              : `${mode} ${module}`}
-          </button>
-        )}
+          );
+        })()}
 
         {mode === "Edit" && (
-          <button 
+          <button
             type="button"
             onClick={() => {
               handleFormReset();
@@ -195,3 +223,48 @@ export default function EntityFormPage({ config, mode, context = {}, module, onC
     </div>
   );
 }
+
+//  {config?.actions && config?.actions?.length > 0 && mode !== "Edit" ? (
+//           config?.actions?.map((action, index) => (
+//             <button
+//               key={index}
+//               type="button"
+//               disabled={isPending}
+// className={
+//   action.className || `wg-btn-primary ${theme.submitBtn || ""}`
+// }
+//               onClick={() => {
+//                 // Standard Submit Button
+//                 if (action.type === "submit") {
+//                   handleSubmit();
+//                 }
+//                 // Custom Button (like Commit & Close)
+//                 else if (action.onClick) {
+//                   action.onClick({
+//                     formData,
+//                     // Pass handleSubmit so they can inject their overrides safely
+//                     submitForm: handleSubmit,
+//                   });
+//                 }
+//               }}
+//             >
+//               {isPending && action.type === "submit"
+//                 ? "Processing..."
+//                 : action.label}
+//             </button>
+//           ))
+//         ) : (
+//           /* Fallback if no config.actions are provided */
+// <button
+//   type="button"
+//   onClick={() => handleSubmit()}
+//   disabled={isPending}
+//   className={`wg-btn-primary ${theme.submitBtn || ""}`}
+// >
+//   {isPending
+//     ? mode === "Create"
+//       ? "Creating..."
+//       : "Updating..."
+//     : `${mode} ${module}`}
+// </button>
+//         )}

@@ -8,9 +8,9 @@
 // - visibleWhen
 // -------------------------------------------------------
 
-export const applyVisibilityRules = (formData, fields = []) => {
+export const applyVisibilityRules = (formData, fields = [], context = {}) => {
   return fields
-    .map(field => {
+    .map((field) => {
       // -----------------------------------------
       // 1️⃣ Explicit hidden flag
       // -----------------------------------------
@@ -22,22 +22,23 @@ export const applyVisibilityRules = (formData, fields = []) => {
       // 2️⃣ visibleWhen rule
       // -----------------------------------------
       if (field.visibleWhen) {
-        const isVisible = field.visibleWhen(formData);
+        // 🔥 FIX: Pass both formData AND context here
+        const isVisible = field.visibleWhen(formData, context);
         if (!isVisible) return null;
       }
 
-      // -----------------------------------------
       // 3️⃣ Group Field → Process children
-      // -----------------------------------------
       if (field.type === "group" && Array.isArray(field.fields)) {
+        // 🔥 FIX: Pass context down recursively so nested fields can use it too
         const processedChildren = applyVisibilityRules(
           formData,
-          field.fields
+          field.fields,
+          context,
         );
 
         return {
           ...field,
-          fields: processedChildren
+          fields: processedChildren,
         };
       }
 

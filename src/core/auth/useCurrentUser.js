@@ -34,6 +34,7 @@ export function readUserFromSession() {
       name: name || "",
       userId: userId || null,
       dbName: decoded.DbName || "",
+      team: decoded.Team || "",
       exp: decoded.exp || null
     };
   } catch (err) {

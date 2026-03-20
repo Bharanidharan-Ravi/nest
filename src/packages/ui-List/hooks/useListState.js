@@ -53,7 +53,6 @@ export function useListState(config, rawData = []) {
 
   // 🔥 FIX 1: Derive statusTab directly from the query. No more `useState` or `useEffect` loops!
   const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
-  console.log("statusTab :", statusTab);
 
   const setStatusTab = useCallback(
     (tabKey) => {

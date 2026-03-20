@@ -376,9 +376,7 @@ export const TicketFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "Priority",
-    initValueResolver: ({context}) => {
-      console.log("context :", context.entityData);
-      
+    initValueResolver: ({context}) => {      
       return context.isEdit ? context.entityData?.priority : "Medium";
      }, // Default to Medium if creating
     visibleWhen: () => true,
