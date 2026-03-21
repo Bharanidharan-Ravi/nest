@@ -25,3 +25,5 @@ dist-ssr
 .env.development
 .env.production
 pnpm-lock.yaml
+public.zip
+dist.zip
