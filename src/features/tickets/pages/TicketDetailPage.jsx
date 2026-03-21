@@ -35,7 +35,6 @@ const TicketDetailPage = () => {
   const { data: ticketMasterData } = useTicketMaster();
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
-  console.log("user :", user);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -119,7 +118,7 @@ const TicketDetailPage = () => {
 
     // Infer their role based on the status they were assigned to
     // Adjust these IDs based on your actual Status_Master table
-    if (currentStatusId === 5 || currentStatusId === 6) {
+    if (currentStatusId === 5 ) {
       // 5 = In Development, 6 = Dev Completed
       userRole = "Dev";
     } else if (currentStatusId >= 7 && currentStatusId <= 11) {      
@@ -135,6 +134,7 @@ const TicketDetailPage = () => {
 
   console.log(
     "parentTicket :",
+    parentTicket,
     assigneesJsonString,
     myCurrentStream,
     isOwner,

@@ -30,7 +30,7 @@ export const useTicketMaster = (scope = {}, options = {}) => {
     repoId,
     ...dynamicIdParams,
   });
-  const staleTime = ticketId ? 0 : 1000 * 60 * 3;
+  const staleTime = (ticketId || employeeId) ? 0 : 1000 * 60 * 3;
   return useApiQuery({
     queryKey,
     url: "/sync/v2",

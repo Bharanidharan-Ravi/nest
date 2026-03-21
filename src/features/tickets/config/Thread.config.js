@@ -14,6 +14,21 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "Comment",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
     requiredWhen: (context) => context?.userRole !== "Owner",
+    customValidator: (value, formData, context) => {
+      console.log("value, formData, context :", value, formData, context);
+      
+      if (context?.userRole === "Owner") {
+        const hasHours = !!formData.hours || !!formData.fromTime;
+        const hasAssignee = formData?.AssignedTo?.length > 0;
+        const hasStatus = !!formData.UpdateStatus;
+
+        // If absolutely everything is empty, trigger the native error!
+        if (!value && !hasHours && !hasAssignee && !hasStatus) {
+          return "Please provide a comment, log hours, or select a user to assign.";
+        }
+      }
+      return true;
+    },
   },
 
   {
@@ -96,29 +111,34 @@ export const ThreadFieldConfig = (ticketId) => [
     // required: true,
     // Add standard widths so they sit in a neat row
     className: "col-span-12 md:col-span-4",
+    requiredWhen: (context, formData) => {
+      const filter = (formData?.AssignedTo && formData.AssignedTo.length > 0);
+      console.log("context, formData :", !!filter, formData?.AssignedTo);      
+      return !!(formData?.AssignedTo && formData.AssignedTo.length > 0);
+    },
     optionsResolver: ({ masterData, context, formData }) => {
       let Status = masterData?.StatusMaster || [];
 
       // ── 1. DEVELOPER ROLE ───────────────────────────────────────
-      if (context?.userRole === "Dev") {
-        const devAllowedIds = [5, 6, 8];
-        const devLabels = {
-          5: "In Development",
-          6: "Development Completed",
-          8: "Move to Testing", // Custom UX label
-        };
+      // if (context?.userRole === "Dev") {
+      //   const devAllowedIds = [5, 6, 8];
+      //   const devLabels = {
+      //     5: "In Development",
+      //     6: "Development Completed",
+      //     8: "Move to Testing", // Custom UX label
+      //   };
 
-        return Status.filter((sta) =>
-          devAllowedIds.includes(sta.Status_Id),
-        ).map((sta) => ({
-          // Use the custom label if it exists, otherwise fallback to DB name
-          label: devLabels[sta.Status_Id] || sta.Status_Name,
-          value: {
-            id: sta.Status_Id,
-            name: sta.Status_Name, // Keep the actual DB name in the payload
-          },
-        }));
-      }
+      //   return Status.filter((sta) =>
+      //     devAllowedIds.includes(sta.Status_Id),
+      //   ).map((sta) => ({
+      //     // Use the custom label if it exists, otherwise fallback to DB name
+      //     label: devLabels[sta.Status_Id] || sta.Status_Name,
+      //     value: {
+      //       id: sta.Status_Id,
+      //       name: sta.Status_Name, // Keep the actual DB name in the payload
+      //     },
+      //   }));
+      // }
 
       // ── 2. TESTER ROLE ──────────────────────────────────────────
       if (context?.userRole === "Tester") {
@@ -132,7 +152,6 @@ export const ThreadFieldConfig = (ticketId) => [
           value: { id: sta.status_id, name: sta.status_name },
         }));
       }
-      console.log("context :", context, Status);
 
       return Status.map((sta) => ({
         label: sta.Status_Name,
@@ -143,8 +162,8 @@ export const ThreadFieldConfig = (ticketId) => [
       }));
     },
     initValueResolver: ({ context }) => {
-      if (context?.userRole === "Dev")
-        return { label: "In Development", value: { id: 5 } };
+      // if (context?.userRole === "Dev")
+      //   return { label: "In Development", value: { id: 5 } };
       if (context?.userRole === "Tester")
         return { label: "Testing In Progress", value: { id: 8 } };
       return null;

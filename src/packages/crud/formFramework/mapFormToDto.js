@@ -16,7 +16,6 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     // ----------------------------------------
     // 1️⃣ Hidden field (auto inject)
     // ----------------------------------------
-    console.log("field ", field);
 
     if (field.hidden) {
       target[field.apiKey] = convertType(
