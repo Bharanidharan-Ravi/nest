@@ -65,7 +65,7 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     if (field.type === "select" && field.multiple) {
       const groupArray = Array.isArray(rawValue) ? rawValue : [];
 
-      target[field.apiKey] = groupArray
+      let finalArray = groupArray
         .map((item) => {
           if (item && item.value && item.value.id !== undefined) {
             return { id: item.value.id };
@@ -73,9 +73,15 @@ export const mapFormToDto = (formData = {}, fields = []) => {
           return null;
         })
         .filter((item) => item !== null);
+
+      // 🔥 ALLOW TRANSFORM: Reshape the array if a transform function is provided
+      if (field.transform) {
+        finalArray = field.transform(finalArray, sourceData);
+      }
+
+      target[field.apiKey] = finalArray;
       return;
     }
-
     // ----------------------------------------
     // 3️⃣ Extract Value
     // ----------------------------------------

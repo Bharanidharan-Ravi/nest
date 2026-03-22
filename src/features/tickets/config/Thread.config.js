@@ -13,21 +13,37 @@ export const ThreadFieldConfig = (ticketId) => [
     dataType: "string",
     apiKey: "Comment",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
-    requiredWhen: (context) => context?.userRole !== "Owner",
-    customValidator: (value, formData, context) => {
-      console.log("value, formData, context :", value, formData, context);
-      
-      if (context?.userRole === "Owner") {
-        const hasHours = !!formData.hours || !!formData.fromTime;
-        const hasAssignee = formData?.AssignedTo?.length > 0;
-        const hasStatus = !!formData.UpdateStatus;
+    // 🔥 1. DYNAMIC REQUIRED FLAG
+    // This tells the UI when to show the red '*' asterisk
+    requiredWhen: (context, formData) => {
+      // Devs and Testers ALWAYS must enter a description
+      if (context?.userRole !== "Owner") return true;
 
-        // If absolutely everything is empty, trigger the native error!
+      // For Owners: Check if they filled out any other action fields
+      const hasHours = !!formData?.hours || !!formData?.fromTime;
+      const hasAssignee = formData?.assignees?.length > 0;
+      const hasStatus = !!formData?.UpdateStatus;
+      console.log("formData in requiredWhen :", formData, { hasHours, hasAssignee, hasStatus });
+
+      // If they picked an assignee, status, or hours -> Description is OPTIONAL (false)
+      // If they haven't picked anything at all -> Description is MANDATORY (true)
+      return !hasHours && !hasAssignee && !hasStatus;
+    },
+
+    // 🔥 2. CUSTOM ERROR MESSAGE
+    // This overrides the default "Description is required" with your friendly text
+    customValidator: (value, formData, context) => {
+      if (context?.userRole === "Owner") {
+        const hasHours = !!formData?.hours || !!formData?.fromTime;
+        const hasAssignee = formData?.AssignedTo?.length > 0;
+        const hasStatus = !!formData?.UpdateStatus;
+
+        // If absolutely everything is empty, trigger the friendly native error!
         if (!value && !hasHours && !hasAssignee && !hasStatus) {
           return "Please provide a comment, log hours, or select a user to assign.";
         }
       }
-      return true;
+      return true; // Form is valid!
     },
   },
 
@@ -102,103 +118,135 @@ export const ThreadFieldConfig = (ticketId) => [
     requiredWhen: (context) => context?.userRole !== "Owner",
   },
 
-  {
+ {
     name: "UpdateStatus",
     label: "Update Status",
     type: "select",
     ui: "mui",
-    apiKey: "NextAssigneeStreamId",
-    // required: true,
-    // Add standard widths so they sit in a neat row
     className: "col-span-12 md:col-span-4",
+
+    // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
     requiredWhen: (context, formData) => {
-      const filter = (formData?.AssignedTo && formData.AssignedTo.length > 0);
-      console.log("context, formData :", !!filter, formData?.AssignedTo);      
-      return !!(formData?.AssignedTo && formData.AssignedTo.length > 0);
+      if (context?.userRole !== "Owner") return false;
+      return !!(formData?.assignees && formData.assignees.length > 0);
     },
-    optionsResolver: ({ masterData, context, formData }) => {
+
+    optionsResolver: ({ masterData, context }) => {
       let Status = masterData?.StatusMaster || [];
+      const uniqueOptions = [];
+      const seenIds = new Set();
 
-      // ── 1. DEVELOPER ROLE ───────────────────────────────────────
-      // if (context?.userRole === "Dev") {
-      //   const devAllowedIds = [5, 6, 8];
-      //   const devLabels = {
-      //     5: "In Development",
-      //     6: "Development Completed",
-      //     8: "Move to Testing", // Custom UX label
-      //   };
+      Status.forEach((sta) => {
+        const id = sta.Status_Id || sta.status_id;
+        const name = sta.Status_Name || sta.status_name;
 
-      //   return Status.filter((sta) =>
-      //     devAllowedIds.includes(sta.Status_Id),
-      //   ).map((sta) => ({
-      //     // Use the custom label if it exists, otherwise fallback to DB name
-      //     label: devLabels[sta.Status_Id] || sta.Status_Name,
-      //     value: {
-      //       id: sta.Status_Id,
-      //       name: sta.Status_Name, // Keep the actual DB name in the payload
-      //     },
-      //   }));
-      // }
-
-      // ── 2. TESTER ROLE ──────────────────────────────────────────
-      if (context?.userRole === "Tester") {
-        // Testers stay in their assigned testing phase
-        const testerAllowedIds = [7, 8, 9]; // Unit, Functional, UAT
-
-        return Status.filter((sta) =>
-          testerAllowedIds.includes(sta.status_id),
-        ).map((sta) => ({
-          label: sta.status_name, // e.g., "Functional Testing"
-          value: { id: sta.status_id, name: sta.status_name },
-        }));
-      }
-
-      return Status.map((sta) => ({
-        label: sta.Status_Name,
-        value: {
-          id: sta.Status_Id,
-          name: sta.Status_Name,
-        },
-      }));
+        if (id && !seenIds.has(id)) {
+          seenIds.add(id);
+          uniqueOptions.push({
+            label: name,
+            value: { id, name },
+          });
+        }
+      });
+      return uniqueOptions;
     },
+
     initValueResolver: ({ context }) => {
-      // if (context?.userRole === "Dev")
-      //   return { label: "In Development", value: { id: 5 } };
       if (context?.userRole === "Tester")
         return { label: "Testing In Progress", value: { id: 8 } };
       return null;
     },
-    visibleWhen: (formData, context) => context?.userRole === "Owner",
+
+    // Status is ONLY visible to the Owner
+    visibleWhen: (formData, context) => 
+      context?.userRole === "Owner",
   },
   {
-    name: "AssignedTo",
-    label: "Assign To",
+    label: "Assignees",
+    name: "assignees",
     type: "select",
-    apiKey: "NextAssigneeId",
     ui: "mui",
-    className: "col-span-12 md:col-span-4",
-    // Pass your Master Data employee list here
-    optionsResolver: ({ masterData }) =>
-      masterData?.EmployeeList?.map((emp) => ({
-        label: emp.UserName,
-        value: {
-          id: emp.UserID,
-          name: emp.UserName,
-        },
-      })) || [],
-    disableWhen: (context, formData) => {
-      const currentStatus = formData?.UpdateStatus?.value;
+    multiple: true,
+    required: false,
+    dataType: "string",
+    apiKey: "NextAssignees", 
 
-      // Return true if it should be disabled, false if it should be enabled
-      return (
-        currentStatus === "AWAITING_CLIENT" ||
-        currentStatus === "HOLD" ||
-        currentStatus === "IN_PROGRESS"
-      );
+    // 🔥 VALIDATION FIX: Only required for the Owner if they picked a status
+    requiredWhen: (context, formData) => {
+      if (context?.userRole !== "Owner") return false;
+      return !!formData?.UpdateStatus;
     },
+
+    transform: (mappedArray, formData) => {
+      const streamId = formData?.UpdateStatus?.value?.id || 0;
+      return mappedArray.map((item) => ({
+        Id: item.id,
+        StreamId: streamId,
+      }));
+    },
+
+   optionsResolver: ({ masterData, context }) => {
+      let Employee = masterData?.EmployeeList || [];
+      
+      // Get the currently logged-in user's ID
+      const myUserId = context?.currentUser?.userId?.toLowerCase();
+
+      // 🔥 Automatically filter out the logged-in user so they can't pick themselves!
+      if (myUserId) {
+        Employee = Employee.filter((p) => p.UserID?.toLowerCase() !== myUserId);
+      }
+
+      return Employee.map((emp) => ({
+        label: emp.UserName,
+        value: { id: emp.UserID, name: emp.UserName },
+      }));
+    },
+    
+    initValueResolver: ({ context, formData }) => {
+      if (context.isEdit && context.entityData && Array.isArray(context.entityData.multiAssignees)) {
+        return context.entityData.multiAssignees
+          .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
+          .map((assignee) => ({
+            label: assignee.Assignee_Name,
+            value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
+          }));
+      }
+      return [];
+    },
+
+    // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
     visibleWhen: (formData, context) => 
       context?.userRole === "Dev" || context?.userRole === "Owner",
   },
+  // {
+  //   name: "AssignedTo",
+  //   label: "Assign To",
+  //   type: "select",
+  //   apiKey: "NextAssigneeId",
+  //   ui: "mui",
+  //   className: "col-span-12 md:col-span-4",
+  //   // Pass your Master Data employee list here
+  //   optionsResolver: ({ masterData }) =>
+  //     masterData?.EmployeeList?.map((emp) => ({
+  //       label: emp.UserName,
+  //       value: {
+  //         id: emp.UserID,
+  //         name: emp.UserName,
+  //       },
+  //     })) || [],
+  //   disableWhen: (context, formData) => {
+  //     const currentStatus = formData?.UpdateStatus?.value;
+
+  //     // Return true if it should be disabled, false if it should be enabled
+  //     return (
+  //       currentStatus === "AWAITING_CLIENT" ||
+  //       currentStatus === "HOLD" ||
+  //       currentStatus === "IN_PROGRESS"
+  //     );
+  //   },
+  //   visibleWhen: (formData, context) => 
+  //     context?.userRole === "Dev" || context?.userRole === "Owner",
+  // },
   {
     name: "CompletionPercentage",
     label: "% Completed",

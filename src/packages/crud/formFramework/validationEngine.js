@@ -12,7 +12,6 @@ export const validateForm = (formData, fields, context = {}) => {
     const isRequired = field.requiredWhen
       ? field.requiredWhen(context, data)
       : field.required;
-console.log("isRequired :", isRequired, data);
 
     if (isRequired && !value) {
       
