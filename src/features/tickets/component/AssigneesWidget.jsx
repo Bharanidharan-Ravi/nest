@@ -11,6 +11,8 @@ export default function AssigneesWidget({
   threads = [],
   ticketId,
   data,
+  selectedWorkStream, // 👈 New prop
+  onSelectWorkStream,
 }) {
   const [showUpdateForm, setShowUpdateForm] = useState(false);
 
@@ -25,7 +27,7 @@ export default function AssigneesWidget({
     )[0];
   }, [threads, currentUser]);
 
-   const filteredWorkStreams = useMemo(() => {
+  const filteredWorkStreams = useMemo(() => {
     if (!workStreams) return [];
     // Note: Checking both Assignee_Type and Assignment_Type just to be safe
     // based on your older commented code.
@@ -47,10 +49,15 @@ export default function AssigneesWidget({
       };
     }
     const total = filteredWorkStreams.length;
-    const completed = filteredWorkStreams.filter((ws) => ws.CompletionPct === 100);
+    const completed = filteredWorkStreams.filter(
+      (ws) => ws.CompletionPct === 100,
+    );
     const pending = filteredWorkStreams.filter((ws) => ws.CompletionPct < 100);
     const overallPct = Math.round(
-      filteredWorkStreams.reduce((acc, ws) => acc + (ws.CompletionPct || 0), 0) / total,
+      filteredWorkStreams.reduce(
+        (acc, ws) => acc + (ws.CompletionPct || 0),
+        0,
+      ) / total,
     );
     const pendingByStatus = pending.reduce((acc, ws) => {
       const statusName = ws.StatusName || `Status ${ws.StreamStatus}`;
@@ -69,7 +76,7 @@ export default function AssigneesWidget({
       pendingText,
     };
   }, [filteredWorkStreams]);
- 
+
   return (
     <div className="bg-white border border-gray-200 shadow-sm rounded-2xl flex flex-col max-h-full overflow-hidden">
       {/* SECTION 1: ROLL-UP SUMMARY (Compact Padding) */}
@@ -115,7 +122,20 @@ export default function AssigneesWidget({
           filteredWorkStreams?.map((ws, index) => (
             <div
               key={ws.StreamId || index}
-              className="flex flex-col gap-1 pb-2 border-b border-gray-50 last:border-0 last:pb-0"
+              // className="flex flex-col gap-1 pb-2 border-b border-gray-50 last:border-0 last:pb-0"
+              onClick={() => {
+                // If they click the same one again, un-select it
+                if (selectedWorkStream?.StreamId === ws.StreamId) {
+                  onSelectWorkStream(null);
+                } else {
+                  onSelectWorkStream(ws);
+                }
+              }}
+              className={`flex flex-col gap-1 pb-2 border-b border-gray-50 last:border-0 last:pb-0 cursor-pointer p-2 rounded-md transition-all ${
+                selectedWorkStream?.StreamId === ws.StreamId
+                  ? "bg-blue-50 border-blue-200 ring-1 ring-blue-500" // Highlight selected
+                  : "hover:bg-gray-50" // Normal hover
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">

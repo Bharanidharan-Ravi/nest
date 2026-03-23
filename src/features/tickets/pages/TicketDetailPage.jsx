@@ -35,6 +35,7 @@ const TicketDetailPage = () => {
   const { data: ticketMasterData } = useTicketMaster();
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
+  const [selectedWorkStream, setSelectedWorkStream] = useState(null);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -88,7 +89,7 @@ const TicketDetailPage = () => {
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
 
   // 2. Find ALL assignments for the logged-in user
-// 2. Find ALL assignments for the logged-in user
+  // 2. Find ALL assignments for the logged-in user
   const myAssignments = assigneesJsonString.filter(
     (assignee) =>
       assignee.Assignee_Id?.toLowerCase() === user?.userId?.toLowerCase(),
@@ -96,41 +97,73 @@ const TicketDetailPage = () => {
 
   // 3. Find their ACTIVE stream (Ignore Closed: 14, Cancelled: 15, Inactive: 16)
   const activeStream = myAssignments.find(
-    (a) => ![14, 15, 16].includes(a.StreamStatus)
+    (a) => ![14, 15, 16].includes(a.StreamStatus),
   );
 
   // If they have an active task, prioritize it. Otherwise, fallback to their last completed task.
-  const myCurrentStream = activeStream || (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
-
+  const myCurrentStream =
+    activeStream ||
+    (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
+  const evaluatedStream = selectedWorkStream || myCurrentStream;
   // 4. Dynamically determine their state/role for the UI
   const isOwner = parentTicket?.CreatedBy === user?.userId;
   let userRole = "Standard";
   let isMyWorkCompleted = false;
 
-  if (isOwner) {
-    userRole = "Owner";
-  } else if (myCurrentStream) {
-    const currentStatusId = myCurrentStream.StreamStatus;
-    // If their latest stream is 14 (Closed), their work is done
+  // 🔥 4. Update the logic to use the `evaluatedStream`
+  if (evaluatedStream) {
+    const currentStatusId = evaluatedStream.StreamStatus;
+
     if (currentStatusId === 14) {
       isMyWorkCompleted = true;
     }
 
-    // Infer their role based on the status they were assigned to
-    // Adjust these IDs based on your actual Status_Master table
-    if (currentStatusId === 5 ) {
-      // 5 = In Development, 6 = Dev Completed
+    if (currentStatusId === 5 || currentStatusId === 6) {
       userRole = "Dev";
-    } else if (currentStatusId >= 7 && currentStatusId <= 11) {      
-      // 8 = Functional Testing, 10 = Testing Failed, 11 = Functional Fix
+    } else if (currentStatusId >= 7 && currentStatusId <= 11) {
       userRole = "Tester";
-    } else {
-      // Fallback if status is Null or 1 (New/Just Assigned)
-      if (user?.department === "Development") userRole = "Dev";
-      if (user?.department === "Testing" || user?.department === "QA")
-        userRole = "Tester";
+    } else if (isOwner && !selectedWorkStream) {
+      // Fallback to Owner if their stream is weird, but only if they didn't click someone else's card
+      userRole = "Owner";
     }
+  } else if (isOwner) {
+    userRole = "Owner";
+  } else {
+    if (user?.department === "Development") userRole = "Dev";
+    if (user?.department === "Testing" || user?.department === "QA")
+      userRole = "Tester";
   }
+
+  const formContext = {
+    userRole,
+    isOwner,
+    currentUser: user,
+    activeWorkStream: evaluatedStream, // This makes the StreamId available to ThreadForm.config.js!
+  };
+  // if (isOwner) {
+  //   userRole = "Owner";
+  // } else if (myCurrentStream) {
+  //   const currentStatusId = myCurrentStream.StreamStatus;
+  //   // If their latest stream is 14 (Closed), their work is done
+  //   if (currentStatusId === 14) {
+  //     isMyWorkCompleted = true;
+  //   }
+
+  //   // Infer their role based on the status they were assigned to
+  //   // Adjust these IDs based on your actual Status_Master table
+  //   if (currentStatusId === 5) {
+  //     // 5 = In Development, 6 = Dev Completed
+  //     userRole = "Dev";
+  //   } else if (currentStatusId >= 7 && currentStatusId <= 11) {
+  //     // 8 = Functional Testing, 10 = Testing Failed, 11 = Functional Fix
+  //     userRole = "Tester";
+  //   } else {
+  //     // Fallback if status is Null or 1 (New/Just Assigned)
+  //     if (user?.department === "Development") userRole = "Dev";
+  //     if (user?.department === "Testing" || user?.department === "QA")
+  //       userRole = "Tester";
+  //   }
+  // }
 
   console.log(
     "parentTicket :",
@@ -139,7 +172,7 @@ const TicketDetailPage = () => {
     myCurrentStream,
     isOwner,
     myAssignments,
-    userRole
+    userRole,
   );
 
   // --- 1. Thread Data Processing ---
@@ -384,7 +417,8 @@ const TicketDetailPage = () => {
                       ...ThreadFormConfig,
                       fields: ThreadFieldConfig(ticketId),
                     }}
-                    context={{ userRole, isOwner, currentUser: user }}
+                    // context={{ userRole, isOwner, currentUser: user }}
+                    context={formContext}
                     module="Thread"
                   />
                 </div>
@@ -403,6 +437,8 @@ const TicketDetailPage = () => {
                 workStreams={assigneesJsonString}
                 data={parentTicket}
                 ticketId={ticketId}
+                selectedWorkStream={selectedWorkStream} // 👈 Pass the state down
+                onSelectWorkStream={setSelectedWorkStream}
               />
               {/* Render Labels Widget Here later */}
             </div>

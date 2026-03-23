@@ -56,6 +56,18 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) =>
       context?.editingItem?.Issue_Id || ticketId,
   },
+   {
+    name: "workStreamId",
+    apiKey: "WorkStreamId", // 👈 The exact name your API expects
+    hidden: true,           // 👈 Keeps it invisible in the UI
+    dataType: "string",
+    initValueResolver: ({ context }) => {
+      console.log("context :", context.activeWorkStream.StreamId);
+      
+      // Pulls the StreamId directly from the sidebar card they clicked!
+      return context?.activeWorkStream?.StreamId || null;
+    },
+  },
   {
     label: "From-time (24h Format)",
     name: "fromTime",

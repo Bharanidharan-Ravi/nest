@@ -16,10 +16,16 @@ export const mapFormToDto = (formData = {}, fields = []) => {
     // ----------------------------------------
     // 1️⃣ Hidden field (auto inject)
     // ----------------------------------------
-
     if (field.hidden) {
+      // 🔥 Extract the current value from the form data context first
+      const currentValue = sourceData[field.name];
+
       target[field.apiKey] = convertType(
-        field.defaultValue ?? null,
+        // If currentValue exists (even if it's 0 or false), use it.
+        // Otherwise, fall back to defaultValue or null.
+        currentValue !== undefined && currentValue !== null
+          ? currentValue
+          : (field.defaultValue ?? null),
         field.dataType,
       );
       return;
