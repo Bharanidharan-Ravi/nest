@@ -95,50 +95,55 @@ const TicketDetailPage = () => {
       assignee.Assignee_Id?.toLowerCase() === user?.userId?.toLowerCase(),
   );
 
-  // 3. Find their ACTIVE stream (Ignore Closed: 14, Cancelled: 15, Inactive: 16)
+  // 3. Find their ACTIVE stream (Ignore Closed, Cancelled, Inactive, AND 100% completed tasks)
   const activeStream = myAssignments.find(
-    (a) => ![14, 15, 16].includes(a.StreamStatus),
+    (a) => ![14, 15, 16].includes(a.StreamStatus) && Number(a.CompletionPct) < 100
   );
 
-  // If they have an active task, prioritize it. Otherwise, fallback to their last completed task.
   const myCurrentStream =
     activeStream ||
     (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
+
   const evaluatedStream = selectedWorkStream || myCurrentStream;
+
   // 4. Dynamically determine their state/role for the UI
   const isOwner = parentTicket?.CreatedBy === user?.userId;
   let userRole = "Standard";
-  let isMyWorkCompleted = false;
 
-  // 🔥 4. Update the logic to use the `evaluatedStream`
-  if (evaluatedStream) {
+  // 🔥 FIX 3: Check if the evaluated stream is completely finished (100% or Closed)
+  const isWorkCompleted = evaluatedStream
+    ? (Number(evaluatedStream.CompletionPct) === 100 || [14, 15, 16].includes(evaluatedStream.StreamStatus))
+    : false;
+
+  // 🔥 FIX 2: Highest Priority - If they are the Owner and haven't clicked a sidebar card, ALWAYS be Owner!
+  if (isOwner && !selectedWorkStream) {
+    userRole = "Owner";
+  }
+  // If work is NOT done, give them Dev/Tester buttons
+  else if (evaluatedStream && !isWorkCompleted) {
     const currentStatusId = evaluatedStream.StreamStatus;
-
-    if (currentStatusId === 14) {
-      isMyWorkCompleted = true;
-    }
 
     if (currentStatusId === 5 || currentStatusId === 6) {
       userRole = "Dev";
     } else if (currentStatusId >= 7 && currentStatusId <= 11) {
       userRole = "Tester";
-    } else if (isOwner && !selectedWorkStream) {
-      // Fallback to Owner if their stream is weird, but only if they didn't click someone else's card
-      userRole = "Owner";
     }
-  } else if (isOwner) {
-    userRole = "Owner";
-  } else {
+  }
+  // 🔥 FIX 3: If their work IS 100% done (like Dannu), revert to Standard to hide action buttons!
+  else if (evaluatedStream && isWorkCompleted) {
+    userRole = "Standard";
+  }
+  // Fallbacks
+  else {
     if (user?.department === "Development") userRole = "Dev";
-    if (user?.department === "Testing" || user?.department === "QA")
-      userRole = "Tester";
+    if (user?.department === "Testing" || user?.department === "QA") userRole = "Tester";
   }
 
   const formContext = {
     userRole,
     isOwner,
     currentUser: user,
-    activeWorkStream: evaluatedStream, // This makes the StreamId available to ThreadForm.config.js!
+    activeWorkStream: evaluatedStream,
   };
   // if (isOwner) {
   //   userRole = "Owner";
@@ -279,11 +284,10 @@ const TicketDetailPage = () => {
           Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
           ======================================================== */}
       <div
-        className={`sticky top-0 z-30 w-full transition-all duration-300 ${
-          isStuck
-            ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
-            : "py-4 px-4 sm:px-6 bg-white border-transparent"
-        }`}
+        className={`sticky top-0 z-30 w-full transition-all duration-300 ${isStuck
+          ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
+          : "py-4 px-4 sm:px-6 bg-white border-transparent"
+          }`}
       >
         <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1">

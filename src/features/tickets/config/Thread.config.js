@@ -62,7 +62,7 @@ export const ThreadFieldConfig = (ticketId) => [
     hidden: true,           // 👈 Keeps it invisible in the UI
     dataType: "string",
     initValueResolver: ({ context }) => {
-      console.log("context :", context.activeWorkStream.StreamId);
+      // console.log("context :", context.activeWorkStream.StreamId);
       
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.activeWorkStream?.StreamId || null;

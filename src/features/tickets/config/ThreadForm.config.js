@@ -231,10 +231,10 @@ export const ThreadFormConfig = {
                   }
                 }
                 // ── NORMAL UPDATE WITH ASSIGNMENTS ──
-                else if (context.isOwner && !hasComment && hasAssignee) {
-                  overrides.Comment =
-                    "System: Owner updated assignees and logged hours.";
-                }
+                // else if (context.isOwner && !hasComment && hasAssignee) {
+                //   overrides.Comment =
+                //     "System: Owner updated assignees and logged hours.";
+                // }
 
                 submitForm(overrides);
               },
