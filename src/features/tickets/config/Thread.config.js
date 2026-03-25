@@ -23,7 +23,6 @@ export const ThreadFieldConfig = (ticketId) => [
       const hasHours = !!formData?.hours || !!formData?.fromTime;
       const hasAssignee = formData?.assignees?.length > 0;
       const hasStatus = !!formData?.UpdateStatus;
-      console.log("formData in requiredWhen :", formData, { hasHours, hasAssignee, hasStatus });
 
       // If they picked an assignee, status, or hours -> Description is OPTIONAL (false)
       // If they haven't picked anything at all -> Description is MANDATORY (true)

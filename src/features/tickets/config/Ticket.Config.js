@@ -177,7 +177,8 @@ export const TicketFieldConfig = () => [
     initValueResolver: ({ context, masterData, formData }) => {
       const targetProjId =
         context?.params?.projId ||
-        context?.entityData?.Project;
+        context?.entityData?.project;
+console.log("targetProjId :", targetProjId);
 
       if (!targetProjId) return null;
 
@@ -199,7 +200,7 @@ export const TicketFieldConfig = () => [
     visibleWhen: () => true,
   },
   {
-    label: "Assigned-to",
+    label: "Owner",
     name: "assginedTo",
     type: "select",
     ui: "mui",
@@ -284,24 +285,25 @@ export const TicketFieldConfig = () => [
         },
       }));
     },
-    initValueResolver: ({ context, formData }) => {
-
+  initValueResolver: ({ context, formData }) => {
       if (
         context.isEdit &&
         context.entityData &&
         Array.isArray(context.entityData.multiAssignees)
       ) {
-
         const filter = context.entityData.multiAssignees
-          .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
+          .filter(
+            (assignee) => 
+              assignee.Assignee_Type !== "Main Assignee" && 
+              assignee.StreamStatus !== 16 // 🔥 Added this condition to ignore Inactive status
+          )
           .map((assignee) => ({
             label: assignee.Assignee_Name,
             value: {
               id: assignee.Assignee_Id,
               name: assignee.Assignee_Name,
             },
-          })
-          );
+          }));
 
         return filter;
       }

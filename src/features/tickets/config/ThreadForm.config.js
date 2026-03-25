@@ -15,6 +15,8 @@ export const ThreadFormConfig = {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
+    console.log("currentStreamStatus :", currentStreamStatus);
+    
     // ── 1. TESTER BUTTONS ─────────────────────────────────────────
     if (role === "Tester") {
       return [
@@ -26,17 +28,20 @@ export const ThreadFormConfig = {
               subtext: "Log hours without finishing testing",
               colorClass: "bg-gray-700", // Tailwind color
               onClick: ({ submitForm }) =>
-              submitForm({ StreamStatus: currentStreamStatus }),
+                submitForm({ StreamStatus: currentStreamStatus }),
             },
             {
               label: "Pass & Complete",
               subtext: "Marks testing as 100% successful",
               colorClass: "bg-green-600",
-              onClick: ({ submitForm }) =>
+              onClick: ({ submitForm }) => {
                 submitForm({
+                  StreamStatus: currentStreamStatus, 
                   CompletionPercentage: 100,
                   ClearTestFailure: true,
-                }),
+                });
+
+              }
             },
             {
               label: "Report Bug",
@@ -44,6 +49,7 @@ export const ThreadFormConfig = {
               colorClass: "bg-red-600",
               onClick: ({ submitForm }) =>
                 submitForm({
+                  StreamStatus: currentStreamStatus ,
                   ReportTestFailure: true,
                   TestFailureComment: formData.description,
                 }),
@@ -194,7 +200,13 @@ export const ThreadFormConfig = {
                   Id: a.value.id,
                   StreamId: 8, // 8 = Functional QA
                 }));
-                ((overrides.StreamStatus = 6), submitForm(overrides));
+                if (Number(formData.CompletionPercentage) === 100) {
+                  overrides.StreamStatus = 6;
+                } else {
+                  overrides.StreamStatus = 5;
+                }
+
+                submitForm(overrides);
               },
             },
           ],
@@ -216,7 +228,10 @@ export const ThreadFormConfig = {
               onClick: ({ formData, submitForm }) => {
                 let overrides = {};
 
-                const hasComment = !!formData.description;
+                const cleanComment = formData.description
+                  ?.replace(/<[^>]*>?/gm, "")
+                  .trim();
+                const hasComment = !!cleanComment;
                 const hasHours = !!formData.hours || !!formData.fromTime;
 
                 // FIXED: Changed to assignees
@@ -273,7 +288,7 @@ export const ThreadFormConfig = {
         type: "button",
         className:
           "bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 font-medium",
-        onClick: ({ submitForm }) => submitForm()
+        onClick: ({ submitForm }) => submitForm(),
       },
     ];
   },

@@ -56,9 +56,7 @@ export const useEntityForm = (config, context = {}) => {
       if (field.disableWhen) {
         newField.disabled = field.disableWhen(context, mergedFormData);
       }
-      if (field.requiredWhen) {
-        console.log("requiredWhen :", field.requiredWhen(context, mergedFormData), field.name);
-        
+      if (field.requiredWhen) {        
         newField.required = field.requiredWhen(context, mergedFormData);
       }
       return newField;

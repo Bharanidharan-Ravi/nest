@@ -10,7 +10,6 @@ import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
   const user = readUserFromSession();
-  console.log("Current user in Header:", user);
   
   const UserName = user?.name || "Test";
   const [dropdownVisible, setDropdownVisible] = useState(false);

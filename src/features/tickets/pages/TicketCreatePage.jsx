@@ -42,6 +42,7 @@ const TicketCreatePage = () => {
 
     return normalizeTicket(TicketWrapper[0]);
   }, [TicketWrapper, isEdit]);
+console.log("entityData :", entityData);
 
   const statusOptions = [
     { label: "Active", value: { id: 1, name: "Active" } },

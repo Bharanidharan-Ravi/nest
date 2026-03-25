@@ -36,6 +36,13 @@ const TicketDetailPage = () => {
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
   const [selectedWorkStream, setSelectedWorkStream] = useState(null);
+  // 🔥 1. Add state to track middle-expansion
+  const [expandCount, setExpandCount] = useState(0);
+
+  // 🔥 2. Reset the expansion if they click a different person in the sidebar
+  useEffect(() => {
+    setExpandCount(0);
+  }, [selectedWorkStream, ticketId]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -97,7 +104,8 @@ const TicketDetailPage = () => {
 
   // 3. Find their ACTIVE stream (Ignore Closed, Cancelled, Inactive, AND 100% completed tasks)
   const activeStream = myAssignments.find(
-    (a) => ![14, 15, 16].includes(a.StreamStatus) && Number(a.CompletionPct) < 100
+    (a) =>
+      ![14, 15, 16].includes(a.StreamStatus) && Number(a.CompletionPct) < 100,
   );
 
   const myCurrentStream =
@@ -112,7 +120,8 @@ const TicketDetailPage = () => {
 
   // 🔥 FIX 3: Check if the evaluated stream is completely finished (100% or Closed)
   const isWorkCompleted = evaluatedStream
-    ? (Number(evaluatedStream.CompletionPct) === 100 || [14, 15, 16].includes(evaluatedStream.StreamStatus))
+    ? Number(evaluatedStream.CompletionPct) === 100 ||
+      [14, 15, 16].includes(evaluatedStream.StreamStatus)
     : false;
 
   // 🔥 FIX 2: Highest Priority - If they are the Owner and haven't clicked a sidebar card, ALWAYS be Owner!
@@ -136,7 +145,8 @@ const TicketDetailPage = () => {
   // Fallbacks
   else {
     if (user?.department === "Development") userRole = "Dev";
-    if (user?.department === "Testing" || user?.department === "QA") userRole = "Tester";
+    if (user?.department === "Testing" || user?.department === "QA")
+      userRole = "Tester";
   }
 
   const formContext = {
@@ -191,14 +201,127 @@ const TicketDetailPage = () => {
     toTime: thread.To_Time,
     createdAt: thread.CreatedAt,
     CreatedBy: thread.CreatedBy,
+    CreatedId: thread.CreatedId,
     UpdatedAt: thread.UpdatedAt,
     UpdatedBy: thread.UpdatedBy,
     All_Assignees: thread.All_Assignees,
   }));
 
+  const mainAssignee = React.useMemo(() => {
+    return assigneesJsonString.find(
+      (a) =>
+        a.Assignee_Type === "Main Assignee" ||
+        a.Assignment_Type === "Main Assignee",
+    );
+  }, [assigneesJsonString]);
+
+  // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD
+  const displayedThreads = React.useMemo(() => {
+    // If no card is clicked in the widget, show all threads normally
+    if (!selectedWorkStream) return rawList;
+
+    const startId = selectedWorkStream.ParentThreadId;
+    const endId = selectedWorkStream.ThreadId;
+
+    // Grab the IDs to compare against
+    const targetAssigneeId = selectedWorkStream.Assignee_Id?.toLowerCase();
+    const ticketOwnerId = parentTicket?.CreatedBy?.toLowerCase();
+
+    return rawList.filter((thread) => {
+      // 1. Thread must fall between the Start and End IDs
+      if (startId && endId && thread.Id >= startId && thread.Id <= endId) {
+        // 2. ALWAYS keep the exact Parent Thread (The assignment action)
+        if (thread.Id === startId) return true;
+
+        const threadCreator = thread?.CreatedId;
+
+        // 3. Keep if it was posted by the Selected Assignee
+        const isByAssignee = threadCreator === targetAssigneeId;
+console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
+
+        // 4. Keep if it was posted by the Ticket Owner (in case they replied/gave feedback)
+        const isByOwner = threadCreator === ticketOwnerId;
+
+        // If it's by the Assignee or the Owner, show it.
+        // If it's by "Assignee 2" (someone else interrupting), it gets hidden!
+        return isByAssignee || isByOwner;
+      }
+
+      // Fallback: If ParentThreadId is null/missing for some reason,
+      // just show the exact thread where they completed the work.
+      if (!startId && endId) {
+        return thread.Id === endId;
+      }
+
+      return false;
+    });
+  }, [rawList, selectedWorkStream, parentTicket]);
+
+
+  // ... (your existing displayedThreads useMemo) ...
+
+  // 🔥 3. THE GITHUB MIDDLE-COLLAPSE LOGIC
+  const finalThreads = React.useMemo(() => {
+    if (!displayedThreads) return [];
+
+    const TOTAL = displayedThreads.length;
+    const INITIAL_TOP = 10;
+    const INITIAL_BOTTOM = 10;
+    const LOAD_CHUNK = 30; // How many to load per click
+
+    // If total is 30 or less, just show all of them normally
+    if (TOTAL <= INITIAL_TOP + INITIAL_BOTTOM) {
+      return displayedThreads;
+    }
+
+    const currentTopCount = INITIAL_TOP + expandCount;
+    const remainingHidden = TOTAL - currentTopCount - INITIAL_BOTTOM;
+
+    // If we have expanded enough to see everything, show all
+    if (remainingHidden <= 0) {
+      return displayedThreads;
+    }
+
+    // Slice the top and bottom arrays
+    const topPart = displayedThreads.slice(0, currentTopCount);
+    const bottomPart = displayedThreads.slice(TOTAL - INITIAL_BOTTOM);
+
+    // Inject a "Dummy Marker" directly into the array!
+    return [
+      ...topPart,
+      { 
+        isCollapsedMarker: true, 
+        hiddenCount: remainingHidden, 
+        Id: "collapsed-marker" // Fake ID so ListProvider doesn't crash
+      },
+      ...bottomPart,
+    ];
+  }, [displayedThreads, expandCount]);
+
   const listConfig = {
     ...ThreadListConfig,
+    pageSize: 9999, // 🔥 Override UI default pagination to allow our custom logic
+    infinite: false,
     cardRenderer: (item) => {
+      
+      // 🔥 RENDER THE GITHUB LOAD MORE BUTTON
+      if (item.isCollapsedMarker) {
+        return (
+          <div key="collapsed-marker" className="flex items-center justify-center my-6 relative w-full group">
+            {/* The horizontal rule line behind the button */}
+            <div className="absolute w-full h-px bg-gray-200"></div>
+            
+            <button
+              onClick={() => setExpandCount((prev) => prev + 30)}
+              className="relative z-10 bg-gray-50 hover:bg-white text-gray-500 hover:text-blue-600 text-xs font-bold px-5 py-2 border border-gray-200 hover:border-blue-300 shadow-sm rounded-full transition-all duration-200"
+            >
+              Load {Math.min(item.hiddenCount, 30)} more comments ({item.hiddenCount} hidden)
+            </button>
+          </div>
+        );
+      }
+
+      // Existing Edit Logic
       if (editingItem && editingItem.Id === item.Id) {
         return (
           <EntityFormPage
@@ -214,6 +337,8 @@ const TicketDetailPage = () => {
           />
         );
       }
+      
+      // Standard Card Rendering
       return (
         <ThreadListCard
           item={item}
@@ -222,6 +347,30 @@ const TicketDetailPage = () => {
         />
       );
     },
+    // cardRenderer: (item) => {
+    //   if (editingItem && editingItem.Id === item.Id) {
+    //     return (
+    //       <EntityFormPage
+    //         mode="Edit"
+    //         config={{
+    //           ...ThreadFormConfig,
+    //           invalidateKeys: queryKeys.ticket.thread(ticketId),
+    //           api: `thread/${editingItem?.Id}`,
+    //         }}
+    //         context={{ isEdit: true, editingItem }}
+    //         module="Thread"
+    //         onCancel={() => setEditingItem(null)}
+    //       />
+    //     );
+    //   }
+    //   return (
+    //     <ThreadListCard
+    //       item={item}
+    //       currentUser={user?.name}
+    //       onEdit={() => setEditingItem(item)}
+    //     />
+    //   );
+    // },
   };
   // --- Calculate Time Totals ---
   // --- Calculate Time Totals ---
@@ -264,10 +413,7 @@ const TicketDetailPage = () => {
       mine: formatTime(myMinutes),
     };
   }, [rawList, user]);
-  // const labels = parentTicket.Labels_JSON
-  //   ? JSON.parse(parentTicket.Labels_JSON)
-  //   : [];
-  // const formattedDueDate = formatDate(parentTicket.Due_Date);
+  
   if (!parentTicket) return null;
   return (
     // Clean w-full container with white background
@@ -284,10 +430,11 @@ const TicketDetailPage = () => {
           Applying px-4 sm:px-6 directly keeps contents aligned perfectly.
           ======================================================== */}
       <div
-        className={`sticky top-0 z-30 w-full transition-all duration-300 ${isStuck
-          ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
-          : "py-4 px-4 sm:px-6 bg-white border-transparent"
-          }`}
+        className={`sticky top-0 z-30 w-full transition-all duration-300 ${
+          isStuck
+            ? "py-4 px-4 sm:px-6 bg-gray-100/90 backdrop-blur-xl border-b border-gray-200/60 shadow-sm"
+            : "py-4 px-4 sm:px-6 bg-white border-transparent"
+        }`}
       >
         <div className="flex justify-between items-start w-full">
           <div className="flex flex-col gap-1">
@@ -318,6 +465,19 @@ const TicketDetailPage = () => {
               <span className="font-medium">{parentTicket.Repo_Name}</span>
               <span className="opacity-40">•</span>
               <span>{parentTicket.Project_Name}</span>
+              {mainAssignee && (
+                <>
+                  <span className="opacity-40">•</span>
+                  <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 shadow-sm">
+                    <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">
+                      Owner:
+                    </span>
+                    <span className="text-xs font-bold">
+                      {mainAssignee.Assignee_Name}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-2">
@@ -404,7 +564,11 @@ const TicketDetailPage = () => {
           <div className="w-full lg:w-3/4 flex flex-col gap-6">
             {/* 1. Conversation Threads */}
             <div className="w-full">
-              <ListProvider config={listConfig} data={rawList}>
+              <ListProvider
+                config={listConfig}
+                // data={rawList}
+                data={finalThreads}
+              >
                 <ListCardView />
               </ListProvider>
             </div>
