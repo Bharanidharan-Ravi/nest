@@ -1,0 +1,628 @@
+-- =============================================================================
+-- TicketHistory — GitHub-style audit trail for everything on a ticket
+--
+-- ONE ROW PER EVENT.
+-- Every insert, update, status change, assignment, comment, label change,
+-- workstream update, test failure, attachment upload — captured here.
+--
+-- EventType tells the UI which icon/template to render.
+-- OldValue + NewValue store what changed (nullable — creates have no OldValue).
+-- ActorName is denormalized so history stays readable even if employee deleted.
+-- =============================================================================
+
+CREATE TABLE [dbo].[TicketHistory]
+(
+    -- Primary Key
+    [Id]            UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID() PRIMARY KEY,
+
+    -- Which ticket this event belongs to
+    [IssueId]       UNIQUEIDENTIFIER NOT NULL,
+
+    -- Event classification — drives icon + template in UI
+    -- See EventType constants below
+    [EventType]     NVARCHAR(50)     NOT NULL,
+
+    -- Human-readable summary line (pre-built, stored)
+    -- e.g. "UserB was assigned by Owner"
+    -- e.g. "Status changed from In Development to Functional Testing"
+    -- e.g. "Test failure reported — login bug, completion dropped to 70%"
+    [Summary]       NVARCHAR(500)    NOT NULL,
+
+    -- Field that changed (nullable — not all events have a single field)
+    -- e.g. "Status", "AssigneeId", "CompletionPct", "StreamStatus"
+    [FieldName]     NVARCHAR(100)    NULL,
+
+    -- Previous value as string (null on creates/first-time sets)
+    [OldValue]      NVARCHAR(500)    NULL,
+
+    -- New value as string
+    [NewValue]      NVARCHAR(500)    NULL,
+
+    -- Who performed the action
+    [ActorId]       UNIQUEIDENTIFIER NOT NULL,
+    [ActorName]     NVARCHAR(200)    NOT NULL,  -- denormalized for read-only display
+
+    -- FK to WorkStream row (if event is stream-related)
+    [WorkStreamId]  UNIQUEIDENTIFIER NULL,
+
+    -- FK to ThreadMaster (if event produced a thread)
+    [ThreadId]      BIGINT           NULL,
+
+    -- FK to the entity that was affected (nullable — for cross-refs)
+    [TargetEntityId]     NVARCHAR(100)  NULL,  -- Guid or int as string
+    [TargetEntityType]   NVARCHAR(50)   NULL,  -- "WorkStream", "Label", "Attachment"
+
+    -- Metadata for structured rendering
+    -- Store extra JSON for complex events (e.g. list of labels added/removed)
+    [MetaJson]      NVARCHAR(MAX)    NULL,
+
+    -- When
+    [CreatedAt]     DATETIME2(7)     NOT NULL DEFAULT GETUTCDATE()
+);
+GO
+
+-- Index for fast ticket timeline load
+CREATE NONCLUSTERED INDEX [IX_TicketHistory_IssueId_CreatedAt]
+    ON [dbo].[TicketHistory] ([IssueId], [CreatedAt] DESC);
+GO
+
+-- Index for actor-based queries ("show all actions by UserB")
+CREATE NONCLUSTERED INDEX [IX_TicketHistory_ActorId]
+    ON [dbo].[TicketHistory] ([ActorId], [CreatedAt] DESC);
+GO
+
+
+-- =============================================================================
+-- EventType reference values
+-- Used as constants in C# — stored as readable strings for easy querying
+-- =============================================================================
+-- TICKET_CREATED          Ticket was created
+-- TICKET_UPDATED          Title/description/priority/due date changed
+-- STATUS_CHANGED          Ticket status changed (computed or manual)
+-- ASSIGNEE_ADDED          New assignee added to ticket
+-- ASSIGNEE_REMOVED        Assignee removed from ticket
+-- LABEL_ADDED             Label added to ticket
+-- LABEL_REMOVED           Label removed from ticket
+-- WORKSTREAM_CREATED      New subtask/workstream row created
+-- WORKSTREAM_UPDATED      Subtask status or % updated
+-- WORKSTREAM_COMPLETED    Subtask marked as completed
+-- WORKSTREAM_INACTIVE     Subtask marked inactive (person removed)
+-- TEST_FAILURE_REPORTED   Tester reported bugs — developer blocked
+-- TEST_FAILURE_CLEARED    Tester cleared failure — developer unblocked
+-- THREAD_POSTED           A thread/comment was posted
+-- ATTACHMENT_ADDED        File attached to ticket or thread
+-- DAILY_PLAN_ADDED        Ticket added to someone's daily plan
+-- DAILY_PLAN_COMPLETED    Daily plan auto-completed by background job
+-- DAILY_PLAN_UNCHECKED    User unchecked daily plan with comment
+-- TICKET_CLOSED           Ticket closed (auto or manual)
+-- TICKET_CANCELLED        Ticket cancelled
+-- OVERALL_PCT_CHANGED     Ticket overall completion % changed
+
+
+-------------------------------------------------------------------------------
+
+
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace APIGateWay.ModalLayer.MasterData
+{
+    // =========================================================================
+    // TicketHistory entity
+    // =========================================================================
+    [Table("TicketHistory")]
+    public class TicketHistory
+    {
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public Guid   Id               { get; set; }
+
+        [Required]
+        public Guid   IssueId          { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string EventType        { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(500)]
+        public string Summary          { get; set; } = string.Empty;
+
+        [MaxLength(100)]
+        public string? FieldName       { get; set; }
+
+        [MaxLength(500)]
+        public string? OldValue        { get; set; }
+
+        [MaxLength(500)]
+        public string? NewValue        { get; set; }
+
+        [Required]
+        public Guid   ActorId          { get; set; }
+
+        [Required]
+        [MaxLength(200)]
+        public string ActorName        { get; set; } = string.Empty;
+
+        public Guid?  WorkStreamId     { get; set; }
+        public long?  ThreadId         { get; set; }
+
+        [MaxLength(100)]
+        public string? TargetEntityId  { get; set; }
+
+        [MaxLength(50)]
+        public string? TargetEntityType { get; set; }
+
+        public string? MetaJson        { get; set; }
+
+        public DateTime CreatedAt      { get; set; } = DateTime.UtcNow;
+    }
+}
+
+
+namespace APIGateWay.ModalLayer.PostData
+{
+    // =========================================================================
+    // HistoryEventType — string constants for EventType column
+    // Use these everywhere — never hardcode strings
+    // =========================================================================
+    public static class HistoryEventType
+    {
+        // ── Ticket lifecycle ──────────────────────────────────────────────────
+        public const string TicketCreated         = "TICKET_CREATED";
+        public const string TicketUpdated         = "TICKET_UPDATED";
+        public const string StatusChanged         = "STATUS_CHANGED";
+        public const string TicketClosed          = "TICKET_CLOSED";
+        public const string TicketCancelled       = "TICKET_CANCELLED";
+
+        // ── People ────────────────────────────────────────────────────────────
+        public const string AssigneeAdded         = "ASSIGNEE_ADDED";
+        public const string AssigneeRemoved       = "ASSIGNEE_REMOVED";
+
+        // ── Labels ────────────────────────────────────────────────────────────
+        public const string LabelAdded            = "LABEL_ADDED";
+        public const string LabelRemoved          = "LABEL_REMOVED";
+
+        // ── WorkStream (Subtask) ──────────────────────────────────────────────
+        public const string WorkStreamCreated     = "WORKSTREAM_CREATED";
+        public const string WorkStreamUpdated     = "WORKSTREAM_UPDATED";
+        public const string WorkStreamCompleted   = "WORKSTREAM_COMPLETED";
+        public const string WorkStreamInactive    = "WORKSTREAM_INACTIVE";
+        public const string OverallPctChanged     = "OVERALL_PCT_CHANGED";
+
+        // ── Test failure ──────────────────────────────────────────────────────
+        public const string TestFailureReported   = "TEST_FAILURE_REPORTED";
+        public const string TestFailureCleared    = "TEST_FAILURE_CLEARED";
+
+        // ── Thread / attachment ───────────────────────────────────────────────
+        public const string ThreadPosted          = "THREAD_POSTED";
+        public const string AttachmentAdded       = "ATTACHMENT_ADDED";
+
+        // ── Daily plan ────────────────────────────────────────────────────────
+        public const string DailyPlanAdded        = "DAILY_PLAN_ADDED";
+        public const string DailyPlanCompleted    = "DAILY_PLAN_COMPLETED";
+        public const string DailyPlanUnchecked    = "DAILY_PLAN_UNCHECKED";
+    }
+}
+
+
+-------------------------------------------------------------------------------
+
+
+// =============================================================================
+// ITicketHistoryService.cs
+// =============================================================================
+using APIGateWay.ModalLayer.PostData;
+
+namespace APIGateWay.BusinessLayer.Interface
+{
+    public interface ITicketHistoryService
+    {
+        // Write a single history event — called from repos and services
+        // Always fire-and-forget pattern — history failure NEVER breaks the main action
+        Task LogAsync(TicketHistoryEntry entry);
+
+        // Batch write — for events that produce multiple rows (e.g. labels replaced)
+        Task LogManyAsync(IEnumerable<TicketHistoryEntry> entries);
+    }
+}
+
+namespace APIGateWay.ModalLayer.PostData
+{
+    // =========================================================================
+    // TicketHistoryEntry — input model for logging
+    // Build this and pass to ITicketHistoryService.LogAsync
+    // =========================================================================
+    public class TicketHistoryEntry
+    {
+        public Guid    IssueId          { get; set; }
+        public string  EventType        { get; set; } = string.Empty;  // HistoryEventType.XXX
+        public string  Summary          { get; set; } = string.Empty;
+        public string? FieldName        { get; set; }
+        public string? OldValue         { get; set; }
+        public string? NewValue         { get; set; }
+        public Guid    ActorId          { get; set; }
+        public string  ActorName        { get; set; } = string.Empty;
+        public Guid?   WorkStreamId     { get; set; }
+        public long?   ThreadId         { get; set; }
+        public string? TargetEntityId   { get; set; }
+        public string? TargetEntityType { get; set; }
+        public object? Meta             { get; set; }  // serialized to MetaJson
+    }
+}
+
+
+// =============================================================================
+// TicketHistoryService.cs
+// =============================================================================
+using System.Text.Json;
+using APIGateWay.BusinessLayer.Interface;
+using APIGateWay.DomainLayer.DBContext;
+using APIGateWay.DomainLayer.Interface;
+using APIGateWay.ModalLayer.MasterData;
+using APIGateWay.ModalLayer.PostData;
+
+namespace APIGateWay.BusinessLayer.Repository
+{
+    public class TicketHistoryService : ITicketHistoryService
+    {
+        private readonly APIGatewayDBContext _db;
+
+        public TicketHistoryService(APIGatewayDBContext db)
+        {
+            _db = db;
+        }
+
+        public async Task LogAsync(TicketHistoryEntry entry)
+        {
+            try
+            {
+                var row = BuildRow(entry);
+                _db.TicketHistories.Add(row);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // History failure MUST NOT break the main operation
+                // Log to console — replace with your logger if available
+                Console.WriteLine(
+                    $"[TicketHistoryService] Failed to log event '{entry.EventType}' " +
+                    $"for ticket {entry.IssueId}: {ex.Message}");
+            }
+        }
+
+        public async Task LogManyAsync(IEnumerable<TicketHistoryEntry> entries)
+        {
+            try
+            {
+                var rows = entries.Select(BuildRow).ToList();
+                _db.TicketHistories.AddRange(rows);
+                await _db.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"[TicketHistoryService] Failed to log batch events: {ex.Message}");
+            }
+        }
+
+        private static TicketHistory BuildRow(TicketHistoryEntry entry)
+        {
+            string? metaJson = null;
+            if (entry.Meta != null)
+            {
+                try { metaJson = JsonSerializer.Serialize(entry.Meta); }
+                catch { /* ignore serialization errors */ }
+            }
+
+            return new TicketHistory
+            {
+                IssueId          = entry.IssueId,
+                EventType        = entry.EventType,
+                Summary          = entry.Summary,
+                FieldName        = entry.FieldName,
+                OldValue         = entry.OldValue,
+                NewValue         = entry.NewValue,
+                ActorId          = entry.ActorId,
+                ActorName        = entry.ActorName,
+                WorkStreamId     = entry.WorkStreamId,
+                ThreadId         = entry.ThreadId,
+                TargetEntityId   = entry.TargetEntityId,
+                TargetEntityType = entry.TargetEntityType,
+                MetaJson         = metaJson,
+                CreatedAt        = DateTime.UtcNow,
+            };
+        }
+    }
+}
+
+
+
+------------------------------------------------------------------------------------------------------------
+
+
+// =============================================================================
+// TicketHistoryController.cs
+// Route: GET /api/ticket/{id}/history
+// Returns paginated timeline events for a ticket, newest first
+// =============================================================================
+using APIGateWay.DomainLayer.DBContext;
+using APIGateWay.ModalLayer.MasterData;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace APIGateway.Controllers
+{
+    [ApiController]
+    [Route("api/ticket")]
+    public class TicketHistoryController : ControllerBase
+    {
+        private readonly APIGatewayDBContext _db;
+
+        public TicketHistoryController(APIGatewayDBContext db)
+        {
+            _db = db;
+        }
+
+        // GET /api/ticket/{id}/history?page=1&pageSize=30
+        // Returns newest-first timeline events for the UI history screen
+        [HttpGet("{id:guid}/history")]
+        public async Task<IActionResult> GetHistory(
+            Guid id,
+            [FromQuery] int page     = 1,
+            [FromQuery] int pageSize = 30)
+        {
+            pageSize = Math.Min(pageSize, 100);  // cap at 100 per page
+
+            var total = await _db.TicketHistories
+                .CountAsync(h => h.IssueId == id);
+
+            var items = await _db.TicketHistories
+                .Where(h => h.IssueId == id)
+                .OrderByDescending(h => h.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .Select(h => new
+                {
+                    h.Id,
+                    h.EventType,
+                    h.Summary,
+                    h.FieldName,
+                    h.OldValue,
+                    h.NewValue,
+                    h.ActorId,
+                    h.ActorName,
+                    h.WorkStreamId,
+                    h.ThreadId,
+                    h.TargetEntityId,
+                    h.TargetEntityType,
+                    h.MetaJson,
+                    h.CreatedAt,
+                })
+                .ToListAsync();
+
+            return Ok(new
+            {
+                Total      = total,
+                Page       = page,
+                PageSize   = pageSize,
+                TotalPages = (int)Math.Ceiling((double)total / pageSize),
+                Items      = items,
+            });
+        }
+    }
+}
+
+
+--------------------------------------------------------------------------------------------
+
+
+// =============================================================================
+// USAGE EXAMPLES — copy these call sites into the right repos/services
+// =============================================================================
+// Constructor injection needed in each repo/service:
+//   private readonly ITicketHistoryService _history;
+//   // + add to constructor params + assignment
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TicketRepo.CreateTicketAsync — after SaveEntityWithAttachmentsAsync(ticketMaster)
+// ─────────────────────────────────────────────────────────────────────────────
+await _history.LogAsync(
+    TicketHistoryHelper.TicketCreated(
+        issueId:    ticketMaster.Issue_Id,
+        issueCode:  ticketMaster.Issue_Code,
+        actorId:    _loginContext.userId,
+        actorName:  _loginContext.userName
+    )
+);
+
+// After SaveLabelAsync — one entry per label added
+foreach (var label in issueLabels)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.LabelAdded(
+            issueId:   ticketMaster.Issue_Id,
+            labelName: labelName,   // look up from label cache or DB
+            labelId:   label.Label_Id ?? 0,
+            actorId:   _loginContext.userId,
+            actorName: _loginContext.userName
+        )
+    );
+}
+
+// After UpsertWorkStreamsAsync — one entry per assignee added
+foreach (var result in workStreamResults)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.AssigneeAdded(
+            issueId:      ticketMaster.Issue_Id,
+            assigneeName: employeeName,   // resolve from _db or cache
+            department:   result.StreamName,
+            assigneeId:   result.ResourceId,
+            actorId:      _loginContext.userId,
+            actorName:    _loginContext.userName
+        )
+    );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TicketRepo.UpdateTicketAsync — after UpdateEntityWithAttachmentsAsync
+// Only log fields that actually changed (check OldValue != NewValue)
+// ─────────────────────────────────────────────────────────────────────────────
+if (existingTicket.Title != dto.Title)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.TicketUpdated(
+            issueId:   ticketId,
+            fieldName: "Title",
+            oldValue:  existingTicket.Title,
+            newValue:  dto.Title,
+            actorId:   _loginContext.userId,
+            actorName: _loginContext.userName
+        )
+    );
+}
+
+// Label replace — log removed + added
+foreach (var removed in removedLabels)
+    await _history.LogAsync(TicketHistoryHelper.LabelRemoved(...));
+foreach (var added in addedLabels)
+    await _history.LogAsync(TicketHistoryHelper.LabelAdded(...));
+
+// Assignee changes — log removed + added
+foreach (var removed in removedIds)
+    await _history.LogAsync(TicketHistoryHelper.AssigneeRemoved(...));
+foreach (var added in addedIds)
+    await _history.LogAsync(TicketHistoryHelper.AssigneeAdded(...));
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WorkStreamService.PostWorkStreamAsync — after upsert + ComputeAndUpdate
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Subtask created (WasInserted = true)
+if (streamResult.WasInserted)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.WorkStreamCreated(
+            issueId:      dto.IssueId,
+            assigneeName: assigneeName,
+            streamName:   dto.StreamName,
+            statusName:   statusName ?? dto.StreamStatus.ToString(),
+            workStreamId: streamResult.Id,
+            actorId:      _loginContext.userId,
+            actorName:    _loginContext.userName
+        )
+    );
+}
+else
+{
+    // Subtask updated
+    await _history.LogAsync(
+        TicketHistoryHelper.WorkStreamUpdated(
+            issueId:       dto.IssueId,
+            assigneeName:  assigneeName,
+            oldStatusName: oldStatusName,
+            newStatusName: statusName ?? "",
+            oldPct:        oldPct,
+            newPct:        dto.CompletionPct ?? oldPct,
+            workStreamId:  streamResult.Id,
+            actorId:       _loginContext.userId,
+            actorName:     _loginContext.userName
+        )
+    );
+}
+
+// Test failure reported
+if (dto.ReportTestFailure)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.TestFailureReported(
+            issueId:       dto.IssueId,
+            testerName:    _loginContext.userName,
+            developerName: targetDevName,
+            failureComment: dto.TestFailureComment!,
+            pctDropped:    dto.PercentageDrop ?? 30,
+            workStreamId:  streamResult.Id,
+            actorId:       _loginContext.userId,
+            actorName:     _loginContext.userName
+        )
+    );
+}
+
+// Test failure cleared
+if (dto.ClearTestFailure)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.TestFailureCleared(
+            issueId:       dto.IssueId,
+            testerName:    _loginContext.userName,
+            developerName: targetDevName,
+            workStreamId:  streamResult.Id,
+            actorId:       _loginContext.userId,
+            actorName:     _loginContext.userName
+        )
+    );
+}
+
+// Status changed (from ComputeAndUpdateTicketStatusAsync result)
+if (oldTicketStatusName != ticketStatus.ComputedStatusName)
+{
+    await _history.LogAsync(
+        TicketHistoryHelper.StatusChanged(
+            issueId:        dto.IssueId,
+            oldStatusName:  oldTicketStatusName,
+            newStatusName:  ticketStatus.ComputedStatusName,
+            actorId:        _loginContext.userId,
+            actorName:      _loginContext.userName,
+            isAutoComputed: true
+        )
+    );
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ThreadRepo.CreateThreadAsync — after SaveEntityWithAttachmentsAsync(threadMaster)
+// ─────────────────────────────────────────────────────────────────────────────
+await _history.LogAsync(
+    TicketHistoryHelper.ThreadPosted(
+        issueId:   threadDto.Issue_Id,
+        threadId:  threadMaster.ThreadId,
+        actorName: _loginContext.userName,
+        actorId:   _loginContext.userId
+    )
+);
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DailyPlanRepo.CheckTicketAsync — after SaveEntityWithAttachmentsAsync(plan)
+// ─────────────────────────────────────────────────────────────────────────────
+await _history.LogAsync(
+    TicketHistoryHelper.DailyPlanAdded(
+        issueId:   dto.TicketId,
+        actorId:   _loginContext.userId,
+        actorName: _loginContext.userName,
+        date:      DateTime.UtcNow.ToString("yyyy-MM-dd")
+    )
+);
+
+// DailyPlanRepo.UncheckTicketAsync — after SaveChangesAsync
+await _history.LogAsync(
+    TicketHistoryHelper.DailyPlanUnchecked(
+        issueId:   plan.TicketId,
+        comment:   dto.UncheckComment,
+        actorId:   _loginContext.userId,
+        actorName: _loginContext.userName
+    )
+);
+
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Program.cs — add registration
+// ─────────────────────────────────────────────────────────────────────────────
+builder.Services.AddScoped<ITicketHistoryService, TicketHistoryService>();
+
+// DBContext — add DbSet
+public DbSet<TicketHistory> TicketHistories { get; set; }

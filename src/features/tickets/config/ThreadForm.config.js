@@ -15,7 +15,6 @@ export const ThreadFormConfig = {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
-    console.log("currentStreamStatus :", currentStreamStatus);
     
     // ── 1. TESTER BUTTONS ─────────────────────────────────────────
     if (role === "Tester") {
@@ -240,7 +239,7 @@ export const ThreadFormConfig = {
 
                 // ── ASSIGN ONLY MODE ──
                 if (context.isOwner && !hasComment && !hasHours) {
-                  if (hasAssignee && hasStatus) {
+                  if (hasAssignee) {
                     overrides.AssignOnly = true;
                     overrides.Comment = null;
                   }
@@ -260,10 +259,10 @@ export const ThreadFormConfig = {
               intent: "success",
               onClick: ({ submitForm }) =>
                 submitForm({
-                  StreamStatus: 14, // 14 = Closed
+                  StreamStatus: 15, // 14 = Closed
                   CompletionPercentage: 100,
                   Comment: formData.description || "Ticket closed by owner.",
-                }),
+                }, true),
             },
             {
               label: "Cancel & Close",
@@ -271,9 +270,9 @@ export const ThreadFormConfig = {
               intent: "danger",
               onClick: ({ submitForm }) =>
                 submitForm({
-                  StreamStatus: 15, // 15 = Cancelled
+                  StreamStatus: 16, // 15 = Cancelled
                   Comment: formData.description || "Ticket cancelled by owner.",
-                }),
+                }, true),
             },
           ],
         },

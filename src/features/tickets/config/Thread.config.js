@@ -60,11 +60,19 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "WorkStreamId", // 👈 The exact name your API expects
     hidden: true,           // 👈 Keeps it invisible in the UI
     dataType: "string",
-    initValueResolver: ({ context }) => {
-      // console.log("context :", context.activeWorkStream.StreamId);
-      
+    initValueResolver: ({ context }) => {      
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.activeWorkStream?.StreamId || null;
+    },
+  },
+   {
+    name: "handsoffId",
+    apiKey: "handsoffId", // 👈 The exact name your API expects
+    hidden: true,           // 👈 Keeps it invisible in the UI
+    dataType: "string",
+    initValueResolver: ({ context }) => {      
+      // Pulls the StreamId directly from the sidebar card they clicked!
+      return context?.selectedHandoffId || null;
     },
   },
   {
@@ -129,49 +137,49 @@ export const ThreadFieldConfig = (ticketId) => [
     requiredWhen: (context) => context?.userRole !== "Owner",
   },
 
- {
-    name: "UpdateStatus",
-    label: "Update Status",
-    type: "select",
-    ui: "mui",
-    className: "col-span-12 md:col-span-4",
+//  {
+//     name: "UpdateStatus",
+//     label: "Update Status",
+//     type: "select",
+//     ui: "mui",
+//     className: "col-span-12 md:col-span-4",
 
-    // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
-    requiredWhen: (context, formData) => {
-      if (context?.userRole !== "Owner") return false;
-      return !!(formData?.assignees && formData.assignees.length > 0);
-    },
+//     // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
+//     // requiredWhen: (context, formData) => {
+//     //   if (context?.userRole !== "Owner") return false;
+//     //   return !!(formData?.assignees && formData.assignees.length > 0);
+//     // },
 
-    optionsResolver: ({ masterData, context }) => {
-      let Status = masterData?.StatusMaster || [];
-      const uniqueOptions = [];
-      const seenIds = new Set();
+//     optionsResolver: ({ masterData, context }) => {
+//       let Status = masterData?.StatusMaster || [];
+//       const uniqueOptions = [];
+//       const seenIds = new Set();
 
-      Status.forEach((sta) => {
-        const id = sta.Status_Id || sta.status_id;
-        const name = sta.Status_Name || sta.status_name;
+//       Status.forEach((sta) => {
+//         const id = sta.Status_Id || sta.status_id;
+//         const name = sta.Status_Name || sta.status_name;
 
-        if (id && !seenIds.has(id)) {
-          seenIds.add(id);
-          uniqueOptions.push({
-            label: name,
-            value: { id, name },
-          });
-        }
-      });
-      return uniqueOptions;
-    },
+//         if (id && !seenIds.has(id)) {
+//           seenIds.add(id);
+//           uniqueOptions.push({
+//             label: name,
+//             value: { id, name },
+//           });
+//         }
+//       });
+//       return uniqueOptions;
+//     },
 
-    initValueResolver: ({ context }) => {
-      if (context?.userRole === "Tester")
-        return { label: "Testing In Progress", value: { id: 8 } };
-      return null;
-    },
+//     initValueResolver: ({ context }) => {
+//       if (context?.userRole === "Tester")
+//         return { label: "Testing In Progress", value: { id: 8 } };
+//       return null;
+//     },
 
-    // Status is ONLY visible to the Owner
-    visibleWhen: (formData, context) => 
-      context?.userRole === "Owner",
-  },
+//     // Status is ONLY visible to the Owner
+//     visibleWhen: (formData, context) => 
+//       context?.userRole === "Owner",
+//   },
   {
     label: "Assignees",
     name: "assignees",
@@ -183,10 +191,10 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "NextAssignees", 
 
     // 🔥 VALIDATION FIX: Only required for the Owner if they picked a status
-    requiredWhen: (context, formData) => {
-      if (context?.userRole !== "Owner") return false;
-      return !!formData?.UpdateStatus;
-    },
+    // requiredWhen: (context, formData) => {
+    //   if (context?.userRole !== "Owner") return false;
+    //   return !!formData?.UpdateStatus;
+    // },
 
     transform: (mappedArray, formData) => {
       const streamId = formData?.UpdateStatus?.value?.id || 0;
@@ -226,8 +234,8 @@ export const ThreadFieldConfig = (ticketId) => [
     },
 
     // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
-    visibleWhen: (formData, context) => 
-      context?.userRole === "Dev" || context?.userRole === "Owner",
+    // visibleWhen: (formData, context) => 
+    //   context?.userRole === "Dev" || context?.userRole === "Owner",
   },
   // {
   //   name: "AssignedTo",
@@ -273,6 +281,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
     },
   },
+
   // {
   //   name: "UseLastComment",
   //   label: "Use my previous thread comment",

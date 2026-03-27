@@ -80,8 +80,10 @@ export default function EntityFormPage({
       }
     }
   };
-  const handleSubmit = (overrides = {}) => {
-    if (!validate()) return;
+  const handleSubmit = (overrides = {}, skipValidation= false) => {
+    if (!skipValidation) {
+      if (!validate()) return; 
+    }
 
     const dto = buildDto();
 
@@ -96,7 +98,7 @@ export default function EntityFormPage({
     const finalDto = { ...dto, ...overrides };
     console.log("finalDto :", finalDto);
     
-    mutate(finalDto);
+    // mutate(finalDto);
   };
 
   const uploadFile = async (file) => {
@@ -179,9 +181,17 @@ export default function EntityFormPage({
                   disabled={isPending}
                   className={`wg-btn-primary ${theme.submitBtn || ""} ${action.className || ""}`}
                   onClick={() => {
-                    if (action.type === "submit") handleSubmit();
-                    else if (action.onClick)
-                      action.onClick({ formData, submitForm: handleSubmit });
+                    if (action.type === "submit") {
+                      // Pass skipValidation directly from the action config
+                      handleSubmit({}, action.skipValidation); 
+                    } 
+                    else if (action.onClick) {
+                      // 🔥 2. Allow the config's onClick to pass the skipValidation flag
+                      action.onClick({ 
+                        formData, 
+                        submitForm: (overrides, skipVal = false) => handleSubmit(overrides, skipVal || action.skipValidation) 
+                      });
+                    }
                   }}
                 >
                   {isPending && action.type === "submit"

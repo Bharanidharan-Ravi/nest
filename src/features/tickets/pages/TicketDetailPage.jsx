@@ -36,12 +36,15 @@ const TicketDetailPage = () => {
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
   const [selectedWorkStream, setSelectedWorkStream] = useState(null);
+  const [selectedHandoffId, setSelectedHandoffId] = useState(null);
   // 🔥 1. Add state to track middle-expansion
   const [expandCount, setExpandCount] = useState(0);
+console.log("selectedHandoffId :", selectedHandoffId);
 
   // 🔥 2. Reset the expansion if they click a different person in the sidebar
   useEffect(() => {
     setExpandCount(0);
+    setSelectedHandoffId(null);
   }, [selectedWorkStream, ticketId]);
 
   useEffect(() => {
@@ -94,6 +97,7 @@ const TicketDetailPage = () => {
 
   // 1. Parse the array safely
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
+  // const handoffsJsonString = JSON.parse(parentTicket?.HandOffs || "[]");
 
   // 2. Find ALL assignments for the logged-in user
   // 2. Find ALL assignments for the logged-in user
@@ -115,7 +119,7 @@ const TicketDetailPage = () => {
   const evaluatedStream = selectedWorkStream || myCurrentStream;
 
   // 4. Dynamically determine their state/role for the UI
-  const isOwner = parentTicket?.CreatedBy === user?.userId;
+  const isOwner = parentTicket?.Assignee_Id === user?.userId;
   let userRole = "Standard";
 
   // 🔥 FIX 3: Check if the evaluated stream is completely finished (100% or Closed)
@@ -129,16 +133,16 @@ const TicketDetailPage = () => {
     userRole = "Owner";
   }
   // If work is NOT done, give them Dev/Tester buttons
-  else if (evaluatedStream && !isWorkCompleted) {
-    const currentStatusId = evaluatedStream.StreamStatus;
+  // else if (evaluatedStream && !isWorkCompleted) {
+  //   const currentStatusId = evaluatedStream.StreamStatus;
 
-    if (currentStatusId === 5 || currentStatusId === 6) {
-      userRole = "Dev";
-    } else if (currentStatusId >= 7 && currentStatusId <= 11) {
-      userRole = "Tester";
-    }
-  }
-  // 🔥 FIX 3: If their work IS 100% done (like Dannu), revert to Standard to hide action buttons!
+  //   if (currentStatusId === 5 || currentStatusId === 6) {
+  //     userRole = "Dev";
+  //   } else if (currentStatusId >= 7 && currentStatusId <= 11) {
+  //     userRole = "Tester";
+  //   }
+  // }
+  // 🔥 FIX 3: If their work IS 100% done, revert to Standard to hide action buttons!
   else if (evaluatedStream && isWorkCompleted) {
     userRole = "Standard";
   }
@@ -154,6 +158,7 @@ const TicketDetailPage = () => {
     isOwner,
     currentUser: user,
     activeWorkStream: evaluatedStream,
+    selectedHandoffId: selectedHandoffId,
   };
   // if (isOwner) {
   //   userRole = "Owner";
@@ -205,6 +210,7 @@ const TicketDetailPage = () => {
     UpdatedAt: thread.UpdatedAt,
     UpdatedBy: thread.UpdatedBy,
     All_Assignees: thread.All_Assignees,
+    HandsOffId: thread.HandsOffId,
   }));
 
   const mainAssignee = React.useMemo(() => {
@@ -216,48 +222,88 @@ const TicketDetailPage = () => {
   }, [assigneesJsonString]);
 
   // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD
+ // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD OR HANDOFF
+  // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD OR HANDOFF
   const displayedThreads = React.useMemo(() => {
-    // If no card is clicked in the widget, show all threads normally
-    if (!selectedWorkStream) return rawList;
+    // 1. If nothing is selected, show all threads normally
+    if (!selectedWorkStream && !selectedHandoffId) return rawList;
 
-    const startId = selectedWorkStream.ParentThreadId;
-    const endId = selectedWorkStream.ThreadId;
+    const parentThreadId = selectedWorkStream?.ParentThreadId;
 
-    // Grab the IDs to compare against
-    const targetAssigneeId = selectedWorkStream.Assignee_Id?.toLowerCase();
-    const ticketOwnerId = parentTicket?.CreatedBy?.toLowerCase();
+    // ================================================================
+    // SCENARIO A: A SPECIFIC HANDOFF IS CLICKED
+    // ================================================================
+    if (selectedHandoffId) {
+      return rawList.filter((thread) => {
+        // Keep the exact Parent Thread (So they can see who assigned it)
+        if (parentThreadId && thread.Id === parentThreadId) return true;
+        
+        // Keep ONLY the threads strictly tied to this exact Handoff
+        if (thread.HandsOffId === selectedHandoffId) return true;
 
-    return rawList.filter((thread) => {
-      // 1. Thread must fall between the Start and End IDs
-      if (startId && endId && thread.Id >= startId && thread.Id <= endId) {
-        // 2. ALWAYS keep the exact Parent Thread (The assignment action)
-        if (thread.Id === startId) return true;
+        return false;
+      });
+    }
 
-        const threadCreator = thread?.CreatedId;
+    // ================================================================
+    // SCENARIO B: A WORKSTREAM IS CLICKED (But no specific handoff)
+    // ================================================================
+    if (selectedWorkStream) {
+      const startId = selectedWorkStream.ParentThreadId;
+      const endId = selectedWorkStream.ThreadId;
+      const targetAssigneeId = selectedWorkStream.Assignee_Id?.toLowerCase();
+      const ticketOwnerId = parentTicket?.CreatedBy?.toLowerCase();
 
-        // 3. Keep if it was posted by the Selected Assignee
-        const isByAssignee = threadCreator === targetAssigneeId;
-console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
+      // 1. Get Outgoing Handoffs (e.g. Developer pushing to Tester)
+      const outgoingHandoffIds = selectedWorkStream.HandOffData?.map(h => h.HandsOffId) || [];
 
-        // 4. Keep if it was posted by the Ticket Owner (in case they replied/gave feedback)
-        const isByOwner = threadCreator === ticketOwnerId;
+      // 2. Get Incoming Handoffs (e.g. Tester receiving from Developer)
+      const incomingHandoffIds = [];
+      assigneesJsonString.forEach(ws => {
+        if (ws.HandOffData) {
+          ws.HandOffData.forEach(h => {
+            if (h.TargetStreamId === selectedWorkStream.StreamId) {
+              incomingHandoffIds.push(h.HandsOffId);
+            }
+          });
+        }
+      });
 
-        // If it's by the Assignee or the Owner, show it.
-        // If it's by "Assignee 2" (someone else interrupting), it gets hidden!
-        return isByAssignee || isByOwner;
-      }
+      // Combine them so this person sees ALL handoffs involving them
+      const allRelevantHandoffIds = [...outgoingHandoffIds, ...incomingHandoffIds];
 
-      // Fallback: If ParentThreadId is null/missing for some reason,
-      // just show the exact thread where they completed the work.
-      if (!startId && endId) {
-        return thread.Id === endId;
-      }
+      return rawList.filter((thread) => {
+        // 1. Explicit Handoff Relationship (Always keep these!)
+        if (thread.HandsOffId && allRelevantHandoffIds.includes(thread.HandsOffId)) return true;
 
-      return false;
-    });
-  }, [rawList, selectedWorkStream, parentTicket]);
+        // 2. Explicit Assignment Thread (Always keep the exact thread that assigned them)
+        if (startId && thread.Id === startId) return true;
 
+        // 3. General Comments made DURING this specific WorkStream
+        const isByAssignee = thread.CreatedId?.toLowerCase() === targetAssigneeId;
+        const isByOwner = thread.CreatedId?.toLowerCase() === ticketOwnerId;
 
+        if (isByAssignee || isByOwner) {
+          // If the work is completed, only show comments between Start and End
+          if (startId && endId) {
+            if (thread.Id >= startId && thread.Id <= endId) return true;
+          } 
+          // If the work is currently active (No End ID yet), show comments after the Start ID
+          else if (startId && !endId) {
+            if (thread.Id >= startId) return true;
+          }
+          // Fallback if there's no Start ID
+          else if (!startId && endId) {
+            if (thread.Id === endId) return true;
+          }
+        }
+
+        return false;
+      });
+    }
+
+    return rawList;
+  }, [rawList, selectedWorkStream, selectedHandoffId, parentTicket, assigneesJsonString]);
   // ... (your existing displayedThreads useMemo) ...
 
   // 🔥 3. THE GITHUB MIDDLE-COLLAPSE LOGIC
@@ -289,10 +335,10 @@ console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
     // Inject a "Dummy Marker" directly into the array!
     return [
       ...topPart,
-      { 
-        isCollapsedMarker: true, 
-        hiddenCount: remainingHidden, 
-        Id: "collapsed-marker" // Fake ID so ListProvider doesn't crash
+      {
+        isCollapsedMarker: true,
+        hiddenCount: remainingHidden,
+        Id: "collapsed-marker", // Fake ID so ListProvider doesn't crash
       },
       ...bottomPart,
     ];
@@ -303,19 +349,22 @@ console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
     pageSize: 9999, // 🔥 Override UI default pagination to allow our custom logic
     infinite: false,
     cardRenderer: (item) => {
-      
       // 🔥 RENDER THE GITHUB LOAD MORE BUTTON
       if (item.isCollapsedMarker) {
         return (
-          <div key="collapsed-marker" className="flex items-center justify-center my-6 relative w-full group">
+          <div
+            key="collapsed-marker"
+            className="flex items-center justify-center my-6 relative w-full group"
+          >
             {/* The horizontal rule line behind the button */}
             <div className="absolute w-full h-px bg-gray-200"></div>
-            
+
             <button
               onClick={() => setExpandCount((prev) => prev + 30)}
               className="relative z-10 bg-gray-50 hover:bg-white text-gray-500 hover:text-blue-600 text-xs font-bold px-5 py-2 border border-gray-200 hover:border-blue-300 shadow-sm rounded-full transition-all duration-200"
             >
-              Load {Math.min(item.hiddenCount, 30)} more comments ({item.hiddenCount} hidden)
+              Load {Math.min(item.hiddenCount, 30)} more comments (
+              {item.hiddenCount} hidden)
             </button>
           </div>
         );
@@ -337,7 +386,7 @@ console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
           />
         );
       }
-      
+
       // Standard Card Rendering
       return (
         <ThreadListCard
@@ -413,7 +462,7 @@ console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
       mine: formatTime(myMinutes),
     };
   }, [rawList, user]);
-  
+
   if (!parentTicket) return null;
   return (
     // Clean w-full container with white background
@@ -605,8 +654,11 @@ console.log("threadCreator :", threadCreator, isByAssignee, targetAssigneeId);
                 workStreams={assigneesJsonString}
                 data={parentTicket}
                 ticketId={ticketId}
+                formContext={formContext}
                 selectedWorkStream={selectedWorkStream} // 👈 Pass the state down
                 onSelectWorkStream={setSelectedWorkStream}
+                selectedHandoffId={selectedHandoffId} // 🔥 NEW PROP
+                onSelectHandoff={setSelectedHandoffId}
               />
               {/* Render Labels Widget Here later */}
             </div>

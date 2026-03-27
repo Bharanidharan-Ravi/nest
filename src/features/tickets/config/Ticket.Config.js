@@ -178,7 +178,6 @@ export const TicketFieldConfig = () => [
       const targetProjId =
         context?.params?.projId ||
         context?.entityData?.project;
-console.log("targetProjId :", targetProjId);
 
       if (!targetProjId) return null;
 
