@@ -1,63 +1,76 @@
 import { executeApi } from "../../../core/api/executor";
-import { queryKeys } from "../../../core/query/queryKeys";
 import { useApiQuery } from "../../../core/query/useApiQuery";
-import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
-export const fetchDashboard = (fromdate, todate) => {
-  return executeApi({
-    url: "/DashBoardData/GetDashBoardData",
-    method: "POST",
-
-
-    payload: {
-      FromDate: fromdate,
-      Todate: todate,
-      //   fromDate : fromDate,
-      //   toDate: toDate,
-    },
-  });
-};
-
-
-
-
-export const useDashboardData = (employeeId = null) => {
-  return useApiQuery({
-    queryKey: ["dashboard", "list", employeeId ?? "none"],
-    // Pass the same query function used in prefetch
-    url: "/DashBoardData/GetDashBoardData",
-    method: "POST",
-    payload: {
-      employeeId: employeeId,
-
-    },
-    options: {
-      staleTime: 10 * 60 * 1000,
-      // enabled: !!employeeId
-    },
-  });
-};
-
+/**
+ * Hook to fetch Dashboard Timesheet data
+ */
 export const useDashboardTimesheetData = (employeeId = null, fromdate = null, todate = null) => {
   return useApiQuery({
-    queryKey: ["DashBoardTimeSheetData", "list", employeeId ?? "none", fromdate ?? "none", todate ?? "none"],
-    // Pass the same query function used in prefetch
+    queryKey: ["DashBoardTimesheetData", "list", employeeId ?? "none", fromdate ?? "none", todate ?? "none"],
     url: "/sync/v2",
     method: "POST",
     payload: {
       ConfigKeys: ["TimeSheet"],
-      "Params": {
-        "TimeSheet": {
+      Params: {
+        TimeSheet: {
           EmployeeID: employeeId,
           FromDate: fromdate,
-          Todate: todate,
+          ToDate: todate,
         }
       }
     },
     source: "TimeSheet",
     options: {
-      staleTime: 10 * 60 * 1000,
-      enabled: !!fromdate && !!todate
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      enabled: !!fromdate && !!todate,
     },
+  });
+};
+
+/**
+ * Hook to fetch Checked Tickets data
+ */
+export const useCheckedTicketsData = (employeeId = null, planDate = null) => {
+  return useApiQuery({
+    queryKey: ["CheckedTickets", "list", employeeId ?? "none", planDate ?? "none"],
+    url: "/sync/v2",
+    method: "POST",
+    payload: {
+      ConfigKeys: ["CheckedTickets"],
+      Params: {
+        CheckedTickets: {
+          userId: employeeId,
+          planDate: planDate,
+        }
+      }
+    },
+    options: {
+      staleTime: 10 * 60 * 1000, // 10 minutes
+      enabled: !!employeeId && !!planDate,
+    },
+  });
+};
+
+/**
+ * Function to commit/save checked tickets
+ */
+export const commitCheckedTicket = (tickets) => {
+  console.log("tickets :", tickets);
+  
+  return executeApi({
+    url: "/dailyplan",
+    method: "POST",
+    payload: tickets,
+  });
+};
+
+/**
+ * Function to uncheck/revert a checked ticket
+ */
+export const uncheckcheckedtickets = (planId, body) => {
+  return executeApi({
+    url: `/dailyplan/${planId}/uncheck`,
+    method: "PATCH",
+    payload: body,
   });
 };

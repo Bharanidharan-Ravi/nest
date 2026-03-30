@@ -19,8 +19,12 @@ export function ListLayout({ className }) {
         {config.enableSearch && <ListSearchBar />}
 
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border-b border-gray-200 bg-gray-50 gap-4">
-          <div>{config.enableTabs && <ListTabs />}</div>
-
+          <div className="flex items-center gap-3">
+            <div>{config.enableTabs && <ListTabs />}</div>
+            <div className="px-3 py-1 text-sm font-medium text-ghMuted hover:text-ghText hover:bg-ghBorder/50 rounded-md transition-colors">
+              {config.tabsExtra?.()}
+            </div>
+          </div>
           <div className="flex flex-wrap items-center gap-3">
             <ListViewSwitcher />
             <ListFilters />

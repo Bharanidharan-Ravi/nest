@@ -1,371 +1,331 @@
-// Note: You will need to ensure your imports for hooks (useState, useEffect, useMemo),
-// dayjs, and your custom components/providers are present at the top of the file.
-
-import { useState } from "react";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-import { useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import dayjs from "dayjs";
-import {
-  useDashboardData,
-  useDashboardTimesheetData,
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { 
+    useCheckedTicketsData, 
+    commitCheckedTicket, 
+    useDashboardTimesheetData, 
+    uncheckcheckedtickets 
 } from "../hooks/dashboard.api";
 import { useMasterData } from "../../../core/master/useMasterData";
-import { useMemo } from "react";
-import {
-  DashboardCardConfig,
-  DashboardTableUI,
-  DashboardTimesheet,
-} from "../config/DashboardUI.config";
-import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
-import { ListCardView } from "../../../packages/ui-List/components/ListCardView";
-import DateRangePickerComponent from "../component/DatePicker/DatePicker";
-import { ListTableView } from "../../../packages/ui-List/components/ListTableView";
 import "./Dashboard.css";
-import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import { ROUTE_KEYS } from "../../../core/routing/paths";
-import MuiSelectInput from "../../../packages/react-input-engine/adapters/mui/MuiSelectInput";
 import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
 import { TicketListConfig } from "../../tickets/config/TicketUI.config";
-import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import ModuleSwitcher from "../component/ModuleSwitcher";
-import { ProjUIConfig } from "../../project/config/ProjectUI.config";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 
-export default function Dashboard() {
-  const user = readUserFromSession();
-  const { goTo } = useSmartNavigation();
-  const { data: ProjectList } = useMasterData();
-  const storageKey = `dashboard_selected_${user.userId}`;
-  
-  const [selectedItems, setSelectedItems] = useState(() => {
-    try {
-      const saved = localStorage.getItem(storageKey);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const currentUserName = user?.name;
-
-  useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(selectedItems));
-  }, [selectedItems, storageKey]);
-  const [fromDate, setFromDate] = useState(dayjs());
-  const [toDate, setToDate] = useState(dayjs());
-  const { data } = useTicketMaster({ employeeId: user.userId });
-  const { data: TimeSheet } = useDashboardTimesheetData(
-    user.userId,
-    fromDate,
-    toDate,
-  );
-  const { data: Master } = useMasterData();
-
-  const normalizeTimeData = (data) => ({
-    id: 0,
-  });
-
-  const TicketCount = normalizeTimeData(data);
-  // const TimeSheetData = TimeSheet?.map(normalizeTimeData) || [];
-
-  const normalizeTicket = (ticket) => ({
+const normalizeTicket = (ticket) => ({
     id: ticket.Issue_Id,
+    issueId: ticket.Issue_Id,
     title: ticket.Title,
     ticketKey: ticket.Issue_Code,
     status: ticket.Status,
+    statusId: ticket.StatusId,
     description: ticket.HtmlDesc || ticket.Description,
-    assginedTo: ticket.Assignee_Name,
+    assignedTo: ticket.Assignee_Name,
     estimateHours: ticket.hours,
-    createdAt: ticket.CreatedAt,
-    updatedAt: ticket.UpdatedAt,
-    UpdatedBy: ticket.UpdatedBy,
+    updatedBy: ticket.UpdatedBy,
     repoId: ticket.RepoId,
     dueDate: ticket.Due_Date,
     project: ticket.Project_Id,
-    priority: ticket.Priority,
-    multiAssignees: ticket.All_Assignees
-      ? JSON.parse(ticket.All_Assignees)
-      : [],
+    ProjKey: ticket.ProjKey,
     RepoKey: ticket.RepoKey,
+    priority: ticket.Priority,
+    multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
     label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
-  });
-  const normalizeProj = (proj) => ({
-    id: proj.Id,
-    title: proj.Project_Name,
-    key: proj.ProjectKey,
-    status: proj.Status,
-    owner: proj.EmployeeName,
-    createdAt: proj.CreatedAt,
-    CreatedBy: proj.CreatedBy,
-    repoId: proj.Repo_Id,
-    repoName: proj.Repo_Name,
-    repoKey: proj.RepoKey,
-    UpdatedAt: proj.UpdatedAt,
-    UpdatedBy: proj.UpdatedBy,
-  });
+    CompletionPct: ticket.CompletionPct,
+});
 
-  const Project = ProjectList?.ProjectList?.map(normalizeProj) || [];
+export default function Dashboard() {
+    const user = readUserFromSession();
+    const currentUserName = user?.name;
+    const { goTo } = useSmartNavigation();
 
-  const TicketList = data?.map(normalizeTicket) || [];
-  const employeeFilterOptions = [
-    { label: "All Employees", value: "" },
-    ...(Master?.EmployeeList?.map((user) => ({
-      label: user.UserName,
-      value: user.UserName,
-    })) || []),
-  ];
+    // State
+    const [selectedTickets, setSelectedTickets] = useState([]);
+    const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
+    const [fromDate, setFromDate] = useState(dayjs());
+    const [toDate, setToDate] = useState(dayjs());
 
-  const listConfigWithNav = {
-    ...TicketListConfig,
-    defaultFilters: {
-      assginedTo: currentUserName,
-    },
-    filters: [
-      {
-        key: "assginedTo", // 👈 MUST match the 'owner' key in normalizeProj
-        view: "Assignee",
-        options: employeeFilterOptions,
-        defaultValue: currentUserName,
-      },
-    ],
-  };
-  const dashboardModules = [
-    {
-      id: "tickets",
-      label: "My Tickets",
-      config: listConfigWithNav,
-      data: TicketList,
-    },
-    {
-      id: "timesheets",
-      label: "My Timesheets",
-      config: ProjUIConfig,
-      data: Project,
-    },
-    // {
-    //   id: "planner",
-    //   label: "Daily Planner",
-    //   config: PlannerListConfig,
-    //   data: normalizedPlanner,
-    // },
-  ];
-  return (
-    <div className="dashview">
-      <h2>Dashboard</h2>
-      {/* Pass the master config into your new Switcher component */}
-      <ModuleSwitcher modules={dashboardModules} />
-    </div>
-    // <div className="dashview">
-    //   <h2>Dashboard</h2>
-    //   <div className="div-1">
-    //     <div className="card">
-    //       <div className="tab-container">
-    //         Selected Tickets
-    //         <div className="tab-container-data">{selectedItems.length}</div>
-    //       </div>
-    //     </div>
-    //   </div>
+    // Data Hooks
+    const { data: ticketMasterDataRaw } = useTicketMaster({ employeeId: user.userId });
+    const { data: TimeSheet } = useDashboardTimesheetData(user.userId, fromDate, toDate);
+    const { data: Master } = useMasterData();
+    
+    const { 
+        data: CheckedTicketsResponse, 
+        refetch: refetchCheckedTickets 
+    } = useCheckedTicketsData(user.userId, dayjs().format("YYYY-MM-DD"));
 
-    //   <div className="date-range-picker-container">
-    //     <div className="date-range-picker">
-    //       <DateRangePickerComponent
-    //         value={[fromDate, toDate]}
-    //         onChange={({ startDate, endDate }) => {
-    //           setFromDate(startDate);
-    //           setToDate(endDate);
-    //         }}
-    //       />
-    //     </div>
-    //   </div>
+    // const ticketMasterData = ticketMasterDataRaw?.data || [];
 
-    //   <div className="div-2">
-    //     <div className="w-full pb-10">
-    //       <ListProvider config={listConfigWithNav} data={TicketList}>
-    //         <ListLayout />
-    //       </ListProvider>
-    //     </div>
-    //     <div className="Timesheet_data"></div>
-    //   </div>
-    // </div>
-  );
+    // --- Ticket Module Logic ---
+    const TicketList = useMemo(() => (
+        ticketMasterDataRaw?.map(normalizeTicket) || []
+    ), [ticketMasterDataRaw]);
+
+    const handleSelectionChange = (item, isChecked) => {
+        if (committedIds.includes(item.id || item.issueId)) return;
+        setSelectedTickets((prev) => {
+            if (isChecked) {
+                const exists = prev.some((i) => i.id === item.id);
+                if (exists) return prev;
+                return [...prev, item];
+            }
+            return prev.filter((i) => i.id !== item.id);
+        });
+    };
+
+    const handleCommitTickets = async () => {
+      console.log("selectedTickets :", selectedTickets);
+      
+        if (selectedTickets.length === 0) return;
+        const ticketsPayload = selectedTickets.map((ticket) => ({
+            TicketId: ticket.issueId || ticket.id,
+            ProjKey: ticket.ProjKey || ticket.project,
+        }));
+        await commitCheckedTicket(ticketsPayload);
+        setSelectedTickets([]);
+        refetchCheckedTickets();
+    };
+
+    // --- Checked Tickets Module Logic ---
+    const normalizeCheckedTickets = (item) => {
+        const SameTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === item.TicketId);
+        return {
+            ...(SameTicket ? normalizeTicket(SameTicket) : {}),
+            id: item.id,
+            TicketId: item.TicketId,
+            ProjKey: item.ProjKey,
+            RepoKey: item.RepoKey ?? "-",
+            Status: item.Status,
+            PlannedDate: dayjs(item.PlannedDate).format("DD-MM-YYYY"),
+            UncheckComment: item.UncheckComment ?? "-",
+            Title: item.Title,
+        };
+    };
+
+    const CheckedTicketsData = CheckedTicketsResponse?.CheckedTickets?.Data?.map(normalizeCheckedTickets) || [];
+    const committedIds = Array.isArray(CheckedTicketsResponse?.CheckedTickets?.Data) 
+        ? CheckedTicketsResponse.CheckedTickets.Data.map((t) => t?.TicketId) 
+        : [];
+
+    const allCheckedIds = useMemo(() => {
+        const newIds = selectedTickets.map((t) => t.id || t.issueId);
+        return [...committedIds, ...newIds];
+    }, [selectedTickets, committedIds]);
+
+    const handleUncheckSelectionChange = (item, isChecked) => {
+        setSelectedUncheckTickets((prev) => {
+            if (isChecked) {
+                const exists = prev.some((i) => i.id === item.id);
+                if (exists) return prev;
+                return [...prev, item];
+            }
+            return prev.filter((i) => i.id !== item.id);
+        });
+    };
+
+    // --- Timesheet Module Logic ---
+    const normalizeTimesheetData = (Timedata) => {
+        const matchedTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === Timedata.Issue_Id);
+        return {
+            ...(matchedTicket ? normalizeTicket(matchedTicket) : {}),
+            id: Timedata.ThreadId,
+            ticketId: Timedata.Issue_Id,
+            issueId: Timedata.Issue_Id,
+            ticketNo: Timedata.TicketNo,
+            TicketName: Timedata.TicketName,
+            StartTime: Timedata.StartTime,
+            Comment: Timedata.Comment,
+            EndTime: Timedata.EndTime,
+            ConsumeTime: Timedata.ConsumeTime,
+            total: Timedata.total,
+        };
+    };
+
+    const TimeSheetData = TimeSheet?.map(normalizeTimesheetData) || [];
+
+    // --- Filter Options ---
+    const employeeFilterOptions = [
+        { label: "All Employees", value: "" },
+        ...(Master?.EmployeeList?.map((user) => ({
+            label: user.UserName,
+            value: user.UserName,
+        })) || []),
+    ];
+
+    const employeeFilterOptionsTs = [
+        { label: "All Employees", value: "" },
+        ...(Master?.EmployeeList?.map((user) => ({
+            label: user.UserName,
+            value: user.UserID,
+        })) || []),
+    ];
+
+    // --- Module Configurations ---
+    const listConfigWithNav = {
+        ...TicketListConfig,
+        defaultView: "card",
+        syncUrl: false,
+        allowViewSwitch: false,
+        enableSelection: true,
+        onSelectionChange: handleSelectionChange,
+        selectedIds: allCheckedIds,
+        onItemClick: (item) => goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
+        defaultFilters: { assignedTo: currentUserName },
+        filters: [
+            {
+                key: "assignedTo",
+                view: "Assignee",
+                options: employeeFilterOptions,
+                defaultValue: currentUserName,
+            },
+        ],
+        tabsExtra: () => (
+            <button 
+                onClick={handleCommitTickets}
+                disabled={selectedTickets.length === 0}
+                className={`commit-btn ${selectedTickets.length === 0 ? "commit-btn-disabled" : ""}`}
+            >
+                Commit
+            </button>
+        ),
+    };
+
+    console.log("listConfigWithNav :", listConfigWithNav);
+    
+
+    const listConfigWithpicked = {
+        ...TicketListConfig,
+        defaultFilters: {
+            assignedTo: user.userId,
+            planDate: dayjs().format("MM-DD-YYYY"),
+        },
+        normalizer: normalizeCheckedTickets,
+        syncUrl: false,
+        enableSearch: false,
+        enableTabs: false,
+        enableSort: false,
+        enableSelection: true,
+        onSelectionChange: handleUncheckSelectionChange,
+        selectedIds: selectedUncheckTickets.map((t) => t.id),
+        tabsExtra: () => (
+            <button 
+                onClick={async () => {
+                    await Promise.all(
+                        selectedUncheckTickets.map((ticket) => 
+                            uncheckcheckedtickets(ticket.id, { UncheckComment: "Comment" })
+                        )
+                    );
+                    setSelectedUncheckTickets([]);
+                    refetchCheckedTickets();
+                }}
+                disabled={selectedUncheckTickets.length === 0}
+                className={`commit-btn ${selectedUncheckTickets.length === 0 ? "commit-btn-disabled" : ""}`}
+            >
+                Uncheck
+            </button>
+        ),
+        filters: [
+            {
+                key: "assignedTo",
+                apiKey: "userId",
+                view: "Assignee",
+                filterType: "api",
+                api: "/sync/v2",
+                configKey: "CheckedTickets",
+                source: "CheckedTickets",
+                options: employeeFilterOptions,
+                defaultValue: user.userId,
+            },
+            {
+                key: "planDate",
+                apiKey: "planDate",
+                view: "Plan Date",
+                type: "date",
+                filterType: "api",
+                api: "/sync/v2",
+                configKey: "CheckedTickets",
+                source: "CheckedTickets",
+            }
+        ]
+    };
+
+    const listConfigWithNavTimesheet = {
+        ...TicketListConfig,
+        defaultFilters: {
+            assignedTo: user.userId,
+            fromDate: dayjs().format("MM-DD-YYYY"),
+            toDate: dayjs().format("MM-DD-YYYY"),
+        },
+        normalizer: normalizeTimesheetData,
+        syncUrl: false,
+        enableSearch: false,
+        enableTabs: false,
+        enableSort: false,
+        filters: [
+            {
+                key: "assignedTo",
+                apiKey: "EmployeeID",
+                view: "Assignee",
+                filterType: "api",
+                api: "/sync/v2",
+                configKey: "TimeSheet",
+                source: "TimeSheet",
+                options: employeeFilterOptionsTs,
+                defaultValue: user.userId,
+            },
+            {
+                key: "fromDate",
+                apiKey: "FromDate",
+                view: "From Date",
+                type: "date",
+                filterType: "api",
+                api: "/sync/v2",
+                configKey: "TimeSheet",
+                source: "TimeSheet",
+            },
+            {
+                key: "toDate",
+                apiKey: "ToDate",
+                view: "To Date",
+                type: "date",
+                filterType: "api",
+                api: "/sync/v2",
+                configKey: "TimeSheet",
+                source: "TimeSheet",
+            }
+        ]
+    };
+console.log("TicketList :", TicketList, ticketMasterDataRaw);
+
+    const dashboardModules = [
+        {
+            id: "tickets",
+            label: "My Tickets",
+            config: listConfigWithNav,
+            data: TicketList,
+        },
+        {
+            id: "timesheets",
+            label: "Timesheet",
+            config: listConfigWithNavTimesheet,
+            data: TimeSheetData,
+        },
+        {
+            id: "checkedTickets",
+            label: "Checked Tickets",
+            config: listConfigWithpicked,
+            data: CheckedTicketsData,
+        },
+    ];
+
+    return (
+        <div className="dashview">
+            <h2>Dashboard</h2>
+            <ModuleSwitcher modules={dashboardModules} />
+        </div>
+    );
 }
-
-// import { useEffect, useMemo, useState } from "react";
-// import { ListCardView } from "../../../packages/ui-List/components/ListCardView";
-// import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
-// import { DashboardCardConfig, DashboardTableUI, DashboardTimesheet } from "../config/DashboardUI.config";
-// import Dayjs from "dayjs";
-// import { useDashboardData, useDashboardTimesheetData } from "../hooks/dashboard.api";
-// import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
-// import DateRangePickerComponent from "../component/DatePicker/DatePicker";
-// import { decryptUserInfo } from "../../../app/shared/decryption/Decryption";
-// import "../pages/Dashboard.css"
-// import { ListTableView } from "../../../packages/ui-List/components/ListTableView";
-// import { Ticket } from "lucide-react";
-// import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-
-// export default function Dashboard() {
-//   // const user = sessionStorage.getItem("user");
-//     const user = readUserFromSession();
-
-//   const storagekey = `dashboard_selected_${user.userId}`;
-
-//   const [selectedItems, setSelectedItems] = useState(() => {
-//     try {
-//       const saved = localStorage.getItem(storagekey);
-//       return saved ? JSON.parse(saved) : [];
-//     } catch {
-//       return [];
-//     }
-//   });
-
-//   useEffect(() => {
-//     localStorage.setItem(storagekey, JSON.stringify(selectedItems));
-//   }, [selectedItems, storagekey]);
-
-//   const currentDate = new Date();
-//   const [fromDate, setFromDate] = useState(Dayjs());
-//   const [toDate, setToDate] = useState(Dayjs());
-
-//   const { data } = useDashboardData(user.userId);
-//   const { data: TimeSheet } = useDashboardTimesheetData(user.userId, fromDate, toDate);
-
-//   // Normalize dashboard ticket count
-//   const normalizeCount = (count) => ({
-//     id: 1,
-//     title: count.Total_Count
-//   });
-
-//   // Normalize dashboard data with issueId
-//   const normalizedata = (Listdata) => ({
-//     id: Listdata.Issue_Id,
-//     issueId: Listdata.Issue_Id, // Add issueId for matching
-//     issuesNo: Listdata.Issue_Code,
-//     title: Listdata.Title,
-//     dueDate: Listdata.DueDate,
-//     assignee: Listdata.Assinged_By,
-//   });
-
-//   // Normalize timesheet data with issueId
-//   const normalizeTimedata = (Timedata) => ({
-//     id: Timedata.ThreadId,
-//     issueId: Timedata["Issue_Id"], // Critical: Ensure issueId is always present
-//     TicketNo: Timedata.TicketNo,
-//     TicketName: Timedata.TicketName,
-//     StartTime: Timedata.StartTime,
-//     EndTime: Timedata.EndTime,
-//     ConsumeTime: Timedata.ConsumeTime,
-//     total: Timedata.total,
-//   });
-
-//   const TicketCount = data?.TicketCount.map(normalizeCount) || [];
-//   const DashBoardData = data?.DashBoardData.map(normalizedata) || [];
-//   const TimeSheetData = TimeSheet?.map(normalizeTimedata) || [];
-
-//   const handleSelectionChange = (item, ischecked) => {
-//     setSelectedItems((prev) => {
-//       if (ischecked) {
-//         const exists = prev.some((i) => i.id == item.id);
-//         if (exists) return prev;
-//         return [...prev, item];
-//       } else {
-//         return prev.filter((i) => i.id !== item.id);
-//       }
-//     });
-//   };
-
-//   const selectedIds=useMemo(()=>{
-//     return selectedItems.map((item)=>item.id);
-//   },[selectedItems]);
-
-//   const stickTable = {
-//     ...DashboardTableUI,
-//     onSelectionChange: handleSelectionChange,
-//     selectedIds,
-//   };
-
-//   const FinalTimesheetdata = useMemo(() => {
-//      const merged = [...TimeSheetData];
-//     selectedItems.forEach((ticket)=>{
-//       const existingIndex=merged.findIndex(
-//         (row)=>row.issueId===ticket.issueId
-//       );
-//       if (existingIndex!==-1){
-//         merged[existingIndex]={
-//           ...merged[existingIndex],
-//           TicketNo: ticket.issuesNo,
-//          TicketName: ticket.title,
-//         };
-//       }else{
-//         merged.push({
-//           id: `selected-${ticket.id}`, // Different ID pattern for selected tickets
-//          issueId: ticket.issueId || ticket.id,
-//          TicketNo: ticket.issuesNo,
-//            TicketName: ticket.title,
-//            StartTime: "",
-//            EndTime: "",
-//            total: "",
-
-//         })
-
-//       }
-//     })
-//     return merged;
-//     },[TimeSheetData,selectedItems]);
-//   return (
-//     <div className="dashview overflow-auto">
-//       <h2>Dashboard</h2>
-//       <div className="div-1">
-//         <div className="card">
-//           <ListProvider data={TicketCount} config={DashboardCardConfig}>
-//             <div className="tab-container">
-//               List Of Tickets
-//               <div className="tab-container-data">
-//                 <ListCardView />
-//               </div>
-//             </div>
-//           </ListProvider>
-//         </div>
-
-//         <div className="card">
-//           <div className="tab-container">
-//             Selected Tickets
-//             <div className="tab-container-data">
-//               {selectedItems.length}
-//             </div>
-//           </div>
-//         </div>
-
-//         <div className="date-range-picker">
-//           <DateRangePickerComponent
-//             value={[fromDate, toDate]}
-//             onChange={({ startDate, endDate }) => {
-//               setFromDate(startDate);
-//               setToDate(endDate);
-//             }}
-//           />
-//         </div>
-//       </div>
-
-//       <div className="div-2">
-//         <div className="ticketList border border-gray-300 rounded-lg shadow-sm">
-//           <ListProvider data={DashBoardData} config={stickTable}>
-//             <div className="listWrapper">
-//               <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-//                 <ListTableView />
-//               </div>
-//             </div>
-//           </ListProvider>
-//         </div>
-
-//         <div className="Timesheet_data">
-//           <div className="getdata border border-gray-300 rounded-lg shadow-sm">
-//             <ListProvider data={FinalTimesheetdata} config={DashboardTimesheet}>
-//               <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-//                 <ListTableView />
-//               </div>
-//             </ListProvider>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }

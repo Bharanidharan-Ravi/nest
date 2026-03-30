@@ -9,11 +9,25 @@ import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCom
 import { FiAlertTriangle, FiClock, FiCheckCircle } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
+import { useState } from "react";
 
 dayjs.extend(relativeTime);
 
 export default function TicketListCard({ item, controls, focused }) {
+  const [isCommentExpand, setIsCommentExpand] = useState(false);
   const { data: Master } = useMasterData();
+
+  const mainAssignee = item.multiAssignees?.find(
+    (a) => a.Assignee_Type === "Main Assignee",
+  );
+
+  const uniqueAssignees = Array.from(
+    new Map(
+      (item.multiAssignees || [])
+        .filter((a) => a.Assignee_Type !== "Main Assignee")
+        .map((a) => [a.Assignee_Id, a]),
+    ).values(),
+  );
 
   const ProjectDetails = Master?.ProjectList?.find(
     (proj) => proj.Id === item?.project,
@@ -187,14 +201,17 @@ export default function TicketListCard({ item, controls, focused }) {
             </div>
           )}
 
+          <div className="ticket-repo-info">
+            {mainAssignee && <span>Owner: {mainAssignee.Assignee_Name}</span>}
+          </div>
           {/* Assignees Avatars */}
           <div className="ticket-assignees">
-            {item.multiAssignees?.slice(0, 3).map((a) => (
+            {uniqueAssignees.slice(0, 3).map((a) => (
               <Tooltip key={a.Assignee_Id} title={a.Assignee_Name} arrow>
                 <div className="avatar">{getInitials(a.Assignee_Name)}</div>
               </Tooltip>
             ))}
-            {item.multiAssignees?.length > 3 && (
+            {uniqueAssignees.length > 3 && (
               <div className="avatar avatar-more">
                 +{item.multiAssignees.length - 3}
               </div>

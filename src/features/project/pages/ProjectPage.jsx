@@ -13,12 +13,16 @@ import { useMasterData } from "../../../core/master/useMasterData";
 import { useProjectData } from "../hooks/useProjectData";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 
 const ProjectPage = () => {
   const { repoId } = useParams();
   const { data } = useMasterData();
   const { data: projects } = useProjectData(repoId);
   const { goTo } = useSmartNavigation();
+  const user = readUserFromSession();
+  const allowedUsers = ["bharanidharan", "dinesh", "poovannan"];
+  const userName = user?.name?.toLowerCase() || "";
 
   const scopedProjects = Array.isArray(projects)
     ? projects
@@ -100,13 +104,14 @@ const ProjectPage = () => {
       {!repoId && (
         <div className="flex justify-between items-center mb-3 flex-none">
           <h2>Projects</h2>
-
-          <button
-            onClick={() => goTo(createRouteKey)}
-            className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
-          >
-            Create New Project
-          </button>
+          {allowedUsers.includes(userName) && (
+            <button
+              onClick={() => goTo(createRouteKey)}
+              className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
+            >
+              Create New Project
+            </button>
+          )}
         </div>
       )}
 

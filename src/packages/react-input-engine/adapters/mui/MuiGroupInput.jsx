@@ -16,7 +16,10 @@ const MuiGroupInput = ({
   disabled = false,
   theme = {},
   error = {},
+  isMulti=true,
 }) => {
+  console.log("ismulti :", isMulti);
+  
   const values =
     Array.isArray(value) && value.length > 0
       ? value
@@ -45,16 +48,17 @@ const MuiGroupInput = ({
     Array.isArray(error) ? error[rowIndex]?.[fieldName] : null;
   return (
     <div>
-      <h4>{label}</h4>
+      <h4>{isMulti && label}</h4>
 
       {values.map((item, idx) => (
         <div
           key={`${name}-${idx}`} // 🔥 FIXED KEY
-          style={{
-            display: "flex",
-            gap: "8px",
-            marginBottom: "10px",
-          }}
+          className={theme.MultiInput ? theme.MultiInput : (isMulti ? "flex gap-3 mb-3" : "flex flex-col gap-3 col-12") }
+          // style={{
+          //   display: "flex",
+          //   gap: "8px",
+          //   marginBottom: "10px",
+          // }}
         >
           {fields.map((subField) => {
             const fieldError = getFieldError(idx, subField.name);
@@ -65,7 +69,7 @@ const MuiGroupInput = ({
                 value={item[subField.name] || ""}
                 variant="outlined"
                 required={subField.required}
-                className={theme.input || "wg-mui-input"}
+                className={theme.input || "wg-mui-input col-3"}
                 onChange={(e) =>
                   handleChange(idx, subField.name, e.target.value)
                 }
@@ -77,7 +81,7 @@ const MuiGroupInput = ({
             );
           })}
 
-          {!disabled && idx > 0 && (
+          {!disabled && idx > 0 && isMulti && (
             <Button color="error" onClick={() => handleRemove(idx)}>
               Remove
             </Button>
@@ -85,7 +89,7 @@ const MuiGroupInput = ({
         </div>
       ))}
 
-      {!disabled && <Button onClick={handleAdd}>+ Add {label}</Button>}
+      {!disabled && isMulti &&<Button onClick={handleAdd}>+ Add {label}</Button>}
     </div>
   );
 };

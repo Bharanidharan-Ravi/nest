@@ -80,6 +80,7 @@ const FormEngine = ({
                 uploadFile={uploadFile}
                 onFileDelete={onFileDelete}
                 theme={fieldTheme}
+                isMulti={field.isMulti}
               />
             </div>
           );

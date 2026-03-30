@@ -98,7 +98,7 @@ export default function EntityFormPage({
     const finalDto = { ...dto, ...overrides };
     console.log("finalDto :", finalDto);
     
-    // mutate(finalDto);
+    mutate(finalDto);
   };
 
   const uploadFile = async (file) => {

@@ -23,6 +23,7 @@ export function ListCardView() {
                     <input
                       type="checkbox"
                       className="cursor-pointer w-4 h-4"
+                      defaultChecked={config.selectedIds?.includes(item.id) || false}
                       onClick={(e) => {
                         e.stopPropagation();
                         config.onSelectionChange &&
@@ -48,7 +49,7 @@ export function ListCardView() {
 
         return (
           <div
-            key={item.Id}
+            key={item.id}
             className={itemClasses}
             onClick={() => config.onItemClick && config.onItemClick(item)}
           >
@@ -61,6 +62,7 @@ export function ListCardView() {
                 <input
                   type="checkbox"
                   className="cursor-pointer w-4 h-4"
+                  defaultChecked = {config.selectedIds?.includes(item.id) || false}
                   onChange={(e) =>
                     config.onSelectionChange &&
                     config.onSelectionChange(item, e.target.checked)
