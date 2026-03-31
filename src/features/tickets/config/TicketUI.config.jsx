@@ -43,7 +43,7 @@ export const TicketListConfig = {
     {
       key: "open",
       label: "Open",
-      field: "StatusId",
+      field: "statusId",
       // Exclude OnHold(13), Closed(14), Cancelled(15), Inactive(16)
       // Anything NOT in this list will be treated as an Open/Active ticket
       excludeValues: [13, 14, 15, 16],
@@ -51,7 +51,7 @@ export const TicketListConfig = {
     {
       key: "closed",
       label: "Closed",
-      field: "StatusId",
+      field: "statusId",
       // Specifically include these IDs for the Closed tab
       filterValue: [13, 14, 15, 16],
     },

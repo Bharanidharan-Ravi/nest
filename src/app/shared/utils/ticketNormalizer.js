@@ -1,0 +1,22 @@
+export const normalizeTicket = (ticket) => ({
+    id: ticket.Issue_Id,
+    issueId: ticket.Issue_Id,
+    title: ticket.Title,
+    ticketKey: ticket.Issue_Code,
+    status: ticket.Status,
+    statusId: ticket.StatusId,
+    description: ticket.HtmlDesc || ticket.Description,
+    assignedTo: ticket.Assignee_Name,
+    estimateHours: ticket.hours,
+    updatedBy: ticket.UpdatedBy,
+    repoId: ticket.RepoId,
+    dueDate: ticket.Due_Date,
+    project: ticket.Project_Id,
+    ProjKey: ticket.ProjKey,
+    RepoKey: ticket.RepoKey,
+    priority: ticket.Priority,
+    // Safely parse JSON strings, fallback to empty arrays if null/invalid
+    multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
+    label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
+    CompletionPct: ticket.CompletionPct,
+});

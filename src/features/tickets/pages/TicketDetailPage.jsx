@@ -39,7 +39,6 @@ const TicketDetailPage = () => {
   const [selectedHandoffId, setSelectedHandoffId] = useState(null);
   // 🔥 1. Add state to track middle-expansion
   const [expandCount, setExpandCount] = useState(0);
-console.log("selectedHandoffId :", selectedHandoffId);
 
   // 🔥 2. Reset the expansion if they click a different person in the sidebar
   useEffect(() => {

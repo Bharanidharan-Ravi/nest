@@ -38,9 +38,9 @@ export default function TicketsPage() {
     id: ticket.Issue_Id,
     title: ticket.Title,
     ticketKey: ticket.Issue_Code,
-    status: ticket.Status,
+    statusId: ticket.StatusId,
     description: ticket.HtmlDesc || ticket.Description,
-    assginedTo: ticket.Assignee_Name,
+    assginedTo: ticket.Assignee_Id,
     estimateHours: ticket.hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
@@ -59,7 +59,7 @@ export default function TicketsPage() {
     { label: "All Employees", value: "" },
     ...(Master?.EmployeeList?.map((user) => ({
       label: user.UserName,
-      value: user.UserName,
+      value: user.UserID,
     })) || []),
   ];
 
@@ -86,6 +86,7 @@ export default function TicketsPage() {
     })) || []),
   ];
   const TicketList = data?.map(normalizeTicket) || [];
+
   // const focusedIndex = useTicketKeyboardNavigation(
   //   TicketList,
   //   (item) => navigate(`${location.pathname}/${item.id}`),
@@ -104,9 +105,42 @@ export default function TicketsPage() {
           ]
         : []),
       {
-        key: "assginedTo", // 👈 MUST match the 'owner' key in normalizeProj
+        key: "assginedTo",
         view: "Assignee",
         options: employeeFilterOptions,
+        filterType: "custom",
+        customFilter: (item, selectedValue) => {
+          if (!selectedValue) return true; // If nothing is selected, don't filter it out
+
+          // 1. Convert the selected dropdown value to lowercase safely
+          const safeSelected = String(selectedValue).toLowerCase();
+
+          // 2. Check primary assignee (also converted to lowercase)
+          // (Assuming item.assginedTo holds the Name or ID)
+          if (
+            item.assginedTo &&
+            String(item.assginedTo).toLowerCase() === safeSelected
+          ) {
+            return true;
+          }
+
+          // 3. Check multiAssignees array
+          if (Array.isArray(item.multiAssignees)) {
+            return item.multiAssignees.some((assignee) => {
+              // Convert both Name and Id to lowercase before comparing
+              const matchName =
+                assignee.Assignee_Name &&
+                String(assignee.Assignee_Name).toLowerCase() === safeSelected;
+              const matchId =
+                assignee.Assignee_Id &&
+                String(assignee.Assignee_Id).toLowerCase() === safeSelected;
+
+              return matchName || matchId;
+            });
+          }
+
+          return false; // No match found
+        },
       },
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
@@ -128,9 +162,9 @@ export default function TicketsPage() {
         // focused={index === focusedIndex}
       />
     ),
-    onItemClick: (item) => {      
-       const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
-        goTo(createRouteKey, { ticketId: item.id });
+    onItemClick: (item) => {
+      const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
+      goTo(createRouteKey, { ticketId: item.id });
     },
     onEditClick: (item) => {
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });

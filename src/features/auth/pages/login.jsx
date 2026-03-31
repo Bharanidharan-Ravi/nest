@@ -19,7 +19,7 @@ export default function Login() {
     mutationFn: loginApi,
     onSuccess: (data) => {
         loginStore(data); // store token
-        navigate("/dashboard");
+        navigate("/dashboard?module=tickets");
     },
   });
 

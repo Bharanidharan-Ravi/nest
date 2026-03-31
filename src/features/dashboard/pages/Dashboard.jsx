@@ -14,43 +14,53 @@ import { TicketListConfig } from "../../tickets/config/TicketUI.config";
 import ModuleSwitcher from "../component/ModuleSwitcher";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
+import { useQueryClient } from "@tanstack/react-query";
+import { createTimesheetNormalizer } from "../../../app/shared/utils/timesheetNormalizer";
+import { useSearchParams } from "react-router-dom";
 
-const normalizeTicket = (ticket) => ({
-    id: ticket.Issue_Id,
-    issueId: ticket.Issue_Id,
-    title: ticket.Title,
-    ticketKey: ticket.Issue_Code,
-    status: ticket.Status,
-    statusId: ticket.StatusId,
-    description: ticket.HtmlDesc || ticket.Description,
-    assignedTo: ticket.Assignee_Name,
-    estimateHours: ticket.hours,
-    updatedBy: ticket.UpdatedBy,
-    repoId: ticket.RepoId,
-    dueDate: ticket.Due_Date,
-    project: ticket.Project_Id,
-    ProjKey: ticket.ProjKey,
-    RepoKey: ticket.RepoKey,
-    priority: ticket.Priority,
-    multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
-    label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
-    CompletionPct: ticket.CompletionPct,
-});
+// const normalizeTicket = (ticket) => ({
+//     id: ticket.Issue_Id,
+//     issueId: ticket.Issue_Id,
+//     title: ticket.Title,
+//     ticketKey: ticket.Issue_Code,
+//     status: ticket.Status,
+//     statusId: ticket.StatusId,
+//     description: ticket.HtmlDesc || ticket.Description,
+//     assignedTo: ticket.Assignee_Name,
+//     estimateHours: ticket.hours,
+//     updatedBy: ticket.UpdatedBy,
+//     repoId: ticket.RepoId,
+//     dueDate: ticket.Due_Date,
+//     project: ticket.Project_Id,
+//     ProjKey: ticket.ProjKey,
+//     RepoKey: ticket.RepoKey,
+//     priority: ticket.Priority,
+//     multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
+//     label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
+//     CompletionPct: ticket.CompletionPct,
+// });
 
 export default function Dashboard() {
     const user = readUserFromSession();
-    const currentUserName = user?.name;
+    const currentUserName = user?.userId;
     const { goTo } = useSmartNavigation();
-
+    const queryClient = useQueryClient();
+    const [searchParams] = useSearchParams();
     // State
     const [selectedTickets, setSelectedTickets] = useState([]);
     const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
     const [fromDate, setFromDate] = useState(dayjs());
     const [toDate, setToDate] = useState(dayjs());
 
+    const timesheetsQuery = searchParams.get("timesheets_q") || searchParams.get("tickets_q") || "";
+    const match = timesheetsQuery.match(/assignedTo:([^\s]+)/);
+    const employeeId = match ? match[1].replace(/"/g, "") : null;
+console.log("employeeId :", employeeId);
+
     // Data Hooks
-    const { data: ticketMasterDataRaw } = useTicketMaster({ employeeId: user.userId });
-    const { data: TimeSheet } = useDashboardTimesheetData(user.userId, fromDate, toDate);
+    // const { data: ticketMasterDataRaw } = useTicketMaster({ employeeId: employeeId });
+    // const { data: TimeSheet } = useDashboardTimesheetData(user.userId, fromDate, toDate);
     const { data: Master } = useMasterData();
     
     const { 
@@ -61,9 +71,9 @@ export default function Dashboard() {
     // const ticketMasterData = ticketMasterDataRaw?.data || [];
 
     // --- Ticket Module Logic ---
-    const TicketList = useMemo(() => (
-        ticketMasterDataRaw?.map(normalizeTicket) || []
-    ), [ticketMasterDataRaw]);
+    // const TicketList = useMemo(() => (
+    //     ticketMasterDataRaw?.map(normalizeTicket) || []
+    // ), [ticketMasterDataRaw]);
 
     const handleSelectionChange = (item, isChecked) => {
         if (committedIds.includes(item.id || item.issueId)) return;
@@ -77,9 +87,7 @@ export default function Dashboard() {
         });
     };
 
-    const handleCommitTickets = async () => {
-      console.log("selectedTickets :", selectedTickets);
-      
+    const handleCommitTickets = async () => {      
         if (selectedTickets.length === 0) return;
         const ticketsPayload = selectedTickets.map((ticket) => ({
             TicketId: ticket.issueId || ticket.id,
@@ -92,9 +100,9 @@ export default function Dashboard() {
 
     // --- Checked Tickets Module Logic ---
     const normalizeCheckedTickets = (item) => {
-        const SameTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === item.TicketId);
+        // const SameTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === item.TicketId);
         return {
-            ...(SameTicket ? normalizeTicket(SameTicket) : {}),
+            // ...normalizeTicket,
             id: item.id,
             TicketId: item.TicketId,
             ProjKey: item.ProjKey,
@@ -126,12 +134,11 @@ export default function Dashboard() {
             return prev.filter((i) => i.id !== item.id);
         });
     };
-
     // --- Timesheet Module Logic ---
     const normalizeTimesheetData = (Timedata) => {
-        const matchedTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === Timedata.Issue_Id);
+    //    const matchedTicket = ticketMasterDataRaw?.find((ticket) => ticket.Issue_Id === Timedata.Issue_Id);
         return {
-            ...(matchedTicket ? normalizeTicket(matchedTicket) : {}),
+            // ...(matchedTicket ? normalizeTicket(matchedTicket) : {}),
             id: Timedata.ThreadId,
             ticketId: Timedata.Issue_Id,
             issueId: Timedata.Issue_Id,
@@ -145,14 +152,14 @@ export default function Dashboard() {
         };
     };
 
-    const TimeSheetData = TimeSheet?.map(normalizeTimesheetData) || [];
+    // const TimeSheetData = TimeSheet?.map(normalizeTimesheetData) || [];
 
     // --- Filter Options ---
     const employeeFilterOptions = [
-        { label: "All Employees", value: "" },
+        // { label: "All Employees", value: "" },
         ...(Master?.EmployeeList?.map((user) => ({
             label: user.UserName,
-            value: user.UserName,
+            value: user.UserID,
         })) || []),
     ];
 
@@ -168,19 +175,24 @@ export default function Dashboard() {
     const listConfigWithNav = {
         ...TicketListConfig,
         defaultView: "card",
-        syncUrl: false,
+        syncUrl: true,
         allowViewSwitch: false,
         enableSelection: true,
         onSelectionChange: handleSelectionChange,
         selectedIds: allCheckedIds,
         onItemClick: (item) => goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
-        defaultFilters: { assignedTo: currentUserName },
+        // defaultFilters: { assignedTo: currentUserName },
         filters: [
             {
                 key: "assignedTo",
                 view: "Assignee",
                 options: employeeFilterOptions,
                 defaultValue: currentUserName,
+                filterType: "api",
+                api:"/sync/v2",
+                apiKey: "EmployeeId",
+                configKey: "TicketsList",
+                normalizer: normalizeTicket,
             },
         ],
         tabsExtra: () => (
@@ -192,10 +204,7 @@ export default function Dashboard() {
                 Commit
             </button>
         ),
-    };
-
-    console.log("listConfigWithNav :", listConfigWithNav);
-    
+    };    
 
     const listConfigWithpicked = {
         ...TicketListConfig,
@@ -238,7 +247,7 @@ export default function Dashboard() {
                 configKey: "CheckedTickets",
                 source: "CheckedTickets",
                 options: employeeFilterOptions,
-                defaultValue: user.userId,
+                // defaultValue: user.userId,
             },
             {
                 key: "planDate",
@@ -252,6 +261,9 @@ export default function Dashboard() {
             }
         ]
     };
+    
+    // Create the normalizer, empowering it with the cache client
+    const timesheetNormalizer = createTimesheetNormalizer(queryClient);
 
     const listConfigWithNavTimesheet = {
         ...TicketListConfig,
@@ -260,8 +272,7 @@ export default function Dashboard() {
             fromDate: dayjs().format("MM-DD-YYYY"),
             toDate: dayjs().format("MM-DD-YYYY"),
         },
-        normalizer: normalizeTimesheetData,
-        syncUrl: false,
+        syncUrl: true,
         enableSearch: false,
         enableTabs: false,
         enableSort: false,
@@ -274,6 +285,7 @@ export default function Dashboard() {
                 api: "/sync/v2",
                 configKey: "TimeSheet",
                 source: "TimeSheet",
+                normalizer:timesheetNormalizer,
                 options: employeeFilterOptionsTs,
                 defaultValue: user.userId,
             },
@@ -299,20 +311,20 @@ export default function Dashboard() {
             }
         ]
     };
-console.log("TicketList :", TicketList, ticketMasterDataRaw);
+// console.log("TicketList :", TicketList, ticketMasterDataRaw);
 
     const dashboardModules = [
         {
             id: "tickets",
             label: "My Tickets",
             config: listConfigWithNav,
-            data: TicketList,
+            data: [],
         },
         {
             id: "timesheets",
             label: "Timesheet",
             config: listConfigWithNavTimesheet,
-            data: TimeSheetData,
+            data: [],
         },
         {
             id: "checkedTickets",

@@ -68,7 +68,7 @@ const LoginPage = () => {
     mutationFn: loginApi,
     onSuccess: (data) => {      
       loginStore(data); // store token
-      navigate("/dashboard");
+      navigate("/dashboard?module=tickets");
     },
   });
 

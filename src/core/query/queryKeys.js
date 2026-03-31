@@ -27,6 +27,11 @@ export const queryKeys = {
       ...queryKeys.ticket.all,
       "thread",
       ticketId
+    ],
+    byEmployee: (employeeId) => [
+      ...queryKeys.ticket.all, 
+      "TicketsList", 
+      { EmployeeId: employeeId }
     ]
   },
   project: {

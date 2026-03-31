@@ -54,9 +54,7 @@ export const useCheckedTicketsData = (employeeId = null, planDate = null) => {
 /**
  * Function to commit/save checked tickets
  */
-export const commitCheckedTicket = (tickets) => {
-  console.log("tickets :", tickets);
-  
+export const commitCheckedTicket = (tickets) => {  
   return executeApi({
     url: "/dailyplan",
     method: "POST",

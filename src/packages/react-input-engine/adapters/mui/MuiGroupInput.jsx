@@ -17,9 +17,7 @@ const MuiGroupInput = ({
   theme = {},
   error = {},
   isMulti=true,
-}) => {
-  console.log("ismulti :", isMulti);
-  
+}) => {  
   const values =
     Array.isArray(value) && value.length > 0
       ? value
