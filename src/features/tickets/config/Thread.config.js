@@ -55,22 +55,22 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) =>
       context?.editingItem?.Issue_Id || ticketId,
   },
-   {
+  {
     name: "workStreamId",
     apiKey: "WorkStreamId", // 👈 The exact name your API expects
-    hidden: true,           // 👈 Keeps it invisible in the UI
+    hidden: true, // 👈 Keeps it invisible in the UI
     dataType: "string",
-    initValueResolver: ({ context }) => {      
+    initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.activeWorkStream?.StreamId || null;
     },
   },
-   {
+  {
     name: "handsoffId",
     apiKey: "handsoffId", // 👈 The exact name your API expects
-    hidden: true,           // 👈 Keeps it invisible in the UI
+    hidden: true, // 👈 Keeps it invisible in the UI
     dataType: "string",
-    initValueResolver: ({ context }) => {      
+    initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.selectedHandoffId || null;
     },
@@ -87,7 +87,11 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) =>
       formatTimeHHMM(context?.editingItem?.fromTime),
     disableWhen: (context) => Boolean(context?.formData?.hours),
-    // errorMessage: "Only alphanumeric allowed",
+    // 🔥 FIX 3: Enforce pair validation
+    customValidator: (value, formData) => {
+      if (formData.toTime && !value) return "Required if To-time is entered";
+      return true;
+    }
   },
   {
     label: "To-time (24h Format)",
@@ -98,12 +102,16 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 3,
     dataType: "dateTime",
     apiKey: "To_Time",
-    errorMessage: "To-time cannot be earlier than From-time",
     initValueResolver: ({ context }) =>
       formatTimeHHMM(context?.editingItem?.toTime),
     disableWhen: (context) => Boolean(context?.formData?.hours),
+    // 🔥 FIX 3: Enforce pair validation & logic check
+    customValidator: (value, formData) => {
+      if (formData.fromTime && !value) return "Required if From-time is entered";
+      if (formData.fromTime && value && value < formData.fromTime) return "Cannot be earlier than From-time";
+      return true;
+    }
   },
-
   {
     name: "hours",
     apiKey: "Hours",
@@ -112,74 +120,94 @@ export const ThreadFieldConfig = (ticketId) => [
     label: "Total Hours",
     dataType: "string",
     required: false,
-    defaultValue: null,
-    effectResolver: (formData) => {
-      const hours = calcHHMM(formData.fromTime, formData.toTime);
-      return hours;
-    },
     colSpan: 3,
-    effectDependencies: ["fromTime", "toTime"],
     initValueResolver: ({ context }) => context?.editingItem?.Hours,
+
+    // 🔥 FIX 1: Removed duplicate properties & fixed "formTime" typo to "fromTime"
+    effectDependencies: ["fromTime", "toTime"],
     effectResolver: (formData) => {
+      // 1. If both times exist, instantly calculate and return
       if (formData.fromTime && formData.toTime) {
-        const hours = calcHHMM(formData.fromTime, formData.toTime);
-        return hours;
+        return calcHHMM(formData.fromTime, formData.toTime);
       }
 
-      if (formData.hours) {
-        formData.fromTime = null;
-        formData.toTime = null;
+      // 🔥 FIX 2: Stop aggressively wiping out fromTime/toTime!
+      // 2. If the user clears one of the time boxes, clear the calculated hours so it doesn't get stuck
+      if (
+        (formData.fromTime && !formData.toTime) ||
+        (!formData.fromTime && formData.toTime)
+      ) {
+        return null;
       }
 
+      // 3. Otherwise, return the manually typed hours
       return formData.hours || null;
     },
-    effectDependencies: ["formTime", "toTime", "hours"],
-    requiredWhen: (context) => context?.userRole !== "Owner",
+
+    // 🔥 FIX 3: "Either/Or" Validation
+    customValidator: (value, formData, context) => {
+      // Owners have their own validation rules on the description field
+      if (context?.userRole === "Owner") return true;
+
+      const hasBothTimes = !!formData.fromTime && !!formData.toTime;
+      const hasManualHours = !!value;
+
+      // Fail if they haven't entered manual hours AND haven't completed the from/to pair
+      if (!hasManualHours && !hasBothTimes) {
+        return "Please enter Total Hours, OR both From and To times.";
+      }
+
+      return true; // Valid!
+    },
+    disableWhen: (context, formData) => {      
+      // It will lock the hours field ONLY if both fromTime AND toTime have values
+      return Boolean(formData?.fromTime && formData?.toTime);
+    },
   },
 
-//  {
-//     name: "UpdateStatus",
-//     label: "Update Status",
-//     type: "select",
-//     ui: "mui",
-//     className: "col-span-12 md:col-span-4",
+  //  {
+  //     name: "UpdateStatus",
+  //     label: "Update Status",
+  //     type: "select",
+  //     ui: "mui",
+  //     className: "col-span-12 md:col-span-4",
 
-//     // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
-//     // requiredWhen: (context, formData) => {
-//     //   if (context?.userRole !== "Owner") return false;
-//     //   return !!(formData?.assignees && formData.assignees.length > 0);
-//     // },
+  //     // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
+  //     // requiredWhen: (context, formData) => {
+  //     //   if (context?.userRole !== "Owner") return false;
+  //     //   return !!(formData?.assignees && formData.assignees.length > 0);
+  //     // },
 
-//     optionsResolver: ({ masterData, context }) => {
-//       let Status = masterData?.StatusMaster || [];
-//       const uniqueOptions = [];
-//       const seenIds = new Set();
+  //     optionsResolver: ({ masterData, context }) => {
+  //       let Status = masterData?.StatusMaster || [];
+  //       const uniqueOptions = [];
+  //       const seenIds = new Set();
 
-//       Status.forEach((sta) => {
-//         const id = sta.Status_Id || sta.status_id;
-//         const name = sta.Status_Name || sta.status_name;
+  //       Status.forEach((sta) => {
+  //         const id = sta.Status_Id || sta.status_id;
+  //         const name = sta.Status_Name || sta.status_name;
 
-//         if (id && !seenIds.has(id)) {
-//           seenIds.add(id);
-//           uniqueOptions.push({
-//             label: name,
-//             value: { id, name },
-//           });
-//         }
-//       });
-//       return uniqueOptions;
-//     },
+  //         if (id && !seenIds.has(id)) {
+  //           seenIds.add(id);
+  //           uniqueOptions.push({
+  //             label: name,
+  //             value: { id, name },
+  //           });
+  //         }
+  //       });
+  //       return uniqueOptions;
+  //     },
 
-//     initValueResolver: ({ context }) => {
-//       if (context?.userRole === "Tester")
-//         return { label: "Testing In Progress", value: { id: 8 } };
-//       return null;
-//     },
+  //     initValueResolver: ({ context }) => {
+  //       if (context?.userRole === "Tester")
+  //         return { label: "Testing In Progress", value: { id: 8 } };
+  //       return null;
+  //     },
 
-//     // Status is ONLY visible to the Owner
-//     visibleWhen: (formData, context) => 
-//       context?.userRole === "Owner",
-//   },
+  //     // Status is ONLY visible to the Owner
+  //     visibleWhen: (formData, context) =>
+  //       context?.userRole === "Owner",
+  //   },
   {
     label: "Assignees",
     name: "assignees",
@@ -188,7 +216,7 @@ export const ThreadFieldConfig = (ticketId) => [
     multiple: true,
     required: false,
     dataType: "string",
-    apiKey: "NextAssignees", 
+    apiKey: "NextAssignees",
 
     // 🔥 VALIDATION FIX: Only required for the Owner if they picked a status
     // requiredWhen: (context, formData) => {
@@ -204,9 +232,9 @@ export const ThreadFieldConfig = (ticketId) => [
       }));
     },
 
-   optionsResolver: ({ masterData, context }) => {
+    optionsResolver: ({ masterData, context }) => {
       let Employee = masterData?.EmployeeList || [];
-      
+
       // Get the currently logged-in user's ID
       const myUserId = context?.currentUser?.userId?.toLowerCase();
 
@@ -220,9 +248,13 @@ export const ThreadFieldConfig = (ticketId) => [
         value: { id: emp.UserID, name: emp.UserName },
       }));
     },
-    
+
     initValueResolver: ({ context, formData }) => {
-      if (context.isEdit && context.entityData && Array.isArray(context.entityData.multiAssignees)) {
+      if (
+        context.isEdit &&
+        context.entityData &&
+        Array.isArray(context.entityData.multiAssignees)
+      ) {
         return context.entityData.multiAssignees
           .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
           .map((assignee) => ({
@@ -234,7 +266,7 @@ export const ThreadFieldConfig = (ticketId) => [
     },
 
     // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
-    // visibleWhen: (formData, context) => 
+    // visibleWhen: (formData, context) =>
     //   context?.userRole === "Dev" || context?.userRole === "Owner",
   },
   // {
@@ -263,7 +295,7 @@ export const ThreadFieldConfig = (ticketId) => [
   //       currentStatus === "IN_PROGRESS"
   //     );
   //   },
-  //   visibleWhen: (formData, context) => 
+  //   visibleWhen: (formData, context) =>
   //     context?.userRole === "Dev" || context?.userRole === "Owner",
   // },
   {

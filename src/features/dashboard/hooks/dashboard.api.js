@@ -35,6 +35,7 @@ export const useCheckedTicketsData = (employeeId = null, planDate = null) => {
     queryKey: ["CheckedTickets", "list", employeeId ?? "none", planDate ?? "none"],
     url: "/sync/v2",
     method: "POST",
+    source: "CheckedTickets",
     payload: {
       ConfigKeys: ["CheckedTickets"],
       Params: {

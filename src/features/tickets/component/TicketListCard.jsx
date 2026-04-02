@@ -16,7 +16,6 @@ dayjs.extend(relativeTime);
 export default function TicketListCard({ item, controls, focused }) {
   const [isCommentExpand, setIsCommentExpand] = useState(false);
   const { data: Master } = useMasterData();
-
   const mainAssignee = item.multiAssignees?.find(
     (a) => a.Assignee_Type === "Main Assignee",
   );
@@ -37,7 +36,7 @@ export default function TicketListCard({ item, controls, focused }) {
     (e) => e.UserID === item.UpdatedBy,
   );
 
-  const { renderCheckbox, renderEdit } = controls || {};
+  const { renderCheckbox, renderEdit, disabled } = controls || {};
 
   const statusIcon =
     item.status === "Active" ? (
@@ -133,7 +132,19 @@ export default function TicketListCard({ item, controls, focused }) {
         <div className="ticket-title-wrapper">
           {/* 1. Icon & Checkbox stay locked to the left */}
           <div className="ticket-controls">
-            {renderCheckbox && renderCheckbox()}
+            {/* {renderCheckbox && renderCheckbox()} */}
+            {disabled ? (
+              <Tooltip title="Already Committed" placement="top" arrow>
+                <div className="cursor-not-allowed opacity-60">
+                  {/* pointer-events-none ensures the tooltip triggers on the wrapper, not the disabled input */}
+                  <div className="pointer-events-none">
+                    {renderCheckbox && renderCheckbox()}
+                  </div>
+                </div>
+              </Tooltip>
+            ) : (
+              renderCheckbox && renderCheckbox()
+            )}
             {statusIcon}
           </div>
 

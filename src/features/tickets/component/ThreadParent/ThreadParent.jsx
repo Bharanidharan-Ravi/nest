@@ -52,7 +52,6 @@ import { FaCalendarAlt } from "react-icons/fa"; // Using a calendar icon for the
 const ThreadParent = ({ item }) => {
   const labels = item.label ? JSON.parse(item.label) : [];
   const formattedDueDate = formatDate(item.DueDate);
-
   return (
     // <div className="p-6 bg-white rounded-lg mx-auto mt-0">
       <div className="flex flex-col gap-4">

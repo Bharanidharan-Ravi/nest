@@ -32,7 +32,6 @@ export const useTicketMaster = (scope = {}, options = {}) => {
     repoId,
     ...dynamicIdParams,
   });
-  console.log("ticket :",payload, queryKey );
   
   const staleTime = (ticketId || employeeId) ? 0 : 1000 * 60 * 3;
   return useApiQuery({

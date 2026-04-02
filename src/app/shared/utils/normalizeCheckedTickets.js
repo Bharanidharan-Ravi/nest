@@ -1,0 +1,16 @@
+export const normalizeCheckedTickets = (item) => ({
+  id: item.Id,
+  ticketId: item.TicketId,
+  ProjKey: item.ProjKey,
+  RepoKey: item.RepoKey,
+  Status: item.Status,
+  UncheckComment: item.UncheckComment ?? "-",
+  project: item.Project_ID,
+  title: item.Title,
+  label: item.Labels_JSON ? JSON.parse(item.Labels_JSON) : [],
+  multiAssignees: item.All_Assignees ? JSON.parse(item.All_Assignees) : [],
+  CompletionPct: item.CompletionPct,
+  dueDate: item.Due_Date,
+  createdAt: item.CreatedAt,
+  ticketKey: item.Issue_Code,
+});

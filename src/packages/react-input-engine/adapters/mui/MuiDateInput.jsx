@@ -5,7 +5,9 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
 import dayjs from "dayjs";
+import customParseFormat from "dayjs/plugin/customParseFormat"; // 👈 Add this
 
+dayjs.extend(customParseFormat);
 const MuiDateInput = ({
   name,
   label,
@@ -53,7 +55,15 @@ const MuiDateInput = ({
           ? dayjs().add(amount, unitMap[unitChar])
           : dayjs().subtract(amount, unitMap[unitChar]);
     } else if (/^[\d/.-]+$/.test(str)) {
-      const parsed = dayjs(str);
+      // 🔥 FIX: Explicitly parse using your specific display format first
+      // The 'true' flag makes it strictly adhere to these formats
+      let parsed = dayjs(str, ["DD/MM/YYYY", "DD-MM-YYYY", "DD.MM.YYYY"], true);
+
+      // Fallback: If they typed something weird like "2026-04-07", let normal dayjs try to figure it out
+      if (!parsed.isValid()) {
+        parsed = dayjs(str);
+      }
+
       if (parsed.isValid() && parsed.year() > 1000) {
         newDate = parsed;
       }

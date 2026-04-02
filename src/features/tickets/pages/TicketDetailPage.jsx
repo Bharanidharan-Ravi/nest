@@ -159,40 +159,16 @@ const TicketDetailPage = () => {
     activeWorkStream: evaluatedStream,
     selectedHandoffId: selectedHandoffId,
   };
-  // if (isOwner) {
-  //   userRole = "Owner";
-  // } else if (myCurrentStream) {
-  //   const currentStatusId = myCurrentStream.StreamStatus;
-  //   // If their latest stream is 14 (Closed), their work is done
-  //   if (currentStatusId === 14) {
-  //     isMyWorkCompleted = true;
-  //   }
 
-  //   // Infer their role based on the status they were assigned to
-  //   // Adjust these IDs based on your actual Status_Master table
-  //   if (currentStatusId === 5) {
-  //     // 5 = In Development, 6 = Dev Completed
-  //     userRole = "Dev";
-  //   } else if (currentStatusId >= 7 && currentStatusId <= 11) {
-  //     // 8 = Functional Testing, 10 = Testing Failed, 11 = Functional Fix
-  //     userRole = "Tester";
-  //   } else {
-  //     // Fallback if status is Null or 1 (New/Just Assigned)
-  //     if (user?.department === "Development") userRole = "Dev";
-  //     if (user?.department === "Testing" || user?.department === "QA")
-  //       userRole = "Tester";
-  //   }
-  // }
-
-  console.log(
-    "parentTicket :",
-    parentTicket,
-    assigneesJsonString,
-    myCurrentStream,
-    isOwner,
-    myAssignments,
-    userRole,
-  );
+  // console.log(
+  //   "parentTicket :",
+  //   parentTicket,
+  //   assigneesJsonString,
+  //   myCurrentStream,
+  //   isOwner,
+  //   myAssignments,
+  //   userRole,
+  // );
 
   // --- 1. Thread Data Processing ---
   const threads = ThreadsList?.ThreadsList?.Data || [];
@@ -220,24 +196,32 @@ const TicketDetailPage = () => {
     );
   }, [assigneesJsonString]);
 
-  // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD
- // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD OR HANDOFF
-  // 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD OR HANDOFF
+// 🔥 2. FILTER THREADS BY SELECTED SIDEBAR CARD OR HANDOFF
   const displayedThreads = React.useMemo(() => {
     // 1. If nothing is selected, show all threads normally
     if (!selectedWorkStream && !selectedHandoffId) return rawList;
-
-    const parentThreadId = selectedWorkStream?.ParentThreadId;
-
     // ================================================================
-    // SCENARIO A: A SPECIFIC HANDOFF IS CLICKED
+    // SCENARIO A: A SPECIFIC HANDOFF IS CLICKED (e.g., "Push #54")
     // ================================================================
     if (selectedHandoffId) {
+      // First, find the specific handoff object across all workstreams 
+      // so we can extract its InitiatingThreadId
+      let activeHandoff = null;
+      for (const ws of assigneesJsonString) {
+        if (ws.HandOffData) {
+          const found = ws.HandOffData.find(h => h.HandsOffId === selectedHandoffId);
+          if (found) {
+            activeHandoff = found;
+            break;
+          }
+        }
+      }
+
       return rawList.filter((thread) => {
-        // Keep the exact Parent Thread (So they can see who assigned it)
-        if (parentThreadId && thread.Id === parentThreadId) return true;
+        // Show ONLY the parent thread that triggered this specific handoff
+        if (activeHandoff && thread.Id === activeHandoff.InitiatingThreadId) return true;
         
-        // Keep ONLY the threads strictly tied to this exact Handoff
+        // Also include any specific threads tied directly to this handoff ID
         if (thread.HandsOffId === selectedHandoffId) return true;
 
         return false;
@@ -245,13 +229,11 @@ const TicketDetailPage = () => {
     }
 
     // ================================================================
-    // SCENARIO B: A WORKSTREAM IS CLICKED (But no specific handoff)
+    // SCENARIO B: A WORKSTREAM IS CLICKED (Overall Assignee Block)
     // ================================================================
     if (selectedWorkStream) {
-      const startId = selectedWorkStream.ParentThreadId;
-      const endId = selectedWorkStream.ThreadId;
+      const parentThreadId = selectedWorkStream.ParentThreadId;
       const targetAssigneeId = selectedWorkStream.Assignee_Id?.toLowerCase();
-      const ticketOwnerId = parentTicket?.CreatedBy?.toLowerCase();
 
       // 1. Get Outgoing Handoffs (e.g. Developer pushing to Tester)
       const outgoingHandoffIds = selectedWorkStream.HandOffData?.map(h => h.HandsOffId) || [];
@@ -272,37 +254,24 @@ const TicketDetailPage = () => {
       const allRelevantHandoffIds = [...outgoingHandoffIds, ...incomingHandoffIds];
 
       return rawList.filter((thread) => {
-        // 1. Explicit Handoff Relationship (Always keep these!)
+        // 1. The Parent Thread (Where this Workstream started/was assigned)
+        if (parentThreadId && thread.Id === parentThreadId) return true;
+
+        // 2. All threads where this specific user entered a value
+        // We check both CreatedId and CreatedBy just to be safe
+        const isByAssignee = thread.CreatedId?.toLowerCase() === targetAssigneeId || 
+                             thread.CreatedBy?.toLowerCase() === targetAssigneeId;
+        if (isByAssignee) return true;
+
+        // 3. Child threads (Handoff threads incoming/outgoing for this user)
         if (thread.HandsOffId && allRelevantHandoffIds.includes(thread.HandsOffId)) return true;
-
-        // 2. Explicit Assignment Thread (Always keep the exact thread that assigned them)
-        if (startId && thread.Id === startId) return true;
-
-        // 3. General Comments made DURING this specific WorkStream
-        const isByAssignee = thread.CreatedId?.toLowerCase() === targetAssigneeId;
-        const isByOwner = thread.CreatedId?.toLowerCase() === ticketOwnerId;
-
-        if (isByAssignee || isByOwner) {
-          // If the work is completed, only show comments between Start and End
-          if (startId && endId) {
-            if (thread.Id >= startId && thread.Id <= endId) return true;
-          } 
-          // If the work is currently active (No End ID yet), show comments after the Start ID
-          else if (startId && !endId) {
-            if (thread.Id >= startId) return true;
-          }
-          // Fallback if there's no Start ID
-          else if (!startId && endId) {
-            if (thread.Id === endId) return true;
-          }
-        }
 
         return false;
       });
     }
 
     return rawList;
-  }, [rawList, selectedWorkStream, selectedHandoffId, parentTicket, assigneesJsonString]);
+  }, [rawList, selectedWorkStream, selectedHandoffId, assigneesJsonString]);
   // ... (your existing displayedThreads useMemo) ...
 
   // 🔥 3. THE GITHUB MIDDLE-COLLAPSE LOGIC

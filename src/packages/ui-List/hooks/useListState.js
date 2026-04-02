@@ -143,7 +143,6 @@ export function useListState(config, rawData = []) {
       }),
     );
   }, [apiFilterEntries, config.filters]);
-console.log("apiPayload :", apiPayload);
 
   const { data: apiFilteredData, dataUpdatedAt } = useApiQuery({
     queryKey: [apiFilterConfig?.configKey, apiPayload],

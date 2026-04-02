@@ -16,8 +16,10 @@ export function ListCardView() {
   return (
     <div className={containerClasses}>
       {data.map((item) => {
+        const isDisabled = config.disabledIds?.includes(item.id || item.issueId) || false;
         const controls = advanced
           ? {
+            disabled: isDisabled,
               renderCheckbox: config.enableSelection
                 ? () => (
                     <input

@@ -16,8 +16,6 @@ export function ListFilters() {
 
   if (!config?.filters) return null;
   const parsed = parseQuery(query);
-  console.log("query :", query);
-
   // --- Helper Functions ---
 
   const updateQuery = (key, value) => {
@@ -30,7 +28,6 @@ export function ListFilters() {
     }
 
     const newQuery = [...otherFilters, parsed.text].filter(Boolean).join(" ");
-    console.log("newQuery :", newQuery);
 
     setQuery(newQuery);
     setOpenDropdownKey(null);
