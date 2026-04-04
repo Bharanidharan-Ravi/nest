@@ -11,7 +11,7 @@ export const ThreadFieldConfig = (ticketId) => [
     ui: "editor",
     // required: true,
     dataType: "string",
-    apiKey: "Comment",
+    apiKey: "CommentText",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
     // 🔥 1. DYNAMIC REQUIRED FLAG
     // This tells the UI when to show the red '*' asterisk

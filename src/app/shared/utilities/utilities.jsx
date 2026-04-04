@@ -12,7 +12,6 @@ export function HtmlRenderer({ html }) {
 
     fileLinks.forEach((link) => {
       const filename = link.getAttribute('filename') || link.textContent;
-      const fileExtension = filename.split('.').pop().toLowerCase();
 
       // Create a span element to style the file pill
       const span = doc.createElement('span');
@@ -21,21 +20,52 @@ export function HtmlRenderer({ html }) {
 
       link.textContent = '';
       link.appendChild(span);
-      link.setAttribute("target", "_blank");
-
-      // Force download for text-based files like .txt, .html, .csv, etc.
-      if (fileExtension === 'txt' || fileExtension === 'html' || fileExtension === 'csv') {
-        // Create a Blob URL for text-based files to force download
-        const blob = new Blob([link.href], { type: 'text/plain' });
-        const downloadUrl = URL.createObjectURL(blob);
-        link.setAttribute('href', downloadUrl);
-        link.setAttribute('download', filename);
-      } else {
-        link.setAttribute('download', filename);
-      }
+      
+      // Removed target="_blank" so it doesn't even try to open a new tab
+      link.setAttribute("download", filename); 
     });
 
     return doc.body.innerHTML;
+  };
+
+  const handleContainerClick = async (event) => {
+    // 1. Check if a file link was clicked
+    const link = event.target.closest('a[data-type="file-attachment"]');
+    if (!link) return;
+
+    // 2. STOP the browser immediately. No previews, no new tabs.
+    event.preventDefault(); 
+
+    const filename = link.getAttribute('download') || link.getAttribute('filename') || 'download';
+
+    try {
+      // 3. Fetch the actual file data
+      const response = await fetch(link.href);
+      if (!response.ok) throw new Error("Network response was not ok");
+      
+      // 4. Get the blob, but FORCE it to be an 'octet-stream' (binary download)
+      const originalBlob = await response.blob();
+      const forceDownloadBlob = new Blob([originalBlob], { type: 'application/octet-stream' });
+      
+      const downloadUrl = window.URL.createObjectURL(forceDownloadBlob);
+
+      // 5. Create a temporary, invisible link to trigger the pure download
+      const tempLink = document.createElement('a');
+      tempLink.style.display = 'none';
+      tempLink.href = downloadUrl;
+      tempLink.download = filename;
+      
+      document.body.appendChild(tempLink);
+      tempLink.click();
+      
+      // 6. Clean up
+      window.URL.revokeObjectURL(downloadUrl);
+      document.body.removeChild(tempLink);
+    } catch (error) {
+      console.error("Failed to download the file directly:", error);
+      // We do NOT use window.open here anymore, so it will never preview.
+      alert("Failed to download file. Please check your network connection.");
+    }
   };
 
   const highlightedHtml = highlightFiles(html);
@@ -44,6 +74,7 @@ export function HtmlRenderer({ html }) {
     <div
       className="html-renderer"
       dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+      onClick={handleContainerClick} 
     />
   );
 }

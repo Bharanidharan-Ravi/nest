@@ -1,55 +1,53 @@
 import { useState } from "react";
-import { useMutation } from "@tanstack/react-query";
-import { loginApi } from "../api/login.api";
-import { useNavigate } from "react-router-dom";
-import { useAppStore } from "../../../core/state/useAppStore";
-import Bowser from "bowser";
 
-export default function Login() {
-  const navigate = useNavigate();
-  const loginStore = useAppStore((s) => s.login);
-  const userAgent = window.navigator.userAgent;
+export default function DND() {
+  const API_URL = import.meta.env.VITE_API_BASE_URL;
+  const [input, setInput] = useState(null);
+  const download = async (fileId) => {
+    try {
+      const response = await fetch(
+        `${API_URL}/attachment/download/${fileId}`
+      )
 
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
-  });
+      if (!response.ok) throw new Error("network error");
+      const json = await response.json();
+      const fileInfo = json;
 
-  const { mutate, isPending } = useMutation({
-    mutationFn: loginApi,
-    onSuccess: (data) => {
-        loginStore(data); // store token
-        navigate("/dashboard?module=tickets");
-    },
-  });
+      if(!fileInfo || !fileInfo.FileData) {
+        alert("Download failed");
+        return;
+      }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+      const byteCharacters = atob(fileInfo.FileData);
+      const byteNumber = new Array(byteCharacters.length);
+      for (let i= 0; i < byteCharacters.length; i++) {
+        byteNumber[i] = byteCharacters.charCodeAt(i);
+      }
 
-    const browser = Bowser.getParser(userAgent);
-    const body = {
-      username: form.username,
-      password: form.password,
-      DeviceInfo: JSON.stringify(browser.parsedResult),
-    };
-    mutate(body);
-  };
+      const byteArray = new Uint8Array(byteNumber);
 
+      const blob = new Blob([byteArray], {type: fileInfo.ContentType});
+
+      const downloadUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileInfo.FileName;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("failed to download:", error);
+      alert("AN error occurred");
+    }
+  }
   return (
     <div>
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          placeholder="Username"
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-        />
-        <button disabled={isPending}>Login</button>
-      </form>
+      <input type="text" onChange={(e) => setInput(e.target.value)}/>
+      <button onClick={() => download(input)}>click</button>
     </div>
   );
 }

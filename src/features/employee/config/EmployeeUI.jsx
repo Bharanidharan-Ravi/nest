@@ -1,0 +1,46 @@
+import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
+
+export const EmployeedataTable = {
+    syncUrl: false,
+    defaultView: "table",
+    enableSearch: false,
+    enableSelection: true,
+    enableTabs: false,
+    theme: {
+      extend: {
+        height: {
+          '30': '30px',
+        },
+      },
+    },
+    enableSort: false,
+    enableFooter:false,
+    infinite:true,
+    columns: [
+      { key: "UserName", label: "Employee", render: (item) => <div className="h-30">{item.UserName}</div> },
+      { key: "Specialization", label: "Specialization", render: (item) => <div className="h-30">{item.Specialization}</div> },
+      { key: "DoB", label: "DoB", render: (item) => <div className="h-30">{item.DoB}</div> },
+      { key: "Email", label: "Email", render: (item) => <div className="h-30">{item.Email}</div> },
+      { key: "EmaPhoneNumberil", label: "PhoneNumber", render: (item) => <div className="h-30">{item.PhoneNumber}</div> },
+      {
+        key: "AvatarPath", 
+        label: "Avatar", 
+        render: (item) => {
+          const relativepath = item?.AvatarPath;
+          console.log("relativepath",relativepath);
+          
+          
+          return (
+            <div className="flex items-center justify-center h-30">
+              {relativepath ? (
+                <img className="h-10 W-10 rounded-full object-cover border" src={`${relativepath}`} alt="Avatar" />
+              ) : (
+                <img className="h-10 W-10 rounded-full object-cover border"  src="default-avatar-path.jpg" alt="Default Avatar" />
+              )}
+            </div>
+          );
+        },
+      }
+    ],
+  };
+

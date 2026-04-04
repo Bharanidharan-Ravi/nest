@@ -15,6 +15,7 @@ import {
 } from "../core/realtime/realtimeManager";
 import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
 import { GlobalUI } from "./shared/GlobalUI/GlobalUI";
+import DND from "../features/auth/pages/login";
 
 function App() {
   const queryClient = useQueryClient();
@@ -49,6 +50,7 @@ function App() {
       <GlobalUI />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/Dnd" element={<DND />} />
 
         <Route element={<AuthGuard />}>
           <Route element={<AppBootstrap />}>

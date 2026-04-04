@@ -87,7 +87,7 @@ apiClient.interceptors.response.use(
     // const method = response?.config?.method?.toUpperCase();
     const respData = response?.data ?? {};
     const code = respData.code ?? 200;
-    const message = respData.message ?? "";
+    const message = respData.Message ?? "";
     const data = respData.Res ?? (respData.Res || null) ?? (respData.Data || null); // fallback to either Data or data
 
     const method = response?.config?.method?.toUpperCase();

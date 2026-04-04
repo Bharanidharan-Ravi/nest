@@ -28,9 +28,10 @@ export default function Dashboard() {
   // Data Hooks
   const { data: Master } = useMasterData();
 
-  const { data: CheckedTicketsResponse } =
-    useCheckedTicketsData(user.userId, dayjs().format("YYYY-MM-DD"));
-  console.log("CheckedTicketsResponse :", CheckedTicketsResponse, Master);
+  const { data: CheckedTicketsResponse } = useCheckedTicketsData(
+    user.userId,
+    dayjs().format("YYYY-MM-DD"),
+  );
 
   const handleSelectionChange = (item, isChecked) => {
     if (committedIds.includes(item.id || item.issueId)) return;
@@ -85,7 +86,6 @@ export default function Dashboard() {
       value: user.UserID,
     })) || []),
   ];
-  console.log("committedIds :", committedIds);
 
   // --- Module Configurations ---
   const dashboardTickets = {
@@ -260,10 +260,9 @@ export default function Dashboard() {
       label: "Checked Tickets",
       config: dashboardPickedList,
       // data: viewChecked,
-
     },
   ];
-
+ 
   return (
     <div className="dashview">
       <h2>Dashboard</h2>

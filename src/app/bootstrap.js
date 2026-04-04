@@ -6,6 +6,7 @@ import { LabelFeature } from "../features/label"
 import { ProjectFeature } from "../features/project/Index"
 import { RepositoryFeature } from "../features/repository"
 import { TicketsFeature } from "../features/tickets"
+import { EmployeeFeature } from "../features/employee"
 
 export const bootstrapApp = () => {
   registerFeature(DashboardFeature)
@@ -13,7 +14,7 @@ export const bootstrapApp = () => {
   registerFeature(TicketsFeature)
   registerFeature(ProjectFeature)
   registerFeature(LabelFeature)
-
+  registerFeature(EmployeeFeature)
     // 2. Build the nav registry from everything registered above
   //    Pass getAllFeatures() directly — avoids circular import inside routeRegistry
   buildRouteRegistry(getAllFeatures());

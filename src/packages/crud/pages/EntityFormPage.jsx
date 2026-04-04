@@ -14,6 +14,7 @@ export default function EntityFormPage({
   context = {},
   module,
   onCancel,
+  onSuccessCallback,
 }) {
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
@@ -31,6 +32,10 @@ export default function EntityFormPage({
     invalidateKeys: config.invalidateKeys || [],
     onSuccess: (data) => {
       handleFormReset();
+
+      if (onSuccessCallback) {
+        onSuccessCallback(data);
+      }
       if (!config.redirectTo) return;
       if (typeof config.redirectTo === "function") {
         config.redirectTo(smartNav); // 👈 pass navigation API

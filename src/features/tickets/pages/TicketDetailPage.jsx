@@ -351,6 +351,7 @@ const TicketDetailPage = () => {
             context={{ isEdit: true, editingItem }}
             module="Thread"
             onCancel={() => setEditingItem(null)}
+            onSuccessCallback={() => setEditingItem(null)}
           />
         );
       }

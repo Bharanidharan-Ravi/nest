@@ -56,6 +56,10 @@ export const ROUTE_KEYS = {
   LABEL_LIST:   "label-list",
   LABEL_CREATE: "label-create",
   LABEL_EDIT:   "label-edit",
+
+  EMPLOYEE_LIST:   "employee.list",
+  EMPLOYEE_CREATE: "employee.create",
+  EMPLOYEE_EDIT:   "employee.edit",
 };
 
 export const PATHS = {
@@ -100,4 +104,8 @@ export const PATHS = {
   LABEL_LIST:   "/labels",
   LABEL_CREATE: "/labels/create",
   LABEL_EDIT:   "/labels/:labelId/edit",
+  
+  EMPLOYEE_LIST:   "/employee",
+  EMPLOYEE_CREATE: "/employee/create",
+  EMPLOYEE_EDIT:   "/employee/:employeeId/edit",
 };

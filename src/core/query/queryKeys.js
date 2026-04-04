@@ -47,4 +47,8 @@ export const queryKeys = {
     list:   ()   => [...queryKeys.label.all, "list"],
     detail: (id) => [...queryKeys.label.all, "detail", id]
   },
+   employee: {
+    all:    ["EmployeeList"],
+    list:   (id)   => [...queryKeys.employee.all, "list",id]
+  },
 }
