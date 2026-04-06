@@ -12,10 +12,6 @@ const EmployeePage=()=>{
 
 
 const { data: EmployeeList, isLoading, isError, error } = getEmployeeList();
-  
-  // Log the whole state so you know exactly what React Query is doing
-  console.log("Query State:", { isLoading, isError, error, EmployeeList });
-
 
 const normalizeLabel = (Emp) => {
   // Parse the Attachment_JSON string into an array of objects

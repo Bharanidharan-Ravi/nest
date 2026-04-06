@@ -75,14 +75,18 @@ export const useEntityForm = (config, context = {}) => {
         [name]: metadata?.raw ?? value,
       };
 
+      const fullFormState = { ...resolvedInitialData, ...next };
       // 2. Handle effectResolvers (Dynamic field updates based on dependencies)
       (config.fields || []).forEach((field) => {
         if (
           field.effectResolver &&
           (field.effectDependencies || []).includes(name)
         ) {
-          const resolvedValue = field.effectResolver(next);
-          if (resolvedValue != null) next[field.name] = resolvedValue;
+          const resolvedValue = field.effectResolver(fullFormState);
+          if (resolvedValue != null) {
+            next[field.name] = resolvedValue;
+            fullFormState[field.name] = resolvedValue; // Keep full state in sync
+          }
         }
       });
 
@@ -184,7 +188,7 @@ export const useEntityForm = (config, context = {}) => {
     return Object.keys(validationErrors).length === 0;
   };
 
-  const buildDto = () => mapFormToDto(mergedFormData, config.fields);
+  const buildDto = () => mapFormToDto(mergedFormData, config.fields, context);
   const reset = () => {
     setFormData({});
     setErrors({});

@@ -26,6 +26,7 @@ export default function EntityFormPage({
     reset();
     setTempFiles([]);
   };
+  
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",

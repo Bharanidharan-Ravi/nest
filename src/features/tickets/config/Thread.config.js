@@ -3,6 +3,22 @@ import {
   formatTimeHHMM,
 } from "../../../app/shared/utilities/utilities";
 
+const isTimeLocked = (context) => {
+  if (!context?.isEdit ) return false;
+  if (!context?.editingItem?.createdAt) return false;
+  
+  const createdDate = new Date(context.editingItem.createdAt);
+  const today = new Date();
+  
+  // Normalize to midnight to calculate strict day differences (ignoring hours/minutes)
+  const createdDay = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
+  const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  const diffDays = (currentDay - createdDay) / (1000 * 60 * 60 * 24);
+  
+  return diffDays > 1; // Returns true if it is older than Yesterday
+};
+
 export const ThreadFieldConfig = (ticketId) => [
   {
     label: "Description",
@@ -11,7 +27,7 @@ export const ThreadFieldConfig = (ticketId) => [
     ui: "editor",
     // required: true,
     dataType: "string",
-    apiKey: "CommentText",
+    apiKey: "Comment",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
     // 🔥 1. DYNAMIC REQUIRED FLAG
     // This tells the UI when to show the red '*' asterisk
@@ -86,12 +102,15 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "From_Time",
     initValueResolver: ({ context }) =>
       formatTimeHHMM(context?.editingItem?.fromTime),
-    disableWhen: (context) => Boolean(context?.formData?.hours),
-    // 🔥 FIX 3: Enforce pair validation
+    // 🔥 FIX: Check 1-day lock first, then check if hours are populated
+    disableWhen: (context, formData) => {
+      if (isTimeLocked(context)) return true;
+      // return Boolean(formData?.hours);
+    },
     customValidator: (value, formData) => {
       if (formData.toTime && !value) return "Required if To-time is entered";
       return true;
-    }
+    },
   },
   {
     label: "To-time (24h Format)",
@@ -104,7 +123,10 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "To_Time",
     initValueResolver: ({ context }) =>
       formatTimeHHMM(context?.editingItem?.toTime),
-    disableWhen: (context) => Boolean(context?.formData?.hours),
+    disableWhen: (context, formData) => {
+      if (isTimeLocked(context)) return true;
+      // return Boolean(formData?.hours);
+    },
     // 🔥 FIX 3: Enforce pair validation & logic check
     customValidator: (value, formData) => {
       if (formData.fromTime && !value) return "Required if From-time is entered";
@@ -125,7 +147,7 @@ export const ThreadFieldConfig = (ticketId) => [
 
     // 🔥 FIX 1: Removed duplicate properties & fixed "formTime" typo to "fromTime"
     effectDependencies: ["fromTime", "toTime"],
-    effectResolver: (formData) => {
+    effectResolver: (formData) => {      
       // 1. If both times exist, instantly calculate and return
       if (formData.fromTime && formData.toTime) {
         return calcHHMM(formData.fromTime, formData.toTime);
@@ -144,24 +166,42 @@ export const ThreadFieldConfig = (ticketId) => [
       return formData.hours || null;
     },
 
-    // 🔥 FIX 3: "Either/Or" Validation
+   disableWhen: (context, formData) => {      
+      if (isTimeLocked(context)) return true;
+      return Boolean(formData?.fromTime && formData?.toTime);
+    },
+
+    forceSubmit: (context) => context.isEdit !== true, // 🔥 FIX 4: Allow hours to be submitted even if disabled, but ONLY on edit (not create)
+    // 🔥 FIX: Dynamic Validation based on Role, Description, and Lock Status
     customValidator: (value, formData, context) => {
-      // Owners have their own validation rules on the description field
-      if (context?.userRole === "Owner") return true;
+      // 1. If locked due to the 1-day rule, we cannot force them to enter data.
+      if (isTimeLocked(context)) return true;
 
       const hasBothTimes = !!formData.fromTime && !!formData.toTime;
       const hasManualHours = !!value;
 
-      // Fail if they haven't entered manual hours AND haven't completed the from/to pair
+      // 2. OWNER LOGIC
+      if (context?.userRole === "Owner") {
+        // Strip HTML tags to see if they actually typed something
+        const cleanDesc = formData.description?.replace(/<[^>]*>?/gm, "").trim();
+        const hasDescription = !!cleanDesc;
+
+        // If Assign-Only (no description), time is optional
+        if (!hasDescription) return true;
+
+        // If they typed a description, time becomes mandatory
+        if (!hasManualHours && !hasBothTimes) {
+          return "Time logging is required when adding a comment.";
+        }
+        return true; 
+      }
+
+      // 3. DEV / TESTER LOGIC (Always mandatory)
       if (!hasManualHours && !hasBothTimes) {
         return "Please enter Total Hours, OR both From and To times.";
       }
 
-      return true; // Valid!
-    },
-    disableWhen: (context, formData) => {      
-      // It will lock the hours field ONLY if both fromTime AND toTime have values
-      return Boolean(formData?.fromTime && formData?.toTime);
+      return true;
     },
   },
 
@@ -250,6 +290,7 @@ export const ThreadFieldConfig = (ticketId) => [
     },
 
     initValueResolver: ({ context, formData }) => {
+      
       if (
         context.isEdit &&
         context.entityData &&

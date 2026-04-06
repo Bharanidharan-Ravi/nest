@@ -32,7 +32,12 @@ export const queryKeys = {
       ...queryKeys.ticket.all, 
       "TicketsList", 
       { EmployeeId: employeeId }
-    ]
+    ],
+    history: (ticketId) => [
+      ...queryKeys.ticket.all,
+      "history",
+      ticketId
+    ],
   },
   project: {
     all: ["project"],

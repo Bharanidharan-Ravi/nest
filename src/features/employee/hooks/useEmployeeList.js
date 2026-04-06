@@ -7,13 +7,11 @@ import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
 export const fetchemployeeList = (config = {}, EmployeeId = null) => {
-  console.log("its trigger:", EmployeeId, config);
   const payload = buildSyncPayload({
     configKey: "EmployeeList",
     // No repoId — labels are global, not scoped to a repo
     ...(EmployeeId && { idKey: "EmployeeID", idValue: EmployeeId }),
   });
-  console.log("payload :", payload);
 
   return executeApi({
     url: "/sync/v2",
@@ -27,7 +25,6 @@ export const getEmployeeList = (EmployeeId = null) => {
   const query = EmployeeId
     ? queryKeys.employee.list(EmployeeId)
     : queryKeys.employee.all;
-  console.log("EmployeeList:", EmployeeId, query);
 
   const defaultKeys = ["EmployeeList"];
   return useApiQuery({

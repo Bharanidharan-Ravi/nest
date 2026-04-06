@@ -136,12 +136,19 @@ export const handleRealtimeMessage = (queryClient, message) => {
       console.log("oldData thread BEFORE :", oldData);
 
       // 1. Defensively grab the existing data array. If nothing exists, it's an empty array.
+      // let currentList = [];
+      // if (
+      //   oldData &&
+      //   oldData.ThreadsList &&
+      //   Array.isArray(oldData.ThreadsList.Data)
+      // ) {
+      //   currentList = oldData.ThreadsList.Data;
+      // }
       let currentList = [];
-      if (
-        oldData &&
-        oldData.ThreadsList &&
-        Array.isArray(oldData.ThreadsList.Data)
-      ) {
+
+      if (Array.isArray(oldData?.ThreadsList)) {
+        currentList = oldData.ThreadsList;
+      } else if (Array.isArray(oldData?.ThreadsList?.Data)) {
         currentList = oldData.ThreadsList.Data;
       }
 
@@ -179,10 +186,7 @@ export const handleRealtimeMessage = (queryClient, message) => {
       // 6. Return the constructed state matching the EXACT structure your page expects
       return {
         ...(oldData || {}),
-        ThreadsList: {
-          ...(oldData?.ThreadsList || {}),
-          Data: updatedDataList,
-        },
+        ThreadsList: updatedDataList, // ✅ PURE ARRAY
       };
     });
   }
@@ -263,7 +267,7 @@ export const handleRealtimeMessage = (queryClient, message) => {
         } else if (action === "Delete") {
           updatedDataList = currentList.filter((x) => !match(x));
         }
-console.log("updatedDataList :", updatedDataList);
+        console.log("updatedDataList :", updatedDataList);
 
         // 4. Sort Tickets (Newest First)
         updatedDataList = sortListByCreatedAt(updatedDataList, "desc");

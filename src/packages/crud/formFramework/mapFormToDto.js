@@ -9,10 +9,21 @@
 // - datatype conversion
 // ---------------------------------------------------------
 
-export const mapFormToDto = (formData = {}, fields = []) => {
+export const mapFormToDto = (formData = {}, fields = [], context = {}) => {
   const dto = {};
-
   const processField = (field, sourceData, target) => {
+
+    // ====================================================================
+    // 🔥 0️⃣ DISABLED FIELD CHECK (The Gatekeeper)
+    // If the field is disabled AND does not have forceSubmit: true, skip it!
+    // ====================================================================
+    if (field.disableWhen && typeof field.disableWhen === "function") {
+      const isDisabled = field.disableWhen(context, sourceData);
+      if (isDisabled && !field.forceSubmit) {
+        return; // 🛑 EXIT EARLY: Do not map this field to the DTO
+      }
+    }
+
     // ----------------------------------------
     // 1️⃣ Hidden field (auto inject)
     // ----------------------------------------

@@ -2,34 +2,68 @@
  * Generates a sync payload for the API.
  * Supports repoId, legacy idKey/Value pairs, and any additional custom parameters.
  */
+
+
 export const buildSyncPayload = ({
-  configKey,
+  configKey,        // string OR array
   repoId,
   idKey,
   idValue,
-  customParams = {} // This allows you to pass { FromDate: '...', ToDate: '...' }
+  customParams = {}
 }) => {
+  const configKeys = Array.isArray(configKey) ? configKey : [configKey];
+
   const payload = {
-    ConfigKeys: [configKey]
+    ConfigKeys: configKeys
   };
 
-  // We only create the Params object if there is actually data to send
-  const hasParams = repoId || (idKey && idValue) || Object.keys(customParams).length > 0;
+  const hasParams =
+    repoId || (idKey && idValue) || Object.keys(customParams).length > 0;
 
   if (hasParams) {
-    payload.Params = {
-      [configKey]: {
-        // Add repoId if it exists
+    payload.Params = {};
+
+    configKeys.forEach((key) => {
+      payload.Params[key] = {
         ...(repoId && { repoId }),
-        
-        // Add idKey/Value pair if they both exist (Legacy support)
         ...(idKey && idValue && { [idKey]: idValue }),
-        
-        // Spread any other params (like FromDate and ToDate) directly into the object
-        ...customParams 
-      }
-    };
+        ...customParams
+      };
+    });
   }
 
   return payload;
 };
+
+
+// export const buildSyncPayload = ({
+//   configKey,
+//   repoId,
+//   idKey,
+//   idValue,
+//   customParams = {} // This allows you to pass { FromDate: '...', ToDate: '...' }
+// }) => {
+//   const payload = {
+//     ConfigKeys: [configKey]
+//   };
+
+//   // We only create the Params object if there is actually data to send
+//   const hasParams = repoId || (idKey && idValue) || Object.keys(customParams).length > 0;
+
+//   if (hasParams) {
+//     payload.Params = {
+//       [configKey]: {
+//         // Add repoId if it exists
+//         ...(repoId && { repoId }),
+        
+//         // Add idKey/Value pair if they both exist (Legacy support)
+//         ...(idKey && idValue && { [idKey]: idValue }),
+        
+//         // Spread any other params (like FromDate and ToDate) directly into the object
+//         ...customParams 
+//       }
+//     };
+//   }
+
+//   return payload;
+// };

@@ -26,9 +26,7 @@ export const EmployeedataTable = {
         key: "AvatarPath", 
         label: "Avatar", 
         render: (item) => {
-          const relativepath = item?.AvatarPath;
-          console.log("relativepath",relativepath);
-          
+          const relativepath = item?.AvatarPath;          
           
           return (
             <div className="flex items-center justify-center h-30">

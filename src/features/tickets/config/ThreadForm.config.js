@@ -15,7 +15,7 @@ export const ThreadFormConfig = {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
-    
+
     // ── 1. TESTER BUTTONS ─────────────────────────────────────────
     if (role === "Tester") {
       return [
@@ -35,12 +35,11 @@ export const ThreadFormConfig = {
               colorClass: "bg-green-600",
               onClick: ({ submitForm }) => {
                 submitForm({
-                  StreamStatus: currentStreamStatus, 
+                  StreamStatus: currentStreamStatus,
                   CompletionPercentage: 100,
                   ClearTestFailure: true,
                 });
-
-              }
+              },
             },
             {
               label: "Report Bug",
@@ -48,7 +47,7 @@ export const ThreadFormConfig = {
               colorClass: "bg-red-600",
               onClick: ({ submitForm }) =>
                 submitForm({
-                  StreamStatus: currentStreamStatus ,
+                  StreamStatus: currentStreamStatus,
                   ReportTestFailure: true,
                   TestFailureComment: formData.description,
                 }),
@@ -243,6 +242,11 @@ export const ThreadFormConfig = {
                     overrides.AssignOnly = true;
                     overrides.Comment = null;
                   }
+                } else if (hasComment) {
+                  overrides.WorkStreamId =
+                    context?.activeWorkStream?.StreamId ||
+                    context?.lastValidStreamId ||
+                    null;
                 }
                 // ── NORMAL UPDATE WITH ASSIGNMENTS ──
                 // else if (context.isOwner && !hasComment && hasAssignee) {
@@ -258,21 +262,28 @@ export const ThreadFormConfig = {
               subtext: "Complete this ticket successfully",
               intent: "success",
               onClick: ({ submitForm }) =>
-                submitForm({
-                  StreamStatus: 15, // 14 = Closed
-                  CompletionPercentage: 100,
-                  Comment: formData.description || "Ticket closed by owner.",
-                }, true),
+                submitForm(
+                  {
+                    StreamStatus: 15, // 14 = Closed
+                    CompletionPercentage: 100,
+                    Comment: formData.description || "Ticket closed by owner.",
+                  },
+                  true,
+                ),
             },
             {
               label: "Cancel & Close",
               subtext: "Mark this ticket as cancelled",
               intent: "danger",
               onClick: ({ submitForm }) =>
-                submitForm({
-                  StreamStatus: 16, // 15 = Cancelled
-                  Comment: formData.description || "Ticket cancelled by owner.",
-                }, true),
+                submitForm(
+                  {
+                    StreamStatus: 16, // 15 = Cancelled
+                    Comment:
+                      formData.description || "Ticket cancelled by owner.",
+                  },
+                  true,
+                ),
             },
           ],
         },
