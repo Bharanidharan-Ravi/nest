@@ -21,7 +21,7 @@ export const LabelFieldConfig = () => [
     pattern: "^[A-Za-z0-9 ]+$",
     errorMessage: "Only alphanumeric characters allowed",
 
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.Title : "",
   },
 
@@ -35,7 +35,7 @@ export const LabelFieldConfig = () => [
     dataType: "string",
     apiKey: "Description",
 
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.Description ?? "" : "",
   },
 
@@ -47,7 +47,7 @@ export const LabelFieldConfig = () => [
     required: false,
     dataType: "string",
     apiKey:   "Color",
-    initValueResolver: (context) =>
+    initValueResolver: ({context}) =>
       context.isEdit ? context.entityData?.Color ?? "" : "",
   },
 ]

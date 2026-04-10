@@ -4,22 +4,27 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import { GoIssueOpened, GoIssueClosed } from "react-icons/go";
 import { Tooltip } from "@mui/material";
 import "../css/TicketListCard.css";
-import { useMasterData } from "../../../core/master/useMasterData";
 import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCompletionIndicator/BatteryCompletionIndicator";
-import { FiAlertTriangle, FiClock, FiCheckCircle } from "react-icons/fi";
+import { FiClock } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { useState } from "react";
+import { getDueStatus, getInitials, getLabelStyle, HighlightText } from "../../../app/shared/utilities/utilities";
+import { useEmployeeById, useProjectById } from "../../../core/master/selectors";
+import { useList } from "../../../packages/ui-List/context/ListContext";
+import { parseQuery } from "../../../packages/ui-List/hooks/useQueryParser";
 
 dayjs.extend(relativeTime);
 
 export default function TicketListCard({ item, controls, focused }) {
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
-  const { data: Master } = useMasterData();
+  const ProjectDetails = useProjectById(item?.project);
+  const updated = useEmployeeById(item.updatedBy);
+  const { query } = useList();
+  const { text } = parseQuery(query);
   const mainAssignee = item.multiAssignees?.find(
     (a) => a.Assignee_Type === "Main Assignee",
   );
-
   const uniqueAssignees = Array.from(
     new Map(
       (item.multiAssignees || [])
@@ -27,15 +32,6 @@ export default function TicketListCard({ item, controls, focused }) {
         .map((a) => [a.Assignee_Id, a]),
     ).values(),
   );
-
-  const ProjectDetails = Master?.ProjectList?.find(
-    (proj) => proj.Id === item?.project,
-  );
-
-  const updated = Master?.EmployeeList?.find(
-    (e) => e.UserID === item.UpdatedBy,
-  );
-
   const { renderCheckbox, renderEdit, disabled } = controls || {};
   const activeStatus = [14, 15, 16, 17];
   const statusIcon = activeStatus.includes(item.statusId) ? (
@@ -43,77 +39,11 @@ export default function TicketListCard({ item, controls, focused }) {
   ) : (
     <GoIssueOpened className="status-icon status-open" />
   );
-
-  const getInitials = (name) => {
-    if (!name) return "U";
-    const parts = name.split(" ");
-    return parts.length > 1
-      ? (parts[0][0] + parts[1][0]).toUpperCase()
-      : name.substring(0, 2).toUpperCase();
-  };
-
-  const getDueStatus = (dueDate) => {
-    if (!dueDate) return null;
-
-    const diff = dayjs(dueDate).diff(dayjs(), "day");
-
-    if (diff < 0) {
-      return {
-        text: `${Math.abs(diff)} days overdue`,
-        icon: <FiAlertTriangle className="due-icon" />,
-        className: "overdue",
-      };
-    }
-
-    if (diff === 0) {
-      return {
-        text: "Due today",
-        icon: <FiClock className="due-icon" />,
-        className: "today",
-      };
-    }
-
-    return {
-      text: `${diff} days left`,
-      icon: <FiCheckCircle className="due-icon" />,
-      className: "remaining",
-    };
-  };
-
   const dueStatus = getDueStatus(item.dueDate);
 
   // Placeholders for your new data properties
   const department = item.department || "Development"; // Replace with your logic
   const priority = item.priority || "Medium"; // Replace with your logic
-  const getLabelStyle = (hexColor) => {
-    // Fallback for missing colors
-    if (!hexColor || !hexColor.startsWith("#")) {
-      return {
-        backgroundColor: "#f3f4f6",
-        color: "#4b5563",
-        borderColor: "#d1d5db",
-      };
-    }
-
-    // Parse RGB values
-    const hex = hexColor.replace("#", "");
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 2), 16);
-    const b = parseInt(hex.substr(4, 2), 16);
-
-    // YIQ formula to calculate perceived brightness (0 to 255)
-    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
-
-    // If brightness is high (> 180), it's a light color. Force dark text.
-    const isLight = yiq > 180;
-
-    return {
-      backgroundColor: `${hexColor}1A`, // 10% opacity background
-      color: isLight ? "#374151" : hexColor, // Dark gray text for light colors
-      borderColor: isLight ? `${hexColor}80` : `${hexColor}4D`, // Make border slightly darker for light colors
-    };
-  };
-
   const openInNewTab = (url) => {
     const newTab = window.open(url, "_blank");
     if (newTab) {
@@ -159,7 +89,7 @@ export default function TicketListCard({ item, controls, focused }) {
             >
               <span className="ticket-id">#{item.ticketKey}</span>
               <span className="ticket-title" title={item.title}>
-                {item.title}
+               <HighlightText text={item.title} highlight={text} />
               </span>
             </a>
             {/* Badges immediately follow the text */}
@@ -185,21 +115,21 @@ export default function TicketListCard({ item, controls, focused }) {
         <div className="ticket-meta-row">
           {ProjectDetails && (
             <div className="ticket-repo-info">
-              <Tooltip title={ProjectDetails.Repo_Name} arrow>
+              <Tooltip title={ProjectDetails.repoName} arrow>
                 <span className="repo-key">
-                  {ProjectDetails?.Repo_Name?.split(" ")
+                  {ProjectDetails?.repoName
+                    ?.split(" ")
                     .map((word) => word[0]?.toUpperCase())
                     .join("")}
                 </span>
               </Tooltip>
               <span className="meta-divider">•</span>
-              <Tooltip title={ProjectDetails.Project_Name} arrow>
+              <Tooltip title={ProjectDetails.name} arrow>
                 <span className="project-key">
-                  {ProjectDetails.Project_Name.split(" ").length > 2
-                    ? ProjectDetails.Project_Name.split(" ")
-                      .slice(0, 2)
-                      .join(" ") + "..."
-                    : ProjectDetails.Project_Name}
+                  {ProjectDetails.name.split(" ").length > 2
+                    ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
+                      "..."
+                    : ProjectDetails.name}
                 </span>
               </Tooltip>
               <span className="meta-divider">•</span>
@@ -238,18 +168,19 @@ export default function TicketListCard({ item, controls, focused }) {
           )}
         </div>
 
-
-
         {/* Timesheet */}
 
-        {(item.StartTime || item.EndTime || item.ConsumeTime || item.Comment) && (
+        {(item.StartTime ||
+          item.EndTime ||
+          item.ConsumeTime ||
+          item.Comment) && (
           <div className="ticket-timesheet-info">
-
             {/* working time */}
             {item.StartTime && item.EndTime && (
               <span className="timesheet-item">
                 <FiClock className="due-icon" />
-                Working Time: {dayjs(item.StartTime).format("HH:mm")} - {dayjs(item.EndTime).format("HH:mm")}
+                Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                {dayjs(item.EndTime).format("HH:mm")}
               </span>
             )}
 
@@ -269,7 +200,11 @@ export default function TicketListCard({ item, controls, focused }) {
                 <span className="meta-divider">•</span>
                 <span
                   className="comment-toggle"
-                  onClick={() => setIsCommentExpanded(!isCommentExpanded)}
+                  onClick={(e) => { // 👈 FIX: Add 'e' here
+                    e.stopPropagation();
+                    e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                    setIsCommentExpanded(!isCommentExpanded);
+                  }}
                 >
                   {isCommentExpanded ? "Hide Comment" : "View Comment"}
                 </span>
@@ -302,8 +237,8 @@ export default function TicketListCard({ item, controls, focused }) {
         </div>
         <div className="update-info">
           <div className="ticket-assignees">
-            <Tooltip key={updated?.UserID} title={updated?.UserName} arrow>
-              <div className="avatar">{getInitials(updated?.UserName)} </div>
+            <Tooltip key={updated?.id} title={updated?.name} arrow>
+              <div className="avatar">{getInitials(updated?.name)} </div>
             </Tooltip>
           </div>
           <p>
@@ -317,9 +252,6 @@ export default function TicketListCard({ item, controls, focused }) {
     </div>
   );
 }
-
-
-
 
 // export default function TicketListCard({ item, controls, focused }) {
 //   const [isCommentExpand, setIsCommentExpand] = useState(false);
@@ -502,13 +434,13 @@ export default function TicketListCard({ item, controls, focused }) {
 //                 </span>
 //               </Tooltip>
 //               <span className="meta-divider">•</span>
-//               <Tooltip title={ProjectDetails.Project_Name} arrow>
+//               <Tooltip title={ProjectDetails.name} arrow>
 //                 <span className="project-key">
-//                   {ProjectDetails.Project_Name.split(" ").length > 2
-//                     ? ProjectDetails.Project_Name.split(" ")
+//                   {ProjectDetails.name.split(" ").length > 2
+//                     ? ProjectDetails.name.split(" ")
 //                         .slice(0, 2)
 //                         .join(" ") + "..."
-//                     : ProjectDetails.Project_Name}
+//                     : ProjectDetails.name}
 //                 </span>
 //               </Tooltip>
 //               <span className="meta-divider">•</span>
@@ -569,8 +501,8 @@ export default function TicketListCard({ item, controls, focused }) {
 //         </div>
 //         <div className="update-info">
 //           <div className="ticket-assignees">
-//             <Tooltip key={updated?.UserID} title={updated?.UserName} arrow>
-//               <div className="avatar">{getInitials(updated?.UserName)} </div>
+//             <Tooltip key={updated?.UserID} title={updated?.name} arrow>
+//               <div className="avatar">{getInitials(updated?.name)} </div>
 //             </Tooltip>
 //           </div>
 //           <p>

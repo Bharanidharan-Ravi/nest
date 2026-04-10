@@ -126,12 +126,13 @@ apiClient.interceptors.response.use(
           break; // Stop at the first error found
         }
       }
-    }
+    }    
 
     // 🔥 2. Safely fallback to OLD error formats if the new one isn't found
     const errorMsg =
       extractedErrorMessage ||
       responseData?.message ||
+      responseData?.errorMessage ||
       error.message ||
       "Something went wrong";
     useUIStore.getState().setError(errorMsg);

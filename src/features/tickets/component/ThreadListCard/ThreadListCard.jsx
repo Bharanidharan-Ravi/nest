@@ -56,8 +56,8 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
       <div
         className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${
           isMe
-           ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm" // Subtle Yellow Glass for "Me"
-          : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
+            ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm" // Subtle Yellow Glass for "Me"
+            : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
         }`}
       >
         {/* Header - Blends seamlessly into the card instead of a hard block */}
@@ -90,14 +90,23 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
         </div>
 
         {/* Footer (Slightly darker translucent bar at the bottom) */}
-        {(item.fromTime || item.Hours) && (
-          <div className="px-5 py-2.5 rounded-b-2xl flex justify-between text-xs text-gray-500 bg-black/[0.03]">
-            <span>{formatDateRange(item.fromTime, item.toTime)}</span>
-            <span className="font-medium text-gray-600">
-              Total Hours: {item.Hours || "N/A"}
-            </span>
-          </div>
-        )}
+        <div className="px-5 py-2.5 rounded-b-2xl flex justify-between text-xs text-gray-500 bg-black/[0.03]">
+          {item.fromTime && item.toTime ? (
+            <>
+              <span>{formatDateRange(item.fromTime, item.toTime)}</span>
+              <span className="font-medium text-gray-600">
+                Total Hours: {item.Hours || "-"}
+              </span>
+            </>
+          ) : (
+            <>
+              <span>&nbsp;</span> {/* Empty space for fromTime/toTime */}
+              <span className="font-medium text-gray-600">
+                Total Hours: {item.Hours || "-"}
+              </span>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

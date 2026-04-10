@@ -1,57 +1,67 @@
 // hooks/useQueryTranslator.js
 
-// 1. Converts Internal Query (GUIDs) -> Display Query (Labels)
+// getDisplayQuery — convert IDs → Labels (handles multi)
 export function getDisplayQuery(query, filtersConfig = []) {
   if (!query) return "";
   const tokens = query.match(/(\w+:"[^"]+"|\w+:\S+|\S+)/g) || [];
 
-  return tokens.map(token => {
-    if (token.includes(":")) {
-      const [key, ...rest] = token.split(":");
-      const value = rest.join(":").replace(/^"|"$/g, ""); // Strip quotes
+  return tokens
+    .map((token) => {
+      if (!token.includes(":")) return token;
 
-      // Convert FROM internal TO display, so look up by internal `key`
-      const filterDef = filtersConfig.find(f => f.key === key);
-      
-      if (filterDef) {
-        const option = filterDef.options.find(o => String(o.value) === String(value));
-        if (option) {
-          // 🔥 FIX 1: Use 'view' if you provided it, otherwise fallback to 'key'
-          const displayPrefix = filterDef.view || filterDef.key;
-          
-          // 🔥 FIX 2: Actually wrap in quotes if there is a space! 
-          return option.label.includes(" ") 
-            ? `${displayPrefix}:"${option.label}"` 
-            : `${displayPrefix}:${option.label}`;
-        }
-      }
-    }
-    return token;
-  }).join(" ");
+      const [key, ...rest] = token.split(":");
+      const rawValue = rest.join(":").replace(/^"|"$/g, "");
+      const filterDef = filtersConfig.find((f) => f.key === key);
+
+      if (!filterDef) return token;
+
+      const displayPrefix = filterDef.view || filterDef.key;
+
+      // 🔥 Split comma-separated IDs and convert each one
+      const ids = rawValue.split(",").map((v) => v.trim());
+      const labels = ids.map((id) => {
+        const option = filterDef.options?.find(
+          (o) => String(o.value) === String(id),
+        );
+        return option ? option.label : id; // fallback to raw id if not found
+      });
+
+      // Wrap in quotes if any label has a space
+      const formatted = labels.map((l) => l).join(","); // ✅ No quotes wrapping
+      return `${displayPrefix}:${formatted}`;
+    })
+    .join(" ");
 }
 
-// 2. Converts Display Query (Labels) -> Internal Query (GUIDs)
+// getInternalQuery — convert Labels → IDs (handles multi)
 export function getInternalQuery(displayQuery, filtersConfig = []) {
   if (!displayQuery) return "";
   const tokens = displayQuery.match(/(\w+:"[^"]+"|\w+:\S+|\S+)/g) || [];
 
-  return tokens.map(token => {
-    if (token.includes(":")) {
-      const [displayKey, ...rest] = token.split(":");
-      const label = rest.join(":").replace(/^"|"$/g, ""); // Strip quotes
+  return tokens
+    .map((token) => {
+      if (!token.includes(":")) return token;
 
-      // 🔥 FIX 3: Convert FROM display TO internal. 
-      // We must search by BOTH 'view' or 'key' because the text prefix is now "Repo" or "Emp"
-      const filterDef = filtersConfig.find(f => f.view === displayKey || f.key === displayKey);
-      
-      if (filterDef) {
-        const option = filterDef.options.find(o => String(o.label) === String(label));
-        if (option) {
-          // Always return the true backend key and value
-          return `${filterDef.key}:${option.value}`;
-        }
-      }
-    }
-    return token;
-  }).join(" ");
+      const [displayKey, ...rest] = token.split(":");
+      const rawLabel = rest.join(":").replace(/^"|"$/g, "");
+      const filterDef = filtersConfig.find(
+        (f) => f.view === displayKey || f.key === displayKey,
+      );
+
+      if (!filterDef) return token;
+
+      // 🔥 Split comma-separated labels and convert each one back to ID
+      const labels = rawLabel
+        .split(",")
+        .map((v) => v.trim().replace(/^"|"$/g, ""));
+      const ids = labels.map((label) => {
+        const option = filterDef.options?.find(
+          (o) => String(o.label) === String(label),
+        );
+        return option ? String(option.value) : label;
+      });
+
+      return `${filterDef.key}:${ids.join(",")}`;
+    })
+    .join(" ");
 }

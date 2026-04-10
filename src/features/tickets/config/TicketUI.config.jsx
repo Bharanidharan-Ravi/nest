@@ -14,6 +14,7 @@ export const TicketListConfig = {
   enableSelection: true,
   enableEdit: true,
   enableCardControls: true,
+  searchFields: ["title", "description", "RepoKey"],
   filters: [
     {
       key: "status",

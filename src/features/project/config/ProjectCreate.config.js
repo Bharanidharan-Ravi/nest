@@ -24,10 +24,11 @@ export const ProjFieldConfig = () => [
     ),
 
     // 🔥 Disable when repoId param exists
-    disableWhen: (context) => Boolean(context?.params?.repoId || context?.entityData?.Repo_Id),
-
+    disableWhen: (context) =>
+      Boolean(context?.params?.repoId || context?.entityData?.Repo_Id),
+    forceSubmit: true, // 🔥 Ensure this field is always submitted, even when disabled
     // 🔥 Smart initial value resolver
-    initValueResolver: ({context, masterData}) => {
+    initValueResolver: ({ context, masterData }) => {
       // 1. Get the ID from entityData if editing, otherwise get it from the URL params
       const targetRepoId = context?.isEdit
         ? context?.entityData?.Repo_Id
@@ -37,7 +38,9 @@ export const ProjFieldConfig = () => [
       if (!targetRepoId) return null;
 
       // 2. Find the exact repo object in your master data list
-      const repo = masterData?.RepoList?.find((r) => r.Repo_Id === targetRepoId);
+      const repo = masterData?.RepoList?.find(
+        (r) => r.Repo_Id === targetRepoId,
+      );
 
       if (!repo) return null;
 
@@ -64,7 +67,8 @@ export const ProjFieldConfig = () => [
 
     pattern: "^[A-Za-z0-9 ]+$",
     errorMessage: "Only alphanumeric allowed",
-    initValueResolver: ({context}) => context.isEdit ? context.entityData?.Project_Name : "",
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.Project_Name : "",
     visibleWhen: () => true,
   },
   {
@@ -79,7 +83,7 @@ export const ProjFieldConfig = () => [
     masterKey: "RepoList",
     // colSpan:,
     // 🔥 Build dropdown options
-    optionsResolver: ({masterData}) =>
+    optionsResolver: ({ masterData }) =>
       masterData?.EmployeeList?.map((user) => ({
         label: user.UserName,
         value: {
@@ -87,7 +91,7 @@ export const ProjFieldConfig = () => [
           name: user.UserName,
         },
       })) || [],
-    initValueResolver: ({context, masterData}) => {
+    initValueResolver: ({ context, masterData }) => {
       if (context.isEdit && context.entityData?.EmployeeName) {
         const empId = context.entityData?.Responsible;
         if (!empId) return null;
@@ -116,23 +120,24 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "StartDate",
-    initValueResolver: ({context}) => context.isEdit ? context.entityData?.StartDate : "",
-    customValidator:(value,data)=>{
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.StartDate : "",
+    customValidator: (value, data) => {
       if (!value) return null;
       const startDate = new Date(value);
       const today = new Date();
-      today.setHours(0,0,0,0);
-      if(startDate < today){
+      today.setHours(0, 0, 0, 0);
+      if (startDate < today) {
         return "Start Date cannot be in the past";
       }
-      if(data.dueDate) {
+      if (data.dueDate) {
         const dueDate = new Date(data.dueDate);
         if (startDate > dueDate) {
           return "Start Date cannot be after Due Date";
         }
       }
       return true;
-    }
+    },
   },
   {
     label: "Due Date",
@@ -144,16 +149,17 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "DueDate",
-    initValueResolver: ({context}) => context.isEdit ? context.entityData?.DueDate : "",
-    customValidator:(value,data)=>{
-      if(!value || !data.startDate) return null;
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.DueDate : "",
+    customValidator: (value, data) => {
+      if (!value || !data.startDate) return null;
       const startDate = new Date(data.startDate);
       const dueDate = new Date(value);
       if (dueDate < startDate) {
         return "Due Date cannot be before Start Date";
       }
       return true;
-    }
+    },
   },
   {
     label: "Description",
@@ -165,10 +171,12 @@ export const ProjFieldConfig = () => [
     dataType: "string",
 
     apiKey: "Description",
-    initValueResolver: ({context}) => {
+    initValueResolver: ({ context }) => {
       if (!context.isEdit || !context.entityData) return "";
 
-      return context.entityData.HtmlDesc || context.entityData.Description || "";
+      return (
+        context.entityData.HtmlDesc || context.entityData.Description || ""
+      );
     },
     visibleWhen: () => true,
   },

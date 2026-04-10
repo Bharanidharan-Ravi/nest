@@ -7,27 +7,42 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
   const isUrlSyncEnabled = config.syncUrl !== false;
+  // 🔥 1. Get the prefix so we can read namespaced URLs correctly (e.g., "tickets_")
+  const currentModule = searchParams.get("module") || "default";
+  const prefix = isUrlSyncEnabled ? `${currentModule}_` : "";
 
   /* --- INITIAL STATE (Run once) --- */
-    /* --- INITIAL STATE (Run once) --- */
   const initialQuery = useMemo(() => {
-    
     // 🔥 HELPER: Builds the string from defaults
+    // const buildDefaultString = (tabKey) => {
+    //   let q = tabKey ? `is:${tabKey}` : "";
+    //   if (config.filters) {
+    //     config.filters.forEach((f) => {
+    //       if (f.defaultValue) {
+    //         const safeValue = f.defaultValue.includes(" ")
+    //           ? `"${f.defaultValue}"`
+    //           : f.defaultValue;
+    //         q += ` ${f.key}:${safeValue}`;
+    //       }
+    //     });
+    //   }
+    //   return q.trim();
+    // };
     const buildDefaultString = (tabKey) => {
       let q = tabKey ? `is:${tabKey}` : "";
-      
       if (config.filters) {
         config.filters.forEach((f) => {
-          if (f.defaultValue) {
-            // Safely wrap in quotes if the default value has a space (e.g., "John Doe")
-            const safeValue = f.defaultValue.includes(" ") ? `"${f.defaultValue}"` : f.defaultValue;
+          // ✅ Only add default if it's a real value, not the "All" placeholder
+          if (f.defaultValue && f.defaultValue !== "") {
+            const safeValue = f.defaultValue.includes(" ")
+              ? `"${f.defaultValue}"`
+              : f.defaultValue;
             q += ` ${f.key}:${safeValue}`;
           }
         });
       }
       return q.trim();
     };
-
     // If child list, ignore URL and load default config
     if (!isUrlSyncEnabled) {
       return buildDefaultString(config.tabConfig?.[0]?.key);
@@ -35,60 +50,67 @@ export function useListState(config, rawData = []) {
 
     // 🔥 If URL already has a query string, the URL wins!
     // (Note: Use your prefix here like searchParams.get("tickets_q") if you applied the namespaces)
-    const urlQ = searchParams.get("q"); 
+    const urlQ = searchParams.get(`${prefix}q`);
     if (urlQ) return urlQ;
 
-    // Otherwise, build the default string!
-    const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
+    // 🔥 3. Read from `${prefix}tab` instead of just "tab"
+    const urlTab =
+      searchParams.get(`${prefix}tab`) || config.tabConfig?.[0]?.key;
     return buildDefaultString(urlTab);
-    
-  }, [isUrlSyncEnabled, config.tabConfig, config.filters, searchParams]);
+  }, [
+    isUrlSyncEnabled,
+    config.tabConfig,
+    config.filters,
+    searchParams,
+    prefix,
+  ]);
 
+  //   const initialQuery = useMemo(() => {
 
-//   const initialQuery = useMemo(() => {
-    
-//     // If child list, ignore URL and load default config
-//     if (!isUrlSyncEnabled) {
-//       const defaultTab = config.tabConfig?.[0]?.key;
-//       return defaultTab ? `is:${defaultTab}` : "";
-//     }
+  //     // If child list, ignore URL and load default config
+  //     if (!isUrlSyncEnabled) {
+  //       const defaultTab = config.tabConfig?.[0]?.key;
+  //       return defaultTab ? `is:${defaultTab}` : "";
+  //     }
 
-//     const urlQ = searchParams.get("q");
-//     if (urlQ) return urlQ;
+  //     const urlQ = searchParams.get("q");
+  //     if (urlQ) return urlQ;
 
-//     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
-//     return urlTab ? `is:${urlTab}` : "";
-//   }, [isUrlSyncEnabled, config.tabConfig, searchParams]);
+  //     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
+  //     return urlTab ? `is:${urlTab}` : "";
+  //   }, [isUrlSyncEnabled, config.tabConfig, searchParams]);
 
   /* --- STATES --- */
   const [query, setQuery] = useState(initialQuery);
+  const [selectedOptions, setSelectedOptions] = useState({});
   const [sortField, setSortField] = useState(
-    (isUrlSyncEnabled ? searchParams.get("sort") : null) ||
+    (isUrlSyncEnabled ? searchParams.get(`${prefix}sort`) : null) ||
       config.defaultSort?.field ||
       "updatedAt",
   );
+
   const [sortOrder, setSortOrder] = useState(
-    (isUrlSyncEnabled ? searchParams.get("order") : null) ||
+    (isUrlSyncEnabled ? searchParams.get(`${prefix}order`) : null) ||
       config.defaultSort?.order ||
       "desc",
   );
   const [filters, setFilters] = useState({});
 
-//  const [filters, setFilters] = useState(() => {
-//     // 1. Start with any root-level defaultFilters (if you still use them)
-//     const initial = { ...(config.defaultFilters || {}) };
-//     // 2. Loop through config.filters and grab any 'defaultValue' you defined
-//     if (config.filters) {
-//         config.filters.forEach((f) => {
-//             if (f.defaultValue !== undefined && initial[f.key] === undefined) {
-//                 initial[f.key] = f.defaultValue;
-//             }
-//         });
-//     }
-//     console.log("initial :", initial);
-    
-//     return initial; // This will now contain { assignedTo: currentUserName }
-// });
+  //  const [filters, setFilters] = useState(() => {
+  //     // 1. Start with any root-level defaultFilters (if you still use them)
+  //     const initial = { ...(config.defaultFilters || {}) };
+  //     // 2. Loop through config.filters and grab any 'defaultValue' you defined
+  //     if (config.filters) {
+  //         config.filters.forEach((f) => {
+  //             if (f.defaultValue !== undefined && initial[f.key] === undefined) {
+  //                 initial[f.key] = f.defaultValue;
+  //             }
+  //         });
+  //     }
+  //     console.log("initial :", initial);
+
+  //     return initial; // This will now contain { assignedTo: currentUserName }
+  // });
   const [view, setView] = useState(config.defaultView || "table");
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
 
@@ -126,19 +148,18 @@ export function useListState(config, rawData = []) {
         config.filters.find((f) => f.key === key)?.filterType === "api",
     );
   }, [filters, queryFilters, config.filters]);
-//  console.log("combinedFiltersForApi :", combinedFiltersForApi, apiFilterEntries);
+  //  console.log("combinedFiltersForApi :", combinedFiltersForApi, apiFilterEntries);
   const apiFilterConfig =
     apiFilterEntries.length > 0
       ? config.filters.find((f) => f.key === apiFilterEntries[0][0])
       : null;
-  
 
   const apiPayload = useMemo(() => {
     if (apiFilterEntries.length === 0) return undefined;
 
     return Object.fromEntries(
       apiFilterEntries.map(([key, value]) => {
-        const filterConf = config.filters.find((f) => f.key === key);        
+        const filterConf = config.filters.find((f) => f.key === key);
         return [filterConf?.apiKey || config?.filters?.idKey, value];
       }),
     );
@@ -161,7 +182,6 @@ export function useListState(config, rawData = []) {
   });
 
   console.log("apiFilteredData :", apiFilteredData);
-  
 
   /* --- PROCESS DATA (Local Filtering & Sorting) --- */
   const processed = useMemo(() => {
@@ -171,13 +191,13 @@ export function useListState(config, rawData = []) {
     if (apiFilterEntries.length > 0 && apiFilteredData) {
       const raw = Array.isArray(apiFilteredData) ? apiFilteredData : [];
       const activeNormalizer = apiFilterConfig?.normalizer || config.normalizer;
-      
-      data = activeNormalizer ? raw.map(activeNormalizer) : raw;    
+
+      data = activeNormalizer ? raw.map(activeNormalizer) : raw;
     } else {
       data = [...rawData];
     }
-
-    const combinedFilters = { ...filters, ...queryFilters };    
+    console.log("Filtered Data:", data, rawData);
+    const combinedFilters = { ...filters, ...queryFilters };
 
     Object.entries(combinedFilters).forEach(([key, value]) => {
       if (!value) return;
@@ -205,17 +225,53 @@ export function useListState(config, rawData = []) {
       }
 
       const filterConfig = config.filters?.find((f) => f.key === key);
-      
+
       if (filterConfig?.filterType === "api") return; // Skip, handled by server
-// 🔥 NEW: Execute the custom filter function if it exists
-      if (filterConfig?.filterType === "custom" && typeof filterConfig.customFilter === "function") {
+      // 🔥 NEW: Execute the custom filter function if it exists
+      if (
+        filterConfig?.filterType === "custom" &&
+        typeof filterConfig.customFilter === "function"
+      ) {
         data = data.filter((item) => filterConfig.customFilter(item, value));
       } else if (filterConfig?.filterType === "array") {
+        // value could be "id1" (single) or "id1,id2" (multi) or ["id1","id2"] (array)
+        const selectedValues = Array.isArray(value)
+          ? value
+          : String(value)
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean);
+
         data = data.filter(
           (item) =>
             Array.isArray(item[key]) &&
-            item[key].some((entry) => entry[filterConfig.filterKey] == value),
+            // ✅ every = AND logic (item must have ALL selected labels)
+            // ❌ some  = OR logic  (item just needs ONE matching label)
+            selectedValues.every((selectedVal) =>
+              item[key].some(
+                (entry) =>
+                  String(entry[filterConfig.filterKey]) === String(selectedVal),
+              ),
+            ),
         );
+        // const selectedValues = Array.isArray(value)
+        //   ? value
+        //   : String(value)
+        //       .split(",")
+        //       .map((v) => v.trim())
+        //       .filter(Boolean);
+
+        // data = data.filter(
+        //   (item) =>
+        //     Array.isArray(item[key]) &&
+        //     // item must match ANY of the selected values (OR logic)
+        //     selectedValues.some((selectedVal) =>
+        //       item[key].some(
+        //         (entry) =>
+        //           String(entry[filterConfig.filterKey]) === String(selectedVal),
+        //       ),
+        //     ),
+        // );
       } else {
         data = data.filter((item) => item[key] == value);
       }
@@ -223,8 +279,10 @@ export function useListState(config, rawData = []) {
 
     // Text search
     if (text) {
+      const lower = text.toLowerCase();
+      const fields = config.searchFields || ["title"]; // fallback to title only
       data = data.filter((item) =>
-        item.title?.toLowerCase().includes(text.toLowerCase()),
+        fields.some((field) => item[field]?.toLowerCase().includes(lower)),
       );
     }
 
@@ -264,7 +322,7 @@ export function useListState(config, rawData = []) {
   ]);
 
   const visibleData = processed.slice(0, visibleCount);
-console.log("visibleData :", visibleData);
+  console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
     setVisibleCount((v) => v + (config.pageSize || 20));
@@ -288,7 +346,9 @@ console.log("visibleData :", visibleData);
     total: processed.length,
     hasMore: visibleCount < processed.length,
     loadMore,
-    dataUpdatedAt
+    dataUpdatedAt,
+    selectedOptions,
+    setSelectedOptions,
   };
 }
 

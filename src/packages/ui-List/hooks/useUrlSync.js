@@ -22,6 +22,9 @@ export function useUrlSync(state) {
     if (state.sortField) newParams.set(`${prefix}sort`, state.sortField);
     else newParams.delete(`${prefix}sort`);
 
+    if (state.sortOrder) newParams.set(`${prefix}order`, state.sortOrder);
+    else newParams.delete(`${prefix}order`);
+
     if (state.statusTab) newParams.set(`${prefix}tab`, state.statusTab);
     else newParams.delete(`${prefix}tab`);
 
@@ -31,6 +34,7 @@ export function useUrlSync(state) {
   }, [
     state.query,
     state.sortField,
+    state.sortOrder,
     state.statusTab,
     state.config.syncUrl,
     searchParams,

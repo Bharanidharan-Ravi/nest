@@ -1,72 +1,148 @@
-import { useState, useEffect } from "react";
+// ListSearchBar.jsx — full fixed version
+
+import { useState, useRef } from "react";
 import { useList } from "../context/ListContext";
-import { getDisplayQuery, getInternalQuery } from "../hooks/useQueryTranslator";
+import { getInternalQuery } from "../hooks/useQueryTranslator";
+import { parseQuery } from "../hooks/useQueryParser";
 
 export function ListSearchBar() {
   const { query, setQuery, config } = useList();
-  const [displayValue, setDisplayValue] = useState("");
-  
-  // 🔥 NEW: Track if the user's cursor is currently inside the input
-  const [isFocused, setIsFocused] = useState(false); 
+  const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef(null);
 
-  useEffect(() => {
-    if (!config.filters) return;
-    
-    // Calculate what the display text *should* look like right now
-    const expectedDisplay = getDisplayQuery(query, config.filters);
-    
-    // 🔥 THE FIX: If the user is NOT typing, always force sync. 
-    // This allows the Search Bar to instantly flip from GUIDs to Labels 
-    // the moment `useMasterData()` finishes fetching on page reload.
-    if (!isFocused && displayValue !== expectedDisplay) {
-      setDisplayValue(expectedDisplay);
-    } 
-    // If they ARE typing, only intervene if things get out of sync under the hood
-    else if (isFocused && getInternalQuery(displayValue, config.filters) !== query) {
-      setDisplayValue(expectedDisplay);
+  const { filters, text } = parseQuery(query);
+
+  // ── Tab chip (is:open / is:closed) ──────────────────────────────────────
+  const tabChip = filters.is
+    ? { key: "is", value: filters.is, display: filters.is }
+    : null;
+
+  // ── Filter chips ─────────────────────────────────────────────────────────
+  const filterChips = Object.entries(filters)
+    .filter(([key]) => key !== "is")
+    .flatMap(([key, value]) => {
+      const filterDef = config.filters?.find((f) => f.key === key);
+      const displayKey = filterDef?.view || key;
+
+      const values = Array.isArray(value)
+        ? value
+        : String(value)
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean);
+
+      return values
+        .filter((v) => v !== "")
+        .map((v) => {
+          const option = filterDef?.options?.find(
+            (o) => String(o.value) === String(v),
+          );
+          const displayLabel = option ? option.label : v;
+          return { key, value: v, display: `${displayKey}: ${displayLabel}` };
+        });
+    });
+
+  // Replace removeChip's setQuery call with:
+  const removeChip = (chipKey, chipValue) => {
+    const { filters: cur, text: curText } = parseQuery(query);
+
+    const rebuilt = Object.entries(cur)
+      .map(([k, v]) => {
+        if (k !== chipKey) return `${k}:${Array.isArray(v) ? v.join(",") : v}`;
+        const vals = Array.isArray(v)
+          ? v
+          : String(v)
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean);
+        const remaining = vals.filter((x) => x !== chipValue);
+        return remaining.length > 0 ? `${k}:${remaining.join(",")}` : null;
+      })
+      .filter(Boolean);
+
+    setQuery([...rebuilt, curText].filter(Boolean).join(" ").trim());
+    setInputValue(curText); // ✅ Keep input in sync with remaining free text
+  };
+  // ── Free text enter ───────────────────────────────────────────────────────
+  const handleInputChange = (e) => {
+    const val = e.target.value;
+    setInputValue(val);
+
+    // Rebuild query with new free text — keep all existing filters
+    const { filters: cur } = parseQuery(query);
+    const existingFilters = Object.entries(cur).map(
+      ([k, v]) => `${k}:${Array.isArray(v) ? v.join(",") : v}`,
+    );
+    // ✅ Update text part live as user types
+    setQuery([...existingFilters, val].filter(Boolean).join(" ").trim());
+  };
+
+  const handleInputKeyDown = (e) => {
+    // Only keep Backspace to remove last chip — no more Enter needed
+    if (e.key === "Backspace" && !inputValue && filterChips.length > 0) {
+      const last = filterChips[filterChips.length - 1];
+      removeChip(last.key, last.value);
     }
-  }, [query, config.filters, displayValue, isFocused]);
-
-  const handleChange = (e) => {
-    const newValue = e.target.value;
-    setDisplayValue(newValue); 
-    
-    const internalQuery = getInternalQuery(newValue, config.filters || []);
-    setQuery(internalQuery);
   };
 
-  const handleFocus = () => {
-    setIsFocused(true); // Note that they clicked in
-    if (displayValue && !displayValue.endsWith(" ")) {
-      setDisplayValue(displayValue + " ");
-    }
-  };
-
-  const handleBlur = () => {
-    setIsFocused(false); // Note that they clicked out
-  };
-
-  const handleClear = () => {
-    setDisplayValue("");
-    setQuery("");
+  const handleClearAll = () => {
+    // Clear all filters but KEEP is:open
+    const tab = filters.is;
+    setQuery(tab ? `is:${tab}` : "");
+    setInputValue("");
   };
 
   return (
-    <div className="p-3 border-b border-gray-200 relative bg-white rounded-t-lg">
-      <input
-        value={displayValue}
-        onFocus={handleFocus}
-        onBlur={handleBlur} // 🔥 Add the blur handler here
-        onChange={handleChange}
-        placeholder="Find a project..."
-        className="w-full border border-gray-300 bg-gray-50 focus:bg-white rounded-md px-4 py-2 text-sm text-brand-black focus:outline-none focus:ring-0 focus:border-gray-400 transition-all"
-      />
-      {displayValue && (
-        <button
-          onClick={handleClear}
-          className="absolute right-8 top-1/2 -translate-y-1/2 text-gray-400 hover:text-brand-black transition-colors"
+    <div
+      className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-gray-200 bg-white rounded-t-lg min-h-[44px] cursor-text"
+      onClick={() => inputRef.current?.focus()}
+    >
+      {/* Tab chip — is:open / is:closed — NOT removable */}
+      {tabChip && (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 capitalize">
+          {tabChip.display}
+        </span>
+      )}
+
+      {/* Filter chips — removable */}
+      {filterChips.map((chip, i) => (
+        <span
+          key={`${chip.key}-${chip.value}-${i}`}
+          className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300 shadow-sm"
         >
-          ✕
+          {chip.display}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              removeChip(chip.key, chip.value);
+            }}
+            className="text-gray-400 hover:text-gray-700 transition-colors leading-none ml-0.5"
+          >
+            ✕
+          </button>
+        </span>
+      ))}
+
+      {/* Free text input */}
+      <input
+        ref={inputRef}
+        value={inputValue}
+        onChange={handleInputChange} // ✅ was missing live update
+        onKeyDown={handleInputKeyDown}
+        placeholder={
+          filterChips.length === 0 && !tabChip ? "Find a ticket..." : ""
+        }
+        className="flex-1 min-w-[120px] bg-transparent text-sm text-gray-800 focus:outline-none py-0.5"
+      />
+
+      {/* Clear filters (keeps tab) */}
+      {filterChips.length > 0 && (
+        <button
+          onClick={handleClearAll}
+          className="ml-auto text-gray-400 hover:text-gray-600 transition-colors text-xs px-1"
+          title="Clear all filters"
+        >
+          Clear ✕
         </button>
       )}
     </div>

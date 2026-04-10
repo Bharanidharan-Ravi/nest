@@ -63,7 +63,7 @@
 //     ...(Master?.EmployeeList?.map((user) => ({
 //       label: user.UserName,
 //       value: user.UserID,
-      
+
 //     })) || []),
 //   ];
 
@@ -103,8 +103,7 @@
 //     }))
 //     .sort((a, b) => a.label.localeCompare(b.label)) || []
 //   ];
-  
-  
+
 //   const TicketList = data?.map(normalizeTicket) || [];
 
 //   // const focusedIndex = useTicketKeyboardNavigation(
@@ -226,13 +225,9 @@
 //   );
 // }
 
-
 // //anbu
 
-
-
-
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import React from "react";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import "../css/ViewTickets.css";
@@ -242,22 +237,34 @@ import { useMasterData } from "../../../core/master/useMasterData";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import { useTicketKeyboardNavigation } from "../hooks/useTicketKeyboardNavigation";
-import ThreadListCard from "../component/ThreadListCard/ThreadListCard";
 import TicketListCard from "../component/TicketListCard";
 import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
+import { getEmployeeFilterOptions } from "../../../app/shared/utilities/formUtils";
+import {
+  useEmployeeById,
+  useEmployeeOptions,
+  useLabelOptions,
+  useProjectOptions,
+  useRepoOptions,
+  useTeamOptions,
+} from "../../../core/master/selectors";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
-  const navigate = useNavigate();
   const { data: Master } = useMasterData();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
 
-  const { data, isLoading } = useTicketMaster({
+  const { data } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
   });
+  const projectFilterOptions = useProjectOptions(true);
+  const LabelFilterOptions = useLabelOptions(true);
+  const employeeFilterOptions = useEmployeeOptions(true);
+  const repoFilterOptions = useRepoOptions(true);
+  const teamFilterOptions = useTeamOptions(true);
+
   const editRouteKey = projId
     ? ROUTE_KEYS.PROJ_TICKET_EDIT
     : ROUTE_KEYS.TICKET_EDIT;
@@ -268,87 +275,13 @@ export default function TicketsPage() {
       ? ROUTE_KEYS.PROJ_TICKET_CREATE
       : ROUTE_KEYS.TICKET_CREATE;
 
-  const isRepoScoped = !!repoId;
-  // const normalizeTicket = (ticket) => ({
-  //   id: ticket.Issue_Id,
-  //   title: ticket.Title,
-  //   ticketKey: ticket.Issue_Code,
-  //   status: ticket.Status,
-  //   statusId: ticket.StatusId,
-  //   description: ticket.HtmlDesc || ticket.Description,
-  //   assginedTo: ticket.Assignee_Id,
-  //   estimateHours: ticket.hours,
-  //   createdAt: ticket.CreatedAt,
-  //   updatedAt: ticket.UpdatedAt,
-  //   UpdatedBy: ticket.UpdatedBy,
-  //   repoId: ticket.RepoId,
-  //   dueDate: ticket.Due_Date,
-  //   project: ticket.Project_Id,
-  //   priority: ticket.Priority,
-  //   multiAssignees: ticket.All_Assignees
-  //     ? JSON.parse(ticket.All_Assignees)
-  //     : [],
-  //   RepoKey: ticket.RepoKey,
-  //   label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
-  //   CompletionPct: ticket.CompletionPct,
-  //   // 🆕 ADD TEAM FIELDS
-  //   teamId: ticket.Assignee_TeamId,
-  //   teamName: ticket.Assignee_TeamName,
-  // });
+  console.log("projectFilterOptions :", projectFilterOptions);
+  // 🆕 CORRECT teamFilterOptions - Extract from TICKETS
 
-  const employeeFilterOptions = [
-    { label: "All Employees", value: "" },
-    ...(Master?.EmployeeList
-          ?.filter((user) => user.Status === "Active") // 👈 1. Filter first
-          .map((user) => ({                            // 👈 2. Then map
-            label: user.UserName,
-            value: user.UserID,
-          })) || []),
-  ];
-  
-
-  const repoFilterOptions = [
-    { label: " Repositories", value: "" },
-    ...(Master?.RepoList?.map((repo) => ({
-      label: repo.Title, // What the user sees in the dropdown
-      value: repo.Repo_Id, // What the system uses to filter the cards
-    })) || []),
-  ];
-  const projectFilterOptions = [
-    { label: "Projects", value: "" },
-    ...(Master?.ProjectList?.map((prj) => ({
-      label: prj.Project_Name, // What the user sees in the dropdown
-      value: prj.Id, // What the system uses to filter the cards
-    })) || []),
-  ];
-
-  const LabelFilterOptions = [
-    { label: " Labels", value: "" },
-    ...(Master?.LabelMaster?.map((labels) => ({
-      label: labels.Title, // What the user sees in the dropdown
-      value: labels.Id, // What the system uses to filter the cards
-    })) || []),
-  ];
-  // 🆕 ADD THIS - Team filter options
-// const teamFilterOptions = [
-//   { label: "All Teams", value: "" },
-//   ...(Master?.EmployeeList?.map((emp) => ({
-//     label: emp.TeamName || emp.Assignee_TeamName , // Adjust based on your master data structure
-//     value: emp.TeamId || emp.Assignee_TeamId ,
-//   })) || []),
-// ];
-
-// 🆕 CORRECT teamFilterOptions - Extract from TICKETS
-const teamFilterOptions = [
-  { label: "All Teams", value: "" },
-  ...(Master?.TeamMaster?.map((team) => ({
-    label: team.TeamName, // What the user sees in the dropdown
-    value: team.TeamId, // What the system uses to filter the cards
-  })) || []),
-];
-console.log("teamFilterOptions :", teamFilterOptions);
+  console.log("teamFilterOptions :", teamFilterOptions);
 
   const TicketList = data?.map(normalizeTicket) || [];
+  console.log("TicketList :", TicketList);
 
   // const focusedIndex = useTicketKeyboardNavigation(
   //   TicketList,
@@ -360,17 +293,44 @@ console.log("teamFilterOptions :", teamFilterOptions);
     filters: [
       ...(!repoId
         ? [
-          {
-            key: "repoId",
-            view: "Repo",
-            options: repoFilterOptions,
-          },
-        ]
+            {
+              key: "repoId",
+              view: "Repo",
+              options: repoFilterOptions,
+            },
+          ]
         : []),
       {
-        key: "assginedTo", // 👈 MUST match the 'owner' key in normalizeProj
+        key: "assginedTo", // Ensure this matches the typo in your raw data
         view: "Assignee",
         options: employeeFilterOptions,
+        filterType: "custom", // 🔥 CRITICAL
+        customFilter: (item, selectedValue) => {
+          if (!selectedValue) return true;
+          const safeSelected = String(selectedValue).toLowerCase();
+
+          // Check primary assignee (handling null safely)
+          if (
+            item.assignedTo &&
+            String(item.assignedTo).toLowerCase() === safeSelected
+          ) {
+            return true;
+          }
+
+          // Check the multiAssignees array
+          if (Array.isArray(item.multiAssignees)) {
+            return item.multiAssignees.some((assignee) => {
+              const matchName =
+                assignee.Assignee_Name &&
+                String(assignee.Assignee_Name).toLowerCase() === safeSelected;
+              const matchId =
+                assignee.Assignee_Id &&
+                String(assignee.Assignee_Id).toLowerCase() === safeSelected;
+              return matchName || matchId;
+            });
+          }
+          return false;
+        },
       },
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
@@ -382,19 +342,30 @@ console.log("teamFilterOptions :", teamFilterOptions);
         view: "Label",
         options: LabelFilterOptions,
         filterType: "array",
+        allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
       {
-        key: "teamId",  // 👈 MUST match normalizeTicket key
+        key: "teamId",
         view: "Team",
         options: teamFilterOptions,
+        filterType: "custom",
+        customFilter: (item, value) => {
+          if (!value || value === "") return true;
+          // Check if ANY assignee on this ticket belongs to the selected team
+          return item.multiAssignees?.some(
+            (a) =>
+              String(a.Assignee_TeamId) === String(value) &&
+              a.Assignee_Type === "Main Assignee",
+          );
+        },
       },
     ],
     cardRenderer: (item, controls) => (
       <TicketListCard
         item={item}
         controls={controls}
-      // focused={index === focusedIndex}
+        // focused={index === focusedIndex}
       />
     ),
     onItemClick: (item) => {

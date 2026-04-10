@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
 
 export const EmployeedataTable = {
@@ -46,7 +47,7 @@ export const EmployeedataTable = {
     {
       key: "DoB",
       label: "DoB",
-      render: (item) => <div className="h-30">{item.DoB}</div>,
+      render: (item) => <div className="h-30">{item.DoB ? dayjs(item.DoB).format("DD-MM-YYYY") : "-"}</div>,
     },
     {
       key: "Email",
