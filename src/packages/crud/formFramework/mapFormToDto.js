@@ -12,7 +12,6 @@
 export const mapFormToDto = (formData = {}, fields = [], context = {}) => {
   const dto = {};
   const processField = (field, sourceData, target) => {
-
     // ====================================================================
     // 🔥 0️⃣ DISABLED FIELD CHECK (The Gatekeeper)
     // If the field is disabled AND does not have forceSubmit: true, skip it!
@@ -45,37 +44,29 @@ export const mapFormToDto = (formData = {}, fields = [], context = {}) => {
     const rawValue = sourceData[field.name];
 
     // ----------------------------------------
-    // 2️⃣ Group Field (Nested Multi)
+    // 2️⃣ Group Field (Nested Multi / Array)
     // ----------------------------------------
+
     if (field.type === "group" && field.isMulti) {
       const groupArray = Array.isArray(rawValue) ? rawValue : [];
-
       target[field.apiKey] = groupArray.map((item) => {
         const groupObject = {};
-
         field.fields?.forEach((subField) => {
           processField(subField, item, groupObject);
         });
-
         return groupObject;
       });
-
       return;
     }
 
-    if (field.type === "group" && field.isMulti) {
-      const groupArray = Array.isArray(rawValue) ? rawValue : [];
-
-      target[field.apiKey] = groupArray.map((item) => {
-        const groupObject = {};
-
-        field.fields?.forEach((subField) => {
-          processField(subField, item, groupObject);
-        });
-
-        return groupObject;
+    // 🔥 NEW: 2b️⃣ Group Field (Single Object)
+    if (field.type === "group" && !field.isMulti) {
+      const groupObject = {};
+      // rawValue represents formData["Employee"] in this context
+      field.fields?.forEach((subField) => {
+        processField(subField, rawValue || {}, groupObject);
       });
-
+      target[field.apiKey] = groupObject;
       return;
     }
 

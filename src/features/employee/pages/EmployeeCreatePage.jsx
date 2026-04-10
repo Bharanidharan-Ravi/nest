@@ -1,36 +1,57 @@
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { EmployeeFormConfig } from "../config/EmployeeForm";
 import { useParams }      from "react-router-dom"
+import { getEmployeeList, getTeamMaster } from "../hooks/useEmployeeList";
+import { useMasterData } from "../../../core/master/useMasterData";
 
 const EmployeeCreate = () => {
 
-  // const params = useParams()
-  // const isEdit = !!params.EmployeeId
+  const params = useParams();
 
-  // const { data: labelListWrapper } = useLabelData(
-  //   isEdit ? params.EmployeeId : null
-  // )
+  const isEdit = !!params.employeeId
+  console.log('====================================');
+  console.log("isEdit",params);
+  console.log('====================================');
 
+  const { data: EmployeeListWrapper } = getEmployeeList(
+    isEdit ? params.employeeId : null
+  )
+console.log("params :", params.employeeId );
 
+  const config = ["TeamMaster"];
+  const {data} = useMasterData(config);
+  console.log("data :", data);
+  
+  const entityData =
+    isEdit && Array.isArray(EmployeeListWrapper)
+      ? EmployeeListWrapper.find((emp) => emp.UserID === params.employeeId) || null
+      : null;
 
+    const dynamicConfig = {
+      ...EmployeeFormConfig,
+      // PUT /api/label/{id} on edit, POST /api/label on create
+      api: isEdit ? `Employee/update/${params.employeeId}` : EmployeeFormConfig.api,
+      // fields: isEdit
+      //   ? [...EmployeeFormConfig.fields, statusField]  // status only on edit
+      //   : EmployeeFormConfig.fields,
+    }
+  
 
+console.log('====================================');
+console.log("entityData",entityData);
+console.log('====================================');
 
-
-
-  return (
-    <div className="max-w-7xl mx-auto w-full">
-      <div className="mb-6 pb-2 border-b border-ghBorder">
-        <h2 className="text-2xl font-semibold text-ghText">
-          Create Employee
-        </h2>
+    return (
+      <div>
+        <h2>{isEdit ? "Edit Employee" : "Create Employee"}</h2>
+        <EntityFormPage
+          mode={isEdit ? "Update" : "Create"}
+          config={dynamicConfig}
+          context={{ params, isEdit, entityData, data }}
+          module="Employee"
+        />
       </div>
-
-      <EntityFormPage 
-      mode="Create" 
-      config={EmployeeFormConfig} 
-      module="Employee" />
-    </div>
-  );
-};
-
+    )
+  }
+  
 export default EmployeeCreate;

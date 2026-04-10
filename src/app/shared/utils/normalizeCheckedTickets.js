@@ -4,6 +4,7 @@ export const normalizeCheckedTickets = (item) => ({
       ProjKey: item.ProjKey,
       RepoKey: item.RepoKey,
       Status: item.Status,
+      navId: item.TicketId,
       UncheckComment: item.UncheckComment ?? "-",
       project: item.Project_ID,
       title:item.Title,

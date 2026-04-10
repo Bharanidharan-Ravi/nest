@@ -58,7 +58,7 @@ const ProjectCreate = () => {
   return (
     <div>
       <h2>{isEdit ? "Edit Project" : "Create Project"}</h2>
-      <EntityFormPage mode={isEdit ? "Update" : "create"} config={dynamicConfig}
+      <EntityFormPage mode={isEdit ? "Update" : "Create"} config={dynamicConfig}
         context={{ params, isEdit, entityData }}
         module="Project"
       />

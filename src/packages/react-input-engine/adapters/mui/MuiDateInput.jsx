@@ -16,6 +16,7 @@ const MuiDateInput = ({
   onChange,
   required,
   theme = {},
+  disableMinDate = false,
 }) => {
   const formattedValue = useMemo(() => {
     if (value && dayjs(value).isValid()) {
@@ -87,17 +88,24 @@ const MuiDateInput = ({
     setIsEditing(false);
   };
 
-  const handleCalendarSelect = (newValue) => {
+const handleCalendarSelect = (newValue, selectionState) => {
     if (newValue && newValue.isValid()) {
       const formattedDisplay = newValue.format("DD/MM/YYYY");
       const formattedApi = newValue.format("YYYY-MM-DD");
+      
+      // 1. Always update the input text and parent state 
+      // so the calendar visually navigates to the newly selected year
       setInputText(formattedDisplay);
-      setIsEditing(false);
       onChange(name, formattedApi, formattedApi);
-      setAnchorEl(null);
+
+      // 🔥 2. FIX: Only close the popover if the user clicked a specific Day
+      // If they clicked a year, selectionState is "partial", so it stays open
+      if (selectionState === "finish" || selectionState === undefined) {
+        setIsEditing(false);
+        setAnchorEl(null); 
+      }
     }
   };
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
       <TextField
@@ -152,7 +160,7 @@ const MuiDateInput = ({
         <DateCalendar
           value={value ? dayjs(value) : null}
           onChange={handleCalendarSelect}
-          minDate={dayjs()}
+          minDate={disableMinDate ? undefined : dayjs()}
         />
       </Popover>
     </LocalizationProvider>

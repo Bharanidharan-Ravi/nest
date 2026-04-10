@@ -12,24 +12,63 @@ export const useEntityForm = (config, context = {}) => {
   const [errors, setErrors] = useState({});
   const { data: masterData } = useMasterData();
 
+  // const resolvedInitialData = useMemo(() => {
+  //   const initialValues = {};
+
+  //   (config.fields || []).forEach((field) => {
+  //     if (!field.initValueResolver) return;
+
+  //     const initialValue = field.initValueResolver({
+  //       context,
+  //       masterData,
+  //       formData,
+  //     });
+
+  //     if (initialValue !== null && initialValue !== undefined) {
+  //       initialValues[field.name] = initialValue;
+  //     }
+  //   });
+
+  //   return initialValues;
+  // }, [config.fields, context, masterData, formData]);
   const resolvedInitialData = useMemo(() => {
-    const initialValues = {};
+    // 🔥 RECURSIVE HELPER
+    const resolveFields = (fieldsArray) => {
+      const initialValues = {};
 
-    (config.fields || []).forEach((field) => {
-      if (!field.initValueResolver) return;
+      (fieldsArray || []).forEach((field) => {
+        // 1. If it's a group, recurse into its children
+        if (field.type === "group" && Array.isArray(field.fields)) {
+          const groupValues = resolveFields(field.fields);
+          // If the group itself has a resolver, merge it with child resolvers
+          let groupSelfValue = field.initValueResolver
+            ? field.initValueResolver({ context, masterData, formData })
+            : {};
 
-      const initialValue = field.initValueResolver({
-        context,
-        masterData,
-        formData,
+          if (
+            Object.keys(groupValues).length > 0 ||
+            Object.keys(groupSelfValue || {}).length > 0
+          ) {
+            initialValues[field.name] = { ...groupValues, ...groupSelfValue };
+          }
+        }
+        // 2. Standard field resolver
+        else if (field.initValueResolver) {
+          const initialValue = field.initValueResolver({
+            context,
+            masterData,
+            formData,
+          });
+
+          if (initialValue !== null && initialValue !== undefined) {
+            initialValues[field.name] = initialValue;
+          }
+        }
       });
+      return initialValues;
+    };
 
-      if (initialValue !== null && initialValue !== undefined) {
-        initialValues[field.name] = initialValue;
-      }
-    });
-
-    return initialValues;
+    return resolveFields(config.fields);
   }, [config.fields, context, masterData, formData]);
 
   const mergedFormData = useMemo(
@@ -42,30 +81,77 @@ export const useEntityForm = (config, context = {}) => {
 
     let updated = applyDependencies(mergedFormData, baseFields);
 
-    updated = updated.map((field) => {
+    // 🔥 RECURSIVE HELPER: Process fields and sub-fields
+    const processFieldNode = (field) => {
       let newField = { ...field };
 
-      if (field.optionsResolver && masterData) {
-        newField.options = field.optionsResolver({
+      // 1. Resolve options
+      if (newField.optionsResolver && masterData) {
+        newField.options = newField.optionsResolver({
           masterData,
           context,
-          formData,
+          formData: mergedFormData, // Use merged state!
         });
       }
 
-      if (field.disableWhen) {
-        newField.disabled = field.disableWhen(context, mergedFormData);
+      // 2. Resolve disables
+      if (newField.disableWhen) {
+        newField.disabled = newField.disableWhen(context, mergedFormData);
       }
-      if (field.requiredWhen) {        
-        newField.required = field.requiredWhen(context, mergedFormData);
+
+      // 3. Resolve required
+      if (newField.requiredWhen) {
+        newField.required = newField.requiredWhen(context, mergedFormData);
       }
+
+      // 4. Recurse if it's a group!
+      if (newField.type === "group" && Array.isArray(newField.fields)) {
+        newField.fields = newField.fields.map((subField) =>
+          processFieldNode(subField)
+        );
+      }
+
       return newField;
-    });
+    };
+
+    // Apply recursive function to all top-level fields
+    updated = updated.map(processFieldNode);
 
     updated = applyVisibilityRules(mergedFormData, updated, context);
 
     return updated;
   }, [mergedFormData, config.fields, masterData, context]);
+  // const processedFields = useMemo(() => {
+  //   const baseFields = config.fields || [];
+
+  //   let updated = applyDependencies(mergedFormData, baseFields);
+
+  //   updated = updated.map((field) => {
+  //     let newField = { ...field };
+
+  //     if (field.optionsResolver && masterData) {
+  //       console.log("master :", masterData);
+
+  //       newField.options = field.optionsResolver({
+  //         masterData,
+  //         context,
+  //         formData,
+  //       });
+  //     }
+
+  //     if (field.disableWhen) {
+  //       newField.disabled = field.disableWhen(context, mergedFormData);
+  //     }
+  //     if (field.requiredWhen) {
+  //       newField.required = field.requiredWhen(context, mergedFormData);
+  //     }
+  //     return newField;
+  //   });
+
+  //   updated = applyVisibilityRules(mergedFormData, updated, context);
+
+  //   return updated;
+  // }, [mergedFormData, config.fields, masterData, context]);
 
   const handleChange = (name, value, metadata = {}) => {
     setFormData((prev) => {
@@ -102,7 +188,11 @@ export const useEntityForm = (config, context = {}) => {
 
       // 4. REAL-TIME VALIDATION ENGINE
       const currentStateToValidate = { ...resolvedInitialData, ...next };
-      const latestErrors = validateForm(currentStateToValidate, config.fields, context);
+      const latestErrors = validateForm(
+        currentStateToValidate,
+        config.fields,
+        context,
+      );
 
       setErrors((prevErrors) => {
         const updatedErrors = { ...prevErrors };
@@ -182,7 +272,13 @@ export const useEntityForm = (config, context = {}) => {
     });
   };
   const validate = () => {
-    const validationErrors = validateForm(mergedFormData, config.fields, context);
+    const validationErrors = validateForm(
+      mergedFormData,
+      config.fields,
+      context,
+    );
+    console.log("validation error :", validationErrors);
+    
     setErrors(validationErrors);
 
     return Object.keys(validationErrors).length === 0;

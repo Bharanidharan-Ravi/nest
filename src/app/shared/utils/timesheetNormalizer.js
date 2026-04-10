@@ -7,6 +7,7 @@ export const createTimesheetNormalizer = (Timedata) => {
     id: Timedata.ThreadId,
     ticketId: Timedata.Issue_Id,
     issueId: Timedata.Issue_Id,
+    navId: Timedata.Issue_Id,
     TicketName: Timedata.TicketName,
     title: Timedata.TicketName,
     startTime: Timedata.StartTime,

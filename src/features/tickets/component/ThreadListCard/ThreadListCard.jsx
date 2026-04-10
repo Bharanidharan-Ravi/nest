@@ -7,7 +7,7 @@ const getInitials = (name) => {
   if (!name) return "";
   return name
     .split(" ")
-    .map((part) => part[0].toUpperCase())
+    .map((part) => part[0]?.toUpperCase())
     .join("");
 };
 
@@ -23,7 +23,6 @@ function formatDateRange(fromTime, toTime) {
 // 👉 Accept the new onEdit and currentUser props!
 const ThreadListCard = ({ item, onEdit, currentUser }) => {
   dayjs.extend(relativeTime);
-
   // Check if this comment was made by the logged-in user
   const isMe = item.CreatedBy === currentUser;
   return (

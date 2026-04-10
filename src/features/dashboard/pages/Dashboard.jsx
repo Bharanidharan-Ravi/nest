@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   const { data: CheckedTicketsResponse } = useCheckedTicketsData(
     user.userId,
-    dayjs().format("YYYY-MM-DD"),
+    dayjs().startOf("day").format("YYYY-MM-DD"),
   );
 
   const handleSelectionChange = (item, isChecked) => {
@@ -140,6 +140,8 @@ export default function Dashboard() {
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
+    onItemClick: (item) =>
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
     filters: [
       {
         key: "assignedTo",
@@ -163,7 +165,7 @@ export default function Dashboard() {
         configKey: "TimeSheet",
         source: "TimeSheet",
         normalizer: createTimesheetNormalizer,
-        defaultValue: dayjs().format("MM-DD-YYYY"),
+        defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
       },
       {
         key: "toDate",
@@ -175,7 +177,7 @@ export default function Dashboard() {
         configKey: "TimeSheet",
         source: "TimeSheet",
         normalizer: createTimesheetNormalizer,
-        defaultValue: dayjs().format("MM-DD-YYYY"),
+        defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
       },
     ],
   };
@@ -237,7 +239,7 @@ export default function Dashboard() {
         configKey: "CheckedTickets",
         source: "CheckedTickets",
         normalizer: normalizeCheckedTickets,
-        defaultValue: dayjs().format("MM-DD-YYYY"),
+        defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
       },
     ],
   };

@@ -188,3 +188,29 @@ export const formatTimeHHMM = (dateTime) => {
   const mm = date.getMinutes().toString().padStart(2, "0");
   return `${hh}:${mm}`;
 };
+
+export const buildOptionsResolver = (listKey, idKey, labelKey, filterFn = null, customMap = null) => {
+  // 🔥 1. Add formData to the destructured arguments
+  return ({ masterData, context, formData }) => {
+    let list = masterData?.[listKey] || context?.data?.[listKey];
+    
+    if (!Array.isArray(list)) return [];
+
+    if (filterFn) {
+      // 🔥 2. Pass the entire state object into the filter function!
+      list = list.filter((item) => filterFn(item, { masterData, context, formData }));
+    }
+
+    if (customMap) {
+      return list.map(customMap);
+    }
+
+    return list.map((item) => ({
+      label: item[labelKey],
+      value: {
+        id: item[idKey],
+        name: item[labelKey],
+      },
+    }));
+  };
+};

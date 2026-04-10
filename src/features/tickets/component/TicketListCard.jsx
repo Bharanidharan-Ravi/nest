@@ -122,7 +122,7 @@ export default function TicketListCard({ item, controls, focused }) {
   };
 
   const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
-  const ticketUrl = tryBuildPath(createRouteKey, { ticketId: item.id });
+  const ticketUrl = tryBuildPath(createRouteKey, { ticketId: item.navId });
   return (
     <div className={`ticket-row ${focused ? "focused-row" : ""}`}>
       {/* LEFT BLOCK: Main Information */}

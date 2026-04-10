@@ -1,3 +1,4 @@
+import { buildOptionsResolver } from "../../../app/shared/utilities/utilities";
 
 export const ProjFieldConfig = () => [
   /* --------------------------------------------------
@@ -16,20 +17,17 @@ export const ProjFieldConfig = () => [
     masterKey: "RepoList",
 
     // 🔥 Build dropdown options
-    optionsResolver: (masterData) =>
-      masterData?.RepoList?.map((repo) => ({
-        label: repo.Title,
-        value: {
-          id: repo.Repo_Id,
-          name: repo.Title,
-        },
-      })) || [],
+    optionsResolver: buildOptionsResolver(
+      "RepoList", // 1. listKey
+      "Repo_Id", // 2. idKey
+      "Title", // 3. labelKey
+    ),
 
     // 🔥 Disable when repoId param exists
     disableWhen: (context) => Boolean(context?.params?.repoId || context?.entityData?.Repo_Id),
 
     // 🔥 Smart initial value resolver
-    initValueResolver: (context, masterData) => {
+    initValueResolver: ({context, masterData}) => {
       // 1. Get the ID from entityData if editing, otherwise get it from the URL params
       const targetRepoId = context?.isEdit
         ? context?.entityData?.Repo_Id
@@ -66,7 +64,7 @@ export const ProjFieldConfig = () => [
 
     pattern: "^[A-Za-z0-9 ]+$",
     errorMessage: "Only alphanumeric allowed",
-    initValueResolver: (context) => context.isEdit ? context.entityData?.Project_Name : "",
+    initValueResolver: ({context}) => context.isEdit ? context.entityData?.Project_Name : "",
     visibleWhen: () => true,
   },
   {
@@ -81,7 +79,7 @@ export const ProjFieldConfig = () => [
     masterKey: "RepoList",
     // colSpan:,
     // 🔥 Build dropdown options
-    optionsResolver: (masterData) =>
+    optionsResolver: ({masterData}) =>
       masterData?.EmployeeList?.map((user) => ({
         label: user.UserName,
         value: {
@@ -89,7 +87,7 @@ export const ProjFieldConfig = () => [
           name: user.UserName,
         },
       })) || [],
-    initValueResolver: (context, masterData) => {
+    initValueResolver: ({context, masterData}) => {
       if (context.isEdit && context.entityData?.EmployeeName) {
         const empId = context.entityData?.Responsible;
         if (!empId) return null;
@@ -118,7 +116,7 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "StartDate",
-    initValueResolver: (context) => context.isEdit ? context.entityData?.StartDate : "",
+    initValueResolver: ({context}) => context.isEdit ? context.entityData?.StartDate : "",
     customValidator:(value,data)=>{
       if (!value) return null;
       const startDate = new Date(value);
@@ -146,7 +144,7 @@ export const ProjFieldConfig = () => [
     dataType: "string",
     colSpan: 3,
     apiKey: "DueDate",
-    initValueResolver: (context) => context.isEdit ? context.entityData?.DueDate : "",
+    initValueResolver: ({context}) => context.isEdit ? context.entityData?.DueDate : "",
     customValidator:(value,data)=>{
       if(!value || !data.startDate) return null;
       const startDate = new Date(data.startDate);
@@ -167,7 +165,7 @@ export const ProjFieldConfig = () => [
     dataType: "string",
 
     apiKey: "Description",
-    initValueResolver: (context) => {
+    initValueResolver: ({context}) => {
       if (!context.isEdit || !context.entityData) return "";
 
       return context.entityData.HtmlDesc || context.entityData.Description || "";

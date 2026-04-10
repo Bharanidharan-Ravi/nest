@@ -15,6 +15,7 @@ import MuiTextInput from "../adapters/mui/MuiTextInput";
 import MuiTimeInput from "../adapters/mui/MuiTimeInput";
 import PriorityRadioField from "../adapters/mui/PriorityRadioField";
 import ToggleSwitchField from "../adapters/mui/ToggleSwitchField";
+import FileAttachmentInput from "../adapters/mui/Attachment";
 
 export const inputRegistry = {
   mui: {
@@ -27,7 +28,8 @@ export const inputRegistry = {
     color:  MuiColorInput,   
     priority: PriorityRadioField,
     battery: BatteryCompletionIndicator,
-    toggle: ToggleSwitchField
+    toggle: ToggleSwitchField,
+    adAttach: FileAttachmentInput,
   },
   html: {
     text: HtmlTextInput,

@@ -22,9 +22,12 @@ export const fetchemployeeList = (config = {}, EmployeeId = null) => {
 };
 
 export const getEmployeeList = (EmployeeId = null) => {
+  console.log("EmployeeId :", EmployeeId);
+  
   const query = EmployeeId
     ? queryKeys.employee.list(EmployeeId)
     : queryKeys.employee.all;
+console.log("query :", query);
 
   const defaultKeys = ["EmployeeList"];
   return useApiQuery({
@@ -39,17 +42,23 @@ export const getEmployeeList = (EmployeeId = null) => {
   });
 };
 
-//   import { useQuery } from "@tanstack/react-query";
-// import { executeApi } from "../../../core/api/executor";
-// import { masterKeys } from "../../../core/master/masterKeys";
-// import { fetchMasterData } from "../../../core/master/masterService";
 
-// export const EmployeeList = () => {
-//   const defaultKeys = ["EmployeeList"];
-//     return useQuery({
-//       queryKey:  masterKeys.employee(),
-//       queryFn: () => fetchMasterData(defaultKeys),
-//     staleTime: Infinity,
-//     gcTime: Infinity,
-//     });
-//   };0
+
+export const getTeamMaster = () => {
+  const query = queryKeys.team.all;
+
+  const payload = buildSyncPayload({
+    configKey: "TeamMaster",
+  });
+  return useApiQuery({
+    queryKey: query,
+    url: "/sync/v2",
+    method: "POST",
+    payload: payload,
+    source: "TeamMaster",
+    options: {
+      staleTime: 0,
+      enabled: true,
+    },
+  });
+};

@@ -1,21 +1,18 @@
-
-
 export const EmployeeConfig = () => [
-
-
-  // {
-  //   label: "Attachment",
-  //   name: "Attachment",
-  //   type: "adAttach",
-  //   ui: "mui",
-  //   required: false,
-  //   dataType: "string",
-  //   // customComponent:FileAttachmentInput,
-  //   apiKey: "temp",
-  //   fullWidth:true,
-  // },
-  
-
+  {
+    label: "Attachment",
+    name: "Attachment",
+    type: "adAttach",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    // customComponent:FileAttachmentInput,
+    apiKey: "temp",
+    fullWidth: true,
+    // Attachment field
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.PreviewUrl : "",
+  },
 
   {
     label: "CreatedFor",
@@ -27,7 +24,8 @@ export const EmployeeConfig = () => [
     defaultValue: "Employee",
     dataType: "string",
     apiKey: "CreatedFor",
-
+    // initValueResolver: (context) =>
+    //   context.isEdit ? context.entityData?.CreatedFor : "",
   },
   {
     label: "Employee",
@@ -37,6 +35,9 @@ export const EmployeeConfig = () => [
     isMulti: false,
     ui: "mui",
     apiKey: "Employee",
+    // initValueResolver: (context) =>
+    //   context.isEdit ? context.entityData?.CreatedFor : "",
+
     fields: [
       {
         label: "Employee Name",
@@ -46,23 +47,66 @@ export const EmployeeConfig = () => [
         required: true,
         dataType: "string",
         apiKey: "EmployeeName",
+        initValueResolver: ({ context }) => {
+          console.log(
+            "Resolver args.context:",
+            context,
+            context.entityData?.UserName,
+          );
+          return context.isEdit ? (context.entityData?.UserName ?? "") : "";
+        },
       },
 
-      {
+     {
         label: "Team",
         name: "Team",
-        type: "text",
+        type: "select",
         ui: "mui",
         required: false,
         dataType: "string",
         apiKey: "Team",
-      },
+        // 1. ALWAYS provide the full list of teams from masterData
+        optionsResolver: ({ context }) => {
+          return (context?.data?.TeamMaster || []).map((team) => ({
+            label: team.TeamName,
+            value: {
+              id: team.TeamId,
+              name: team.TeamName,
+            },
+          }));
+        },
+        // 2. Just return the Team ID so MUI knows which option to highlight
+        initValueResolver: ({ context }) => {
+         if (!context?.isEdit) return ""; 
 
+          const teamId = context?.entityData?.Team; // e.g., "2"
+          if (!teamId) return "";
+
+          // 🔥 Find the matching team in your master data
+          const team = context?.data?.TeamMaster?.find(
+            (t) => String(t.TeamId) === String(teamId)
+          );
+
+          // Return the exact same structure as optionsResolver
+          if (team) {
+            return {
+              label: team.TeamName,
+              value: {
+                id: team.TeamId,
+                name: team.TeamName,
+              },
+            };
+          }
+
+          return teamId; // Fallback just in case it's not found in masterData
+        },
+      },
       {
         label: "Role",
         name: "Role",
         type: "text",
         ui: "mui",
+        hidden: true,
         defaultValue: 2,
         required: false,
         dataType: "number",
@@ -77,7 +121,27 @@ export const EmployeeConfig = () => [
         required: false,
         dataType: "string",
         apiKey: "Specialization",
-
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit
+            ? (context.entityData?.Specialization ?? "")
+            : "";
+        },
+      },
+        {
+        label: "DoB",
+        name: "DoB",
+        type: "date",
+        ui: "mui",
+        required: false,
+        dataType: "string",
+        apiKey: "DoB",
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit
+            ? (context.entityData?.DoB ?? "")
+            : "";
+        },
       },
       {
         label: "Email",
@@ -87,6 +151,10 @@ export const EmployeeConfig = () => [
         required: false,
         dataType: "string",
         apiKey: "Email",
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit ? (context.entityData?.Email ?? "") : "";
+        },
       },
       {
         label: "PhoneNumber",
@@ -96,10 +164,12 @@ export const EmployeeConfig = () => [
         required: false,
         dataType: "string",
         apiKey: "PhoneNumber",
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit ? (context.entityData?.PhoneNumber ?? "") : "";
+        },
       },
-      
-      
-    ]
+    ],
   },
 
   {
@@ -111,7 +181,6 @@ export const EmployeeConfig = () => [
     ui: "mui",
     apiKey: "Login",
     fields: [
-
       {
         label: "UserName",
         name: "UserName",
@@ -119,6 +188,10 @@ export const EmployeeConfig = () => [
         apiKey: "UserName",
         dataType: "string",
         required: true,
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit ? (context.entityData?.LoginName ?? "") : "";
+        },
       },
       {
         label: "password",
@@ -129,12 +202,15 @@ export const EmployeeConfig = () => [
         required: true,
         customValidator: (value) =>
           value?.length >= 4 || "Password must be minimum 4 characters",
+        visibleWhen: (formData, context) => !context?.isEdit,
       },
       {
         label: "Role",
         name: "Role",
         type: "text",
         ui: "mui",
+        hidden: true,
+        defaultValue: 2,
         required: false,
         dataType: "number",
         apiKey: "Role",
@@ -149,7 +225,24 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "DBName",
       },
+      {
+        name: "status",
+        label: "Label Status",
+        type: "select",
+        ui: "mui",
+        apiKey: "Status",
+        // options: statusOptions,
+        required: true,
+        options: [
+          { label: "Active", value: { id: "Active", name: "Active" } },
+          { label: "Inactive", value: { id: "Inactive", name: "Inactive" } },
+        ],
+        visibleWhen: (formData, context) => context?.isEdit,
+        initValueResolver: ({ context }) => {
+          console.log("Resolver args.context:", context);
+          return context.isEdit ? (context.entityData?.Status ?? "") : "";
+        },
+      },
     ],
   },
-
-]
+];

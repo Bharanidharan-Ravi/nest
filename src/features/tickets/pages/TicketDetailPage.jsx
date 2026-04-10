@@ -27,7 +27,6 @@ const TicketDetailPage = () => {
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
   const { data: ticketMasterData } = useTicketMaster();
-console.log("ThreadsList :", ThreadsList, ticketMasterData);
 
   // Handle header stickiness
   useEffect(() => {

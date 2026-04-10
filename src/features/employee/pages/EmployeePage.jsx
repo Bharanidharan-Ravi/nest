@@ -11,14 +11,17 @@ const EmployeePage=()=>{
   const { goTo } = useSmartNavigation()
 
 
-const { data: EmployeeList, isLoading, isError, error } = getEmployeeList();
+const{data}=getEmployeeList()
+
+console.log("Employee",data);
+
 
 const normalizeLabel = (Emp) => {
   // Parse the Attachment_JSON string into an array of objects
   const attachments = Emp.Attachment_JSON ? JSON.parse(Emp.Attachment_JSON) : [];
 
     return {
-    UserID:Emp.UserID,
+    id:Emp.UserID,
     UserName:Emp.UserName,
     AvatarPath:Emp?.PreviewUrl,
     Team:Emp.Team,
@@ -34,9 +37,22 @@ const normalizeLabel = (Emp) => {
     }
   }
 
-  const Employee = Array.isArray(EmployeeList)
-    ? EmployeeList?.map(normalizeLabel)
+  const Employee = Array.isArray(data)
+    ? data?.map(normalizeLabel)
     : []
+
+    const listConfigWithNav = {
+      ...EmployeedataTable,
+  
+      onEditClick: (item) => {
+        goTo(ROUTE_KEYS.EMPLOYEE_EDIT, { employeeId: item.id })
+      },
+  
+      onSelectionChange: (item, isChecked) => {
+        console.log(`Employee ${item.id} ${isChecked ? "selected" : "deselected"}`)
+      },
+    }
+  
     return (
         <>
           <div className="flex justify-between items-center mb-3 flex-none">
@@ -51,7 +67,7 @@ const normalizeLabel = (Emp) => {
           </div>
     
           <div className="flex-1 min-h-0">
-            <ListProvider config={EmployeedataTable} data={Employee}>
+            <ListProvider config={listConfigWithNav} data={Employee}>
               <ListLayout />
             </ListProvider>
           </div>

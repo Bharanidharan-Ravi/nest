@@ -27,7 +27,7 @@ export const ThreadFieldConfig = (ticketId) => [
     ui: "editor",
     // required: true,
     dataType: "string",
-    apiKey: "Comment",
+    apiKey: "CommentText",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
     // 🔥 1. DYNAMIC REQUIRED FLAG
     // This tells the UI when to show the red '*' asterisk
@@ -71,14 +71,19 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) =>
       context?.editingItem?.Issue_Id || ticketId,
   },
-  {
+{
     name: "workStreamId",
-    apiKey: "WorkStreamId", // 👈 The exact name your API expects
-    hidden: true, // 👈 Keeps it invisible in the UI
+    apiKey: "WorkStreamId", 
+    hidden: true, 
     dataType: "string",
     initValueResolver: ({ context }) => {
-      // Pulls the StreamId directly from the sidebar card they clicked!
-      return context?.activeWorkStream?.StreamId || null;
+      // 1. Edit Mode: Take the workStreamId attached to the thread being edited
+      if (context?.isEdit) {
+        return context?.editingItem?.workStreamId || null;
+      }
+
+      // 2. Create Mode: Try the active work stream first, fallback to the last valid stream if empty
+      return context?.activeWorkStream?.StreamId || context?.lastValidStreamId || null;
     },
   },
   {
@@ -89,6 +94,16 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.selectedHandoffId || null;
+    },
+  },
+  {
+    name: "resourceId",
+    apiKey: "ResourceId", // 👈 The exact name your API expects
+    hidden: true, // 👈 Keeps it invisible in the UI
+    dataType: "string",
+    initValueResolver: ({ context }) => {
+      // Pulls the StreamId directly from the sidebar card they clicked!
+      return context?.editingItem?.CreatedId || null;
     },
   },
   {
@@ -290,55 +305,30 @@ export const ThreadFieldConfig = (ticketId) => [
     },
 
     initValueResolver: ({ context, formData }) => {
-      
       if (
         context.isEdit &&
-        context.entityData &&
-        Array.isArray(context.entityData.multiAssignees)
+        context.editingItem &&
+        Array.isArray(context.editingItem?.assignees)
       ) {
-        return context.entityData.multiAssignees
+        
+        return context.editingItem?.assignees
           .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
-          .map((assignee) => ({
-            label: assignee.Assignee_Name,
-            value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
-          }));
+          // .map((assignee) => ({
+          //   label: assignee.Assignee_Name,
+          //   value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
+          // }));
       }
       return [];
     },
 
     // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
-    // visibleWhen: (formData, context) =>
-    //   context?.userRole === "Dev" || context?.userRole === "Owner",
+    visibleWhen: (formData, context) =>{
+      console.log("context in assignee visibility", context);
+      
+      return (
+      !context?.isEdit)
+    }
   },
-  // {
-  //   name: "AssignedTo",
-  //   label: "Assign To",
-  //   type: "select",
-  //   apiKey: "NextAssigneeId",
-  //   ui: "mui",
-  //   className: "col-span-12 md:col-span-4",
-  //   // Pass your Master Data employee list here
-  //   optionsResolver: ({ masterData }) =>
-  //     masterData?.EmployeeList?.map((emp) => ({
-  //       label: emp.UserName,
-  //       value: {
-  //         id: emp.UserID,
-  //         name: emp.UserName,
-  //       },
-  //     })) || [],
-  //   disableWhen: (context, formData) => {
-  //     const currentStatus = formData?.UpdateStatus?.value;
-
-  //     // Return true if it should be disabled, false if it should be enabled
-  //     return (
-  //       currentStatus === "AWAITING_CLIENT" ||
-  //       currentStatus === "HOLD" ||
-  //       currentStatus === "IN_PROGRESS"
-  //     );
-  //   },
-  //   visibleWhen: (formData, context) =>
-  //     context?.userRole === "Dev" || context?.userRole === "Owner",
-  // },
   {
     name: "CompletionPercentage",
     label: "% Completed",
@@ -353,6 +343,9 @@ export const ThreadFieldConfig = (ticketId) => [
       // Return true if it should be disabled, false if it should be enabled
       return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
     },
+    initValueResolver: ({ context, formData }) => {
+      return context?.editingItem?.CompletionPct || formData?.CompletionPercentage || null;
+    }
   },
 
   // {

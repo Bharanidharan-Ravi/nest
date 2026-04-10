@@ -214,10 +214,10 @@ export function useListState(config, rawData = []) {
         data = data.filter(
           (item) =>
             Array.isArray(item[key]) &&
-            item[key].some((entry) => entry[filterConfig.filterKey] === value),
+            item[key].some((entry) => entry[filterConfig.filterKey] == value),
         );
       } else {
-        data = data.filter((item) => item[key] === value);
+        data = data.filter((item) => item[key] == value);
       }
     });
 

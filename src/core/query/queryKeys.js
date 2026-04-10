@@ -55,5 +55,8 @@ export const queryKeys = {
    employee: {
     all:    ["EmployeeList"],
     list:   (id)   => [...queryKeys.employee.all, "list",id]
+  },team: {
+    all:    ["TeamList"],
+    // list:   (id)   => [...queryKeys.employee.all, "list",id]
   },
 }

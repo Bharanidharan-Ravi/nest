@@ -1,3 +1,5 @@
+import { buildOptionsResolver } from "../../../app/shared/utilities/utilities";
+
 export const TicketFieldConfig = () => [
   /* --------------------------------------------------
      Repository Title
@@ -27,14 +29,11 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-    optionsResolver: ({ masterData }) =>
-      masterData?.LabelMaster?.map((label) => ({
-        label: label.Title,
-        value: {
-          id: label.Id,
-          name: label.Title,
-        },
-      })) || [],
+    optionsResolver: buildOptionsResolver(
+      "LabelMaster", // 1. listKey
+      "Id", // 2. idKey
+      "Title", // 3. labelKey
+    ), 
     apiKey: "labelId",
 
     initValueResolver: ({ context }) => {
@@ -67,14 +66,11 @@ export const TicketFieldConfig = () => [
     name: "repository",
     type: "select",
     ui: "mui",
-    optionsResolver: ({ masterData }) =>
-      masterData?.RepoList?.map((repo) => ({
-        label: repo.Title,
-        value: {
-          id: repo.Repo_Id,
-          name: repo.Title,
-        },
-      })) || [],
+    optionsResolver: buildOptionsResolver(
+      "RepoList", // 1. listKey
+      "Repo_Id", // 2. idKey
+      "Title", // 3. labelKey
+    ),
     required: true,
     dataType: "string",
 
@@ -135,33 +131,28 @@ export const TicketFieldConfig = () => [
     name: "project",
     type: "select",
     ui: "mui",
-    optionsResolver: ({ masterData, context, formData }) => {
-      let projects = masterData?.ProjectList || [];
+    optionsResolver: buildOptionsResolver(
+      "ProjectList", // 1. listKey
+      "Id", // 2. idKey
+      "Project_Name", // 3. labelKey
 
-      // Look for a Project ID first, then fall back to a Repo ID
-      // (Checks both URL params and existing edit data)
-      const targetId =
-        context?.params?.projId ||
-        context?.entityData?.project ||
-        context?.params?.repoId ||
-        context?.entityData?.RepoId ||
-        formData?.repository?.value?.id;
+      // 4. Custom filterFn (Grabbing context and formData!)
+      (project, { context, formData }) => {
+        // Step A: Determine the targetId using your cascading fallback
+        const targetId =
+          context?.params?.projId ||
+          context?.entityData?.project ||
+          context?.params?.repoId ||
+          context?.entityData?.RepoId ||
+          formData?.repository?.value?.id;
 
-      if (targetId) {
-        // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
-        projects = projects.filter(
-          (p) => p.Id === targetId || p.Repo_Id === targetId,
-        );
-      }
+        // Step B: If no targetId is found anywhere, keep all projects
+        if (!targetId) return true;
 
-      return projects.map((project) => ({
-        label: project.Project_Name,
-        value: {
-          id: project.Id,
-          name: project.Project_Name,
-        },
-      }));
-    },
+        // Step C: If a targetId exists, only keep projects that match it
+        return project.Id === targetId || project.Repo_Id === targetId;
+      },
+    ),
     required: true,
     dataType: "string",
     // Disable field if Project ID exists
@@ -176,8 +167,7 @@ export const TicketFieldConfig = () => [
     // 🔥 Smart Initial Value (Sets project if projid exists)
     initValueResolver: ({ context, masterData, formData }) => {
       const targetProjId =
-        context?.params?.projId ||
-        context?.entityData?.project;
+        context?.params?.projId || context?.entityData?.project;
 
       if (!targetProjId) return null;
 
@@ -203,34 +193,12 @@ export const TicketFieldConfig = () => [
     name: "assginedTo",
     type: "select",
     ui: "mui",
-    optionsResolver: ({ masterData }) =>
-      masterData?.EmployeeList?.map((emp) => ({
-        label: emp.UserName,
-        value: {
-          id: emp.UserID,
-          name: emp.UserName,
-        },
-      })) || [],
-    // optionsResolver: (masterData, context, formData) => {
-    //   let Employee = masterData?.EmployeeList || [];
-
-    //   // Look for a Project ID first, then fall back to a Repo ID
-    //   // (Checks both URL params and existing edit data)
-    //   const targetId = formData?.assginedTo?.value?.id;
-
-    //   if (targetId) {
-    //     // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
-    //     Employee = Employee.filter((p) => p.UserID === targetId);
-    //   }
-
-    //   return Employee.map((emp) => ({
-    //     label: emp.UserName,
-    //     value: {
-    //       id: emp.UserID,
-    //       name: emp.UserName,
-    //     },
-    //   }));
-    // },
+    optionsResolver: buildOptionsResolver(
+      "EmployeeList",
+      "UserID",
+      "UserName",
+      (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+    ),
     initValueResolver: ({ context, masterData }) => {
       // ✅ 1. Check if we are editing and actually have the ID
       if (context.isEdit && context.entityData?.Assignee_Id) {
@@ -264,27 +232,26 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-    optionsResolver: ({ masterData, context, formData }) => {
-      let Employee = masterData?.EmployeeList || [];
+    optionsResolver: buildOptionsResolver(
+      "EmployeeList",
+      "UserID",
+      "UserName",
+      // This is your custom filterFn. Notice it grabs `formData` from the second argument!
+      (user, { formData }) => {
+        // 1. Check if they are Active
+        if (user.Status !== "Active") return false;
 
-      // Look for a Project ID first, then fall back to a Repo ID
-      // (Checks both URL params and existing edit data)
-      const targetId = formData?.assginedTo?.value?.id;
+        // 2. Check if they are already selected in the "assginedTo" field
+        const targetId = formData?.assginedTo?.value?.id;
+        if (targetId && user.UserID === targetId) {
+          return false; // Exclude them if they match!
+        }
 
-      if (targetId) {
-        // Filter: match if targetId is either the Project's own ID OR its linked Repo_Id
-        Employee = Employee.filter((p) => p.UserID !== targetId);
-      }
-
-      return Employee.map((emp) => ({
-        label: emp.UserName,
-        value: {
-          id: emp.UserID,
-          name: emp.UserName,
-        },
-      }));
-    },
-  initValueResolver: ({ context, formData }) => {
+        // 3. Keep everyone else
+        return true;
+      },
+    ),
+    initValueResolver: ({ context, formData }) => {
       if (
         context.isEdit &&
         context.entityData &&
@@ -292,9 +259,9 @@ export const TicketFieldConfig = () => [
       ) {
         const filter = context.entityData.multiAssignees
           .filter(
-            (assignee) => 
-              assignee.Assignee_Type !== "Main Assignee" && 
-              assignee.StreamStatus !== 16 // 🔥 Added this condition to ignore Inactive status
+            (assignee) =>
+              assignee.Assignee_Type !== "Main Assignee" &&
+              assignee.StreamStatus !== 16, // 🔥 Added this condition to ignore Inactive status
           )
           .map((assignee) => ({
             label: assignee.Assignee_Name,
@@ -328,7 +295,11 @@ export const TicketFieldConfig = () => [
     // errorMessage: "Only alphanumeric allowed",
 
     visibleWhen: () => true,
-    customValidator: (value) => {
+    customValidator: (value, data, context) => {
+      console.log("cpm :", context);
+      if (context?.isEdit) {
+        return true;
+      }
       if (!value) return "Due Date is required";
       const dueDate = new Date(value);
       const today = new Date();

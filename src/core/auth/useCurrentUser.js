@@ -35,7 +35,9 @@ export function readUserFromSession() {
       userId: userId || null,
       dbName: decoded.DbName || "",
       team: decoded.Team || "",
-      exp: decoded.exp || null
+      exp: decoded.exp || null,
+      PreviewUrl:decoded.PreviewUrl || null
+//anbu
     };
   } catch (err) {
     console.error("Failed to decode JWT:", err);
