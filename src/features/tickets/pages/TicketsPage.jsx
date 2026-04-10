@@ -305,6 +305,7 @@ export default function TicketsPage() {
             value: user.UserID,
           })) || []),
   ];
+  
 
   const repoFilterOptions = [
     { label: " Repositories", value: "" },
@@ -404,9 +405,6 @@ console.log("teamFilterOptions :", teamFilterOptions);
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });
     },
   };
-  console.log("🧑‍💻 Team Filter Options:", teamFilterOptions);
-console.log("📋 Normalized Tickets with Team:", TicketList.slice(0, 2));
-
 
   return (
     <>

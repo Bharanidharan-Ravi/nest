@@ -21,13 +21,10 @@ export const fetchemployeeList = (config = {}, EmployeeId = null) => {
   });
 };
 
-export const getEmployeeList = (EmployeeId = null) => {
-  console.log("EmployeeId :", EmployeeId);
-  
+export const getEmployeeList = (EmployeeId = null) => {  
   const query = EmployeeId
     ? queryKeys.employee.list(EmployeeId)
     : queryKeys.employee.all;
-console.log("query :", query);
 
   const defaultKeys = ["EmployeeList"];
   return useApiQuery({

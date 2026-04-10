@@ -296,7 +296,6 @@ export const TicketFieldConfig = () => [
 
     visibleWhen: () => true,
     customValidator: (value, data, context) => {
-      console.log("cpm :", context);
       if (context?.isEdit) {
         return true;
       }

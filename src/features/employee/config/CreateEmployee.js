@@ -48,11 +48,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "EmployeeName",
         initValueResolver: ({ context }) => {
-          console.log(
-            "Resolver args.context:",
-            context,
-            context.entityData?.UserName,
-          );
           return context.isEdit ? (context.entityData?.UserName ?? "") : "";
         },
       },
@@ -122,7 +117,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "Specialization",
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit
             ? (context.entityData?.Specialization ?? "")
             : "";
@@ -137,7 +131,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "DoB",
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit
             ? (context.entityData?.DoB ?? "")
             : "";
@@ -152,7 +145,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "Email",
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit ? (context.entityData?.Email ?? "") : "";
         },
       },
@@ -165,7 +157,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         apiKey: "PhoneNumber",
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit ? (context.entityData?.PhoneNumber ?? "") : "";
         },
       },
@@ -189,7 +180,6 @@ export const EmployeeConfig = () => [
         dataType: "string",
         required: true,
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit ? (context.entityData?.LoginName ?? "") : "";
         },
       },
@@ -239,7 +229,6 @@ export const EmployeeConfig = () => [
         ],
         visibleWhen: (formData, context) => context?.isEdit,
         initValueResolver: ({ context }) => {
-          console.log("Resolver args.context:", context);
           return context.isEdit ? (context.entityData?.Status ?? "") : "";
         },
       },

@@ -258,9 +258,7 @@ export function ListFilters() {
     setSearchParams(params, { replace: true });
   };
   useEffect(() => {
-    const params = Object.fromEntries([...searchParams]);
-    console.log("params", params);
-  
+    const params = Object.fromEntries([...searchParams]);  
     // Use tickets_q if available, otherwise fallback to default_q
     if (params.tickets_q || params.default_q) {
       setQuery(params.tickets_q ?? params.default_q);
@@ -341,9 +339,6 @@ export function ListFilters() {
     <div className="flex gap-2 items-center" ref={wrapperRef}>
       {config.filters.map((filter) => {
         const currentValue = parsed.filters[filter.key] || "";
-       
-        console.log("hfjhdjdj",filter.key,currentValue);
-        console.log("cu86875778",filter.options);
  // Handle other filters (like Assignee, etc.)
  const activeOption =
  (filter.options && filter.options.find((opt) => opt.value == currentValue)) ||

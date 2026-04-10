@@ -27,8 +27,6 @@ const TicketThreads = ({
   currentUser,
 }) => {
   const [expandCount, setExpandCount] = useState(0);
-  console.log("threadsData :", threadsData);
-
   // 1. Process Raw Threads
 
  const rawThreads = React.useMemo(() => {
@@ -122,8 +120,6 @@ const TicketThreads = ({
       };
     });
   }, [threadsData, assigneesJsonString]);
-
-  console.log("rawThreads :");
 
   // const rawThreads = React.useMemo(() => {
   //   return (threadsData || []).map((thread) => {
@@ -292,7 +288,6 @@ const TicketThreads = ({
       ...bottomPart,
     ];
   }, [enrichedTimeline, expandCount]);
-  console.log("finalTimeline :", finalTimeline);
 
   // 5. Card Renderer with History Support
   const listConfig = {

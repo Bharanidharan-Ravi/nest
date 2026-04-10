@@ -276,9 +276,7 @@ export const useEntityForm = (config, context = {}) => {
       mergedFormData,
       config.fields,
       context,
-    );
-    console.log("validation error :", validationErrors);
-    
+    );    
     setErrors(validationErrors);
 
     return Object.keys(validationErrors).length === 0;

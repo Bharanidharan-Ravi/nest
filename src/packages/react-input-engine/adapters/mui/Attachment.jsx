@@ -189,7 +189,6 @@ const FileAttachmentInput = ({ onFileSelect, uploadFile, value }) => {
         reader.readAsDataURL(file);
 
         const response = await uploadFile(file);
-        console.log("response", response);
       } else {
         onFileSelect(file);
       }

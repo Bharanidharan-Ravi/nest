@@ -9,18 +9,13 @@ const EmployeeCreate = () => {
   const params = useParams();
 
   const isEdit = !!params.employeeId
-  console.log('====================================');
-  console.log("isEdit",params);
-  console.log('====================================');
 
   const { data: EmployeeListWrapper } = getEmployeeList(
     isEdit ? params.employeeId : null
   )
-console.log("params :", params.employeeId );
 
   const config = ["TeamMaster"];
   const {data} = useMasterData(config);
-  console.log("data :", data);
   
   const entityData =
     isEdit && Array.isArray(EmployeeListWrapper)
@@ -35,11 +30,6 @@ console.log("params :", params.employeeId );
       //   ? [...EmployeeFormConfig.fields, statusField]  // status only on edit
       //   : EmployeeFormConfig.fields,
     }
-  
-
-console.log('====================================');
-console.log("entityData",entityData);
-console.log('====================================');
 
     return (
       <div>

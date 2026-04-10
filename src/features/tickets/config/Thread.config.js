@@ -322,9 +322,7 @@ export const ThreadFieldConfig = (ticketId) => [
     },
 
     // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
-    visibleWhen: (formData, context) =>{
-      console.log("context in assignee visibility", context);
-      
+    visibleWhen: (formData, context) =>{      
       return (
       !context?.isEdit)
     }

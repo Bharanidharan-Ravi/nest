@@ -86,9 +86,7 @@ export default function EntityFormPage({
       }
     }
   };
-  const handleSubmit = (overrides = {}, skipValidation= false) => {
-    console.log("its trigger ");
-    
+  const handleSubmit = (overrides = {}, skipValidation= false) => {    
     if (!skipValidation) {
       if (!validate()) return; 
     }

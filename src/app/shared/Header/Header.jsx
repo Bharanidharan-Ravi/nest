@@ -15,10 +15,8 @@ import { useEffect } from "react";
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
   const user = readUserFromSession();
-  console.log("user", user);
 
   const location = useLocation();
-  console.log("location", location);
 
   const dropdownRef = useRef(null);
   const UserName = user?.name || "Test";
