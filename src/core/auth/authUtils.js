@@ -1,9 +1,12 @@
 export const isTokenExpired = (token) => {
   if (!token) return true;
+  
   try {
     // JWTs are base64 encoded strings split by periods (header.payload.signature)
     const payloadBase64 = token.split('.')[1];
+    
     const decodedJson = atob(payloadBase64);
+
     const payload = JSON.parse(decodedJson);
     
     // 'exp' is in seconds, Date.now() is in milliseconds

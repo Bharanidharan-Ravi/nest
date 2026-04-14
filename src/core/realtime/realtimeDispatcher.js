@@ -1,4 +1,4 @@
-import { masterKeys } from "../master/masterKeys";
+import { masterKeys } from "../master/masterCall/masterKeys";
 import { queryKeys } from "../query/queryKeys";
 
 // 🔥 Centralized master config keys

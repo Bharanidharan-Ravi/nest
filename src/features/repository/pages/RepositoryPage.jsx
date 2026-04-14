@@ -4,7 +4,7 @@
  * Uses goTo(key, params) — no hardcoded navigate('/repository/...') calls.
  */
 
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { repoListConfig } from "../config/RepoUI.config";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";

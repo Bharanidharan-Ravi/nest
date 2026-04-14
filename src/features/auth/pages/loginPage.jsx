@@ -137,6 +137,9 @@ const LoginPage = () => {
             <Avatar sx={{ m: 1, bgcolor: "#f1c40f" }}>
               <LockOutlinedIcon sx={{ color: "#000" }} />
             </Avatar>
+             {/* <Avatar sx={{ m: 1, background: "transparent", width: 84, height: 54 }}>
+              <img src="/favicon.ico?v=2" alt="" />
+            </Avatar> */}
             <Typography
               component="h1"
               variant="h5"

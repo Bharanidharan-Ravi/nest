@@ -2,7 +2,7 @@ import { useEntityForm } from "../formFramework/useEntityForm";
 import { useApiMutation } from "../../../core/query/useApiMutation";
 import FormEngine from "../../react-input-engine/core/FormEngine";
 import { useNavigate } from "react-router-dom";
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { executeApi } from "../../../core/api/executor";
 import { useState } from "react";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";

@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { Outlet } from "react-router-dom";
-import { preloadMasterData } from "./masterBootstrap";
+import { preloadMasterData } from "./masterCall/masterBootstrap";
 
 export default function AppBootstrap() {
   useEffect(() => {

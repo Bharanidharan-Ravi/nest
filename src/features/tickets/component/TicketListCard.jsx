@@ -9,14 +9,22 @@ import { FiClock } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { useState } from "react";
-import { getDueStatus, getInitials, getLabelStyle, HighlightText } from "../../../app/shared/utilities/utilities";
-import { useEmployeeById, useProjectById } from "../../../core/master/selectors";
+import {
+  getDueStatus,
+  getInitials,
+  getLabelStyle,
+  HighlightText,
+} from "../../../app/shared/utilities/utilities";
+import {
+  useEmployeeById,
+  useProjectById,
+} from "../../../core/master/selectors/selectors";
 import { useList } from "../../../packages/ui-List/context/ListContext";
 import { parseQuery } from "../../../packages/ui-List/hooks/useQueryParser";
 
 dayjs.extend(relativeTime);
 
-export default function TicketListCard({ item, controls, focused }) {
+export default function TicketListCard({ item, controls, focused, quickCommentButton }) {
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
   const ProjectDetails = useProjectById(item?.project);
   const updated = useEmployeeById(item.updatedBy);
@@ -89,7 +97,7 @@ export default function TicketListCard({ item, controls, focused }) {
             >
               <span className="ticket-id">#{item.ticketKey}</span>
               <span className="ticket-title" title={item.title}>
-               <HighlightText text={item.title} highlight={text} />
+                <HighlightText text={item.title} highlight={text} />
               </span>
             </a>
             {/* Badges immediately follow the text */}
@@ -200,7 +208,8 @@ export default function TicketListCard({ item, controls, focused }) {
                 <span className="meta-divider">•</span>
                 <span
                   className="comment-toggle"
-                  onClick={(e) => { // 👈 FIX: Add 'e' here
+                  onClick={(e) => {
+                    // 👈 FIX: Add 'e' here
                     e.stopPropagation();
                     e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
                     setIsCommentExpanded(!isCommentExpanded);
@@ -218,9 +227,17 @@ export default function TicketListCard({ item, controls, focused }) {
       </div>
       {/* MIDDLE BLOCK: Due Date */}
       <div className="ticket-due">
-        <div className="due-date">
-          {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : "-"}
+        <div className="due-date-row">
+          {quickCommentButton && (
+            <div className="quick-comment-wrapper">{quickCommentButton}</div>
+          )}
+          <div className="due-date">
+            {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
+          </div>
         </div>
+        {/* <div className="due-date">
+          {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : "-"}
+        </div> */}
         {dueStatus && (
           <div className={`due-status ${dueStatus.className}`}>
             {dueStatus.icon}
@@ -232,7 +249,7 @@ export default function TicketListCard({ item, controls, focused }) {
       {/* RIGHT BLOCK: Progress & Actions */}
       <div className="ticket-progress">
         <div className="battery-header">
-          <BatteryCompletionIndicator defaultValue={item.progress ?? 0} />
+          <BatteryCompletionIndicator defaultValue={item.CompletionPct ?? 0} />
           <div className="edit-icon">{renderEdit && renderEdit()}</div>
         </div>
         <div className="update-info">

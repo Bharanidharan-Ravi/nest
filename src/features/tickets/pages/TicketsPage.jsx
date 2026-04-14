@@ -233,25 +233,22 @@ import { useTicketMaster } from "../hooks/useTicketMaster";
 import "../css/ViewTickets.css";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
-import { useMasterData } from "../../../core/master/useMasterData";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import TicketListCard from "../component/TicketListCard";
 import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
-import { getEmployeeFilterOptions } from "../../../app/shared/utilities/formUtils";
 import {
-  useEmployeeById,
   useEmployeeOptions,
   useLabelOptions,
   useProjectOptions,
   useRepoOptions,
   useTeamOptions,
-} from "../../../core/master/selectors";
+} from "../../../core/master/selectors/selectors";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
-  const { data: Master } = useMasterData();
+  // const { data: Master } = useMasterData();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
 

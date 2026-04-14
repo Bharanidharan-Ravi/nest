@@ -2,6 +2,7 @@ import React from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import TicketListCard from "../component/TicketListCard";
+import { FiMessageSquare } from "react-icons/fi";
 dayjs.extend(relativeTime);
 
 export const TicketListConfig = {
@@ -11,7 +12,7 @@ export const TicketListConfig = {
   enableTabs: true, // 👈 required
   enableSort: true,
   infinite: true,
-  enableSelection: true,
+  enableSelection: false,
   enableEdit: true,
   enableCardControls: true,
   searchFields: ["title", "description", "RepoKey"],
@@ -58,7 +59,25 @@ export const TicketListConfig = {
     },
   ],
 
-  cardRenderer: (item, controls) => (
-    <TicketListCard item={item} controls={controls} />
+  cardRenderer: (item, controls, isQuickOpen, setOpenQuickId) => (
+    <TicketListCard
+      item={item}
+      controls={controls}
+      // quickCommentButton={
+      //   // config?.enablequickComment ? (
+      //   <button
+      //     className="px-2.5 py-1 rounded-md text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-300 transition-all duration-150 flex items-center gap-1 flex-shrink-0 shadow-sm hover:shadow-md outline-none focus:outline-none ring-0"
+      //     title="Quick Comment"
+      //     onClick={(e) => {
+      //       e.stopPropagation();
+      //       setOpenQuickId(isQuickOpen ? null : item);
+      //     }}
+      //   >
+      //     <FiMessageSquare className="text-base" />
+      //     {/* {isQuickOpen ? "Close" : "Quick Comment"} */}
+      //   </button>
+      //   // ) : null
+      // }
+    />
   ),
 };

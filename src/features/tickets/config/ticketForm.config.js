@@ -1,4 +1,4 @@
-import { masterKeys } from "../../../core/master/masterKeys";
+import { masterKeys } from "../../../core/master/masterCall/masterKeys";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { TicketFieldConfig } from "./Ticket.Config";

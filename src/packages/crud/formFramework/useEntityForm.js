@@ -5,7 +5,7 @@ import { mapFormToDto } from "./mapFormToDto";
 import { validateForm } from "./validationEngine";
 import { applyDependencies } from "./dependencyEngine";
 import { applyVisibilityRules } from "./visibilityEngine";
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 
 export const useEntityForm = (config, context = {}) => {
   const [formData, setFormData] = useState({});

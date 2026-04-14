@@ -9,11 +9,12 @@ import { useParams } from "react-router-dom";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { ProjUIConfig } from "../config/ProjectUI.config";
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { useProjectData } from "../hooks/useProjectData";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { useEmployeeOptions, useRepoOptions } from "../../../core/master/selectors/selectors";
 
 const ProjectPage = () => {
   const { repoId } = useParams();
@@ -23,7 +24,8 @@ const ProjectPage = () => {
   const user = readUserFromSession();
   const allowedUsers = ["bharanidharan", "dinesh", "poovannan"];
   const userName = user?.name?.toLowerCase() || "";
-
+  const employeeFilterOptions = useEmployeeOptions(true);
+  const repoFilterOptions = useRepoOptions(true);
   const scopedProjects = Array.isArray(projects)
     ? projects
     : Array.isArray(projects?.ProjectList?.Data)
@@ -52,21 +54,6 @@ const ProjectPage = () => {
 
   const repos = rawList?.map(normalizeProj) || [];
 
-  const employeeFilterOptions = [
-    { label: "All Employees", value: "" },
-    ...(data?.EmployeeList?.map((user) => ({
-      label: user.UserName,
-      value: user.UserName,
-    })) || []),
-  ];
-
-  const repoFilterOptions = [
-    { label: "All Repositories", value: "" },
-    ...(data?.RepoList?.map((repo) => ({
-      label: repo.Title,
-      value: repo.Repo_Id,
-    })) || []),
-  ];
   // Determine create route key based on context (inside repo vs standalone)
   const createRouteKey = repoId
     ? ROUTE_KEYS.REPO_PROJ_CREATE

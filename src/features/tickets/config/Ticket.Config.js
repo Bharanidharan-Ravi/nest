@@ -33,7 +33,7 @@ export const TicketFieldConfig = () => [
       "LabelMaster", // 1. listKey
       "Id", // 2. idKey
       "Title", // 3. labelKey
-    ), 
+    ),
     apiKey: "labelId",
 
     initValueResolver: ({ context }) => {
@@ -83,7 +83,7 @@ export const TicketFieldConfig = () => [
         context?.params?.projId ||
         context?.entityData?.RepoId,
       ),
-
+    forceSubmit: true,
     // 🔥 Smart Initial Value (Looks up Repo ID via Project Master)
     initValueResolver: ({ context, masterData, formData }) => {
       // 1. Check if we have an explicit Repo ID first
@@ -158,7 +158,7 @@ export const TicketFieldConfig = () => [
     // Disable field if Project ID exists
     disableWhen: (context) =>
       Boolean(context?.params?.projid || context?.entityData?.project),
-
+    forceSubmit: true,
     apiKey: "Project_Id",
     // 🔥 Disable if projid is passed (locking the specific project)
     disableWhen: (context) =>

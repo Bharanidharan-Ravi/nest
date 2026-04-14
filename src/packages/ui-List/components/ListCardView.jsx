@@ -1,9 +1,13 @@
+import { useState } from "react";
 import { useList } from "../context/ListContext";
 import { FiEdit } from "react-icons/fi";
+import { ThreadFieldConfig } from "../../../features/tickets/config/Thread.config";
+import { ThreadFormConfig } from "../../../features/tickets/config/ThreadForm.config";
+import EntityFormPage from "../../crud/pages/EntityFormPage";
 
 export function ListCardView() {
   const { data, config } = useList();
-
+  const [openQuickId, setOpenQuickId] = useState(null);
   const theme = config.theme || {};
   const containerClasses = theme.cardContainer || "flex flex-col w-full";
 
@@ -16,16 +20,19 @@ export function ListCardView() {
   return (
     <div className={containerClasses}>
       {data.map((item) => {
-        const isDisabled = config.disabledIds?.includes(item.id || item.issueId) || false;
+        const isDisabled =
+          config.disabledIds?.includes(item.id || item.issueId) || false;
         const controls = advanced
           ? {
-            disabled: isDisabled,
+              disabled: isDisabled,
               renderCheckbox: config.enableSelection
                 ? () => (
                     <input
                       type="checkbox"
                       className="cursor-pointer w-4 h-4"
-                      defaultChecked={config.selectedIds?.includes(item.id) || false}
+                      defaultChecked={
+                        config.selectedIds?.includes(item.id) || false
+                      }
                       onClick={(e) => {
                         e.stopPropagation();
                         config.onSelectionChange &&
@@ -48,62 +55,131 @@ export function ListCardView() {
                 : null,
             }
           : null;
-
+        const isQuickOpen = openQuickId?.navId;
         return (
-          <div
-            key={item.id}
-            className={itemClasses}
-            onClick={() => config.onItemClick && config.onItemClick(item)}
-          >
-            {/* OLD MODE CONTROLS */}
-            {!advanced && config.enableSelection && (
-              <div
-                className="absolute left-3 top-2 flex items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <input
-                  type="checkbox"
-                  className="cursor-pointer w-4 h-4"
-                  defaultChecked = {config.selectedIds?.includes(item.id) || false}
-                  onChange={(e) =>
-                    config.onSelectionChange &&
-                    config.onSelectionChange(item, e.target.checked)
-                  }
-                />
-              </div>
-            )}
+          <>
+            <div
+              key={item.id}
+              className={itemClasses}
+              onClick={() => config.onItemClick && config.onItemClick(item)}
+            >
+              {/* OLD MODE CONTROLS */}
+              {!advanced && config.enableSelection && (
+                <div
+                  className="absolute left-3 top-2 flex items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <input
+                    type="checkbox"
+                    className="cursor-pointer w-4 h-4"
+                    defaultChecked={
+                      config.selectedIds?.includes(item.id) || false
+                    }
+                    onChange={(e) =>
+                      config.onSelectionChange &&
+                      config.onSelectionChange(item, e.target.checked)
+                    }
+                  />
+                </div>
+              )}
 
-            {!advanced && config.enableEdit && (
-              <div
-                className="absolute right-3 top-2 flex items-center"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <FiEdit
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    config.onEditClick && config.onEditClick(item);
-                  }}
-                />
-              </div>
-            )}
+              {!advanced && config.enableEdit && (
+                <div
+                  className="absolute right-3 top-2 flex items-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FiEdit
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      config.onEditClick && config.onEditClick(item);
+                    }}
+                  />
+                </div>
+              )}
 
-            {/* CARD CONTENT */}
-            <div className={`w-full ${!advanced && config.enableSelection ? "pl-7" : ""}`}>
-              {advanced
-                ? config.cardRenderer(item, controls)
-                : config.cardRenderer(item)}
+              {/* CARD CONTENT */}
+              <div
+                className={`w-full ${!advanced && config.enableSelection ? "pl-7" : ""}`}
+              >
+                {advanced
+                  ? config.cardRenderer(
+                      item,
+                      controls,
+                      isQuickOpen,
+                      setOpenQuickId,
+                    )
+                  : config.cardRenderer(item)}
+              </div>
             </div>
-          </div>
+            {isQuickOpen && (
+              <div
+                className="border-b border-ghBorder bg-gray-50 p-3"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <EntityFormPage
+                  mode="Create"
+                  config={{
+                    ...ThreadFormConfig,
+                    fields: ThreadFieldConfig(openQuickId?.navId).filter(
+                      (field) => field.name !== "assignees",
+                    ),
+                  }}
+                  module="Thread"
+                  // onCancel={() => setOpenQuickId(null)}
+                  onSuccessCallback={() => setOpenQuickId(null)}
+                />
+              </div>
+            )}
+          </>
+          // <div
+          //   key={item.id}
+          //   className={itemClasses}
+          //   onClick={() => config.onItemClick && config.onItemClick(item)}
+          // >
+          //   {/* OLD MODE CONTROLS */}
+          //   {!advanced && config.enableSelection && (
+          //     <div
+          //       className="absolute left-3 top-2 flex items-center"
+          //       onClick={(e) => e.stopPropagation()}
+          //     >
+          //       <input
+          //         type="checkbox"
+          //         className="cursor-pointer w-4 h-4"
+          //         defaultChecked = {config.selectedIds?.includes(item.id) || false}
+          //         onChange={(e) =>
+          //           config.onSelectionChange &&
+          //           config.onSelectionChange(item, e.target.checked)
+          //         }
+          //       />
+          //     </div>
+          //   )}
+
+          //   {!advanced && config.enableEdit && (
+          //     <div
+          //       className="absolute right-3 top-2 flex items-center"
+          //       onClick={(e) => e.stopPropagation()}
+          //     >
+          //       <FiEdit
+          //         onClick={(e) => {
+          //           e.stopPropagation();
+          //           config.onEditClick && config.onEditClick(item);
+          //         }}
+          //       />
+          //     </div>
+          //   )}
+
+          //   {/* CARD CONTENT */}
+          //   <div className={`w-full ${!advanced && config.enableSelection ? "pl-7" : ""}`}>
+          //     {advanced
+          //       ? config.cardRenderer(item, controls)
+          //       : config.cardRenderer(item)}
+          //   </div>
+          // </div>
         );
       })}
     </div>
   );
 }
-
-
-
-
-
 
 // import { useList } from "../context/ListContext";
 // import { FiEdit } from "react-icons/fi";

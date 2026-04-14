@@ -1,6 +1,6 @@
 // core/master/masterService.js
 
-import { executeApi } from "../api/executor";
+import { executeApi } from "../../api/executor";
 
 export const fetchMasterData = async (configKeys) => {
   const response = await executeApi({

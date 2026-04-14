@@ -1,4 +1,4 @@
-import { masterKeys } from "../../../core/master/masterKeys";
+import { masterKeys } from "../../../core/master/masterCall/masterKeys";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { RepoFieldConfig } from "./CreateRepo.Config";
 export const repositoryFormConfig = {

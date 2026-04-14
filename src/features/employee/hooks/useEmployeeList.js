@@ -1,7 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
 import { executeApi } from "../../../core/api/executor";
-import { masterKeys } from "../../../core/master/masterKeys";
-import { fetchMasterData } from "../../../core/master/masterService";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";

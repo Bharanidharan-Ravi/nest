@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
 import { useTicketMaster } from "../hooks/useTicketMaster";
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import FloatingArrowScroll from "../../../app/shared/Component/FloatingArrowScroll";
@@ -11,6 +11,9 @@ import AssigneesWidget from "../component/AssigneesWidget";
 // Import your new split components
 import ParentTicketHeader from "../component/ThreadParent/ParentTicketHeader";
 import TicketThreads from "../component/ThreadListCard/TicketThreads";
+import {
+  useProjectMaster,
+} from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
   const { data } = useMasterData();
@@ -27,7 +30,8 @@ const TicketDetailPage = () => {
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
   const { data: ticketMasterData } = useTicketMaster();
-
+  const projectMasterData = useProjectMaster();
+  
   // Handle header stickiness
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -45,15 +49,20 @@ const TicketDetailPage = () => {
       (issue) => issue.Issue_Id === ticketId,
     );
     if (!ticket) return null;
-    const projectDetails = data?.ProjectList?.find(
-      (p) => p.Id === ticket.Project_Id,
+    // const projectDetails = useProjectById(ticket.Project_Id);
+    // console.log("projectDetails :", projectDetails);
+
+    const projectDetails = projectMasterData?.find(
+      (p) => p.id === ticket.Project_Id,
     );
+console.log("ticket :", ticket, projectDetails);
+
     return {
       ...ticket,
       id: ticket.Issue_Id, // Ensure we have a consistent 'id' field for the ticket
-      Project_Name: projectDetails?.Project_Name || "Unknown Project",
-      projKey: projectDetails?.ProjectKey || "Unknown Repo",
-      Repo_Name: projectDetails?.Repo_Name || "Unknown Repo",
+      Project_Name: projectDetails?.name || "Unknown Project",
+      projKey: projectDetails?.projectKey || "Unknown Repo",
+      Repo_Name: projectDetails?.repoName || "Unknown Repo",
     };
   }, [ticketMasterData, ticketId, data]);
 
@@ -129,7 +138,9 @@ const TicketDetailPage = () => {
     let totalMinutes = 0,
       myMinutes = 0;
 
-    const threads = Array.isArray(ThreadsList?.ThreadsList) ? ThreadsList?.ThreadsList : [];
+    const threads = Array.isArray(ThreadsList?.ThreadsList)
+      ? ThreadsList?.ThreadsList
+      : [];
 
     threads.forEach((thread) => {
       if (thread?.Hours && typeof thread.Hours === "string") {

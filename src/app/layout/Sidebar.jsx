@@ -1,11 +1,11 @@
 import { NavLink } from "react-router-dom";
 import { useSmartNavigation } from "../../core/navigation/useSmartNavigation";
-import { useMasterData } from "../../core/master/useMasterData";
 import { buildPath } from "../../core/routing/routeRegistry";
 import { useCurrentUser } from "../../core/auth/useCurrentUser";
 import { PERMISSIONS } from "../../core/auth/permissions";
 
 import { useState, useMemo } from "react";
+import { useMasterData } from "../../core/master/masterCall/useMasterData";
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const { data } = useMasterData();

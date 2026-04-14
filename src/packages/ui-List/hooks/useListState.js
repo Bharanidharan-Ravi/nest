@@ -191,33 +191,31 @@ export function useListState(config, rawData = []) {
     if (apiFilterEntries.length > 0 && apiFilteredData) {
       const raw = Array.isArray(apiFilteredData) ? apiFilteredData : [];
       const activeNormalizer = apiFilterConfig?.normalizer || config.normalizer;
-
       data = activeNormalizer ? raw.map(activeNormalizer) : raw;
     } else {
-      data = [...rawData];
+      const activeNormalizer = config.normalizer;
+      data = activeNormalizer ? rawData.map(activeNormalizer) : [...rawData];
     }
-    console.log("Filtered Data:", data, rawData);
+
     const combinedFilters = { ...filters, ...queryFilters };
+
+    // 🔥 1. Initialize a Score Tracker for multi-select matches
+    const matchScores = new Map();
 
     Object.entries(combinedFilters).forEach(([key, value]) => {
       if (!value) return;
 
       // Handle "is" token (Tabs)
       if (key === "is" && config.tabConfig) {
+        // ... (keep your existing mapping logic for tabs here)
         const mapping = config.tabConfig.find((t) => t.key === value);
         if (mapping) {
           data = data.filter((item) => {
             const itemValue = item[mapping.field];
-
-            // 1. Exclude values
-            if (mapping.excludeValues) {
+            if (mapping.excludeValues)
               return !mapping.excludeValues.includes(itemValue);
-            }
-            // 2. Include multiple values
-            if (Array.isArray(mapping.filterValue)) {
+            if (Array.isArray(mapping.filterValue))
               return mapping.filterValue.includes(itemValue);
-            }
-            // 3. Exact match
             return itemValue === mapping.filterValue;
           });
         }
@@ -226,68 +224,66 @@ export function useListState(config, rawData = []) {
 
       const filterConfig = config.filters?.find((f) => f.key === key);
 
-      if (filterConfig?.filterType === "api") return; // Skip, handled by server
-      // 🔥 NEW: Execute the custom filter function if it exists
+      if (filterConfig?.filterType === "api") return;
+
       if (
         filterConfig?.filterType === "custom" &&
         typeof filterConfig.customFilter === "function"
       ) {
         data = data.filter((item) => filterConfig.customFilter(item, value));
       } else if (filterConfig?.filterType === "array") {
-        // value could be "id1" (single) or "id1,id2" (multi) or ["id1","id2"] (array)
-        const selectedValues = Array.isArray(value)
-          ? value
-          : String(value)
-              .split(",")
-              .map((v) => v.trim())
-              .filter(Boolean);
+        // 🔥 2. Handle Multi-Select Comma Strings (e.g. "11,13")
+        const targetValues = String(value).split(",");
 
-        data = data.filter(
-          (item) =>
-            Array.isArray(item[key]) &&
-            // ✅ every = AND logic (item must have ALL selected labels)
-            // ❌ some  = OR logic  (item just needs ONE matching label)
-            selectedValues.every((selectedVal) =>
-              item[key].some(
-                (entry) =>
-                  String(entry[filterConfig.filterKey]) === String(selectedVal),
-              ),
+        data = data.filter((item) => {
+          if (!Array.isArray(item[key])) return false;
+
+          // Count how many of the selected tags this ticket actually has
+          const matchCount = targetValues.filter((tv) =>
+            item[key].some(
+              (entry) => String(entry[filterConfig.filterKey]) === String(tv),
             ),
-        );
-        // const selectedValues = Array.isArray(value)
-        //   ? value
-        //   : String(value)
-        //       .split(",")
-        //       .map((v) => v.trim())
-        //       .filter(Boolean);
+          ).length;
 
-        // data = data.filter(
-        //   (item) =>
-        //     Array.isArray(item[key]) &&
-        //     // item must match ANY of the selected values (OR logic)
-        //     selectedValues.some((selectedVal) =>
-        //       item[key].some(
-        //         (entry) =>
-        //           String(entry[filterConfig.filterKey]) === String(selectedVal),
-        //       ),
-        //     ),
-        // );
+          if (matchCount > 0) {
+            // Add the score to the Map so we can use it during sorting!
+            matchScores.set(item, (matchScores.get(item) || 0) + matchCount);
+            return true; // Keep partial matches
+          }
+          return false;
+        });
       } else {
-        data = data.filter((item) => item[key] == value);
+        // 🔥 3. Standard Filter (Updated to also support multi-select commas!)
+        const targetValues = String(value).split(",");
+        data = data.filter((item) => {
+          if (targetValues.includes(String(item[key]))) {
+            // Add a score of 1 for standard matches
+            matchScores.set(item, (matchScores.get(item) || 0) + 1);
+            return true;
+          }
+          return false;
+        });
       }
     });
 
     // Text search
     if (text) {
-      const lower = text.toLowerCase();
-      const fields = config.searchFields || ["title"]; // fallback to title only
       data = data.filter((item) =>
-        fields.some((field) => item[field]?.toLowerCase().includes(lower)),
+        item.title?.toLowerCase().includes(text.toLowerCase()),
       );
     }
 
-    // Sort
+    // 🔥 4. Sort: Prioritize Match Score, then fallback to user's selection
     data.sort((a, b) => {
+      const scoreA = matchScores.get(a) || 0;
+      const scoreB = matchScores.get(b) || 0;
+
+      // If one ticket has more matching tags than the other, put it at the top!
+      if (scoreA !== scoreB) {
+        return scoreB - scoreA;
+      }
+
+      // If scores are tied (or 0), fallback to standard "Newest/Oldest" sorting
       const aVal = a?.[sortField];
       const bVal = b?.[sortField];
       if (!aVal || !bVal) return 0;
@@ -319,7 +315,196 @@ export function useListState(config, rawData = []) {
     config,
     apiFilterEntries,
     apiFilteredData,
+    // dataUpdatedAt // (Make sure this is here if we added it earlier!)
   ]);
+
+    // const tabCounts = useMemo(() => {
+    //   if (!config.tabConfig) return {};
+    
+    //   const counts = {};
+    
+    //   // Combine filters, except "is" which is the tab filter
+    //   const baseFilters = { ...filters, ...queryFilters };
+    //   delete baseFilters.is;
+    
+    //   // Use normalized API data or rawData
+    //   let allData = Array.isArray(apiFilteredData) ? apiFilteredData : rawData;
+    //   const activeNormalizer = apiFilterConfig?.normalizer || config.normalizer;
+    //   if (activeNormalizer) {
+    //     allData = allData.map(activeNormalizer);
+    //   }
+    
+    //   // Precompute items that pass base filters (excluding tab "is")
+    //   const filteredData = allData.filter(item => 
+    //     Object.entries(baseFilters).every(([key, value]) => {
+    //       if (!value) return true;
+    //       const filterConfig = config.filters?.find(f => f.key === key);
+    //       if (!filterConfig) return true;
+    
+    //       if (filterConfig.filterType === "custom" && typeof filterConfig.customFilter === "function") {
+    //         return filterConfig.customFilter(item, value);
+    //       } else if (filterConfig.filterType === "array") {
+    //         const targetValues = String(value).split(",");
+    //         return Array.isArray(item[key]) && targetValues.some(tv =>
+    //           item[key].some(entry => String(entry[filterConfig.filterKey]) === String(tv))
+    //         );
+    //       } else if (filterConfig.filterType === "api") {
+    //         return true; // already filtered via API
+    //       } else {
+    //         const targetValues = String(value).split(",");
+    //         return targetValues.includes(String(item[key]));
+    //       }
+    //     })
+    //   );
+    
+    //   // Count per tab efficiently
+    //   config.tabConfig.forEach(tab => {
+    //     const { key, field, excludeValues, filterValue } = tab;
+    //     counts[key] = filteredData.reduce((acc, item) => {
+    //       const itemValue = item[field];
+    
+    //       if (excludeValues) {
+    //         if (!excludeValues.includes(itemValue)) acc += 1;
+    //       } else if (Array.isArray(filterValue)) {
+    //         if (filterValue.includes(itemValue)) acc += 1;
+    //       } else {
+    //         if (itemValue === filterValue) acc += 1;
+    //       }
+    
+    //       return acc;
+    //     }, 0);
+    //   });
+    
+    //   return counts;
+    // }, [
+    //   rawData,
+    //   apiFilteredData,
+    //   apiFilterEntries,
+    //   apiFilterConfig,
+    //   config.tabConfig,
+    //   config.filters,
+    //   filters,
+    //   queryFilters,
+    //   config.normalizer
+    // ]);
+  // const processed = useMemo(() => {
+  //   let data = [];
+
+  //   // Use API data if available, otherwise fallback to rawData
+  //   if (apiFilterEntries.length > 0 && apiFilteredData) {
+  //     const raw = Array.isArray(apiFilteredData) ? apiFilteredData : [];
+  //     const activeNormalizer = apiFilterConfig?.normalizer || config.normalizer;
+
+  //     data = activeNormalizer ? raw.map(activeNormalizer) : raw;
+  //   } else {
+  //     data = [...rawData];
+  //   }
+  //   console.log("Filtered Data:", data, rawData);
+  //   const combinedFilters = { ...filters, ...queryFilters };
+
+  //   Object.entries(combinedFilters).forEach(([key, value]) => {
+  //     if (!value) return;
+
+  //     // Handle "is" token (Tabs)
+  //     if (key === "is" && config.tabConfig) {
+  //       const mapping = config.tabConfig.find((t) => t.key === value);
+  //       if (mapping) {
+  //         data = data.filter((item) => {
+  //           const itemValue = item[mapping.field];
+
+  //           // 1. Exclude values
+  //           if (mapping.excludeValues) {
+  //             return !mapping.excludeValues.includes(itemValue);
+  //           }
+  //           // 2. Include multiple values
+  //           if (Array.isArray(mapping.filterValue)) {
+  //             return mapping.filterValue.includes(itemValue);
+  //           }
+  //           // 3. Exact match
+  //           return itemValue === mapping.filterValue;
+  //         });
+  //       }
+  //       return;
+  //     }
+
+  //     const filterConfig = config.filters?.find((f) => f.key === key);
+
+  //     if (filterConfig?.filterType === "api") return; // Skip, handled by server
+  //     // 🔥 NEW: Execute the custom filter function if it exists
+  //     if (
+  //       filterConfig?.filterType === "custom" &&
+  //       typeof filterConfig.customFilter === "function"
+  //     ) {
+  //       data = data.filter((item) => filterConfig.customFilter(item, value));
+  //     } else if (filterConfig?.filterType === "array") {
+  //       // value could be "id1" (single) or "id1,id2" (multi) or ["id1","id2"] (array)
+  //       const selectedValues = Array.isArray(value)
+  //         ? value
+  //         : String(value)
+  //             .split(",")
+  //             .map((v) => v.trim())
+  //             .filter(Boolean);
+
+  //       data = data.filter(
+  //         (item) =>
+  //           Array.isArray(item[key]) &&
+  //           // ✅ every = AND logic (item must have ALL selected labels)
+  //           // ❌ some  = OR logic  (item just needs ONE matching label)
+  //           selectedValues.every((selectedVal) =>
+  //             item[key].some(
+  //               (entry) =>
+  //                 String(entry[filterConfig.filterKey]) === String(selectedVal),
+  //             ),
+  //           ),
+  //       );
+  //     } else {
+  //       data = data.filter((item) => item[key] == value);
+  //     }
+  //   });
+
+  //   // Text search
+  //   if (text) {
+  //     const lower = text.toLowerCase();
+  //     const fields = config.searchFields || ["title"]; // fallback to title only
+  //     data = data.filter((item) =>
+  //       fields.some((field) => item[field]?.toLowerCase().includes(lower)),
+  //     );
+  //   }
+
+  //   // Sort
+  //   data.sort((a, b) => {
+  //     const aVal = a?.[sortField];
+  //     const bVal = b?.[sortField];
+  //     if (!aVal || !bVal) return 0;
+
+  //     const aDate = new Date(aVal);
+  //     const bDate = new Date(bVal);
+
+  //     // Date sorting
+  //     if (!isNaN(aDate) && !isNaN(bDate)) {
+  //       return sortOrder === "asc"
+  //         ? aDate.getTime() - bDate.getTime()
+  //         : bDate.getTime() - aDate.getTime();
+  //     }
+
+  //     // String sorting
+  //     return sortOrder === "asc"
+  //       ? String(aVal).localeCompare(String(bVal))
+  //       : String(bVal).localeCompare(String(aVal));
+  //   });
+
+  //   return data;
+  // }, [
+  //   rawData,
+  //   queryFilters,
+  //   filters,
+  //   sortField,
+  //   sortOrder,
+  //   text,
+  //   config,
+  //   apiFilterEntries,
+  //   apiFilteredData,
+  // ]);
 
   const visibleData = processed.slice(0, visibleCount);
   console.log("visibleData :", visibleData);
@@ -336,6 +521,7 @@ export function useListState(config, rawData = []) {
     setSortField,
     sortOrder,
     setSortOrder,
+    // tabCounts,
     statusTab,
     setStatusTab,
     filters,

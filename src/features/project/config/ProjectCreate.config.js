@@ -83,14 +83,12 @@ export const ProjFieldConfig = () => [
     masterKey: "RepoList",
     // colSpan:,
     // 🔥 Build dropdown options
-    optionsResolver: ({ masterData }) =>
-      masterData?.EmployeeList?.map((user) => ({
-        label: user.UserName,
-        value: {
-          id: user.UserID,
-          name: user.UserName,
-        },
-      })) || [],
+    optionsResolver: buildOptionsResolver(
+      "EmployeeList",
+      "UserID",
+      "UserName",
+      (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+    ),
     initValueResolver: ({ context, masterData }) => {
       if (context.isEdit && context.entityData?.EmployeeName) {
         const empId = context.entityData?.Responsible;
@@ -116,14 +114,15 @@ export const ProjFieldConfig = () => [
     type: "date",
     ui: "mui",
 
-    required: true,
+    // required: true,
+    required: false,
     dataType: "string",
     colSpan: 3,
     apiKey: "StartDate",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.StartDate : "",
     customValidator: (value, data) => {
-      if (!value) return null;
+      if (!value) return true;
       const startDate = new Date(value);
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -144,15 +143,15 @@ export const ProjFieldConfig = () => [
     name: "dueDate",
     type: "date",
     ui: "mui",
-
-    required: true,
+    required: false,
+    // required: true,
     dataType: "string",
     colSpan: 3,
     apiKey: "DueDate",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.DueDate : "",
     customValidator: (value, data) => {
-      if (!value || !data.startDate) return null;
+      if (!value || !data.startDate) return true;
       const startDate = new Date(data.startDate);
       const dueDate = new Date(value);
       if (dueDate < startDate) {
