@@ -2,20 +2,29 @@ import {
   calcHHMM,
   formatTimeHHMM,
 } from "../../../app/shared/utilities/utilities";
+import TicketProgressHistory from "../pages/TicketProgressHistory";
 
 const isTimeLocked = (context) => {
-  if (!context?.isEdit ) return false;
+  if (!context?.isEdit) return false;
   if (!context?.editingItem?.createdAt) return false;
-  
+
   const createdDate = new Date(context.editingItem.createdAt);
   const today = new Date();
-  
+
   // Normalize to midnight to calculate strict day differences (ignoring hours/minutes)
-  const createdDay = new Date(createdDate.getFullYear(), createdDate.getMonth(), createdDate.getDate());
-  const currentDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  
+  const createdDay = new Date(
+    createdDate.getFullYear(),
+    createdDate.getMonth(),
+    createdDate.getDate(),
+  );
+  const currentDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+  );
+
   const diffDays = (currentDay - createdDay) / (1000 * 60 * 60 * 24);
-  
+
   return diffDays > 1; // Returns true if it is older than Yesterday
 };
 
@@ -25,40 +34,24 @@ export const ThreadFieldConfig = (ticketId) => [
     name: "description",
     type: "adEditor",
     ui: "editor",
-    // required: true,
     dataType: "string",
     apiKey: "CommentText",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
-    // 🔥 1. DYNAMIC REQUIRED FLAG
-    // This tells the UI when to show the red '*' asterisk
+
+    // 🔥 Show the red asterisk if they entered time
     requiredWhen: (context, formData) => {
-      // Devs and Testers ALWAYS must enter a description
-      if (context?.userRole !== "Owner") return true;
-
-      // For Owners: Check if they filled out any other action fields
-      const hasHours = !!formData?.hours || !!formData?.fromTime;
-      const hasAssignee = formData?.assignees?.length > 0;
-      const hasStatus = !!formData?.UpdateStatus;
-
-      // If they picked an assignee, status, or hours -> Description is OPTIONAL (false)
-      // If they haven't picked anything at all -> Description is MANDATORY (true)
-      return !hasHours && !hasAssignee && !hasStatus;
+      return !!formData?.hours || !!formData?.fromTime;
     },
 
-    // 🔥 2. CUSTOM ERROR MESSAGE
-    // This overrides the default "Description is required" with your friendly text
-    customValidator: (value, formData, context) => {
-      if (context?.userRole === "Owner") {
-        const hasHours = !!formData?.hours || !!formData?.fromTime;
-        const hasAssignee = formData?.AssignedTo?.length > 0;
-        const hasStatus = !!formData?.UpdateStatus;
+    // 🔥 Throw an error if they entered time but no description
+    customValidator: (value, formData) => {
+      const hasTime = !!formData?.hours || !!formData?.fromTime;
+      const cleanDesc = value?.replace(/<[^>]*>?/gm, "").trim();
 
-        // If absolutely everything is empty, trigger the friendly native error!
-        if (!value && !hasHours && !hasAssignee && !hasStatus) {
-          return "Please provide a comment, log hours, or select a user to assign.";
-        }
+      if (hasTime && !cleanDesc) {
+        return "Description is mandatory when logging hours.";
       }
-      return true; // Form is valid!
+      return true;
     },
   },
 
@@ -71,10 +64,10 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) =>
       context?.editingItem?.Issue_Id || ticketId,
   },
-{
+  {
     name: "workStreamId",
-    apiKey: "WorkStreamId", 
-    hidden: true, 
+    apiKey: "WorkStreamId",
+    hidden: true,
     dataType: "string",
     initValueResolver: ({ context }) => {
       // 1. Edit Mode: Take the workStreamId attached to the thread being edited
@@ -83,7 +76,11 @@ export const ThreadFieldConfig = (ticketId) => [
       }
 
       // 2. Create Mode: Try the active work stream first, fallback to the last valid stream if empty
-      return context?.activeWorkStream?.StreamId || context?.lastValidStreamId || null;
+      return (
+        context?.activeWorkStream?.StreamId ||
+        context?.lastValidStreamId ||
+        null
+      );
     },
   },
   {
@@ -144,10 +141,12 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     // 🔥 FIX 3: Enforce pair validation & logic check
     customValidator: (value, formData) => {
-      if (formData.fromTime && !value) return "Required if From-time is entered";
-      if (formData.fromTime && value && value < formData.fromTime) return "Cannot be earlier than From-time";
+      if (formData.fromTime && !value)
+        return "Required if From-time is entered";
+      if (formData.fromTime && value && value < formData.fromTime)
+        return "Cannot be earlier than From-time";
       return true;
-    }
+    },
   },
   {
     name: "hours",
@@ -160,109 +159,42 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 3,
     initValueResolver: ({ context }) => context?.editingItem?.Hours,
 
-    // 🔥 FIX 1: Removed duplicate properties & fixed "formTime" typo to "fromTime"
     effectDependencies: ["fromTime", "toTime"],
-    effectResolver: (formData) => {      
-      // 1. If both times exist, instantly calculate and return
+    effectResolver: (formData) => {
       if (formData.fromTime && formData.toTime) {
         return calcHHMM(formData.fromTime, formData.toTime);
       }
-
-      // 🔥 FIX 2: Stop aggressively wiping out fromTime/toTime!
-      // 2. If the user clears one of the time boxes, clear the calculated hours so it doesn't get stuck
       if (
         (formData.fromTime && !formData.toTime) ||
         (!formData.fromTime && formData.toTime)
       ) {
         return null;
       }
-
-      // 3. Otherwise, return the manually typed hours
       return formData.hours || null;
     },
 
-   disableWhen: (context, formData) => {      
+    disableWhen: (context, formData) => {
       if (isTimeLocked(context)) return true;
       return Boolean(formData?.fromTime && formData?.toTime);
     },
 
-    forceSubmit: (context) => context.isEdit !== true, // 🔥 FIX 4: Allow hours to be submitted even if disabled, but ONLY on edit (not create)
-    // 🔥 FIX: Dynamic Validation based on Role, Description, and Lock Status
+    forceSubmit: (context) => context.isEdit !== true,
+
+    // 🔥 Throw an error if they entered a description but no time
     customValidator: (value, formData, context) => {
-      // 1. If locked due to the 1-day rule, we cannot force them to enter data.
       if (isTimeLocked(context)) return true;
 
-      const hasBothTimes = !!formData.fromTime && !!formData.toTime;
-      const hasManualHours = !!value;
+      const hasTime = !!value || (!!formData.fromTime && !!formData.toTime);
+      const cleanDesc = formData.description?.replace(/<[^>]*>?/gm, "").trim();
+      const hasDescription = !!cleanDesc;
 
-      // 2. OWNER LOGIC
-      if (context?.userRole === "Owner") {
-        // Strip HTML tags to see if they actually typed something
-        const cleanDesc = formData.description?.replace(/<[^>]*>?/gm, "").trim();
-        const hasDescription = !!cleanDesc;
-
-        // If Assign-Only (no description), time is optional
-        if (!hasDescription) return true;
-
-        // If they typed a description, time becomes mandatory
-        if (!hasManualHours && !hasBothTimes) {
-          return "Time logging is required when adding a comment.";
-        }
-        return true; 
-      }
-
-      // 3. DEV / TESTER LOGIC (Always mandatory)
-      if (!hasManualHours && !hasBothTimes) {
-        return "Please enter Total Hours, OR both From and To times.";
+      if (hasDescription && !hasTime) {
+        return "Time logging is mandatory when entering a description.";
       }
 
       return true;
     },
   },
-
-  //  {
-  //     name: "UpdateStatus",
-  //     label: "Update Status",
-  //     type: "select",
-  //     ui: "mui",
-  //     className: "col-span-12 md:col-span-4",
-
-  //     // 🔥 VALIDATION FIX: Only required for the Owner if they picked an assignee
-  //     // requiredWhen: (context, formData) => {
-  //     //   if (context?.userRole !== "Owner") return false;
-  //     //   return !!(formData?.assignees && formData.assignees.length > 0);
-  //     // },
-
-  //     optionsResolver: ({ masterData, context }) => {
-  //       let Status = masterData?.StatusMaster || [];
-  //       const uniqueOptions = [];
-  //       const seenIds = new Set();
-
-  //       Status.forEach((sta) => {
-  //         const id = sta.Status_Id || sta.status_id;
-  //         const name = sta.Status_Name || sta.status_name;
-
-  //         if (id && !seenIds.has(id)) {
-  //           seenIds.add(id);
-  //           uniqueOptions.push({
-  //             label: name,
-  //             value: { id, name },
-  //           });
-  //         }
-  //       });
-  //       return uniqueOptions;
-  //     },
-
-  //     initValueResolver: ({ context }) => {
-  //       if (context?.userRole === "Tester")
-  //         return { label: "Testing In Progress", value: { id: 8 } };
-  //       return null;
-  //     },
-
-  //     // Status is ONLY visible to the Owner
-  //     visibleWhen: (formData, context) =>
-  //       context?.userRole === "Owner",
-  //   },
   {
     label: "Assignees",
     name: "assignees",
@@ -310,22 +242,21 @@ export const ThreadFieldConfig = (ticketId) => [
         context.editingItem &&
         Array.isArray(context.editingItem?.assignees)
       ) {
-        
-        return context.editingItem?.assignees
-          .filter((assignee) => assignee.Assignee_Type !== "Main Assignee")
-          // .map((assignee) => ({
-          //   label: assignee.Assignee_Name,
-          //   value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
-          // }));
+        return context.editingItem?.assignees.filter(
+          (assignee) => assignee.Assignee_Type !== "Main Assignee",
+        );
+        // .map((assignee) => ({
+        //   label: assignee.Assignee_Name,
+        //   value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
+        // }));
       }
       return [];
     },
 
     // 🔥 VISIBILITY FIX: Now only visible to Devs and Owners (hidden for Testers)
-    visibleWhen: (formData, context) =>{      
-      return (
-      !context?.isEdit)
-    }
+    visibleWhen: (formData, context) => {
+      return !context?.isEdit;
+    },
   },
   {
     name: "CompletionPercentage",
@@ -342,34 +273,78 @@ export const ThreadFieldConfig = (ticketId) => [
       return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
     },
     initValueResolver: ({ context, formData }) => {
-      return context?.editingItem?.CompletionPct || formData?.CompletionPercentage || null;
-    }
+      return (
+        context?.editingItem?.CompletionPct ||
+        formData?.CompletionPercentage ||
+        null
+      );
+    },
+  },
+  {
+    name: "TicketProgressHistoryWidget",
+    type: "custom", // You can name this whatever you want now
+    customComponent: TicketProgressHistory, // 👈 PASS THE REACT COMPONENT HERE
+    colSpan: 12,
+    groupName: "Ticket Status Update",
+    options: {
+      ticketId: ticketId // 👈 Pass the ticketId here so FormEngine forwards it
+    },
+  },
+  {
+    name: "copyDescription",
+    label: "Use Description as Status Summary",
+    type: "checkbox", // Or "switch", depending on your inputRegistry
+    ui: "mui", // Or "html"
+    colSpan: 3, // Spans the full width just under the header
+    groupName: "Ticket Status Update",
+
+    // Only show this checkbox if there is actual text in the description
+    visibleWhen: (formData) => {
+      // Strip HTML tags (like <p></p>) to see if they actually typed words
+      const cleanDesc = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
+      return !!cleanDesc;
+    },
   },
 
-  // {
-  //   name: "UseLastComment",
-  //   label: "Use my previous thread comment",
-  //   type: "toggle", // Matches the key in inputRegistry
-  //   ui: "mui",
-  //   colSpan: 12,
-  //   apiKey: "UseLastThread",
-  //   initValueResolver: () => false, // Ensure it starts 'off'
-  // },
+  // 🔥 2. The Status Summary (Updated to listen to the checkbox)
+  {
+    name: "TicketStatusSummary",
+    label: "Current Status Summary",
+    type: "text",
+    ui: "mui",
+    apiKey: "TicketStatusSummary",
+    colSpan: 6,
+    groupName: "Ticket Status Update",
 
-  //   {
-  //   label: "Calculated Hours",
-  //   name: "calculatedHours",
-  //   type: "text",
-  //   ui: "mui",
-  //   required: false,
-  //   dataType: "string",
-  //   apiKey: "Hours",
-  //   defaultValue: null,
-  //   readOnly: true,
-  //   effectResolver: (formData) => {
-  //     const hours = calcHHMM(formData.fromTime, formData.toTime);
-  //     return hours;
-  //   },
-  //   effectDependencies: ["fromTime", "toTime"],
-  // },
+    // Listen for changes to the checkbox OR the description
+    effectDependencies: ["copyDescription", "description"],
+    effectResolver: (formData) => {
+      // If the checkbox is checked, grab the description and strip the HTML tags
+      if (formData.copyDescription) {
+        const cleanDesc = formData.description
+          ?.replace(/<[^>]*>?/gm, "")
+          .trim();
+        return cleanDesc || "";
+      }
+
+      // If checkbox is unchecked, just keep whatever they manually typed in this box
+      return formData.TicketStatusSummary || "";
+    },
+  },
+  {
+    name: "TicketOverallPercentage",
+    label: "Overall Ticket Progress (%)",
+    type: "battery", // Or "number" depending on your registry
+    ui: "mui",
+    apiKey: "TicketOverallPercentage", // Matches your updated PostWorkStreamDto
+    colSpan: 3,
+    options: {
+      step: 10,
+      max: 100,
+      height: "25px",
+      width: "12px",
+      fontSize: "14px",
+    },
+    groupName: "Ticket Status Update", // 👈 This triggers the Header
+  },
 ];

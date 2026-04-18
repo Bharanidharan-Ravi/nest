@@ -26,7 +26,7 @@ export default function EntityFormPage({
     reset();
     setTempFiles([]);
   };
-  
+
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",
@@ -86,9 +86,9 @@ export default function EntityFormPage({
       }
     }
   };
-  const handleSubmit = (overrides = {}, skipValidation= false) => {    
+  const handleSubmit = (overrides = {}, skipValidation = false) => {
     if (!skipValidation) {
-      if (!validate()) return; 
+      if (!validate()) return;
     }
 
     const dto = buildDto();
@@ -103,7 +103,7 @@ export default function EntityFormPage({
     }
     const finalDto = { ...dto, ...overrides };
     console.log("finalDto :", finalDto);
-    
+
     mutate(finalDto);
   };
 
@@ -158,6 +158,7 @@ export default function EntityFormPage({
             typeof config.actions === "function"
               ? config.actions({ formData, context })
               : config.actions;
+console.log("resolvedActions :", resolvedActions);
 
           // 2. Map over the resolved array
           if (
@@ -175,6 +176,7 @@ export default function EntityFormPage({
                     formData={formData}
                     handleSubmit={handleSubmit}
                     isPending={isPending}
+                    // currentActiveOption={action.icon}
                   />
                 );
               }
@@ -185,21 +187,28 @@ export default function EntityFormPage({
                   key={index}
                   type="button"
                   disabled={isPending}
+                  // className={
+                  //   action.className || `wg-btn-primary ${theme.submitBtn || ""}`
+                  // }
                   className={`wg-btn-primary ${theme.submitBtn || ""} ${action.className || ""}`}
                   onClick={() => {
                     if (action.type === "submit") {
                       // Pass skipValidation directly from the action config
-                      handleSubmit({}, action.skipValidation); 
-                    } 
-                    else if (action.onClick) {
+                      handleSubmit({}, action.skipValidation);
+                    } else if (action.onClick) {
                       // 🔥 2. Allow the config's onClick to pass the skipValidation flag
-                      action.onClick({ 
-                        formData, 
-                        submitForm: (overrides, skipVal = false) => handleSubmit(overrides, skipVal || action.skipValidation) 
+                      action.onClick({
+                        formData,
+                        submitForm: (overrides, skipVal = false) =>
+                          handleSubmit(
+                            overrides,
+                            skipVal || action.skipValidation,
+                          ),
                       });
                     }
                   }}
                 >
+                  {action.icon && <span className="mr-2">{action.icon}</span>}
                   {isPending && action.type === "submit"
                     ? "Processing..."
                     : action.label}
@@ -207,23 +216,52 @@ export default function EntityFormPage({
               );
             });
           }
+          // 3. UPDATED FALLBACK BUTTON: Handles Custom Modes (like "Reopen")
+          const isCustomMode = mode !== "Create" && mode !== "Edit"&& mode !== "Update";
+console.log("isCustomMode:", isCustomMode, "mode:", mode);
 
-          // 3. 🚨 FIX: Added 'return' here so the fallback button actually renders!
+          // Dynamically looks for a theme key based on the mode (e.g., theme.reopenBtn)
+          const customThemeClass =
+            isCustomMode && theme[`${mode.toLowerCase()}Btn`]
+              ? theme[`${mode.toLowerCase()}Btn`]
+              : theme.submitBtn || "";
+
           return (
             <button
               type="button"
               onClick={() => handleSubmit()}
               disabled={isPending}
-              className={`wg-btn-primary ${theme.submitBtn || ""}`}
+              // If it's a custom mode, apply the custom theme, otherwise primary
+              className={
+                isCustomMode
+                  ? customThemeClass
+                  : `wg-btn-primary ${theme.submitBtn || ""}`
+              }
             >
               {isPending
-                ? mode === "Create"
-                  ? "Creating..."
-                  : "Updating..."
-                : `${mode} ${module}`}
+                ? "Processing..."
+                : isCustomMode
+                  ? mode // Renders just "Reopen" instead of "Reopen Ticket"
+                  : `${mode} ${module}`}
             </button>
           );
         })()}
+        {/* //   // 3. 🚨 FIX: Added 'return' here so the fallback button actually renders!
+        //   return (
+        //     <button
+        //       type="button"
+        //       onClick={() => handleSubmit()}
+        //       disabled={isPending}
+        //       className={`wg-btn-primary ${theme.submitBtn || ""}`}
+        //     >
+        //       {isPending
+        //         ? mode === "Create"
+        //           ? "Creating..."
+        //           : "Updating..."
+        //         : `${mode} ${module}`}
+        //     </button>
+        //   );
+        // })()} */}
 
         {mode === "Edit" && (
           <button

@@ -2,7 +2,7 @@ import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { EmployeeFormConfig } from "../config/EmployeeForm";
 import { useParams }      from "react-router-dom"
 import { getEmployeeList, getTeamMaster } from "../hooks/useEmployeeList";
-import { useMasterData } from "../../../core/master/useMasterData";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 
 const EmployeeCreate = () => {
 

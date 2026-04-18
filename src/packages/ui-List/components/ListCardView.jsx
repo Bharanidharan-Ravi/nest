@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { useList } from "../context/ListContext";
 import { FiEdit } from "react-icons/fi";
-import { ThreadFieldConfig } from "../../../features/tickets/config/Thread.config";
-import { ThreadFormConfig } from "../../../features/tickets/config/ThreadForm.config";
-import EntityFormPage from "../../crud/pages/EntityFormPage";
 
 export function ListCardView() {
   const { data, config } = useList();
   const [openQuickId, setOpenQuickId] = useState(null);
   const theme = config.theme || {};
   const containerClasses = theme.cardContainer || "flex flex-col w-full";
+console.log("openQuickId :", openQuickId);
 
   const itemClasses =
     theme.cardItem ||
@@ -55,7 +53,6 @@ export function ListCardView() {
                 : null,
             }
           : null;
-        const isQuickOpen = openQuickId?.navId;
         return (
           <>
             <div
@@ -105,31 +102,13 @@ export function ListCardView() {
                   ? config.cardRenderer(
                       item,
                       controls,
-                      isQuickOpen,
-                      setOpenQuickId,
+                      config
+                      // isQuickOpen,
+                      // setOpenQuickId,
                     )
                   : config.cardRenderer(item)}
               </div>
             </div>
-            {isQuickOpen && (
-              <div
-                className="border-b border-ghBorder bg-gray-50 p-3"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <EntityFormPage
-                  mode="Create"
-                  config={{
-                    ...ThreadFormConfig,
-                    fields: ThreadFieldConfig(openQuickId?.navId).filter(
-                      (field) => field.name !== "assignees",
-                    ),
-                  }}
-                  module="Thread"
-                  // onCancel={() => setOpenQuickId(null)}
-                  onSuccessCallback={() => setOpenQuickId(null)}
-                />
-              </div>
-            )}
           </>
           // <div
           //   key={item.id}

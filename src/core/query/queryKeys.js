@@ -59,4 +59,8 @@ export const queryKeys = {
     all:    ["TeamList"],
     // list:   (id)   => [...queryKeys.employee.all, "list",id]
   },
+  TicketProgress: {
+    all:    ["TicketProgress"],
+    list:   (id)   => [...queryKeys.TicketProgress.all, id]
+  },
 }

@@ -3,6 +3,8 @@
 // All master selectors live here.
 // Components import from this file only — never from useMasterItem directly.
 
+import { useRegistryQuery } from "../query/useRegistryQuery";
+import { MASTER_REGISTRY } from "../registry/masterRegistry";
 import { useMasterFilter, useMasterFind, useMasterList } from "../useMasterItem";
 
 // ─── Find helpers ─────────────────────────────────────────────────────────────
@@ -16,7 +18,15 @@ export const useTicketMaster  = ()      => useMasterList("ticket");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees  = ()    => useMasterFilter("employee", (e) => e.isActive);
 export const useProjectsByRepoId = (rid) => useMasterFilter("project",  (p) => p.repoId === rid);
-
+export const useTicketProgress = (issueId, overrides = {}) => {
+  // Pass { issueId } into the params object (the 3rd argument)
+  return useRegistryQuery(
+    MASTER_REGISTRY, 
+    "ticketProgress", 
+    { issueId }, 
+    overrides
+  );
+};
 // ─── Options builder (for dropdowns / selects) ────────────────────────────────
 //
 // params:

@@ -1,6 +1,4 @@
-import apiClient from "../../../core/api/apiClient"
-import { masterKeys } from "../../../core/master/masterKeys";
-import { queryKeys } from "../../../core/query/queryKeys";
+import { masterKeys } from "../../../core/master/masterCall/masterKeys";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { EmployeeConfig } from "./CreateEmployee";
 

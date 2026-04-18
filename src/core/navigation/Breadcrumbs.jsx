@@ -4,12 +4,15 @@ import { useSmartNavigation } from "./useSmartNavigation";
 import { queryKeys } from "../query/queryKeys";
 import { ROUTE_KEYS } from "../routing/paths";
 import { useMasterData } from "../master/masterCall/useMasterData";
+import { useProjectById, useRepoById } from "../master/selectors/selectors";
 
 export const Breadcrumbs = () => {
   const { getBreadcrumbs } = useSmartNavigation();
   const { repoId, ticketId, projId } = useParams();
   const queryClient = useQueryClient();
   const { data } = useMasterData();
+  const repodata = useRepoById(repoId); // 👈 This is a hook, but it's safe to call here because it's not conditional. It will always run when the component renders, and it will read from the cache without causing a re-render
+  const ProjectKey = useProjectById(projId);
 
   /**
    * Return a human-readable label for dynamic route segments.
@@ -19,26 +22,22 @@ export const Breadcrumbs = () => {
   const titleResolver = (key) => {
     switch (key) {
       case ROUTE_KEYS.REPO_DETAIL: {
-        if (!data?.RepoList) return "Loading...";
-        const master = data?.RepoList;
-        return (
-          master?.find((r) => r.Repo_Id === repoId)?.Title ?? null
-        );
+        if (!repodata) return "Loading...";
+        const master = repodata?.key;
+        // return master?.find((r) => r.Repo_Id === repoId)?.Title ?? null;
+        return master;
       }
       case ROUTE_KEYS.TICKET_DETAIL: {
         if (!ticketId) return null;
-        const tickets = queryClient.getQueryData(
-          queryKeys.ticket.list(),
-        );
-        
-        return (
-          tickets?.find((t) => t.Issue_Id === ticketId)?.Title ?? null
-        );
+        const tickets = queryClient.getQueryData(queryKeys.ticket.list());
+  console.log("repo data :", tickets);
+
+        return tickets?.find((t) => t.Issue_Id === ticketId)?.Issue_Code ?? null;
       }
       case ROUTE_KEYS.PROJ_DETAIL: {
-        if (!data?.ProjectList) return "Loading...";
-        const projs = data?.ProjectList;
-        return projs?.find((t) => t.Id === projId)?.Project_Name ?? null;
+        if (!ProjectKey) return "Loading...";
+        const projs = ProjectKey.projectKey;
+        return projs;
       }
       default:
         return null;

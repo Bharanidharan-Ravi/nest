@@ -272,7 +272,7 @@ export default function TicketsPage() {
       ? ROUTE_KEYS.PROJ_TICKET_CREATE
       : ROUTE_KEYS.TICKET_CREATE;
 
-  console.log("projectFilterOptions :", projectFilterOptions);
+  console.log("projectFilterOptions:", projectFilterOptions);
   // 🆕 CORRECT teamFilterOptions - Extract from TICKETS
 
   console.log("teamFilterOptions :", teamFilterOptions);
@@ -293,6 +293,7 @@ export default function TicketsPage() {
             {
               key: "repoId",
               view: "Repo",
+              showCounts: true,
               options: repoFilterOptions,
             },
           ]
@@ -302,6 +303,7 @@ export default function TicketsPage() {
         view: "Assignee",
         options: employeeFilterOptions,
         filterType: "custom", // 🔥 CRITICAL
+        showCounts: true,
         customFilter: (item, selectedValue) => {
           if (!selectedValue) return true;
           const safeSelected = String(selectedValue).toLowerCase();
@@ -332,11 +334,13 @@ export default function TicketsPage() {
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
+        showCounts: true,
         options: projectFilterOptions,
       },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Label",
+        showCounts: true,
         options: LabelFilterOptions,
         filterType: "array",
         allowMultiple: true,
@@ -345,6 +349,7 @@ export default function TicketsPage() {
       {
         key: "teamId",
         view: "Team",
+        showCounts: true,
         options: teamFilterOptions,
         filterType: "custom",
         customFilter: (item, value) => {
@@ -358,13 +363,13 @@ export default function TicketsPage() {
         },
       },
     ],
-    cardRenderer: (item, controls) => (
-      <TicketListCard
-        item={item}
-        controls={controls}
-        // focused={index === focusedIndex}
-      />
-    ),
+    // cardRenderer: (item, controls) => (
+    //   <TicketListCard
+    //     item={item}
+    //     controls={controls}
+    //     // focused={index === focusedIndex}
+    //   />
+    // ),
     onItemClick: (item) => {
       const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
       goTo(createRouteKey, { ticketId: item.id });

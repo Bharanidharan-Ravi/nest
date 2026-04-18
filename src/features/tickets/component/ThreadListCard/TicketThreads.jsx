@@ -382,6 +382,10 @@ const TicketThreads = ({
       );
     },
   };
+console.log("parentTicket :", parentTicket);
+
+ const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.StatusId);
+console.log("isTerminalState :", isTerminalState);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -391,23 +395,22 @@ const TicketThreads = ({
         </ListProvider>
       </div>
 
-      {/* Reply Form */}
-      {!editingItem &&
-        parentTicket.Status !== "Inactive" &&
-        parentTicket.Status !== "Cancelled" &&
-        parentTicket.Status !== "Closed" && (
-          <div className="rounded-3xl p-2">
-            <EntityFormPage
-              mode="Create"
-              config={{
-                ...ThreadFormConfig,
-                fields: ThreadFieldConfig(ticketId),
-              }}
-              context={formContext}
-              module="Thread"
-            />
-          </div>
-        )}
+      {/* Reply / Reopen Form */}
+      {!editingItem && (
+        <div className="rounded-3xl p-2">
+          <EntityFormPage
+            // Dynamically change mode based on ticket status
+            mode={isTerminalState ? "Reopen" : "Create"} 
+            config={{
+              ...ThreadFormConfig,
+              fields: ThreadFieldConfig(ticketId),
+            }}
+            // Merge formContext with the isClosed flag for your config.actions
+            context={{ ...formContext, isClosed: isTerminalState }} 
+            module="Ticket"
+          />
+        </div>
+      )}
     </div>
   );
 };

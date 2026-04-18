@@ -278,7 +278,13 @@ import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
 import { createTimesheetNormalizer } from "../../../app/shared/utils/timesheetNormalizer";
 import { normalizeCheckedTickets } from "../../../app/shared/utils/normalizeCheckedTickets";
 import { useQueryClient } from "@tanstack/react-query";
-import { useEmployeeOptions } from "../../../core/master/selectors/selectors";
+import {
+  useEmployeeOptions,
+  useLabelOptions,
+  useProjectOptions,
+  useRepoOptions,
+  useTeamOptions,
+} from "../../../core/master/selectors/selectors";
 import {
   useCheckedTickets,
   useCommitCheckedTicket,
@@ -301,25 +307,23 @@ export default function Dashboard() {
     employeeId: currentUserId,
     planDate: today,
   });
-  
+
   // ── Mutations ─────────────────────────────────────────────────────────────
   const { mutateAsync: commitTickets, isPending: isCommitting } =
-    useCommitCheckedTicket(
-    //   {
-    //   onSuccess: async () => {
-    //     setSelectedTickets([]);
-    //   },
-    // }
-  );
+    useCommitCheckedTicket();
+  //   {
+  //   onSuccess: async () => {
+  //     setSelectedTickets([]);
+  //   },
+  // }
 
-  const { mutateAsync: uncheckTicket } = useUncheckCheckedTicket(
+  const { mutateAsync: uncheckTicket } = useUncheckCheckedTicket();
   //   {
   //   onSuccess: async () => {
   //     setSelectedUncheckTickets([]);
   //     await refreshCheckedTickets();
   //   },
   // }
-);
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const committedIds = checkedTicketsData.map((t) => t?.TicketId);
@@ -378,9 +382,9 @@ export default function Dashboard() {
     );
   };
 
-const handleUncheckTickets = async () => {
+  const handleUncheckTickets = async () => {
     if (selectedUncheckTickets.length === 0) return;
-    
+
     try {
       // 1. Fire all uncheck mutations in parallel
       await Promise.all(
@@ -397,15 +401,20 @@ const handleUncheckTickets = async () => {
 
       // 3. Invalidate caches to refresh both your hook and the ModuleSwitcher filters
       await queryClient.invalidateQueries({ queryKey: ["CheckedTickets"] });
-      await queryClient.invalidateQueries({ queryKey: ["dashboard", "checkedTickets"] });
-
+      await queryClient.invalidateQueries({
+        queryKey: ["dashboard", "checkedTickets"],
+      });
     } catch (error) {
       console.error("Failed to uncheck tickets:", error);
     }
   };
 
   // ── Dropdown options ──────────────────────────────────────────────────────
-  const employeeFilterOptions = useEmployeeOptions(true);
+  const employeeFilterOptions = useEmployeeOptions(false);
+  const projectFilterOptions = useProjectOptions(true);
+  const LabelFilterOptions = useLabelOptions(true);
+  const repoFilterOptions = useRepoOptions(true);
+  const teamFilterOptions = useTeamOptions(true);
 
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
@@ -416,6 +425,9 @@ const handleUncheckTickets = async () => {
     enableSelection: true,
     disabledIds: committedIds,
     selectedIds: allCheckedIds,
+    onEditClick: (item) => {
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
+    },
     onSelectionChange: (item, isChecked) => {
       if (committedIds.includes(item.id || item.issueId)) return;
       handleSelectionChange(item, isChecked);
@@ -423,6 +435,12 @@ const handleUncheckTickets = async () => {
     onItemClick: (item) =>
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
     filters: [
+      {
+        key: "repoId",
+        view: "Repo",
+        options: repoFilterOptions,
+        showCounts: true,
+      },
       {
         key: "assignedTo",
         view: "Assignee",
@@ -432,7 +450,39 @@ const handleUncheckTickets = async () => {
         api: "/sync/v2",
         apiKey: "EmployeeId",
         configKey: "TicketsList",
+        // showCounts: true,
         normalizer: normalizeTicket,
+      },
+      {
+        key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Project",
+        showCounts: true,
+        options: projectFilterOptions,
+      },
+      //   {
+      //   key: "teamId",
+      //   view: "Team",
+      //   showCounts: true,
+      //   options: teamFilterOptions,
+      //   filterType: "custom",
+      //   customFilter: (item, value) => {
+      //     if (!value || value === "") return true;
+      //     // Check if ANY assignee on this ticket belongs to the selected team
+      //     return item.multiAssignees?.some(
+      //       (a) =>
+      //         String(a.Assignee_TeamId) === String(value) &&
+      //         a.Assignee_Type === "Main Assignee",
+      //     );
+      //   },
+      // },
+      {
+        key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Label",
+        showCounts: true,
+        options: LabelFilterOptions,
+        filterType: "array",
+        allowMultiple: true,
+        filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
     ],
     tabsExtra: () => (
@@ -456,20 +506,39 @@ const handleUncheckTickets = async () => {
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
+    onEditClick: (item) => {
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
+    },
     onItemClick: (item) =>
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
     filters: [
       {
         key: "assignedTo",
         apiKey: "EmployeeID",
         view: "Assignee",
         filterType: "api",
+        // showCounts: true,
         api: "/sync/v2",
         configKey: "TimeSheet",
         source: "TimeSheet",
         normalizer: createTimesheetNormalizer,
         options: employeeFilterOptions,
         defaultValue: currentUserId,
+      },
+      {
+        key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Project",
+        showCounts: true,
+        options: projectFilterOptions,
+      },
+      {
+        key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Label",
+        showCounts: true,
+        options: LabelFilterOptions,
+        filterType: "array",
+        allowMultiple: true,
+        filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
       {
         key: "fromDate",
@@ -507,6 +576,11 @@ const handleUncheckTickets = async () => {
     enableSelection: true,
     onSelectionChange: handleUncheckSelectionChange,
     selectedIds: selectedUncheckTickets.map((t) => t.id),
+    onEditClick: (item) => {
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
+    },
+    onItemClick: (item) =>
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
     tabsExtra: () => (
       <button
         onClick={handleUncheckTickets}
@@ -525,6 +599,7 @@ const handleUncheckTickets = async () => {
         key: "assignedTo",
         apiKey: "userId",
         view: "Assignee",
+        // showCounts: true,
         filterType: "api",
         api: "/sync/v2",
         configKey: "CheckedTickets",
@@ -532,6 +607,37 @@ const handleUncheckTickets = async () => {
         options: employeeFilterOptions,
         normalizer: normalizeCheckedTickets,
         defaultValue: currentUserId,
+      },
+      {
+        key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Project",
+        showCounts: true,
+        options: projectFilterOptions,
+      },
+      // {
+      //   key: "teamId",
+      //   view: "Team",
+      //   showCounts: true,
+      //   options: teamFilterOptions,
+      //   filterType: "custom",
+      //   customFilter: (item, value) => {
+      //     if (!value || value === "") return true;
+      //     // Check if ANY assignee on this ticket belongs to the selected team
+      //     return item.multiAssignees?.some(
+      //       (a) =>
+      //         String(a.Assignee_TeamId) === String(value) &&
+      //         a.Assignee_Type === "Main Assignee",
+      //     );
+      //   },
+      // },
+      {
+        key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        view: "Label",
+        showCounts: true,
+        options: LabelFilterOptions,
+        filterType: "array",
+        allowMultiple: true,
+        filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
       {
         key: "planDate",

@@ -55,7 +55,7 @@ export default function BatteryCompletionIndicator({
       <div className="battery-tip" style={{ background: color }} />
       {showPercent && (
         <span className="battery-label" style={{ color }}>
-          {defaultValue}% 
+          {Math.round(Number(defaultValue))}%
         </span>
       )}
     </div>

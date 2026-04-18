@@ -13,6 +13,7 @@ import ParentTicketHeader from "../component/ThreadParent/ParentTicketHeader";
 import TicketThreads from "../component/ThreadListCard/TicketThreads";
 import {
   useProjectMaster,
+  useTicketProgress,
 } from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
@@ -31,6 +32,10 @@ const TicketDetailPage = () => {
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
   const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
+  const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
+    enabled: !!ticketId // Only fire if ticketId exists in the URL
+  });
+  console.log("progressLogs :", progressLogs);
   
   // Handle header stickiness
   useEffect(() => {
@@ -116,24 +121,6 @@ console.log("ticket :", ticket, projectDetails);
       a.Assignment_Type === "Main Assignee",
   );
 
-  // 3. Time Stats
-  // const timeStats = React.useMemo(() => {
-  //   let totalMinutes = 0, myMinutes = 0;
-  //   (ThreadsList?.ThreadsList || []).forEach((thread) => {
-  //     if (thread.Hours && typeof thread.Hours === "string") {
-  //       const parts = thread.Hours.trim().split(":");
-  //       const mins = (parseInt(parts[0], 10) || 0) * 60 + (parseInt(parts[1], 10) || 0);
-  //       totalMinutes += mins;
-  //       if (thread.UpdatedBy === user?.userId) myMinutes += mins;
-  //     }
-  //   });
-
-  //   const formatTime = (totalMins) => {
-  //     return `${String(Math.floor(totalMins / 60)).padStart(2, "0")}:${String(totalMins % 60).padStart(2, "0")}`;
-  //   };
-
-  //   return { total: formatTime(totalMinutes), mine: formatTime(myMinutes) };
-  // }, [ThreadsList?.ThreadsList, user]);
   const timeStats = React.useMemo(() => {
     let totalMinutes = 0,
       myMinutes = 0;

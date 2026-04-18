@@ -4,6 +4,10 @@ export default {
     "./index.html",
     "src/**/*.jsx", // <-- ONLY use this single line!
   ],
+  safelist: [
+    'bg-orange-500',
+    'hover:bg-orange-600'
+  ],
   theme: {
     extend: {
       colors: {

@@ -81,7 +81,7 @@ export const TicketFieldConfig = () => [
       Boolean(
         context?.params?.repoId ||
         context?.params?.projId ||
-        context?.entityData?.RepoId,
+        context?.entityData?.repoId,
       ),
     forceSubmit: true,
     // 🔥 Smart Initial Value (Looks up Repo ID via Project Master)
@@ -103,7 +103,7 @@ export const TicketFieldConfig = () => [
 
       // 2. If no explicit Repo ID, but we have a Project ID, look inside Project Master!
       if (!targetRepoId) {
-        targetRepoId = context?.params?.repoId || context?.entityData?.RepoId;
+        targetRepoId = context?.params?.repoId || context?.entityData?.repoId;
       }
 
       // If we still don't have a Repo ID, leave blank
@@ -143,7 +143,7 @@ export const TicketFieldConfig = () => [
           context?.params?.projId ||
           context?.entityData?.project ||
           context?.params?.repoId ||
-          context?.entityData?.RepoId ||
+          context?.entityData?.repoId ||
           formData?.repository?.value?.id;
 
         // Step B: If no targetId is found anywhere, keep all projects
@@ -201,13 +201,13 @@ export const TicketFieldConfig = () => [
     ),
     initValueResolver: ({ context, masterData }) => {
       // ✅ 1. Check if we are editing and actually have the ID
-      if (context.isEdit && context.entityData?.Assignee_Id) {
+      if (context.isEdit && context.entityData?.assignedTo) {
         // ✅ 2. Return the constructed object immediately
         return {
-          label: context.entityData.assginedTo || "Unknown",
+          label: context.entityData.assginedName || "Unknown",
           value: {
-            id: context.entityData.Assignee_Id,
-            name: context.entityData.assginedTo || "Unknown",
+            id: context.entityData.assignedTo,
+            name: context.entityData.assginedName || "Unknown",
           },
         };
       }
@@ -261,7 +261,7 @@ export const TicketFieldConfig = () => [
           .filter(
             (assignee) =>
               assignee.Assignee_Type !== "Main Assignee" &&
-              assignee.StreamStatus !== 16, // 🔥 Added this condition to ignore Inactive status
+              assignee.StreamStatus !== 17, // 🔥 Added this condition to ignore Inactive status
           )
           .map((assignee) => ({
             label: assignee.Assignee_Name,
@@ -286,7 +286,7 @@ export const TicketFieldConfig = () => [
     type: "date",
     ui: "mui",
     initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.DueDate : "",
+      context.isEdit ? context.entityData?.dueDate : "",
     required: true,
     dataType: "string",
     apiKey: "Due_Date",

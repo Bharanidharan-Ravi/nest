@@ -8,7 +8,8 @@ export const normalizeTicket = (ticket) => ({
     statusId: ticket.StatusId,
     description: ticket.HtmlDesc || ticket.Description,
     assignedTo: ticket.Assignee_Id,
-    estimateHours: ticket.hours,
+    assginedName: ticket.Assignee_Name,
+    estimateHours: ticket.hours || ticket.Hours,
     createdAt: ticket.CreatedAt,
     updatedAt: ticket.UpdatedAt,
     updatedBy: ticket.UpdatedBy,
@@ -17,6 +18,7 @@ export const normalizeTicket = (ticket) => ({
     project: ticket.Project_Id,
     ProjKey: ticket.ProjKey,
     RepoKey: ticket.RepoKey,
+    reopenedBy: ticket.ReopenedBy,
     priority: ticket.Priority,
     // Safely parse JSON strings, fallback to empty arrays if null/invalid
     multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],

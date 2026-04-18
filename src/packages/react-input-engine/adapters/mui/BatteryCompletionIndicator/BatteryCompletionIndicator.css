@@ -1,41 +1,42 @@
 .battery-wrapper {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px; /* Reduced from 8px */
 }
 
 .battery-body {
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 3px 4px;
-  border: 2px solid;
-  border-radius: 5px;
+  gap: 3px; /* Reduced from 3px */
+  padding: 2px 3px; /* Reduced from 3px 4px */
+  border: 1.5px solid; /* Thinner border */
+  border-radius: 4px;
   transition: border-color 0.2s;
 }
 
 .battery-cell {
-  width: 10px;
-  height: 18px;
-  border-radius: 2px;
+  width: 10px; /* Reduced from 10px */
+  height: 16px; /* Reduced from 18px */
+  border-radius: 1px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .battery-tip {
-  width: 4px;
-  height: 8px;
+  width: 3px; /* Reduced from 4px */
+  height: 6px; /* Reduced from 8px */
   border-radius: 0 2px 2px 0;
   transition: background 0.2s;
 }
 
 .battery-label {
-  font-size: 13px;
+  font-size: 11px; /* Reduced from 13px to match surrounding meta text */
   font-weight: 600;
   white-space: nowrap;
   transition: color 0.2s;
 }
 
+/* Kept the same */
 .battery-update-btn {
   padding: 3px 10px;
   font-size: 12px;

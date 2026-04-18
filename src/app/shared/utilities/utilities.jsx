@@ -233,8 +233,10 @@ export const buildOptionsResolver = (
 
 export const getDueStatus = (dueDate) => {
   if (!dueDate) return null;
-
-  const diff = dayjs(dueDate).diff(dayjs(), "day");
+  const today = dayjs().startOf("day");
+  const due = dayjs(dueDate).startOf("day");
+  // const diff = dayjs(dueDate).diff(dayjs(), "day");
+  const diff = due.diff(today, "day");
 
   if (diff < 0) {
     return {

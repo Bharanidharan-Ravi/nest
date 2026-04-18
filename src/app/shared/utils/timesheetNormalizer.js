@@ -18,6 +18,7 @@ export const createTimesheetNormalizer = (Timedata) => {
     ticketKey: Timedata.TicketNo,
     project: Timedata.Project_Id,
     updatedAt: Timedata.UpdatedAt,
+    CompletionPct: Timedata.CompletionPct,
     createdAt: Timedata.CreatedAt,
     updatedBy: Timedata.UpdatedBy,
     total: Timedata.total,

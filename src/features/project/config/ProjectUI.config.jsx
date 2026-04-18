@@ -20,7 +20,7 @@ export const ProjUIConfig = {
   enableSort: true,
   enableSelection: true,
   enableEdit: true,
-  // allowViewSwitch: true,
+  allowViewSwitch: true,
   filters: [
     {
       key: "employee",

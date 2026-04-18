@@ -15,6 +15,7 @@ export const TicketListConfig = {
   enableSelection: false,
   enableEdit: true,
   enableCardControls: true,
+  enablequickComment: true,
   searchFields: ["title", "description", "RepoKey"],
   filters: [
     {
@@ -32,8 +33,20 @@ export const TicketListConfig = {
   },
 
   sortFields: [
-    { key: "createdAt", label: "Created on" },
-    { key: "updatedAt", label: "Last updated" },
+    { key: "createdAt", label: "Created on", type: "date" },
+    { key: "updatedAt", label: "Last updated", type: "date" },
+    // 🔥 NEW: Custom Bucket Sort for Due Date
+    {
+      key: "dueDate",
+      label: "Due Priority",
+      type: "custom",
+      // These will override the global "Newest/Oldest" just for this field
+      orders: [
+        { key: "today_first", label: "Due Today First" },
+        { key: "overdue_first", label: "Overdue First" },
+        { key: "upcoming_first", label: "Upcoming First" },
+      ],
+    },
   ],
 
   sortOrders: [
@@ -48,36 +61,18 @@ export const TicketListConfig = {
       field: "statusId",
       // Exclude OnHold(13), Closed(14), Cancelled(15), Inactive(16)
       // Anything NOT in this list will be treated as an Open/Active ticket
-      excludeValues: [13, 14, 15, 16],
+      excludeValues: [14, 15, 16, 17],
     },
     {
       key: "closed",
       label: "Closed",
       field: "statusId",
       // Specifically include these IDs for the Closed tab
-      filterValue: [13, 14, 15, 16],
+      filterValue: [14, 15, 16, 17],
     },
   ],
 
-  cardRenderer: (item, controls, isQuickOpen, setOpenQuickId) => (
-    <TicketListCard
-      item={item}
-      controls={controls}
-      // quickCommentButton={
-      //   // config?.enablequickComment ? (
-      //   <button
-      //     className="px-2.5 py-1 rounded-md text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-300 transition-all duration-150 flex items-center gap-1 flex-shrink-0 shadow-sm hover:shadow-md outline-none focus:outline-none ring-0"
-      //     title="Quick Comment"
-      //     onClick={(e) => {
-      //       e.stopPropagation();
-      //       setOpenQuickId(isQuickOpen ? null : item);
-      //     }}
-      //   >
-      //     <FiMessageSquare className="text-base" />
-      //     {/* {isQuickOpen ? "Close" : "Quick Comment"} */}
-      //   </button>
-      //   // ) : null
-      // }
-    />
+  cardRenderer: (item, controls, config) => (
+    <TicketListCard item={item} controls={controls} config={config} />
   ),
 };
