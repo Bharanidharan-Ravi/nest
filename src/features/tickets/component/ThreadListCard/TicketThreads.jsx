@@ -29,7 +29,7 @@ const TicketThreads = ({
   const [expandCount, setExpandCount] = useState(0);
   // 1. Process Raw Threads
 
- const rawThreads = React.useMemo(() => {
+  const rawThreads = React.useMemo(() => {
     const threadsArray = Array.isArray(threadsData) ? threadsData : [];
 
     // 🔥 1. "List all handoff IDs in an array"
@@ -45,7 +45,7 @@ const TicketThreads = ({
       const threadHandoffs = allHandoffs.filter(
         (handoff) =>
           handoff.InitiatingThreadId === thread.ThreadId &&
-          handoff.Status !== "Inactive"
+          handoff.Status !== "Inactive",
       );
 
       // 🔴 NEW: Find the StreamIds that were explicitly marked as Inactive
@@ -53,7 +53,7 @@ const TicketThreads = ({
         .filter(
           (handoff) =>
             handoff.InitiatingThreadId === thread.ThreadId &&
-            handoff.Status === "Inactive"
+            handoff.Status === "Inactive",
         )
         .map((h) => h.TargetStreamId);
 
@@ -61,7 +61,7 @@ const TicketThreads = ({
       const mappedAssignees = threadHandoffs
         .map((handoff) => {
           const targetAssignee = (assigneesJsonString || []).find(
-            (a) => a.StreamId === handoff.TargetStreamId
+            (a) => a.StreamId === handoff.TargetStreamId,
           );
 
           if (targetAssignee) {
@@ -83,7 +83,7 @@ const TicketThreads = ({
         .filter(
           (a) =>
             a.ParentThreadId === thread.ThreadId &&
-            !inactiveStreamIds.includes(a.StreamId) // 👈 This shuts the backdoor!
+            !inactiveStreamIds.includes(a.StreamId), // 👈 This shuts the backdoor!
         )
         .map((a) => ({
           label: a.Assignee_Name,
@@ -97,9 +97,16 @@ const TicketThreads = ({
       // Combine both so we don't lose anyone, and remove duplicates by streamId
       const finalAssignees = [...mappedAssignees, ...directAssignees].filter(
         (v, i, a) =>
-          a.findIndex((t) => t.value.streamId === v.value.streamId) === i
+          a.findIndex((t) => t.value.streamId === v.value.streamId) === i,
       );
-
+      let parsedCoContributors = [];
+      try {
+        if (thread.CoContributors_JSON) {
+          parsedCoContributors = JSON.parse(thread.CoContributors_JSON);
+        }
+      } catch (error) {
+        console.error("failed to parse CoContributors", thread.ThreadId);
+      }
       // 🔥 4. "Add it to rawThreads"
       return {
         id: thread.ThreadId,
@@ -117,44 +124,11 @@ const TicketThreads = ({
         completionPct: thread.CompletionPct,
         assignees: finalAssignees,
         HandsOffId: thread.HandsOffId,
+        CoContributors: parsedCoContributors,
       };
     });
   }, [threadsData, assigneesJsonString]);
 
-  // const rawThreads = React.useMemo(() => {
-  //   return (threadsData || []).map((thread) => {
-  //     let parsedAssignees = [];
-  //     try {
-  //       if (thread.All_Assignees) parsedAssignees = JSON.parse(thread.All_Assignees);
-  //     } catch (e) {
-  //       console.error("failed to parse all_assignees", thread.ThreadId);
-  //     }
-
-  //     const assignedUser = parsedAssignees.map((assignee) => ({
-  //       id: assignee.Assignee_Id || assignee.Id,
-  //       name: assignee.Assignee_Name,
-  //       type: assignee.Assignee_Type,
-  //     }));
-
-  //     return {
-  //       Id: thread.ThreadId,
-  //       Issue_Id: thread.Issue_Id,
-  //       description: thread.HtmlDesc,
-  //       Hours: thread.Hours,
-  //       fromTime: thread.From_Time,
-  //       toTime: thread.To_Time,
-  //       createdAt: thread.CreatedAt,
-  //       CreatedBy: thread.CreatedBy,
-  //       CreatedId: thread.CreatedId,
-  //       UpdatedAt: thread.UpdatedAt,
-  //       UpdatedBy: thread.UpdatedBy,
-  //       ThreadAssignees: assignedUser,
-  //       HandsOffId: thread.HandsOffId,
-  //     };
-  //   });
-  // }, [threadsData]);
-
-  // 2. Filter by Sidebar Selection
   const filteredThreads = React.useMemo(() => {
     if (!selectedWorkStream && !selectedHandoffId) return rawThreads;
 
@@ -382,10 +356,8 @@ const TicketThreads = ({
       );
     },
   };
-console.log("parentTicket :", parentTicket);
 
- const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.StatusId);
-console.log("isTerminalState :", isTerminalState);
+  const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.StatusId);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -400,13 +372,13 @@ console.log("isTerminalState :", isTerminalState);
         <div className="rounded-3xl p-2">
           <EntityFormPage
             // Dynamically change mode based on ticket status
-            mode={isTerminalState ? "Reopen" : "Create"} 
+            mode={isTerminalState ? "Reopen" : "Create"}
             config={{
               ...ThreadFormConfig,
               fields: ThreadFieldConfig(ticketId),
             }}
             // Merge formContext with the isClosed flag for your config.actions
-            context={{ ...formContext, isClosed: isTerminalState }} 
+            context={{ ...formContext, isClosed: isTerminalState }}
             module="Ticket"
           />
         </div>

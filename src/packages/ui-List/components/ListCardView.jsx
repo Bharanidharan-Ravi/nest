@@ -7,8 +7,6 @@ export function ListCardView() {
   const [openQuickId, setOpenQuickId] = useState(null);
   const theme = config.theme || {};
   const containerClasses = theme.cardContainer || "flex flex-col w-full";
-console.log("openQuickId :", openQuickId);
-
   const itemClasses =
     theme.cardItem ||
     "p-1.5 border-b border-ghBorder bg-white hover:bg-ghHover transition-colors duration-150 last:border-b-0 w-full overflow-hidden break-words relative cursor-pointer";

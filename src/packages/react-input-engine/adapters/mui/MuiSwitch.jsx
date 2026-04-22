@@ -1,13 +1,12 @@
 import React from "react";
-import { Checkbox, FormControlLabel, FormControl, FormHelperText } from "@mui/material";
+import { Switch, FormControlLabel, FormControl, FormHelperText } from "@mui/material";
 
-const MuiCheckbox = ({ 
+const MuiSwitch = ({ 
   name, 
   label, 
   value, 
   error, 
   onChange, 
-  required, 
   disabled,
   theme = {} 
 }) => {
@@ -15,7 +14,7 @@ const MuiCheckbox = ({
   const isChecked = Boolean(value);
 
   const handleChange = (e) => {
-    // Pass the boolean state back to FormEngine and useEntityForm
+    // Pass the boolean state back to FormEngine (true/false)
     onChange(name, e.target.checked);
   };
 
@@ -23,24 +22,22 @@ const MuiCheckbox = ({
     <FormControl 
       error={!!error} 
       component="fieldset" 
-      className={theme.checkboxContainer || "w-full flex items-center h-full pt-2"}
+      className={theme.switchContainer || "w-full pt-2"}
     >
       <FormControlLabel
         control={
-          <Checkbox
+          <Switch
             checked={isChecked}
             onChange={handleChange}
             name={name}
-            color="primary"
+            color="warning" 
             disabled={disabled}
-            required={required}
-            className={theme.checkbox || ""}
-            size="small" // 🔥 Scales down the checkbox square to match the text
+            size="small" // 🔥 Scales down the toggle itself to match the text
           />
         }
         // 🔥 Wrap the label in a span to force Tailwind's smaller font size
         label={<span className="text-sm text-gray-700">{label}</span>}
-        className={theme.checkboxLabel || ""} 
+        className={theme.switchLabel || ""} 
       />
       
       {error && <FormHelperText>{error}</FormHelperText>}
@@ -48,4 +45,4 @@ const MuiCheckbox = ({
   );
 };
 
-export default MuiCheckbox;
+export default MuiSwitch;

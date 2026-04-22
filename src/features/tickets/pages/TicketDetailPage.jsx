@@ -13,11 +13,12 @@ import ParentTicketHeader from "../component/ThreadParent/ParentTicketHeader";
 import TicketThreads from "../component/ThreadListCard/TicketThreads";
 import {
   useProjectMaster,
+  useTeamMaster,
   useTicketProgress,
 } from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-  const { data } = useMasterData();
+  // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
 
@@ -32,11 +33,22 @@ const TicketDetailPage = () => {
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
   const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
+  const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
-    enabled: !!ticketId // Only fire if ticketId exists in the URL
+    enabled: !!ticketId, // Only fire if ticketId exists in the URL
   });
-  console.log("progressLogs :", progressLogs);
-  
+  const toMinutes = (hoursStr) => {
+    if (!hoursStr || typeof hoursStr !== "string") return 0;
+    const [h = 0, m = 0] = hoursStr.trim().split(":").map(Number);
+    return Math.max(0, h * 60 + m);
+  };
+
+  // Helper: convert minutes back to HH:MM string
+  const toTimeStr = (totalMins) => {
+    const h = Math.floor(totalMins / 60);
+    const m = totalMins % 60;
+    return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  };
   // Handle header stickiness
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -54,13 +66,10 @@ const TicketDetailPage = () => {
       (issue) => issue.Issue_Id === ticketId,
     );
     if (!ticket) return null;
-    // const projectDetails = useProjectById(ticket.Project_Id);
-    // console.log("projectDetails :", projectDetails);
 
     const projectDetails = projectMasterData?.find(
       (p) => p.id === ticket.Project_Id,
     );
-console.log("ticket :", ticket, projectDetails);
 
     return {
       ...ticket,
@@ -69,7 +78,7 @@ console.log("ticket :", ticket, projectDetails);
       projKey: projectDetails?.projectKey || "Unknown Repo",
       Repo_Name: projectDetails?.repoName || "Unknown Repo",
     };
-  }, [ticketMasterData, ticketId, data]);
+  }, [ticketMasterData, ticketId]);
 
   // 2. Process Assignees and Roles
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
@@ -121,6 +130,66 @@ console.log("ticket :", ticket, projectDetails);
       a.Assignment_Type === "Main Assignee",
   );
 
+  const teamMap = React.useMemo(() => {
+    const teams = TeamMaster || [];
+    const map = {};
+    teams.forEach((t) => {
+      map[t.id] = t.name;
+    });
+    return map;
+  }, [TeamMaster]);
+
+  const teamTimeStats = React.useMemo(() => {
+    const threads = Array.isArray(ThreadsList?.ThreadsList)
+      ? ThreadsList?.ThreadsList
+      : [];
+
+    const teamTotals = {}; // teamId → total minutes
+
+    threads.forEach((thread) => {
+      if (!thread.Hours) return;
+      const mins = toMinutes(thread.Hours);
+
+      // 🔥 Use a Set to collect unique teams. 
+      // If 3 Web Devs are tagged, it only adds the 'Web' team ID once!
+      const teamsInvolved = new Set();
+
+      // 1. Add the Thread Creator's team
+      if (thread.team) {
+        teamsInvolved.add(thread.team);
+      }
+
+      // 2. Add the Co-Contributors' teams
+      if (thread.CoContributors_JSON) {
+        try {
+          const coContributors = JSON.parse(thread.CoContributors_JSON);
+          coContributors.forEach((c) => {
+            if (c.team) {
+              teamsInvolved.add(c.team);
+            }
+          });
+        } catch (e) {
+          console.error("Failed to parse CoContributors for team stats", e);
+        }
+      }
+
+      // 3. Add the total minutes to every unique team involved in this thread
+      teamsInvolved.forEach((teamId) => {
+        if (!teamTotals[teamId]) teamTotals[teamId] = 0;
+        teamTotals[teamId] += mins;
+      });
+    });
+
+    // Convert to readable format: { TeamName: "02:30", ... }
+    const result = {};
+    Object.entries(teamTotals).forEach(([teamId, totalMins]) => {
+      const teamName = teamMap[Number(teamId)] || `Team ${teamId}`;
+      result[teamName] = toTimeStr(totalMins);
+    });
+
+    return result;
+  }, [ThreadsList, toMinutes, toTimeStr, teamMap]);
+
   const timeStats = React.useMemo(() => {
     let totalMinutes = 0,
       myMinutes = 0;
@@ -163,10 +232,13 @@ console.log("ticket :", ticket, projectDetails);
       <ParentTicketHeader
         parentTicket={parentTicket}
         timeStats={timeStats}
+        teamTimeStats={teamTimeStats}
         mainAssignee={mainAssignee}
         isStuck={isStuck}
         sentinelRef={sentinelRef}
         goTo={goTo}
+        isOwner={isOwner}
+        progressLogs={progressLogs}
       />
 
       <div className="flex flex-col gap-8 mt-6 px-4 sm:px-6 relative">

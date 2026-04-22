@@ -500,18 +500,77 @@ export default function Dashboard() {
     ),
   };
 
+  // ✅ Static — no external dependency
+  const dashboardTimesheetGraph = {
+    graphType: "stackedBar",
+    graphXAxisKey: "updatedAt",
+    graphValueKey: "ConsumeTime",
+    graphLabelKey: "TicketName",
+    graphGroupIdKey: "ticketId",
+    graphColorKey: "statusColor",
+    isDateAxis: true,
+    // graphXAxis: not needed — auto-derived from data
+    valueFormatter: (val) => {
+      const h = Math.floor(val);
+      const m = Math.round((val % 1) * 60);
+      return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
+    },
+    yaxis: {
+      max: 12,
+      ticks: [
+        { value: 0, label: "0" },
+        { value: 2, label: "2h" },
+        { value: 4, label: "4h" },
+        { value: 6, label: "6h" },
+        { value: 8, label: "8h" },
+        { value: 10, label: "10h" },
+        { value: 12, label: "12h+" },
+      ],
+    },
+  };
+
   const dashboardTimesheet = {
     ...TicketListConfig,
     syncUrl: true,
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
+    defaultView: "card",
+    allowViewSwitch: ["card", "graph"],
+    graphConfig: dashboardTimesheetGraph,
     onEditClick: (item) => {
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
     },
     onItemClick: (item) =>
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
     filters: [
+      {
+        type: "weekRange",
+        key: "weekRange", // internal query key
+
+        // ── Navigation ──────────────────────────────
+        enableDailyNav: true, // shows −  + buttons
+        // enableMonthlyNav: true, // shows «  » buttons
+
+        // ── View restriction ─────────────────────────
+        // showOnViews: ["graph"], // only visible in graph view
+        filterType: "api",
+        api: "/sync/v2",
+        configKey: "TimeSheet",
+        source: "TimeSheet",
+        // ── API output ───────────────────────────────
+        // Option A — single range value
+        // apiMode: "range",
+        // query value used as-is: "2026-04-19~2026-04-25"
+        // defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
+        defaultRange: "week", 
+        normalizer: createTimesheetNormalizer,
+        // Option B — two separate named params
+        apiMode: "split",
+        apiStartKey: "FromDate",
+        apiEndKey: "ToDate",
+        apiDateFormat: "MM-DD-YYYY", // dayjs format string
+      },
       {
         key: "assignedTo",
         apiKey: "EmployeeID",
@@ -540,30 +599,30 @@ export default function Dashboard() {
         allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
-      {
-        key: "fromDate",
-        apiKey: "FromDate",
-        view: "From Date",
-        type: "date",
-        filterType: "api",
-        api: "/sync/v2",
-        configKey: "TimeSheet",
-        source: "TimeSheet",
-        normalizer: createTimesheetNormalizer,
-        defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
-      },
-      {
-        key: "toDate",
-        apiKey: "ToDate",
-        view: "To Date",
-        type: "date",
-        filterType: "api",
-        api: "/sync/v2",
-        configKey: "TimeSheet",
-        source: "TimeSheet",
-        normalizer: createTimesheetNormalizer,
-        defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
-      },
+      // {
+      //   key: "fromDate",
+      //   apiKey: "FromDate",
+      //   view: "From Date",
+      //   type: "date",
+      //   filterType: "api",
+      //   api: "/sync/v2",
+      //   configKey: "TimeSheet",
+      //   source: "TimeSheet",
+      //   normalizer: createTimesheetNormalizer,
+      //   defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
+      // },
+      // {
+      //   key: "toDate",
+      //   apiKey: "ToDate",
+      //   view: "To Date",
+      //   type: "date",
+      //   filterType: "api",
+      //   api: "/sync/v2",
+      //   configKey: "TimeSheet",
+      //   source: "TimeSheet",
+      //   normalizer: createTimesheetNormalizer,
+      //   defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
+      // },
     ],
   };
 

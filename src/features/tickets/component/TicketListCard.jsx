@@ -55,14 +55,20 @@ export default function TicketListCard({
   );
   const { renderCheckbox, renderEdit, disabled } = controls || {};
   const activeStatus = [14, 15, 16, 17];
+  const isCloseRequested = item.isCloseRequested;
   let statusIcon;
-  if (item.reopenedBy) {
-    // If it has a ReopenedBy Guid, show the Reopen icon (usually purple or orange)
+  if (isCloseRequested) {
+    // 🔥 Replace the icon entirely with a red pulsing dot of the same size
     statusIcon = (
-      <GoIssueReopened
-        className="status-icon text-orange-500"
-        title="Reopened Ticket"
-      />
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
+      </div>
+    );
+  } else if (item.reopenedBy) {
+    // If it has a ReopenedBy Guid, show the Reopen icon
+    statusIcon = (
+      <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />
     );
   } else if (activeStatus.includes(item.statusId)) {
     // If it's closed/cancelled
@@ -91,7 +97,12 @@ export default function TicketListCard({
   };
   return (
     <>
-      <div className={`ticket-row ${focused ? "focused-row" : ""}`}>
+      {/* <div className={`ticket-row ${focused ? "focused-row" : ""}`}> */}
+      <div 
+        className={`ticket-row ${focused ? "focused-row" : ""} ${
+          item.isCloseRequested || item.IsCloseRequested ? "close-requested-row" : ""
+        }`}
+      >
         {/* LEFT BLOCK: Main Information */}
         <div className="ticket-main">
           {/* Row 1: Status, ID, Title, Labels, Department */}
@@ -315,7 +326,14 @@ export default function TicketListCard({
         <div className="ticket-progress">
           <div className="battery-header">
             <BatteryCompletionIndicator
-              defaultValue={item.CompletionPct ?? 0}
+              // options={{
+              //   step: 10,
+              //   max: 100,
+              //   height: "10px",
+              //   width: "5px",
+              //   fontSize: "10px"
+              // }}
+              defaultValue={item.overallPercentage ?? 0}
             />
             <div className="edit-icon">{renderEdit && renderEdit()}</div>
           </div>
@@ -329,8 +347,6 @@ export default function TicketListCard({
               {" "}
               Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
             </p>
-            {/* <span>Updated by {item.assginedTo}</span>
-          <span>{dayjs(item.updatedAt).fromNow()}</span> */}
           </div>
         </div>
       </div>
@@ -410,7 +426,7 @@ export default function TicketListCard({
   );
 }
 
-
+///////////////////////-----------------------------------//////////////////
   //  {isQuickFormOpen && (
   //       <>
   //         {/* Backdrop */}

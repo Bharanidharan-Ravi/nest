@@ -344,6 +344,24 @@ export const TicketFieldConfig = () => [
     }, // Default to Medium if creating
     visibleWhen: () => true,
   },
+   {
+    name: "TicketOverallPercentage",
+    label: "Overall Ticket Progress (%)",
+    type: "battery", // Or "number" depending on your registry
+    ui: "mui",
+    apiKey: "TicketOverallPercentage", // Matches your updated PostWorkStreamDto
+    colSpan: 3,
+    hidden: true,
+    initValueResolver: () => false,
+    options: {
+      step: 10,
+      max: 100,
+      height: "25px",
+      width: "12px",
+      fontSize: "14px",
+    },
+    groupName: "Ticket Status Update", // 👈 This triggers the Header
+  },
 
   /* --------------------------------------------------
      Description

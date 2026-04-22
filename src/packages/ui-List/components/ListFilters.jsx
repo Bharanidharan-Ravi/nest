@@ -5,6 +5,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import dayjs from "dayjs";
 import { useSearchParams } from "react-router-dom";
+import { WeekRangeFilter } from "./weeklyFilter";
 
 export function ListFilters() {
   // 1. Removed selectedOptions and setSelectedOptions from context destruction
@@ -42,6 +43,7 @@ export function ListFilters() {
       .filter(Boolean)
       .join(" ");
     setQuery(newQuery);
+    setSearchQuery("");
     if (!isMulti) setOpenDropdownKey(null);
   };
 
@@ -155,11 +157,14 @@ export function ListFilters() {
         //   opt.label?.toLowerCase()?.includes(searchQuery.toLowerCase()),
         // );
         const filteredOptions = (filter?.options || [])
-        .filter((opt) => opt?.label?.toLowerCase().includes(searchQuery.toLowerCase()))
-        .sort((a, b) => a.label.localeCompare(b.label, undefined, {
-                sensitivity: "base",
-              }),
-            );
+          .filter((opt) =>
+            opt?.label?.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+          .sort((a, b) =>
+            a.label.localeCompare(b.label, undefined, {
+              sensitivity: "base",
+            }),
+          );
 
         // Safely determine active option for single select fallback
         const activeOption = filter.options?.find((opt) =>
@@ -206,7 +211,16 @@ export function ListFilters() {
             </div>
           );
         }
-
+        if (filter.type === "weekRange") {
+          return (
+            <WeekRangeFilter
+              key={filter.key}
+              filter={filter}
+              currentValue={currentValue}
+              updateQuery={updateQuery}
+            />
+          );
+        }
         return (
           <div key={filter.key} className="relative">
             <button

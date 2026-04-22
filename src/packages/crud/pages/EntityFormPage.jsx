@@ -102,8 +102,6 @@ export default function EntityFormPage({
       dto.temp = null;
     }
     const finalDto = { ...dto, ...overrides };
-    console.log("finalDto :", finalDto);
-
     mutate(finalDto);
   };
 
@@ -158,7 +156,6 @@ export default function EntityFormPage({
             typeof config.actions === "function"
               ? config.actions({ formData, context })
               : config.actions;
-console.log("resolvedActions :", resolvedActions);
 
           // 2. Map over the resolved array
           if (
@@ -218,7 +215,6 @@ console.log("resolvedActions :", resolvedActions);
           }
           // 3. UPDATED FALLBACK BUTTON: Handles Custom Modes (like "Reopen")
           const isCustomMode = mode !== "Create" && mode !== "Edit"&& mode !== "Update";
-console.log("isCustomMode:", isCustomMode, "mode:", mode);
 
           // Dynamically looks for a theme key based on the mode (e.g., theme.reopenBtn)
           const customThemeClass =

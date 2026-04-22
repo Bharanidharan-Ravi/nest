@@ -30,7 +30,6 @@ export const Breadcrumbs = () => {
       case ROUTE_KEYS.TICKET_DETAIL: {
         if (!ticketId) return null;
         const tickets = queryClient.getQueryData(queryKeys.ticket.list());
-  console.log("repo data :", tickets);
 
         return tickets?.find((t) => t.Issue_Id === ticketId)?.Issue_Code ?? null;
       }

@@ -26,4 +26,6 @@ export const normalizeTicket = (ticket) => ({
     CompletionPct: ticket.CompletionPct,
     teamId: ticket.Assignee_TeamId,
     teamName: ticket.Assignee_TeamName,
+    overallPercentage: ticket.OverallPercentage,
+    isCloseRequested: ticket.IsCloseRequested,
 });

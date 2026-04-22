@@ -3,6 +3,8 @@ import { useSearchParams } from "react-router-dom";
 import { parseQuery } from "./useQueryParser";
 import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
+import { useEffect } from "react";
+import { getDateRangeApiParams } from "../components/getDateRangeApiParams";
 
 export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
@@ -14,20 +16,6 @@ export function useListState(config, rawData = []) {
   /* --- INITIAL STATE (Run once) --- */
   const initialQuery = useMemo(() => {
     // 🔥 HELPER: Builds the string from defaults
-    // const buildDefaultString = (tabKey) => {
-    //   let q = tabKey ? `is:${tabKey}` : "";
-    //   if (config.filters) {
-    //     config.filters.forEach((f) => {
-    //       if (f.defaultValue) {
-    //         const safeValue = f.defaultValue.includes(" ")
-    //           ? `"${f.defaultValue}"`
-    //           : f.defaultValue;
-    //         q += ` ${f.key}:${safeValue}`;
-    //       }
-    //     });
-    //   }
-    //   return q.trim();
-    // };
     const buildDefaultString = (tabKey) => {
       let q = tabKey ? `is:${tabKey}` : "";
       if (config.filters) {
@@ -50,6 +38,7 @@ export function useListState(config, rawData = []) {
 
     // 🔥 If URL already has a query string, the URL wins!
     // (Note: Use your prefix here like searchParams.get("tickets_q") if you applied the namespaces)
+
     const urlQ = searchParams.get(`${prefix}q`);
     if (urlQ) return urlQ;
 
@@ -65,21 +54,6 @@ export function useListState(config, rawData = []) {
     prefix,
   ]);
 
-  //   const initialQuery = useMemo(() => {
-
-  //     // If child list, ignore URL and load default config
-  //     if (!isUrlSyncEnabled) {
-  //       const defaultTab = config.tabConfig?.[0]?.key;
-  //       return defaultTab ? `is:${defaultTab}` : "";
-  //     }
-
-  //     const urlQ = searchParams.get("q");
-  //     if (urlQ) return urlQ;
-
-  //     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
-  //     return urlTab ? `is:${urlTab}` : "";
-  //   }, [isUrlSyncEnabled, config.tabConfig, searchParams]);
-
   /* --- STATES --- */
   const [query, setQuery] = useState(initialQuery);
   const [selectedOptions, setSelectedOptions] = useState({});
@@ -88,7 +62,6 @@ export function useListState(config, rawData = []) {
       config.defaultSort?.field ||
       "updatedAt",
   );
-console.log("sortField :", sortField);
   const [sortOrder, setSortOrder] = useState(
     (isUrlSyncEnabled ? searchParams.get(`${prefix}order`) : null) ||
       config.defaultSort?.order ||
@@ -111,7 +84,11 @@ console.log("sortField :", sortField);
 
   //     return initial; // This will now contain { assignedTo: currentUserName }
   // });
-  const [view, setView] = useState(config.defaultView || "table");
+  const [view, setView] = useState(
+    (isUrlSyncEnabled ? searchParams.get(`${prefix}view`) : null) ||
+      config.defaultView ||
+      "table",
+  );
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
 
   /* --- QUERY PARSE & DERIVED STATE --- */
@@ -157,13 +134,32 @@ console.log("sortField :", sortField);
   const apiPayload = useMemo(() => {
     if (apiFilterEntries.length === 0) return undefined;
 
-    return Object.fromEntries(
-      apiFilterEntries.map(([key, value]) => {
-        const filterConf = config.filters.find((f) => f.key === key);
-        return [filterConf?.apiKey || config?.filters?.idKey, value];
-      }),
-    );
+    const result = {};
+
+    apiFilterEntries.forEach(([key, value]) => {
+      const filterConf = config.filters.find((f) => f.key === key);
+
+      if (filterConf?.type === "weekRange") {
+        // ✅ Expands "2026-04-19~2026-04-25" → { FromDate: "...", ToDate: "..." }
+        const dateParams = getDateRangeApiParams(filterConf, value);
+        Object.assign(result, dateParams);
+      } else {
+        result[filterConf?.apiKey || key] = value;
+      }
+    });
+
+    return result;
   }, [apiFilterEntries, config.filters]);
+  // const apiPayload = useMemo(() => {
+  //   if (apiFilterEntries.length === 0) return undefined;
+
+  //   return Object.fromEntries(
+  //     apiFilterEntries.map(([key, value]) => {
+  //       const filterConf = config.filters.find((f) => f.key === key);
+  //       return [filterConf?.apiKey || config?.filters?.idKey, value];
+  //     }),
+  //   );
+  // }, [apiFilterEntries, config.filters]);
 
   const { data: apiFilteredData, dataUpdatedAt } = useApiQuery({
     queryKey: [apiFilterConfig?.configKey, apiPayload],
@@ -198,6 +194,7 @@ console.log("sortField :", sortField);
     }
 
     const combinedFilters = { ...filters, ...queryFilters };
+    console.log("filter data", combinedFilters, queryFilters);
 
     // 🔥 1. Initialize a Score Tracker for multi-select matches
     const matchScores = new Map();
@@ -205,6 +202,11 @@ console.log("sortField :", sortField);
     Object.entries(combinedFilters).forEach(([key, value]) => {
       if (!value) return;
 
+      // 🚀 THE FIX: Check if this filter key actually exists in the current config
+      const filterConfig = config?.filters?.find((f) => f.key === key);
+      if (!filterConfig && key !== "is" && key !== "text") {
+        return;
+      }
       // Handle "is" token (Tabs)
       if (key === "is" && config.tabConfig) {
         // ... (keep your existing mapping logic for tabs here)
@@ -222,7 +224,8 @@ console.log("sortField :", sortField);
         return;
       }
 
-      const filterConfig = config.filters?.find((f) => f.key === key);
+      // const filterConfig = config.filters?.find((f) => f.key === key);
+      console.log("filterConfig :", filterConfig, data);
 
       if (filterConfig?.filterType === "api") return;
 
@@ -290,7 +293,7 @@ console.log("sortField :", sortField);
       // -------------------------------------------------------------
       // CUSTOM DUE DATE BUCKET SORTING
       // -------------------------------------------------------------
-      if (sortField.type ===  "custom") {
+      if (sortField.type === "custom") {
         // Step 1: Helper to classify a date into a Bucket ID
         const getBucket = (dateStr) => {
           if (!dateStr) return 4; // Nulls/Empty always go to the bottom

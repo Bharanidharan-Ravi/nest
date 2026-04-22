@@ -5,7 +5,6 @@ import { useTicketProgress } from "../../../core/master/selectors/selectors"; //
 
 const TicketProgressHistory = ({ options }) => {
  const routeParams = useParams();
-  console.log("options :", options);
   
   // 🔥 1. Prioritize the ticketId from FormEngine config, fallback to URL params
   const activeTicketId = options?.ticketId || routeParams.ticketId;
@@ -53,7 +52,6 @@ const TicketProgressHistory = ({ options }) => {
       month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
   };
-console.log("its trigger");
 
   return (
     <div className="w-full mt-2">

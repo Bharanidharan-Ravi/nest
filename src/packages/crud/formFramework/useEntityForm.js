@@ -130,7 +130,6 @@ export const useEntityForm = (config, context = {}) => {
   //     let newField = { ...field };
 
   //     if (field.optionsResolver && masterData) {
-  //       console.log("master :", masterData);
 
   //       newField.options = field.optionsResolver({
   //         masterData,

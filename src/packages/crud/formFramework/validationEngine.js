@@ -35,11 +35,8 @@ export const validateForm = (formData, fields, context = {}) => {
       }
     }
 
-    if (field.customValidator) {
-      console.log(`Validating field: ${field.name}`, value, data, context );
-      
+    if (field.customValidator) {      
       const result = field.customValidator(value, data, context);
-      console.log(`Validation result for ${field.name}:`, result);
       
       if (result !== true) {
         errorTarget[field.name] = result;

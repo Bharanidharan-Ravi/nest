@@ -11,6 +11,37 @@
   padding: 6px;
   border-radius: 50%;
 } */
+
+/* Add this to your TicketListCard.css */
+
+.close-requested-row {
+  border-left: 4px solid #ef4444 !important; /* Bold Red Left Rail */
+  background-color: #fef2f2 !important;      /* Very subtle red background tint */
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important; /* Subtle red glow */
+  transition: all 0.2s ease-in-out;
+}
+
+.close-requested-row:hover {
+  background-color: #fee2e2 !important; /* Slightly darker red on hover */
+  box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Optional: Add a little pulsating dot next to the title to really grab attention */
+.close-request-indicator {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background-color: #ef4444;
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 .due-date-row {
   display: flex;
 }

@@ -25,7 +25,6 @@ export function ListSortDropdown() {
   
   // 2. Use field-specific orders if they exist, otherwise fallback to global
   const activeOrders = activeFieldConfig.orders || config.sortOrders;
-console.log("activeFieldConfig :", activeFieldConfig, sortField);
 
   const fieldLabel = activeFieldConfig?.label || "Sort";
   const orderLabel = activeOrders.find(o => o.key === sortOrder.key)?.label || activeOrders[0]?.label;

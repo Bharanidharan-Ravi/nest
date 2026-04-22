@@ -265,6 +265,7 @@ const AdvancedEditor = ({
 
   const editor = useEditor({
     content: value,
+    autofocus: true,
     extensions: [
       StarterKit,
       Underline,

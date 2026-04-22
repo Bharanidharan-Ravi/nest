@@ -15,6 +15,7 @@ export const useRepoByKey      = (key)  => useMasterFind("repo",     "key",  key
 export const useProjectById    = (id)   => useMasterFind("project",  "id",   id);
 export const useProjectMaster  = ()      => useMasterList("project");
 export const useTicketMaster  = ()      => useMasterList("ticket");
+export const useTeamMaster  = ()      => useMasterList("team");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees  = ()    => useMasterFilter("employee", (e) => e.isActive);
 export const useProjectsByRepoId = (rid) => useMasterFilter("project",  (p) => p.repoId === rid);
@@ -61,11 +62,11 @@ export const useMasterOptions = ({
 };
 
 // ─── Predefined option shortcuts ─────────────────────────────────────────────
-export const useEmployeeOptions = (includeAll = false, overrides = {}) =>
+export const useEmployeeOptions = (includeAll = false, role = "Employee", overrides = {}) =>
   useMasterOptions({
     masterKey:     "employee",
     filterFn:      (e) => e.isActive,
-    prependOption: includeAll ? { label: "All Employees", value: "" } : null,
+    prependOption: includeAll ? { label: `All ${role}s`, value: "" } : null,
     valueShape:    "simple", // 👈 This is the default
     ...overrides,            // 👈 Anything passed from the component will override the lines above
   });

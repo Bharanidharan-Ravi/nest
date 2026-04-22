@@ -99,7 +99,6 @@ const FormEngine = ({
             onFileDelete={onFileDelete}
             theme={fieldTheme}
             isMulti={field.isMulti}
-            options={field.options}
           />
         </div>
       );

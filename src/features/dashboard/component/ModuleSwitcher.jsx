@@ -9,6 +9,7 @@ export default function ModuleSwitcher({ modules }) {
   
   // 1. Read the active module from the URL
   const currentModule = searchParams.get("module");
+console.log("searchParams :", searchParams.getAll("tickets_q"));
 
   // 🔥 FIX 2: The Enforcer
   // If there is no module in the URL, instantly append the first module's ID 

@@ -196,20 +196,37 @@ export const ThreadFieldConfig = (ticketId) => [
     },
   },
   {
+    name: "CompletionPercentage",
+    label: "% Completed",
+    type: "text",
+    ui: "mui",
+    apiKey: "CompletionPct",
+    colSpan: 3,
+    // Optional: Only show percentage if it's In Progress or Testing
+    disableWhen: (context, formData) => {
+      const currentStatus = formData?.UpdateStatus?.value;
+
+      // Return true if it should be disabled, false if it should be enabled
+      return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
+    },
+    initValueResolver: ({ context, formData }) => {
+      return (
+        context?.editingItem?.CompletionPct ||
+        formData?.CompletionPercentage ||
+        null
+      );
+    },
+  },
+  {
     label: "Assignees",
     name: "assignees",
     type: "select",
     ui: "mui",
     multiple: true,
+    colSpan: 6,
     required: false,
     dataType: "string",
     apiKey: "NextAssignees",
-
-    // 🔥 VALIDATION FIX: Only required for the Owner if they picked a status
-    // requiredWhen: (context, formData) => {
-    //   if (context?.userRole !== "Owner") return false;
-    //   return !!formData?.UpdateStatus;
-    // },
 
     transform: (mappedArray, formData) => {
       const streamId = formData?.UpdateStatus?.value?.id || 0;
@@ -245,10 +262,6 @@ export const ThreadFieldConfig = (ticketId) => [
         return context.editingItem?.assignees.filter(
           (assignee) => assignee.Assignee_Type !== "Main Assignee",
         );
-        // .map((assignee) => ({
-        //   label: assignee.Assignee_Name,
-        //   value: { id: assignee.Assignee_Id, name: assignee.Assignee_Name },
-        // }));
       }
       return [];
     },
@@ -259,32 +272,84 @@ export const ThreadFieldConfig = (ticketId) => [
     },
   },
   {
-    name: "CompletionPercentage",
-    label: "% Completed",
-    type: "text",
+    label: "Contributor",
+    name: "Contributor",
+    type: "select",
     ui: "mui",
-    apiKey: "CompletionPct",
-    colSpan: 3,
-    // Optional: Only show percentage if it's In Progress or Testing
-    disableWhen: (context, formData) => {
-      const currentStatus = formData?.UpdateStatus?.value;
+    colSpan: 6,
+    multiple: true,
+    required: false,
+    dataType: "string",
+    apiKey: "CoContributors",
+    optionsResolver: ({ masterData, context }) => {
+      let Employee = masterData?.EmployeeList || [];
 
-      // Return true if it should be disabled, false if it should be enabled
-      return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
+      // Get the currently logged-in user's ID
+      const myUserId = context?.currentUser?.userId?.toLowerCase();
+
+      // Automatically filter out the logged-in user so they can't pick themselves!
+      if (myUserId) {
+        Employee = Employee.filter((p) => p.UserID?.toLowerCase() !== myUserId);
+      }
+
+      return Employee.map((emp) => ({
+        label: emp.UserName,
+        value: { id: emp.UserID, name: emp.UserName },
+      }));
     },
-    initValueResolver: ({ context, formData }) => {
-      return (
-        context?.editingItem?.CompletionPct ||
-        formData?.CompletionPercentage ||
-        null
-      );
+
+    // 🔥 1. FIX: Load the saved Co-Contributors when the edit form opens!
+    initValueResolver: ({ context }) => {
+      if (context?.isEdit && Array.isArray(context?.editingItem?.CoContributors)) {
+        // Map the saved API data back into the format the MUI Dropdown expects
+        return context.editingItem.CoContributors.map((c) => ({
+          label: c.name,
+          value: { id: c.id, name: c.name },
+        }));
+      }
+      return [];
     },
+
+    // 🔥 2. FIX: Allow the field to be visible during Edit mode!
+    visibleWhen: () => {
+      return true; 
+    },
+
+    // 🔥 3. FIX: Lock the field so it cannot be edited if older than 1 day
+    disableWhen: (context) => {
+      return isTimeLocked(context);
+    },
+  },
+  {
+    name: "requestClose",
+    apiKey: "IsCloseRequested", // 🔥 Automatically maps to your C# DTO!
+    label: "Request Ticket Closure (Notify Owner)",
+    type: "switch",
+    ui: "mui",
+    colSpan: 4, 
+    initValueResolver: () => false,
+    // 1. Only show this toggle to Developers and Testers (Owners can just close it)
+    visibleWhen: (formData, context) => {
+      return context?.userRole !== "Owner";
+    },
+
+    // 2. Force them to write a comment if they flip this switch ON
+    customValidator: (value, formData) => {
+      if (value === true) {
+        const cleanDesc = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
+        if (!cleanDesc) {
+          return "Please provide a description explaining why this ticket is ready to be closed.";
+        }
+      }
+      return true;
+    }
   },
   {
     name: "TicketProgressHistoryWidget",
     type: "custom", // You can name this whatever you want now
     customComponent: TicketProgressHistory, // 👈 PASS THE REACT COMPONENT HERE
     colSpan: 12,
+    visibleWhen: (formData, context) => !context?.isEdit,
     groupName: "Ticket Status Update",
     options: {
       ticketId: ticketId // 👈 Pass the ticketId here so FormEngine forwards it
@@ -299,8 +364,10 @@ export const ThreadFieldConfig = (ticketId) => [
     groupName: "Ticket Status Update",
 
     // Only show this checkbox if there is actual text in the description
-    visibleWhen: (formData) => {
-      // Strip HTML tags (like <p></p>) to see if they actually typed words
+   visibleWhen: (formData, context) => {
+      // 🔥 2. Hide in Edit Mode
+      if (context?.isEdit) return false;
+
       const cleanDesc = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
       return !!cleanDesc;
     },
@@ -315,7 +382,7 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "TicketStatusSummary",
     colSpan: 6,
     groupName: "Ticket Status Update",
-
+visibleWhen: (formData, context) => !context?.isEdit,
     // Listen for changes to the checkbox OR the description
     effectDependencies: ["copyDescription", "description"],
     effectResolver: (formData) => {
@@ -336,6 +403,7 @@ export const ThreadFieldConfig = (ticketId) => [
     label: "Overall Ticket Progress (%)",
     type: "battery", // Or "number" depending on your registry
     ui: "mui",
+    visibleWhen: (formData, context) => !context?.isEdit,
     apiKey: "TicketOverallPercentage", // Matches your updated PostWorkStreamDto
     colSpan: 3,
     options: {

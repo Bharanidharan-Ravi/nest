@@ -17,6 +17,7 @@ import PriorityRadioField from "../adapters/mui/PriorityRadioField";
 import ToggleSwitchField from "../adapters/mui/ToggleSwitchField";
 import FileAttachmentInput from "../adapters/mui/Attachment";
 import MuiCheckbox from "../adapters/mui/MuiCheckbox";
+import MuiSwitch from "../adapters/mui/MuiSwitch";
 
 export const inputRegistry = {
   mui: {
@@ -30,6 +31,7 @@ export const inputRegistry = {
     priority: PriorityRadioField,
     battery: BatteryCompletionIndicator,
     toggle: ToggleSwitchField,
+    switch: MuiSwitch,
     adAttach: FileAttachmentInput,
     checkbox: MuiCheckbox,
   },
