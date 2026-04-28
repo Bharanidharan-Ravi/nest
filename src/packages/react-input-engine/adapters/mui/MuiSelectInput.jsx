@@ -15,6 +15,7 @@ const MuiSelectInput = ({
   multiple = false,
 }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
+console.log("options :", options);
 
   const handleChange = (_, selected) => {
     if (multiple) {
@@ -141,6 +142,26 @@ const MuiSelectInput = ({
       filterSelectedOptions={multiple}
       clearOnEscape
       openOnFocus
+     slotProps={{
+        popper: {
+          style: { zIndex: 10005 }, 
+          placement: "bottom-start", // 👈 Force it to open downwards
+          modifiers: [
+            {
+              name: "flip",
+              enabled: false, // 👈 Disable the auto-flip behavior completely
+            },
+          ],
+        },
+      }}
+      // (Use componentsProps instead if you are on an older MUI v5 version)
+
+      // 🔥 Force a max-height so the long list scrolls instead of bleeding off screen
+      ListboxProps={{
+        style: {
+          maxHeight: "200px", // 👈 Adjust this value as needed for your UI
+        },
+      }}
       renderInput={(params) => (
         <TextField
           {...params}

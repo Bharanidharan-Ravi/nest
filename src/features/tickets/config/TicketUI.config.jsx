@@ -8,6 +8,8 @@ dayjs.extend(relativeTime);
 export const TicketListConfig = {
   defaultView: "card",
   pageSize: 20,
+  moduleId: "tickets",
+  syncUrl: true,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,

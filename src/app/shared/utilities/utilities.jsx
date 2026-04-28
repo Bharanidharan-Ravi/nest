@@ -204,8 +204,10 @@ export const buildOptionsResolver = (
   filterFn = null,
   customMap = null,
 ) => {
+  
   // 🔥 1. Add formData to the destructured arguments
   return ({ masterData, context, formData }) => {
+
     let list = masterData?.[listKey] || context?.data?.[listKey];
 
     if (!Array.isArray(list)) return [];
@@ -220,6 +222,7 @@ export const buildOptionsResolver = (
     if (customMap) {
       return list.map(customMap);
     }
+  console.log("masterData :", list);
 
     return list.map((item) => ({
       label: item[labelKey],

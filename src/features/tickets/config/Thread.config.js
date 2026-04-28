@@ -1,4 +1,5 @@
 import {
+  buildOptionsResolver,
   calcHHMM,
   formatTimeHHMM,
 } from "../../../app/shared/utilities/utilities";
@@ -236,22 +237,12 @@ export const ThreadFieldConfig = (ticketId) => [
       }));
     },
 
-    optionsResolver: ({ masterData, context }) => {
-      let Employee = masterData?.EmployeeList || [];
-
-      // Get the currently logged-in user's ID
-      const myUserId = context?.currentUser?.userId?.toLowerCase();
-
-      // 🔥 Automatically filter out the logged-in user so they can't pick themselves!
-      if (myUserId) {
-        Employee = Employee.filter((p) => p.UserID?.toLowerCase() !== myUserId);
-      }
-
-      return Employee.map((emp) => ({
-        label: emp.UserName,
-        value: { id: emp.UserID, name: emp.UserName },
-      }));
-    },
+    optionsResolver: buildOptionsResolver(
+          "EmployeeList",
+          "UserID",
+          "UserName",
+          (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+        ),
 
     initValueResolver: ({ context, formData }) => {
       if (
@@ -281,22 +272,12 @@ export const ThreadFieldConfig = (ticketId) => [
     required: false,
     dataType: "string",
     apiKey: "CoContributors",
-    optionsResolver: ({ masterData, context }) => {
-      let Employee = masterData?.EmployeeList || [];
-
-      // Get the currently logged-in user's ID
-      const myUserId = context?.currentUser?.userId?.toLowerCase();
-
-      // Automatically filter out the logged-in user so they can't pick themselves!
-      if (myUserId) {
-        Employee = Employee.filter((p) => p.UserID?.toLowerCase() !== myUserId);
-      }
-
-      return Employee.map((emp) => ({
-        label: emp.UserName,
-        value: { id: emp.UserID, name: emp.UserName },
-      }));
-    },
+    optionsResolver: buildOptionsResolver(
+          "EmployeeList",
+          "UserID",
+          "UserName",
+          (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+        ),
 
     // 🔥 1. FIX: Load the saved Co-Contributors when the edit form opens!
     initValueResolver: ({ context }) => {

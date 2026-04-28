@@ -1,271 +1,3 @@
-// import React, { useState, useEffect, useMemo } from "react";
-// import dayjs from "dayjs";
-// import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-// import {
-//   useCheckedTicketsData,
-//   commitCheckedTicket,
-//   uncheckcheckedtickets,
-// } from "../hooks/dashboard.api";
-// import "./Dashboard.css";
-// import { TicketListConfig } from "../../tickets/config/TicketUI.config";
-// import ModuleSwitcher from "../component/ModuleSwitcher";
-// import { ROUTE_KEYS } from "../../../core/routing/paths";
-// import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-// import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
-// import { createTimesheetNormalizer } from "../../../app/shared/utils/timesheetNormalizer";
-// import { normalizeCheckedTickets } from "../../../app/shared/utils/normalizeCheckedTickets";
-// import { useQueryClient } from "@tanstack/react-query";
-// import { useEmployeeOptions } from "../../../core/master/selectors/selectors";
-// import { useCommitCheckedTicket } from "../../../core/master/selectors/Dashboardselectors";
-
-// export default function Dashboard() {
-//   const user = readUserFromSession();
-//   const currentUserName = user?.userId;
-//   const { goTo } = useSmartNavigation();
-//   const [selectedTickets, setSelectedTickets] = useState([]);
-//   const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
-//   const queryClient = useQueryClient();
-//   const { data: CheckedTicketsResponse } = useCommitCheckedTicket(
-//     user.userId,
-//     dayjs().startOf("day").format("YYYY-MM-DD"),
-//   );
-//   console.log("CheckedTicketsResponse :", CheckedTicketsResponse);
-
-//     // --- Filter Options ---
-//   const employeeFilterOptions = useEmployeeOptions(true);
-
-//   const handleSelectionChange = (item, isChecked) => {
-//     if (committedIds.includes(item.id || item.issueId)) return;
-//     setSelectedTickets((prev) => {
-//       if (isChecked) {
-//         const exists = prev.some((i) => i.id === item.id);
-//         if (exists) return prev;
-//         return [...prev, item];
-//       }
-//       return prev.filter((i) => i.id !== item.id);
-//     });
-//   };
-
-//   const handleCommitTickets = async () => {
-//     if (selectedTickets.length === 0) return;
-//     const ticketsPayload = selectedTickets.map((ticket) => ({
-//       TicketId: ticket.issueId || ticket.id,
-//       ProjKey: ticket.ProjKey || ticket.project,
-//     }));
-//     await commitCheckedTicket(ticketsPayload);
-//     setSelectedTickets([]);
-//     await queryClient.invalidateQueries({ queryKey: ["CheckedTickets"] });
-//   };
-
-//   const committedIds = Array.isArray(CheckedTicketsResponse)
-//     ? CheckedTicketsResponse.map((t) => t?.TicketId)
-//     : [];
-//   // const committedIds = [];
-//   // const viewChecked =
-//   //   CheckedTicketsResponse?.map(normalizeCheckedTickets) || [];
-//   const allCheckedIds = useMemo(() => {
-//     const newIds = selectedTickets.map((t) => t.id || t.issueId);
-//     return [...committedIds, ...newIds];
-//   }, [selectedTickets, committedIds]);
-
-//   const handleUncheckSelectionChange = (item, isChecked) => {
-//     setSelectedUncheckTickets((prev) => {
-//       if (isChecked) {
-//         const exists = prev.some((i) => i.id === item.id);
-//         if (exists) return prev;
-//         return [...prev, item];
-//       }
-//       return prev.filter((i) => i.id !== item.id);
-//     });
-//   };
-//   // --- Timesheet Module Logic --
-
-//   // --- Module Configurations ---
-//   const dashboardTickets = {
-//     ...TicketListConfig,
-//     defaultView: "card",
-//     syncUrl: true,
-//     allowViewSwitch: false,
-//     enableSelection: true,
-//     disabledIds: committedIds,
-
-//     // 🔥 2. Double-check protection in the handler
-//     onSelectionChange: (item, isChecked) => {
-//       // If it's already committed, ignore the click completely!
-//       if (committedIds.includes(item.id || item.issueId)) return;
-//       handleSelectionChange(item, isChecked);
-//     },
-//     selectedIds: allCheckedIds,
-//     onItemClick: (item) =>
-//       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
-//     // defaultFilters: { assignedTo: currentUserName },
-//     filters: [
-//       {
-//         key: "assignedTo",
-//         view: "Assignee",
-//         options: employeeFilterOptions,
-//         defaultValue: currentUserName,
-//         filterType: "api",
-//         api: "/sync/v2",
-//         apiKey: "EmployeeId",
-//         configKey: "TicketsList",
-//         normalizer: normalizeTicket,
-//       },
-//     ],
-//     tabsExtra: () => (
-//       <button
-//         onClick={handleCommitTickets}
-//         disabled={selectedTickets.length === 0}
-//         className={`bg-brand-yellow text-white text-sm px-4 py-1.5 rounded-md font-medium transition-colors flex items-center ${
-//           selectedTickets.length === 0
-//             ? "opacity-50 cursor-not-allowed"
-//             : "hover:bg-yellow-500 shadow-sm"
-//         }`}
-//       >
-//         Commit
-//       </button>
-//     ),
-//   };
-
-//   const dashboardTimesheet = {
-//     ...TicketListConfig,
-//     syncUrl: true,
-//     enableSearch: false,
-//     enableTabs: false,
-//     enableSort: false,
-//     onItemClick: (item) =>
-//       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
-//     filters: [
-//       {
-//         key: "assignedTo",
-//         apiKey: "EmployeeID",
-//         view: "Assignee",
-//         filterType: "api",
-//         api: "/sync/v2",
-//         configKey: "TimeSheet",
-//         source: "TimeSheet",
-//         normalizer: createTimesheetNormalizer,
-//         options: employeeFilterOptions,
-//         defaultValue: user.userId,
-//       },
-//       {
-//         key: "fromDate",
-//         apiKey: "FromDate",
-//         view: "From Date",
-//         type: "date",
-//         filterType: "api",
-//         api: "/sync/v2",
-//         configKey: "TimeSheet",
-//         source: "TimeSheet",
-//         normalizer: createTimesheetNormalizer,
-//         defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
-//       },
-//       {
-//         key: "toDate",
-//         apiKey: "ToDate",
-//         view: "To Date",
-//         type: "date",
-//         filterType: "api",
-//         api: "/sync/v2",
-//         configKey: "TimeSheet",
-//         source: "TimeSheet",
-//         normalizer: createTimesheetNormalizer,
-//         defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
-//       },
-//     ],
-//   };
-
-//   const dashboardPickedList = {
-//     ...TicketListConfig,
-//     // defaultFilters: {
-//     //   assignedTo: user.userId,
-//     //   planDate: dayjs().format("MM-DD-YYYY"),
-//     // },
-//     syncUrl: false,
-//     enableSearch: false,
-//     enableTabs: false,
-//     enableSort: false,
-//     enableSelection: true,
-//     onSelectionChange: handleUncheckSelectionChange,
-//     selectedIds: selectedUncheckTickets.map((t) => t.id),
-//     tabsExtra: () => (
-//       <button
-//         onClick={async () => {
-//           await Promise.all(
-//             selectedUncheckTickets.map((ticket) =>
-//               uncheckcheckedtickets(ticket.id, { UncheckComment: "Comment" }),
-//             ),
-//           );
-//           setSelectedUncheckTickets([]);
-//           await queryClient.invalidateQueries({ queryKey: ["CheckedTickets"] });
-//         }}
-//         disabled={selectedUncheckTickets.length === 0}
-//         className={`bg-brand-yellow text-white text-sm px-4 py-1.5 rounded-md font-medium transition-colors flex items-center ${
-//           selectedUncheckTickets.length === 0
-//             ? "opacity-50 cursor-not-allowed"
-//             : "hover:bg-yellow-500 shadow-sm"
-//         }`}
-//       >
-//         Uncheck
-//       </button>
-//     ),
-//     filters: [
-//       {
-//         key: "assignedTo",
-//         apiKey: "userId",
-//         view: "Assignee",
-//         filterType: "api",
-//         api: "/sync/v2",
-//         configKey: "CheckedTickets",
-//         source: "CheckedTickets",
-//         options: employeeFilterOptions,
-//         normalizer: normalizeCheckedTickets,
-//         defaultValue: user.userId,
-//       },
-//       {
-//         key: "planDate",
-//         apiKey: "planDate",
-//         view: "Plan Date",
-//         type: "date",
-//         filterType: "api",
-//         api: "/sync/v2",
-//         configKey: "CheckedTickets",
-//         source: "CheckedTickets",
-//         normalizer: normalizeCheckedTickets,
-//         defaultValue: dayjs().startOf('day').format("MM-DD-YYYY"),
-//       },
-//     ],
-//   };
-
-//   const dashboardModules = [
-//     {
-//       id: "tickets",
-//       label: "My Tickets",
-//       config: dashboardTickets,
-//       data: [],
-//     },
-//     {
-//       id: "timesheets",
-//       label: "Timesheet",
-//       config: dashboardTimesheet,
-//       data: [],
-//     },
-//     {
-//       id: "checkedTickets",
-//       label: "Checked Tickets",
-//       config: dashboardPickedList,
-//       // data: viewChecked,
-//     },
-//   ];
-
-//   return (
-//     <div className="dashview">
-//       <h2>Dashboard</h2>
-//       <ModuleSwitcher modules={dashboardModules} />
-//     </div>
-//   );
-// }
-
 import React, { useState, useMemo } from "react";
 import dayjs from "dayjs";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
@@ -290,12 +22,15 @@ import {
   useCommitCheckedTicket,
   useUncheckCheckedTicket,
 } from "../../../core/master/selectors/dashboardSelectors";
+import { useSearchParams } from "react-router-dom";
 
 export default function Dashboard() {
   const user = readUserFromSession();
   const currentUserId = user?.userId;
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
+  const timesheetsView = searchParams.get("timesheet_view") || "card";
 
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
@@ -311,19 +46,8 @@ export default function Dashboard() {
   // ── Mutations ─────────────────────────────────────────────────────────────
   const { mutateAsync: commitTickets, isPending: isCommitting } =
     useCommitCheckedTicket();
-  //   {
-  //   onSuccess: async () => {
-  //     setSelectedTickets([]);
-  //   },
-  // }
 
   const { mutateAsync: uncheckTicket } = useUncheckCheckedTicket();
-  //   {
-  //   onSuccess: async () => {
-  //     setSelectedUncheckTickets([]);
-  //     await refreshCheckedTickets();
-  //   },
-  // }
 
   // ── Derived state ─────────────────────────────────────────────────────────
   const committedIds = checkedTicketsData.map((t) => t?.TicketId);
@@ -410,7 +134,7 @@ export default function Dashboard() {
   };
 
   // ── Dropdown options ──────────────────────────────────────────────────────
-  const employeeFilterOptions = useEmployeeOptions(false);
+  const employeeFilterOptions = useEmployeeOptions(true);
   const projectFilterOptions = useProjectOptions(true);
   const LabelFilterOptions = useLabelOptions(true);
   const repoFilterOptions = useRepoOptions(true);
@@ -421,6 +145,7 @@ export default function Dashboard() {
     ...TicketListConfig,
     defaultView: "card",
     syncUrl: true,
+    moduleId: "dash_tickets",
     allowViewSwitch: false,
     enableSelection: true,
     disabledIds: committedIds,
@@ -459,22 +184,6 @@ export default function Dashboard() {
         showCounts: true,
         options: projectFilterOptions,
       },
-      //   {
-      //   key: "teamId",
-      //   view: "Team",
-      //   showCounts: true,
-      //   options: teamFilterOptions,
-      //   filterType: "custom",
-      //   customFilter: (item, value) => {
-      //     if (!value || value === "") return true;
-      //     // Check if ANY assignee on this ticket belongs to the selected team
-      //     return item.multiAssignees?.some(
-      //       (a) =>
-      //         String(a.Assignee_TeamId) === String(value) &&
-      //         a.Assignee_Type === "Main Assignee",
-      //     );
-      //   },
-      // },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Label",
@@ -501,41 +210,48 @@ export default function Dashboard() {
   };
 
   // ✅ Static — no external dependency
-  const dashboardTimesheetGraph = {
-    graphType: "stackedBar",
-    graphXAxisKey: "updatedAt",
-    graphValueKey: "ConsumeTime",
-    graphLabelKey: "TicketName",
-    graphGroupIdKey: "ticketId",
-    graphColorKey: "statusColor",
-    isDateAxis: true,
-    // graphXAxis: not needed — auto-derived from data
-    valueFormatter: (val) => {
-      const h = Math.floor(val);
-      const m = Math.round((val % 1) * 60);
-      return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
-    },
-    yaxis: {
-      max: 12,
-      ticks: [
-        { value: 0, label: "0" },
-        { value: 2, label: "2h" },
-        { value: 4, label: "4h" },
-        { value: 6, label: "6h" },
-        { value: 8, label: "8h" },
-        { value: 10, label: "10h" },
-        { value: 12, label: "12h+" },
-      ],
-    },
+const dashboardTimesheetGraph = (filters) => {
+    // Determine if we are looking at the whole team
+    const isAllEmployees = !filters?.assignedTo || filters?.assignedTo === "";
+
+    return {
+      graphType: "stackedBar",
+      graphXAxisKey: "updatedAt",
+      graphValueKey: "ConsumeTime",
+      
+      // 1. Dynamic Grouping Keys Passed Down
+      graphGroupIdKey: isAllEmployees ? "mployeeName" : "TicketName",
+      graphLabelKey: isAllEmployees ? "employeeName" : "TicketName",
+      graphColorKey: isAllEmployees ? null : "statusColor",
+      
+      // 2. Tooltip Customization (Only show employee name if looking at specific tickets)
+      tooltipSecondaryLabelKey: isAllEmployees ? null : "employeeName",
+      
+      // 3. Status IDs Passed Down (No hardcoding in the graph!)
+      terminalStatusKey: "StatusId",
+      terminalStatusIds: [14, 15, 16, 17],
+
+      isDateAxis: true,
+      minYValue: 8,
+      yAxisStep: 2,
+      valueFormatter: (val) => {
+        const h = Math.floor(val);
+        const m = Math.round((val % 1) * 60);
+        return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
+      },
+    };
   };
 
   const dashboardTimesheet = {
     ...TicketListConfig,
     syncUrl: true,
+    moduleId: "timesheet",
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
     defaultView: "card",
+    tabConfig:[],
+    enablePagination: timesheetsView !== "graph",
     allowViewSwitch: ["card", "graph"],
     graphConfig: dashboardTimesheetGraph,
     onEditClick: (item) => {
@@ -563,7 +279,7 @@ export default function Dashboard() {
         // apiMode: "range",
         // query value used as-is: "2026-04-19~2026-04-25"
         // defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
-        defaultRange: "week", 
+        defaultRange: timesheetsView === "graph" ? "week" : "today",
         normalizer: createTimesheetNormalizer,
         // Option B — two separate named params
         apiMode: "split",
@@ -629,6 +345,7 @@ export default function Dashboard() {
   const dashboardPickedList = {
     ...TicketListConfig,
     syncUrl: false,
+    moduleId: "picklist",
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
@@ -714,7 +431,7 @@ export default function Dashboard() {
   };
 
   const dashboardModules = [
-    { id: "tickets", label: "My Tickets", config: dashboardTickets },
+    { id: "dash_tickets", label: "My Tickets", config: dashboardTickets },
     { id: "timesheets", label: "Timesheet", config: dashboardTimesheet },
     {
       id: "checkedTickets",

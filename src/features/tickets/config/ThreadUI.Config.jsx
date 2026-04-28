@@ -23,6 +23,7 @@ export const ThreadListConfig = {
   enableSearch: false,
   enableTabs: false,
   enableSort: true,
+  syncUrl: false,
   // enableEdit:true,
   infinite:true,
   hideTabs: true,

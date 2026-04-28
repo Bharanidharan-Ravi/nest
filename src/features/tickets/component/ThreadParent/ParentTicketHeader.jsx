@@ -29,8 +29,9 @@ const ParentTicketHeader = ({
   isOwner,
   progressLogs, 
 }) => {
-  // 🔥 1. State for the History Modal
+  // 🔥 1. State for the History Modal and Mobile Expand
   const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false);
 
   // 🔥 2. Function to scroll to the bottom form
   const handleScrollToUpdate = () => {
@@ -60,18 +61,26 @@ const ParentTicketHeader = ({
             : "py-4 px-4 sm:px-6 bg-white border-transparent"
         }`}
       >
-        <div className="flex justify-between items-start w-full">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3">
-              <h3 className="text-2xl text-gray-900 font-bold tracking-tight">
+        {/* 🔥 3. Restructured to flex-col on mobile, flex-row on desktop */}
+        <div className="flex flex-col lg:flex-row justify-between items-start w-full gap-4">
+          
+          {/* LEFT SECTION (Row 1 & 2 on mobile) */}
+          <div className="flex flex-col gap-2 w-full lg:w-auto flex-1 min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-3 w-full">
+              
+              {/* 🔥 FIX: Max 3 lines title + Tooltip */}
+              <h3 
+                className="text-2xl text-gray-900 font-bold tracking-tight line-clamp-3 break-words flex-1"
+                title={`${parentTicket.Title} #${parentTicket.Issue_Code}`}
+              >
                 {parentTicket.Title}
-                <span className="text-gray-400 font-light ml-2">
+                <span className="text-gray-400 font-light ml-2 whitespace-nowrap">
                   #{parentTicket.Issue_Code}
                 </span>
               </h3>
 
               {parentTicket?.labels?.length > 0 && (
-                <div className="flex gap-1.5 mt-1">
+                <div className="flex flex-wrap gap-1.5 mt-1 flex-shrink-0">
                   {parentTicket.labels.map((label) => (
                     <span
                       key={label.LABEL_ID}
@@ -85,7 +94,7 @@ const ParentTicketHeader = ({
               )}
             </div>
 
-            <div className="text-sm text-gray-500 flex items-center gap-2">
+            <div className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
               <span className="font-medium">{parentTicket.Repo_Name}</span>
               <span className="opacity-40">•</span>
               <span>{parentTicket.Project_Name}</span>
@@ -103,16 +112,44 @@ const ParentTicketHeader = ({
                 </>
               )}
             </div>
+
+            {/* 🔥 NEW: Mobile Toggle Button */}
+            <div className="flex justify-between items-center w-full lg:hidden mt-1">
+              <button
+                onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+                className="text-xs font-semibold text-blue-600 flex items-center gap-1 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-md transition-colors border border-blue-100"
+              >
+                {isMobileExpanded ? "Hide Ticket Details" : "View Ticket Details (Status & Time)"}
+              </button>
+
+              <button
+                onClick={() =>
+                  goTo(ROUTE_KEYS.TICKET_EDIT, {
+                    ticketId: parentTicket.Issue_Id,
+                  })
+                }
+                className="text-gray-500 hover:text-blue-600 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
+                title="Edit Ticket"
+              >
+                <FaEdit size={14} />
+              </button>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-2">
-             {/* 🔥 NEW: Compact Status Pill */}
+
+          {/* RIGHT SECTION (Row 3 & 4 on mobile, Hidden by default) */}
+          <div 
+            className={`${
+              isMobileExpanded ? "flex" : "hidden"
+            } lg:flex flex-col items-start lg:items-end gap-3 w-full lg:w-auto flex-shrink-0 mt-2 lg:mt-0`}
+          >
+            <div className="flex flex-wrap lg:flex-nowrap items-center gap-2 w-full lg:w-auto">
+             {/* Status Pill */}
             {(statusSummary || overallPct > 0) && (
               <div className="flex items-center gap-2.5 bg-white border border-blue-200/80 px-3 py-1.5 rounded-full shadow-sm">
-                <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest">
+                <span className="text-[10px] font-extrabold text-blue-600 uppercase tracking-widest hidden sm:inline-block">
                   Status:
                 </span>
-                <span className="text-gray-700 font-medium text-xs max-w-[120px] sm:max-w-[180px] truncate" title={statusSummary}>
+                <span className="text-gray-700 font-medium text-xs max-w-[150px] sm:max-w-[180px] truncate" title={statusSummary}>
                   {statusSummary || "In Progress"}
                 </span>
                 
@@ -127,7 +164,6 @@ const ParentTicketHeader = ({
 
                 <div className="w-px h-3.5 bg-gray-200 mx-0.5"></div>
                 
-                {/* Icons */}
                 <button onClick={() => setShowHistoryModal(true)} className="text-blue-500 hover:text-blue-700 transition-colors p-0.5" title="View Full History">
                   <FaHistory size={13} />
                 </button>
@@ -139,7 +175,7 @@ const ParentTicketHeader = ({
 
               <div className="flex items-center gap-1.5 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg text-xs text-gray-600">
                 <FaCalendarAlt className="text-blue-500" size={13} />
-                <span className="font-medium">
+                <span className="font-medium whitespace-nowrap">
                   Due: {formatDate(parentTicket.Due_Date)}
                 </span>
               </div>
@@ -149,15 +185,16 @@ const ParentTicketHeader = ({
                     ticketId: parentTicket.Issue_Id,
                   })
                 }
-                className=" text-gray-500 hover:text-blue-600  hover:bg-gray-50  rounded-lg transition-all"
+               className="hidden lg:block text-gray-500 hover:text-blue-600 bg-white border border-gray-200 shadow-sm px-2 py-1.5 rounded-lg transition-all"
                 title="Edit Ticket"
               >
-                <FaEdit size={20} />
+                <FaEdit size={16} />
               </button>
             </div>
 
-            <div className="flex items-center gap-3 text-xs font-medium bg-gray-50/80 border border-gray-200/60 shadow-sm rounded-lg px-3 py-1">
-              <div className="flex flex-col items-center">
+            {/* Time Stats - Added max-w-full and overflow-x-auto for small screens */}
+            <div className="flex items-center gap-3 text-xs font-medium bg-gray-50/80 border border-gray-200/60 shadow-sm rounded-lg px-3 py-2 w-full lg:w-auto overflow-x-auto wg-scrollbar">
+              <div className="flex flex-col items-center flex-shrink-0">
                 <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
                   Estimated
                 </span>
@@ -165,8 +202,8 @@ const ParentTicketHeader = ({
                   {parentTicket.Hours || "00:00"}
                 </span>
               </div>
-              <div className="w-px h-5 bg-gray-300"></div>
-              <div className="flex flex-col items-center">
+              <div className="w-px h-5 bg-gray-300 flex-shrink-0"></div>
+              <div className="flex flex-col items-center flex-shrink-0">
                 <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
                   Total Logged
                 </span>
@@ -174,8 +211,8 @@ const ParentTicketHeader = ({
                   {timeStats.total}
                 </span>
               </div>
-              <div className="w-px h-5 bg-gray-300"></div>
-              <div className="flex flex-col items-center">
+              <div className="w-px h-5 bg-gray-300 flex-shrink-0"></div>
+              <div className="flex flex-col items-center flex-shrink-0">
                 <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
                   My Hours
                 </span>
@@ -187,11 +224,11 @@ const ParentTicketHeader = ({
                 ([teamName, logged], index) => (
                   <React.Fragment key={`frag-${index}`}>
                     <div
-                      className="w-px h-5 bg-gray-300"
+                      className="w-px h-5 bg-gray-300 flex-shrink-0"
                       key={`divider-team-${index}`}
                     />
                     <div
-                      className="flex flex-col items-center"
+                      className="flex flex-col items-center flex-shrink-0"
                       key={`team-${teamName}-${index}`}
                     >
                       <span className="text-[9px] text-gray-400 uppercase tracking-wider font-bold leading-none mb-0.5">
@@ -255,7 +292,7 @@ const ParentTicketHeader = ({
         </div>
       </div>
 
-      {/* 🔥 4. NEW: History Modal Overlay */}
+      {/* History Modal Overlay remains unchanged */}
       {showHistoryModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 backdrop-blur-sm px-4 transition-opacity">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">

@@ -56,14 +56,13 @@ export const ROUTE_ROLES = {
   PROJ_TICKET_LIST: ALL,
 
   // ── Labels & Employees (all roles can VIEW) ──────────────────────────
-  LABEL_LIST:       ALL,
-  EMPLOYEE_LIST:    ALL,
+  LABEL_LIST:       ADMIN_MANAGER,
+  EMPLOYEE_LIST:    ADMIN_MANAGER,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────
 // Used by useCurrentUser().can() inside components.
 // Controls visibility of buttons and forms — not entire pages.
-
 export const PERMISSIONS = {
   // Repository
   REPO_CREATE:       ADMIN_MANAGER,

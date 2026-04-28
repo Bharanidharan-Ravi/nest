@@ -10,17 +10,93 @@ export function useListState(config, rawData = []) {
   const [searchParams] = useSearchParams();
   const isUrlSyncEnabled = config.syncUrl !== false;
   // 🔥 1. Get the prefix so we can read namespaced URLs correctly (e.g., "tickets_")
-  const currentModule = searchParams.get("module") || "default";
+  const currentModule =
+    config.moduleId || searchParams.get("module") || "default";
   const prefix = isUrlSyncEnabled ? `${currentModule}_` : "";
 
+  const getInitialState = (urlKey, stateKey, fallback) => {
+    if (!isUrlSyncEnabled) return fallback;
+
+    // 1. URL Always Wins First
+    if (searchParams.has(`${prefix}${urlKey}`)) {
+      return searchParams.get(`${prefix}${urlKey}`);
+    }
+
+    // 2. Cache wins Second (Only if URL doesn't have ANY of our module's filters)
+    const urlHasFilters = Array.from(searchParams.keys()).some(
+      (k) => k !== "module" && k.startsWith(prefix),
+    );
+
+    if (!urlHasFilters) {
+      try {
+        const cacheStr = sessionStorage.getItem(
+          `wgnest_cache_${currentModule}`,
+        );
+
+        if (cacheStr) {
+          const cachedData = JSON.parse(cacheStr);
+          if (cachedData[stateKey] !== undefined) {
+            return cachedData[stateKey];
+          }
+        }
+      } catch (e) {
+        console.error("Cache read failed", e);
+      }
+    }
+
+    // 3. Fallback to defaults
+    return fallback;
+  };
   /* --- INITIAL STATE (Run once) --- */
-  const initialQuery = useMemo(() => {
-    // 🔥 HELPER: Builds the string from defaults
+  // const initialQuery = useMemo(() => {
+  //   // 🔥 HELPER: Builds the string from defaults
+  //   const buildDefaultString = (tabKey) => {
+  //     let q = tabKey ? `is:${tabKey}` : "";
+  //     if (config.filters) {
+  //       config.filters.forEach((f) => {
+  //         // ✅ Only add default if it's a real value, not the "All" placeholder
+  //         if (f.defaultValue && f.defaultValue !== "") {
+  //           const safeValue = f.defaultValue.includes(" ")
+  //             ? `"${f.defaultValue}"`
+  //             : f.defaultValue;
+  //           q += ` ${f.key}:${safeValue}`;
+  //         }
+  //       });
+  //     }
+  //     return q.trim();
+  //   };
+  //   // If child list, ignore URL and load default config
+  //   if (!isUrlSyncEnabled) {
+  //     return buildDefaultString(config.tabConfig?.[0]?.key);
+  //   }
+
+  //   // 🔥 If URL already has a query string, the URL wins!
+  //   // (Note: Use your prefix here like searchParams.get("tickets_q") if you applied the namespaces)
+
+  //   const urlQ = searchParams.get(`${prefix}q`);
+  //   if (urlQ) return urlQ;
+
+  //   // 🔥 3. Read from `${prefix}tab` instead of just "tab"
+  //   const urlTab =
+  //     searchParams.get(`${prefix}tab`) || config.tabConfig?.[0]?.key;
+  //   return buildDefaultString(urlTab);
+  // }, [
+  //   isUrlSyncEnabled,
+  //   config.tabConfig,
+  //   config.filters,
+  //   searchParams,
+  //   prefix,
+  // ]);
+
+  /* --- STATES --- */
+  // const [query, setQuery] = useState(initialQuery);
+  const [query, setQuery] = useState(() => {
     const buildDefaultString = (tabKey) => {
-      let q = tabKey ? `is:${tabKey}` : "";
+      // 🚀 THE FIX: Only append 'is:tabKey' if tabs are actually enabled!
+      let q = config.enableTabs !== false && tabKey ? `is:${tabKey}` : "";
+
       if (config.filters) {
         config.filters.forEach((f) => {
-          // ✅ Only add default if it's a real value, not the "All" placeholder
           if (f.defaultValue && f.defaultValue !== "") {
             const safeValue = f.defaultValue.includes(" ")
               ? `"${f.defaultValue}"`
@@ -31,31 +107,26 @@ export function useListState(config, rawData = []) {
       }
       return q.trim();
     };
-    // If child list, ignore URL and load default config
-    if (!isUrlSyncEnabled) {
-      return buildDefaultString(config.tabConfig?.[0]?.key);
-    }
 
-    // 🔥 If URL already has a query string, the URL wins!
-    // (Note: Use your prefix here like searchParams.get("tickets_q") if you applied the namespaces)
+    const defaultTab =
+      config.enableTabs !== false ? config.tabConfig?.[0]?.key : null;
 
-    const urlQ = searchParams.get(`${prefix}q`);
-    if (urlQ) return urlQ;
+    if (!isUrlSyncEnabled) return buildDefaultString(defaultTab);
 
-    // 🔥 3. Read from `${prefix}tab` instead of just "tab"
-    const urlTab =
-      searchParams.get(`${prefix}tab`) || config.tabConfig?.[0]?.key;
-    return buildDefaultString(urlTab);
-  }, [
-    isUrlSyncEnabled,
-    config.tabConfig,
-    config.filters,
-    searchParams,
-    prefix,
-  ]);
+    // 1. Check URL exact match
+    if (searchParams.has(`${prefix}q`)) return searchParams.get(`${prefix}q`);
+    if (searchParams.has(`${prefix}tab`))
+      return buildDefaultString(
+        config.enableTabs !== false ? searchParams.get(`${prefix}tab`) : null,
+      );
 
-  /* --- STATES --- */
-  const [query, setQuery] = useState(initialQuery);
+    // 2. Check Cache
+    const cachedQuery = getInitialState("q", "query", null);
+    if (cachedQuery !== null) return cachedQuery;
+
+    // 3. Default
+    return buildDefaultString(defaultTab);
+  });
   const [selectedOptions, setSelectedOptions] = useState({});
   const [sortField, setSortField] = useState(
     (isUrlSyncEnabled ? searchParams.get(`${prefix}sort`) : null) ||
@@ -93,6 +164,7 @@ export function useListState(config, rawData = []) {
 
   /* --- QUERY PARSE & DERIVED STATE --- */
   const parsed = parseQuery(query);
+
   const queryFilters = parsed.filters;
   const text = parsed.text;
 
@@ -144,7 +216,11 @@ export function useListState(config, rawData = []) {
         const dateParams = getDateRangeApiParams(filterConf, value);
         Object.assign(result, dateParams);
       } else {
-        result[filterConf?.apiKey || key] = value;
+        // 🚀 THE FIX: If the value is an empty string (meaning "All"), convert it to null.
+        // This prevents SQL Server from crashing when it expects a UNIQUEIDENTIFIER!
+        const finalValue = value === "" ? null : value;
+
+        result[filterConf?.apiKey || key] = finalValue;
       }
     });
 
@@ -153,12 +229,21 @@ export function useListState(config, rawData = []) {
   // const apiPayload = useMemo(() => {
   //   if (apiFilterEntries.length === 0) return undefined;
 
-  //   return Object.fromEntries(
-  //     apiFilterEntries.map(([key, value]) => {
-  //       const filterConf = config.filters.find((f) => f.key === key);
-  //       return [filterConf?.apiKey || config?.filters?.idKey, value];
-  //     }),
-  //   );
+  //   const result = {};
+
+  //   apiFilterEntries.forEach(([key, value]) => {
+  //     const filterConf = config.filters.find((f) => f.key === key);
+
+  //     if (filterConf?.type === "weekRange") {
+  //       // ✅ Expands "2026-04-19~2026-04-25" → { FromDate: "...", ToDate: "..." }
+  //       const dateParams = getDateRangeApiParams(filterConf, value);
+  //       Object.assign(result, dateParams);
+  //     } else {
+  //       result[filterConf?.apiKey || key] = value;
+  //     }
+  //   });
+
+  //   return result;
   // }, [apiFilterEntries, config.filters]);
 
   const { data: apiFilteredData, dataUpdatedAt } = useApiQuery({
@@ -177,7 +262,7 @@ export function useListState(config, rawData = []) {
     },
   });
 
-  console.log("apiFilteredData :", apiFilteredData);
+  // console.log("apiFilteredData :", apiFilteredData);
 
   /* --- PROCESS DATA (Local Filtering & Sorting) --- */
   const processed = useMemo(() => {
@@ -194,7 +279,6 @@ export function useListState(config, rawData = []) {
     }
 
     const combinedFilters = { ...filters, ...queryFilters };
-    console.log("filter data", combinedFilters, queryFilters);
 
     // 🔥 1. Initialize a Score Tracker for multi-select matches
     const matchScores = new Map();
@@ -208,24 +292,41 @@ export function useListState(config, rawData = []) {
         return;
       }
       // Handle "is" token (Tabs)
-      if (key === "is" && config.tabConfig) {
-        // ... (keep your existing mapping logic for tabs here)
-        const mapping = config.tabConfig.find((t) => t.key === value);
-        if (mapping) {
-          data = data.filter((item) => {
-            const itemValue = item[mapping.field];
-            if (mapping.excludeValues)
-              return !mapping.excludeValues.includes(itemValue);
-            if (Array.isArray(mapping.filterValue))
-              return mapping.filterValue.includes(itemValue);
-            return itemValue === mapping.filterValue;
-          });
-        }
-        return;
-      }
+      // if (key === "is" && config.tabConfig) {
+      //   // ... (keep your existing mapping logic for tabs here)
+      //   const mapping = config.tabConfig.find((t) => t.key === value);
+      //   if (mapping) {
+      //     data = data.filter((item) => {
+      //       const itemValue = item[mapping.field];
+      //       if (mapping.excludeValues)
+      //         return !mapping.excludeValues.includes(itemValue);
+      //       if (Array.isArray(mapping.filterValue))
+      //         return mapping.filterValue.includes(itemValue);
+      //       return itemValue === mapping.filterValue;
+      //     });
+      //   }
+      //   return;
+      // }
+      if (key === "is") {
+        // 🚀 THE FIX: If tabs are disabled in config, completely ignore the "is" filter!
+        if (config.enableTabs === false) return;
 
+        if (config.tabConfig) {
+          const mapping = config.tabConfig.find((t) => t.key === value);
+          if (mapping) {
+            data = data.filter((item) => {
+              const itemValue = item[mapping.field];
+              if (mapping.excludeValues)
+                return !mapping.excludeValues.includes(itemValue);
+              if (Array.isArray(mapping.filterValue))
+                return mapping.filterValue.includes(itemValue);
+              return itemValue === mapping.filterValue;
+            });
+          }
+        }
+        return; // ALWAYS return here so 'is' queries never accidentally wipe out data!
+      }
       // const filterConfig = config.filters?.find((f) => f.key === key);
-      console.log("filterConfig :", filterConfig, data);
 
       if (filterConfig?.filterType === "api") return;
 
@@ -386,7 +487,10 @@ export function useListState(config, rawData = []) {
         if (!value) return true;
 
         // 1. Handle Tab ("is") logic
-        if (key === "is" && config.tabConfig) {
+        if (key === "is") {
+          // 🚀 THE FIX: If tabs are disabled, pretend it matched so it doesn't break counts
+          if (config.enableTabs === false || !config.tabConfig) return true;
+
           const mapping = config.tabConfig.find((t) => t.key === value);
           if (!mapping) return true;
           const itemValue = item[mapping.field];
@@ -676,8 +780,10 @@ export function useListState(config, rawData = []) {
   //   apiFilteredData,
   // ]);
 
-  const visibleData = processed.slice(0, visibleCount);
-  console.log("visibleData :", visibleData);
+  // const visibleData = processed.slice(0, visibleCount);
+  // 🚀 THE FIX: If the view is "graph", give it ALL the data. Otherwise, paginate it normally!
+  const visibleData = config.enablePagination === false ? processed : processed.slice(0, visibleCount);
+  // console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
     setVisibleCount((v) => v + (config.pageSize || 20));

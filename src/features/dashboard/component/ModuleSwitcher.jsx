@@ -9,7 +9,7 @@ export default function ModuleSwitcher({ modules }) {
   
   // 1. Read the active module from the URL
   const currentModule = searchParams.get("module");
-console.log("searchParams :", searchParams.getAll("tickets_q"));
+console.log("currentModule :", currentModule, modules);
 
   // 🔥 FIX 2: The Enforcer
   // If there is no module in the URL, instantly append the first module's ID 
@@ -22,6 +22,7 @@ console.log("searchParams :", searchParams.getAll("tickets_q"));
 
   // 3. Render logic (Fallback to the first module instantly to prevent UI flickering)
   const activeModuleId = currentModule || modules[0]?.id;
+  
   const activeModule = modules.find((mod) => mod.id === activeModuleId) || modules[0];
 
   const handleTabSwitch = (moduleId) => {

@@ -88,7 +88,7 @@ export const ProjFieldConfig = () => [
       "UserID",
       "UserName",
       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-    ),
+    ), 
     initValueResolver: ({ context, masterData }) => {
       if (context.isEdit && context.entityData?.EmployeeName) {
         const empId = context.entityData?.Responsible;

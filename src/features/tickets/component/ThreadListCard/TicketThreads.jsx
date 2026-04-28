@@ -31,7 +31,6 @@ const TicketThreads = ({
 
   const rawThreads = React.useMemo(() => {
     const threadsArray = Array.isArray(threadsData) ? threadsData : [];
-
     // 🔥 1. "List all handoff IDs in an array"
     const allHandoffs = [];
     (assigneesJsonString || []).forEach((assignee) => {
@@ -128,7 +127,8 @@ const TicketThreads = ({
       };
     });
   }, [threadsData, assigneesJsonString]);
-
+  
+ console.log("rawThreads :", rawThreads);
   const filteredThreads = React.useMemo(() => {
     if (!selectedWorkStream && !selectedHandoffId) return rawThreads;
 

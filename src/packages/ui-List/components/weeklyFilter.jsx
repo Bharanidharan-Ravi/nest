@@ -1,24 +1,12 @@
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
-import { useRef } from "react";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 dayjs.extend(isBetween);
 
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const CAL_MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
 ];
 
 const PRESETS = [
@@ -49,23 +37,41 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   const [yearPage, setYearPage] = useState(0);
   const [dragStart, setDragStart] = useState(null);
   const [hoverDay, setHoverDay] = useState(null);
+
   const ref = useRef(null);
+  const gridRef = useRef(null);
+  // ── Ref mirror for dragStart so touch-move handler never goes stale ──────
+  const dragStartRef = useRef(null);
+
+  // ── Feature flags ─────────────────────────────────────────────────────────
+  const enableDaily = !!filter.enableDailyNav;
+  const enableMonthly = !!filter.enableMonthlyNav;
+  // "week" → Today resets to this week; anything else → Today resets to today
+  const filterDefaultRange = filter.defaultRange;
+
+  // ── Resolve the default value from filter config ──────────────────────────
   function resolveDefault(filterConfig) {
     const dv = filterConfig.defaultValue;
+    const range = filterConfig.defaultRange;
+
     if (!dv) {
-      // fallback: this week
-      const s = dayjs().startOf("week");
-      return `${s.format("YYYY-MM-DD")}~${s.add(6, "day").format("YYYY-MM-DD")}`;
+      if (range === "week") {
+        // No specific date → use current week
+        const s = dayjs().startOf("week");
+        return `${s.format("YYYY-MM-DD")}~${s.add(6, "day").format("YYYY-MM-DD")}`;
+      }
+      // Default: today (single day) for daily or unspecified
+      const today = dayjs().format("YYYY-MM-DD");
+      return `${today}~${today}`;
     }
 
-    // Single date like "04-22-2026" — parse using apiDateFormat
+    // A specific date was provided — parse it
     const fmt = filterConfig.apiDateFormat || "YYYY-MM-DD";
     const date = dayjs(dv, fmt);
     const iso = date.format("YYYY-MM-DD");
-console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
 
-    if (filterConfig.defaultRange === "week") {
-      // Show last 7 days from that date
+    if (range === "week") {
+      // Show a 7-day window ending on that date
       const s = date.subtract(6, "day");
       return `${s.format("YYYY-MM-DD")}~${iso}`;
     }
@@ -73,70 +79,136 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
     // Single day (start === end)
     return `${iso}~${iso}`;
   }
+
+  // ── Initialise query string with default on first mount ───────────────────
   useEffect(() => {
     if (!currentValue) {
       updateQuery(filter.key, resolveDefault(filter));
     }
-  }, []); // runs once on mount
-  const defaultRange = resolveDefault(filter);
-  // Parse current stored value (or fall back to default)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ── Parse current stored value ────────────────────────────────────────────
   const raw = currentValue || resolveDefault(filter);
-  const isOnDefault = raw === defaultRange;
   const [startStr, endStr] = raw.split("~");
   const start = dayjs(startStr);
   const end = dayjs(endStr || startStr);
-  // ── Feature flags from config ─────────────────────────────────────────────
-  const enableDaily = !!filter.enableDailyNav;
-  const enableMonthly = !!filter.enableMonthlyNav;
 
-  // ── Outside click ─────────────────────────────────────────────────────────
+  // ── Outside-click → close calendar ───────────────────────────────────────
   useEffect(() => {
-    const fn = (e) => {
+    const close = (e) => {
       if (ref.current && !ref.current.contains(e.target)) {
         setShowCal(false);
         setCalMode("day");
       }
     };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
+    document.addEventListener("mousedown", close);
+    document.addEventListener("touchstart", close, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", close);
+      document.removeEventListener("touchstart", close);
+    };
   }, []);
 
+  // ── Touch-move on calendar grid (passive:false lets us preventDefault) ────
+  // We use a ref for dragStart so this effect never needs to re-register.
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+
+    const onTouchMove = (e) => {
+      if (!dragStartRef.current) return;
+      // Prevent the page from scrolling while dragging dates
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (!touch) return;
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (!el) return;
+      const dateStr = el.closest("[data-date]")?.getAttribute("data-date");
+      if (dateStr) {
+        setHoverDay(dayjs(dateStr));
+      }
+    };
+
+    grid.addEventListener("touchmove", onTouchMove, { passive: false });
+    return () => grid.removeEventListener("touchmove", onTouchMove);
+  }, []); // registers once; uses ref, so never stale
+
   // ── Apply range → write to query string ───────────────────────────────────
-  const applyRange = (s, e) => {
-    updateQuery(
-      filter.key,
-      `${s.format("YYYY-MM-DD")}~${e.format("YYYY-MM-DD")}`,
-    );
-    setShowCal(false);
-    setDragStart(null);
-    setHoverDay(null);
-    setCalMode("day");
+  const applyRange = useCallback(
+    (s, e) => {
+      updateQuery(
+        filter.key,
+        `${s.format("YYYY-MM-DD")}~${e.format("YYYY-MM-DD")}`,
+      );
+      setShowCal(false);
+      dragStartRef.current = null;
+      setDragStart(null);
+      setHoverDay(null);
+      setCalMode("day");
+    },
+    [filter.key, updateQuery],
+  );
+
+  // ── Navigation helpers ────────────────────────────────────────────────────
+
+  // Weekly ‹ / › — always snaps to a clean 7-day window.
+  // Preserving an arbitrary span (e.g. 9 days) through week arrows is a
+  // production bug: it sends inconsistent date windows to the API and makes
+  // the "week" label misleading.
+  const shiftWeek = (direction) => {
+    // direction: -1 (back) or +1 (forward)
+    const ns = start.add(direction * 7, "day");
+    applyRange(ns, ns.add(6, "day")); // always exactly 7 days
   };
 
-  // ── Shift — preserves the current span ────────────────────────────────────
-  //   const shift = (amount, unit) => {
-  //     const span = end.diff(start, "day");
-  //     const ns   = start.add(amount, unit);
-  //     applyRange(ns, ns.add(span, "day"));
-  //   };
-  // Moves BOTH start + end (weekly / monthly nav)
-  const shiftBoth = (amount, unit) => {
-    const span = end.diff(start, "day");
-    const ns = start.add(amount, unit);
-    applyRange(ns, ns.add(span, "day"));
+  // Monthly « / » — always snaps to a full calendar month.
+  const shiftMonth = (direction) => {
+    const nm = start.add(direction, "month").startOf("month");
+    applyRange(nm, nm.endOf("month"));
   };
 
-  // Daily + and − — only ToDate moves, FromDate stays fixed
+  // Daily −  →  fromDate (start) moves back 1 day; toDate stays
+  const shiftStart = (amount) => {
+    const ns = start.add(amount, "day");
+    if (ns.isAfter(end, "day")) return; // guard: start can never exceed end
+    applyRange(ns, end);
+  };
+
+  // Daily +  →  toDate (end) moves forward 1 day; fromDate stays
   const shiftEnd = (amount) => {
     const ne = end.add(amount, "day");
-    if (ne.isBefore(start, "day")) return; // guard: can't go before start
+    if (ne.isBefore(start, "day")) return; // guard: end can never precede start
     applyRange(start, ne);
   };
+
+  // Today reset — respects the filter's defaultRange:
+  //   "week"  → reset to this Mon–Sun
+  //   else    → reset to today (single day, from === to)
+  const handleToday = () => {
+    if (filterDefaultRange === "week") {
+      applyRange(
+        dayjs().startOf("week"),
+        dayjs().startOf("week").add(6, "day"),
+      );
+    } else {
+      const today = dayjs();
+      applyRange(today, today);
+    }
+  };
+
+  // ── Is the current range already on the "default today" state? ────────────
+  const isOnDefault =
+    filterDefaultRange === "week"
+      ? start.isSame(dayjs().startOf("week"), "day") &&
+        end.isSame(dayjs().startOf("week").add(6, "day"), "day")
+      : start.isSame(dayjs(), "day") && end.isSame(dayjs(), "day");
+
   // ── Preset active detection ───────────────────────────────────────────────
   const isPresetActive = (s, e) =>
     start.isSame(s, "day") && end.isSame(e, "day");
 
-  // ── Drag preview ──────────────────────────────────────────────────────────
+  // ── Drag / hover preview ──────────────────────────────────────────────────
   const previewStart =
     dragStart && hoverDay
       ? dragStart.isBefore(hoverDay, "day")
@@ -156,13 +228,14 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
     const inR = d.isBetween(previewStart, previewEnd, "day", "()");
     const isT = d.isSame(dayjs(), "day");
     return [
-      "h-8 w-full flex items-center justify-center text-xs cursor-pointer select-none transition-colors",
+      // touch-none prevents iOS from hijacking touch before our handlers fire
+      "h-8 w-full flex items-center justify-center text-xs cursor-pointer select-none transition-colors touch-none",
       isS || isE ? "bg-blue-500 text-white" : "",
       isS ? "rounded-l-full" : "",
       isE ? "rounded-r-full" : "",
       inR ? "bg-blue-100 text-blue-700" : "",
       !isS && !isE && !inR
-        ? "hover:bg-gray-100 rounded-full text-gray-700"
+        ? "hover:bg-gray-100 active:bg-gray-200 rounded-full text-gray-700"
         : "",
       isT && !isS && !isE ? "font-bold underline underline-offset-2" : "",
     ]
@@ -178,13 +251,28 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
     return cells;
   };
 
-  // 12 years per page, centred on today
+  // ── Shared drag-finish logic (mouse + touch) ──────────────────────────────
+  const finishDrag = useCallback(
+    (ds, hd) => {
+      if (ds && hd) {
+        const s = ds.isBefore(hd, "day") ? ds : hd;
+        const e = ds.isBefore(hd, "day") ? hd : ds;
+        applyRange(s, e);
+      } else if (ds) {
+        // Single tap / click with no drag → set both dates to the tapped day
+        applyRange(ds, ds);
+      }
+    },
+    [applyRange],
+  );
+
+  // ── Dynamic reset-button label (short enough to fit the pill) ────────────
+  // "Week" for week mode, "Today" for daily/unset — both fit in ~32px width.
+  const resetLabel = filterDefaultRange === "week" ? "Week" : "Today";
   const yearBase = dayjs().year() - 4 + yearPage * 12;
   const yearRange = Array.from({ length: 12 }, (_, i) => yearBase + i);
 
-  const isThisWeek =
-    start.isSame(dayjs().startOf("week"), "day") &&
-    end.diff(start, "day") === 6;
+  // ── Label ─────────────────────────────────────────────────────────────────
   const isSingleDay = start.isSame(end, "day");
   const label = isSingleDay
     ? start.format("DD MMM YYYY")
@@ -194,175 +282,62 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
     <div className="relative" ref={ref}>
       {/* ── Navigation Pill ───────────────────────────────────────────── */}
       <div className="flex items-center border border-gray-300 rounded-md bg-white h-[32px] overflow-hidden divide-x divide-gray-200">
-        {/* Monthly « — shifts both */}
+
         {enableMonthly && (
-          <button
-            onClick={() => shiftBoth(-1, "month")}
-            title="Previous month"
-            className="px-2 h-full hover:bg-gray-100 text-gray-400 transition-colors text-[11px] font-bold"
-          >
-            «
+          <button onClick={() => shiftMonth(-1)} title="Previous month" className="px-2 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-400 transition-colors text-[11px] font-bold">
+            <span className="leading-none pb-[2px]">«</span>
           </button>
         )}
 
-        {/* Weekly ‹ — shifts both */}
-        <button
-          onClick={() => shiftBoth(-7, "day")}
-          title="Previous week"
-          className="px-2.5 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[11px]"
-        >
-          ‹
+        <button onClick={() => shiftWeek(-1)} title="Previous week" className="px-2.5 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[12px]">
+          <span className="leading-none pb-[2px]">‹</span>
         </button>
 
-        {/* Daily − → moves FROM date back by 1 */}
         {enableDaily && (
-          <button
-            onClick={() => shiftEnd(-1)}
-            title="Decrease to-date"
-            className="px-2 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[10px]"
-          >
-            −
+          <button onClick={() => shiftStart(-1)} title="Decrease from-date by 1 day" className="px-2 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[12px]">
+            <span className="leading-none pb-[2px]">−</span>
           </button>
         )}
 
-        {/* Label */}
         <button
-          onClick={() => {
-            setShowCal((v) => !v);
-            setMonth(start);
-            setCalMode("day");
-          }}
-          className="px-3 h-full text-[11px] font-bold text-gray-600 uppercase tracking-tight min-w-[144px] text-center hover:bg-gray-50 transition-colors"
+          onClick={() => { setShowCal((v) => !v); setMonth(start); setCalMode("day"); }}
+          className="px-3 h-full flex items-center justify-center text-[11px] font-bold text-gray-600 uppercase tracking-tight min-w-[144px] hover:bg-gray-50 active:bg-gray-100 transition-colors"
         >
           {label}
         </button>
 
-        {/* Daily + → moves TO date forward by 1 */}
         {enableDaily && (
-          <button
-            onClick={() => shiftEnd(1)}
-            title="Increase to-date"
-            className="px-2 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[10px]"
-          >
-            +
+          <button onClick={() => shiftEnd(1)} title="Increase to-date by 1 day" className="px-2 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[12px]">
+            <span className="leading-none pb-[1px]">+</span>
           </button>
         )}
 
-        {/* Weekly › — shifts both */}
-        <button
-          onClick={() => shiftBoth(7, "day")}
-          title="Next week"
-          className="px-2.5 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[11px]"
-        >
-          ›
-        </button>
-
-        {/* Monthly » — shifts both */}
-        {enableMonthly && (
-          <button
-            onClick={() => shiftBoth(1, "month")}
-            title="Next month"
-            className="px-2 h-full hover:bg-gray-100 text-gray-400 transition-colors text-[11px] font-bold"
-          >
-            »
-          </button>
-        )}
-
-        {/* Monthly ‹‹ */}
-        {/* {enableMonthly && (
-          <button
-            onClick={() => shift(-1, "month")}
-            title="Previous month"
-            className="px-2 h-full hover:bg-gray-100 text-gray-400 transition-colors text-[11px] font-bold"
-          >
-            «
-          </button>
-        )}
-
-        <button
-          onClick={() => shift(-7, "day")}
-          title="Previous week"
-          className="px-2.5 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[11px]"
-        >
-          ‹
-        </button>
-
-        {enableDaily && (
-          <button
-            onClick={() => shift(-1, "day")}
-            title="Previous day"
-            className="px-2 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[10px]"
-          >
-            −
-          </button>
-        )} */}
-
-        {/* Label */}
-        {/* <button
-          onClick={() => {
-            setShowCal((v) => !v);
-            setMonth(start);
-            setCalMode("day");
-          }}
-          className="px-3 h-full text-[11px] font-bold text-gray-600 uppercase tracking-tight min-w-[144px] text-center hover:bg-gray-50 transition-colors"
-        >
-          {label}
-        </button> */}
-
-        {/* Daily + */}
-        {/* {enableDaily && (
-          <button
-            onClick={() => shift(1, "day")}
-            title="Next day"
-            className="px-2 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[10px]"
-          >
-            +
-          </button>
-        )}
-
-        <button
-          onClick={() => shift(7, "day")}
-          title="Next week"
-          className="px-2.5 h-full hover:bg-gray-100 text-gray-500 transition-colors text-[11px]"
-        >
-          ›
+        <button onClick={() => shiftWeek(1)} title="Next week" className="px-2.5 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[12px]">
+          <span className="leading-none pb-[2px]">›</span>
         </button>
 
         {enableMonthly && (
-          <button
-            onClick={() => shift(1, "month")}
-            title="Next month"
-            className="px-2 h-full hover:bg-gray-100 text-gray-400 transition-colors text-[11px] font-bold"
-          >
-            »
+          <button onClick={() => shiftMonth(1)} title="Next month" className="px-2 h-full flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 text-gray-400 transition-colors text-[11px] font-bold">
+            <span className="leading-none pb-[2px]">»</span>
           </button>
-        )} */}
+        )}
 
-        {/* Today reset */}
-        {!isThisWeek && (
-          <button
-            onClick={() =>
-              applyRange(
-                dayjs().startOf("week"),
-                dayjs().startOf("week").add(6, "day"),
-              )
-            }
-            className="px-2 h-full text-[10px] font-semibold text-blue-500 hover:bg-blue-50 transition-colors"
-          >
-            Today
+        {!isOnDefault && (
+          <button onClick={handleToday} className="px-3 h-full flex items-center justify-center text-[10px] font-semibold text-blue-500 hover:bg-blue-50 active:bg-blue-100 transition-colors whitespace-nowrap">
+            {resetLabel}
           </button>
         )}
       </div>
-
       {/* ── Calendar Popup ────────────────────────────────────────────── */}
       {showCal && (
         <div
           className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-4 w-[288px]"
           onMouseLeave={() => {
+            // Cancel hover preview when mouse leaves the calendar
             if (dragStart) setHoverDay(null);
           }}
         >
-          {/* Header — month nav / year nav / mode switcher */}
+          {/* ── Header: month / year navigation + mode switcher ── */}
           <div className="flex items-center justify-between mb-3">
             <button
               onClick={() => {
@@ -371,7 +346,7 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
                   setMonth((m) => m.subtract(1, "year"));
                 else setMonth((m) => m.subtract(1, "month"));
               }}
-              className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 text-xs"
+              className="p-1.5 hover:bg-gray-100 active:bg-gray-200 rounded-md text-gray-500 text-xs"
             >
               ◁
             </button>
@@ -383,7 +358,6 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
                 </span>
               ) : (
                 <>
-                  {/* Click month name → month picker */}
                   <button
                     onClick={() =>
                       setCalMode(calMode === "month" ? "day" : "month")
@@ -397,7 +371,6 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
                   >
                     {month.format("MMMM")}
                   </button>
-                  {/* Click year → year picker */}
                   <button
                     onClick={() =>
                       setCalMode(calMode === "year" ? "day" : "year")
@@ -418,10 +391,11 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
             <button
               onClick={() => {
                 if (calMode === "year") setYearPage((p) => p + 1);
-                else if (calMode === "month") setMonth((m) => m.add(1, "year"));
+                else if (calMode === "month")
+                  setMonth((m) => m.add(1, "year"));
                 else setMonth((m) => m.add(1, "month"));
               }}
-              className="p-1.5 hover:bg-gray-100 rounded-md text-gray-500 text-xs"
+              className="p-1.5 hover:bg-gray-100 active:bg-gray-200 rounded-md text-gray-500 text-xs"
             >
               ▷
             </button>
@@ -473,9 +447,15 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
             </div>
           )}
 
-          {/* ── DAY grid (drag-to-select) ── */}
+          {/* ── DAY grid ──────────────────────────────────────────────────────
+              Mouse drag:  mousedown (start) → mousemove across cells → mouseup (finish)
+              Touch drag:  touchstart (start) → touchmove handled via useEffect with
+                           passive:false → touchend (finish)
+              Single tap:  touchstart + touchend on same cell → sets from===to
+          */}
           {calMode === "day" && (
             <>
+              {/* Day-of-week headers */}
               <div className="grid grid-cols-7 mb-1">
                 {CAL_DAYS.map((d) => (
                   <div
@@ -486,19 +466,18 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
                   </div>
                 ))}
               </div>
+
+              {/* Day cells grid */}
               <div
+                ref={gridRef}
                 className="grid grid-cols-7"
+                /* ── Mouse: finish drag on mouseup anywhere in grid ── */
                 onMouseUp={() => {
-                  if (dragStart && hoverDay) {
-                    const s = dragStart.isBefore(hoverDay, "day")
-                      ? dragStart
-                      : hoverDay;
-                    const e = dragStart.isBefore(hoverDay, "day")
-                      ? hoverDay
-                      : dragStart;
-                    applyRange(s, e);
-                  }
-                  setDragStart(null);
+                  finishDrag(dragStart, hoverDay);
+                }}
+                /* ── Touch: finish drag on touchend anywhere in grid ── */
+                onTouchEnd={() => {
+                  finishDrag(dragStartRef.current, hoverDay);
                 }}
               >
                 {buildDayCells().map((date, i) =>
@@ -507,12 +486,29 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
                   ) : (
                     <div
                       key={date.format("YYYY-MM-DD")}
+                      // data-date is read by the touchmove handler via elementFromPoint
+                      data-date={date.format("YYYY-MM-DD")}
                       className={getDayClass(date)}
+                      /* ── Mouse events ── */
                       onMouseDown={() => {
+                        dragStartRef.current = date;
                         setDragStart(date);
                         setHoverDay(date);
                       }}
                       onMouseEnter={() => dragStart && setHoverDay(date)}
+                      /* ── Touch events ──
+                         onTouchStart fires per-cell (where the finger lands).
+                         onTouchMove is registered via useEffect with passive:false
+                         so we can call preventDefault() and block page scroll.
+                         onTouchEnd bubbles up to the grid container above.
+                      */
+                      onTouchStart={(e) => {
+                        // Prevent 300ms click delay and page scroll on drag start
+                        e.preventDefault();
+                        dragStartRef.current = date;
+                        setDragStart(date);
+                        setHoverDay(date);
+                      }}
                     >
                       {date.date()}
                     </div>
@@ -522,7 +518,7 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
             </>
           )}
 
-          {/* ── Presets (highlighted when active) ── */}
+          {/* ── Presets ── */}
           <div className="grid grid-cols-3 gap-1.5 mt-3 pt-3 border-t border-gray-100">
             {PRESETS.map((p) => {
               const [s, e] = p.get();
@@ -548,3 +544,79 @@ console.log("filterConfig.defaultRange :", filterConfig.defaultRange);
     </div>
   );
 }
+
+
+
+{/* <div className="flex items-center border border-gray-300 rounded-md bg-white h-[32px] overflow-hidden divide-x divide-gray-200">
+
+  
+        {enableMonthly && (
+          <button
+            onClick={() => shiftMonth(-1)}
+            title="Previous month"
+            className="px-2 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-400 transition-colors text-[11px] font-bold"
+          >
+            «
+          </button>
+        )}
+
+        <button
+          onClick={() => shiftWeek(-1)}
+          title="Previous week"
+          className="px-2.5 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[11px]"
+        >
+          ‹
+        </button>
+        {enableDaily && (
+          <button
+            onClick={() => shiftStart(-1)}
+            title="Decrease from-date by 1 day"
+            className="px-2 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[10px]"
+          >
+            −
+          </button>
+        )}
+        <button
+          onClick={() => {
+            setShowCal((v) => !v);
+            setMonth(start);
+            setCalMode("day");
+          }}
+          className="px-3 h-full text-[11px] font-bold text-gray-600 uppercase tracking-tight min-w-[144px] text-center hover:bg-gray-50 active:bg-gray-100 transition-colors"
+        >
+          {label}
+        </button>
+        {enableDaily && (
+          <button
+            onClick={() => shiftEnd(1)}
+            title="Increase to-date by 1 day"
+            className="px-2 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[10px]"
+          >
+            +
+          </button>
+        )}
+        <button
+          onClick={() => shiftWeek(1)}
+          title="Next week"
+          className="px-2.5 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-500 transition-colors text-[11px]"
+        >
+          ›
+        </button>
+        {enableMonthly && (
+          <button
+            onClick={() => shiftMonth(1)}
+            title="Next month"
+            className="px-2 h-full hover:bg-gray-100 active:bg-gray-200 text-gray-400 transition-colors text-[11px] font-bold"
+          >
+            »
+          </button>
+        )}
+        {!isOnDefault && (
+          <button
+            onClick={handleToday}
+            className="px-2 h-full text-[10px] font-semibold text-blue-500 hover:bg-blue-50 active:bg-blue-100 transition-colors whitespace-nowrap"
+          >
+            {resetLabel}
+          </button>
+        )}
+      </div> */}

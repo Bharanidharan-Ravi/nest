@@ -60,7 +60,10 @@ export default function TicketListCard({
   if (isCloseRequested) {
     // 🔥 Replace the icon entirely with a red pulsing dot of the same size
     statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
+      <div
+        className="relative flex h-[10px] w-[10px] mx-1 mt-1"
+        title="Close Requested by Assignee"
+      >
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
       </div>
@@ -68,7 +71,10 @@ export default function TicketListCard({
   } else if (item.reopenedBy) {
     // If it has a ReopenedBy Guid, show the Reopen icon
     statusIcon = (
-      <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />
+      <GoIssueReopened
+        className="status-icon text-orange-500"
+        title="Reopened Ticket"
+      />
     );
   } else if (activeStatus.includes(item.statusId)) {
     // If it's closed/cancelled
@@ -98,9 +104,11 @@ export default function TicketListCard({
   return (
     <>
       {/* <div className={`ticket-row ${focused ? "focused-row" : ""}`}> */}
-      <div 
+      <div
         className={`ticket-row ${focused ? "focused-row" : ""} ${
-          item.isCloseRequested || item.IsCloseRequested ? "close-requested-row" : ""
+          item.isCloseRequested || item.IsCloseRequested
+            ? "close-requested-row"
+            : ""
         }`}
       >
         {/* LEFT BLOCK: Main Information */}
@@ -153,9 +161,9 @@ export default function TicketListCard({
                 ))}
 
               {/* Department Badge */}
-              {department && (
+              {/* {department && (
                 <span className="department-badge badge">{department}</span>
-              )}
+              )} */}
             </div>
           </div>
 
@@ -283,12 +291,14 @@ export default function TicketListCard({
               <FiMessageSquare className="text-base" />
             </button>
           )}
-        <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
+          <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
             <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
               {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
             </div>
             {dueStatus && (
-              <div className={`flex items-center text-[11px] whitespace-nowrap mt-0.5 ${dueStatus.className}`}>
+              <div
+                className={`flex items-center text-[11px] whitespace-nowrap mt-0.5 ${dueStatus.className}`}
+              >
                 {dueStatus.icon}
                 <span>{dueStatus.text}</span>
               </div>
@@ -363,13 +373,11 @@ export default function TicketListCard({
 
           {/* 2. Modal Wrapper */}
           <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
-            
             {/* 3. The Modal Box - 🔥 ADD e.stopPropagation() HERE 🔥 */}
-            <div 
+            <div
               className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden pointer-events-auto"
-              onClick={(e) => e.stopPropagation()} 
+              onClick={(e) => e.stopPropagation()}
             >
-              
               {/* 4. Header */}
               <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
                 <div className="flex justify-between items-center">
@@ -378,7 +386,8 @@ export default function TicketListCard({
                       Quick Comment
                     </h3>
                     <p className="text-base sm:text-lg text-gray-600">
-                      Ticket #{quickFormTicket?.ticketKey} - {quickFormTicket?.title}
+                      Ticket #{quickFormTicket?.ticketKey} -{" "}
+                      {quickFormTicket?.title}
                     </p>
                   </div>
                   <button
@@ -394,7 +403,7 @@ export default function TicketListCard({
               </div>
 
               {/* 5. Form Wrapper */}
-             <div className="flex-1 overflow-hidden flex flex-col relative bg-white min-h-0">
+              <div className="flex-1 overflow-hidden flex flex-col relative bg-white min-h-0">
                 <EntityFormPage
                   mode="Create"
                   config={{
@@ -402,12 +411,14 @@ export default function TicketListCard({
                     theme: {
                       ...ThreadFormConfig.theme,
                       // 🔥 FIX 2: Added min-h-0 to the formContainer theme
-                      formContainer: "flex flex-col h-full min-h-0", 
-                      footer: "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3", 
+                      formContainer: "flex flex-col h-full min-h-0",
+                      footer:
+                        "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3",
                     },
-                    fields: ThreadFieldConfig(quickFormTicket?.navId).filter(
-                      (field) => field.name !== "assignees",
-                    ),
+                    fields: ThreadFieldConfig(
+                      quickFormTicket?.navId,
+                      quickFormTicket,
+                    ).filter((field) => field.name !== "assignees"),
                   }}
                   module="Thread"
                   onCancel={closeQuickForm}
@@ -416,71 +427,69 @@ export default function TicketListCard({
                   }}
                 />
               </div>
-              
             </div>
           </div>
         </>
       )}
-   
     </>
   );
 }
 
 ///////////////////////-----------------------------------//////////////////
-  //  {isQuickFormOpen && (
-  //       <>
-  //         {/* Backdrop */}
-  //         <div
-  //           className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
-  //           onClick={closeQuickForm}
-  //         />
+//  {isQuickFormOpen && (
+//       <>
+//         {/* Backdrop */}
+//         <div
+//           className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
+//           onClick={closeQuickForm}
+//         />
 
-  //         {/* Form Container */}
-  //         <div
-  //           onClick={(e) => e.stopPropagation()}
-  //           className="fixed inset-0 z-[10000] flex items-center justify-center p-6 overflow-auto"
-  //         >
-  //           <div className="w-full max-w-4xl max-h-[90vh] bg-white rounded-1xl shadow-2xl border border-gray-200">
-  //             <div className="p-5">
-  //               {/* Header */}
-  //               <div className="flex justify-between items-center border-b mb-2 pb-2">
-  //                 <div>
-  //                   <h3 className="text-3xl font-bold text-gray-900 mb-1">
-  //                     Quick Comment
-  //                   </h3>
-  //                   <p className="text-lg text-gray-600">
-  //                     Ticket #{quickFormTicket?.ticketKey} -{" "}
-  //                     {quickFormTicket?.title}
-  //                   </p>
-  //                 </div>
-  //                 <button
-  //                   onClick={closeQuickForm}
-  //                   className="closebtn w-10 h-10 flex items-center justify-center rounded-full 
-  //                     bg-gray-100 hover:bg-gray-200 
-  //                     text-gray-500 hover:text-gray-700 transition-all"
-  //                 >
-  //                   <FiX size={18} />
-  //                 </button>
-  //               </div>
+//         {/* Form Container */}
+//         <div
+//           onClick={(e) => e.stopPropagation()}
+//           className="fixed inset-0 z-[10000] flex items-center justify-center p-6 overflow-auto"
+//         >
+//           <div className="w-full max-w-4xl max-h-[90vh] bg-white rounded-1xl shadow-2xl border border-gray-200">
+//             <div className="p-5">
+//               {/* Header */}
+//               <div className="flex justify-between items-center border-b mb-2 pb-2">
+//                 <div>
+//                   <h3 className="text-3xl font-bold text-gray-900 mb-1">
+//                     Quick Comment
+//                   </h3>
+//                   <p className="text-lg text-gray-600">
+//                     Ticket #{quickFormTicket?.ticketKey} -{" "}
+//                     {quickFormTicket?.title}
+//                   </p>
+//                 </div>
+//                 <button
+//                   onClick={closeQuickForm}
+//                   className="closebtn w-10 h-10 flex items-center justify-center rounded-full
+//                     bg-gray-100 hover:bg-gray-200
+//                     text-gray-500 hover:text-gray-700 transition-all"
+//                 >
+//                   <FiX size={18} />
+//                 </button>
+//               </div>
 
-  //               {/* EntityForm */}
-  //               <EntityFormPage
-  //                 mode="Create"
-  //                 config={{
-  //                   ...ThreadFormConfig,
-  //                   fields: ThreadFieldConfig(quickFormTicket?.navId).filter(
-  //                     (field) => field.name !== "assignees",
-  //                   ),
-  //                 }}
-  //                 module="Thread"
-  //                 onCancel={closeQuickForm}
-  //                 onSuccessCallback={() => {
-  //                   closeQuickForm();
-  //                   // Optional: refresh list data
-  //                 }}
-  //               />
-  //             </div>
-  //           </div>
-  //         </div>
-  //       </>
-  //     )}
+//               {/* EntityForm */}
+//               <EntityFormPage
+//                 mode="Create"
+//                 config={{
+//                   ...ThreadFormConfig,
+//                   fields: ThreadFieldConfig(quickFormTicket?.navId).filter(
+//                     (field) => field.name !== "assignees",
+//                   ),
+//                 }}
+//                 module="Thread"
+//                 onCancel={closeQuickForm}
+//                 onSuccessCallback={() => {
+//                   closeQuickForm();
+//                   // Optional: refresh list data
+//                 }}
+//               />
+//             </div>
+//           </div>
+//         </div>
+//       </>
+//     )}
