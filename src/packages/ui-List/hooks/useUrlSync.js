@@ -7,19 +7,21 @@ export function useUrlSync(state) {
   useEffect(() => {
     if (state.config.syncUrl === false) return;
 
-  const currentModule = state.config.moduleId || searchParams.get("module") || "default";
+    const currentModule = state.config.moduleId || searchParams.get("module") || "default";
     const prefix = `${currentModule}_`;
     
-    // 🔥 1. Define our Cache Key scoped to the specific module
+    // 1. Define our Cache Key scoped to the specific module
     const CACHE_KEY = `wgnest_cache_${currentModule}`;
     
     const newParams = new URLSearchParams(searchParams);
     let hasChanges = false;
 
-    const syncParam = (key, stateValue, defaultVal) => {
+    // 👇 FIX 1: Add a 'forceKeep' parameter to the helper
+    const syncParam = (key, stateValue, defaultVal, forceKeep = false) => {
       const currentUrlVal = newParams.get(key);
       
-      if (stateValue && stateValue !== defaultVal) {
+      // 👇 FIX 2: If forceKeep is true, ignore the defaultVal check and ALWAYS keep it in the URL
+      if (stateValue && (forceKeep || stateValue !== defaultVal)) {
         if (currentUrlVal !== String(stateValue)) {
           newParams.set(key, String(stateValue));
           hasChanges = true;
@@ -38,15 +40,15 @@ export function useUrlSync(state) {
     syncParam(`${prefix}tab`, state.statusTab, state.config.tabConfig?.[0]?.key);
     
     const defaultView = state.config.defaultView || "table";
-    syncParam(`${prefix}view`, state.view, defaultView);
+    
+    // 👇 FIX 3: Pass `true` as the 4th argument so the view is NEVER deleted from the URL!
+    syncParam(`${prefix}view`, state.view, defaultView, true);
 
     if (hasChanges) {
       setParams(newParams, { replace: true });
     }
     
-    // 🔥 2. ALWAYS SAVE TO SESSION STORAGE
-    // This keeps a running snapshot of the user's latest filters.
-    // If they click a "Clear Filters" button, it clears the cache too!
+    // 2. ALWAYS SAVE TO SESSION STORAGE
     const cacheSnapshot = {
       query: state.query,
       sortField: state.sortField,
@@ -67,7 +69,6 @@ export function useUrlSync(state) {
     setParams
   ]);
 }
-
 
 
 

@@ -13,8 +13,8 @@ $LocalUiBuildPath  = "D:\live work\WGNestPack\releases\ui-build\*"
 $LocalDeployScript = "D:\live work\WGNestPack\scripts\Deploy-WGNest.ps1"
 
 # 2. Define Remote Paths 
-$RemoteApiFolder = "C:\NESTAPP\backup\new\api2"
-$RemoteUiFolder  = "C:\NESTAPP\backup\new\ui2"
+$RemoteApiFolder = "G:\testpush\api2"
+$RemoteUiFolder  = "G:\testpush\ui2"
 $RemoteScriptDir = "C:\NESTAPP\backup"
 
 Write-Host "`nInitiating Remote Deployment to $ServerIP..." -ForegroundColor Cyan

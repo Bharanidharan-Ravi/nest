@@ -14,10 +14,10 @@ export const normalizeTicket = (ticket) => ({
     updatedAt: ticket.UpdatedAt,
     updatedBy: ticket.UpdatedBy,
     repoId: ticket.RepoId,
+    RepoKey: ticket.RepoKey,
     dueDate: ticket.Due_Date,
     project: ticket.Project_Id,
     ProjKey: ticket.ProjKey,
-    RepoKey: ticket.RepoKey,
     reopenedBy: ticket.ReopenedBy,
     priority: ticket.Priority,
     // Safely parse JSON strings, fallback to empty arrays if null/invalid

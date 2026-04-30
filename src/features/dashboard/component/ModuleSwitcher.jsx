@@ -9,8 +9,6 @@ export default function ModuleSwitcher({ modules }) {
   
   // 1. Read the active module from the URL
   const currentModule = searchParams.get("module");
-console.log("currentModule :", currentModule, modules);
-
   // 🔥 FIX 2: The Enforcer
   // If there is no module in the URL, instantly append the first module's ID 
   // (which is "tickets") and replace the history state so the back button still works.

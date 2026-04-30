@@ -25,6 +25,7 @@ import { useCallback } from "react";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../config/ThreadForm.config";
 import { ThreadFieldConfig } from "../config/Thread.config";
+import { FaHistory } from "react-icons/fa";
 
 dayjs.extend(relativeTime);
 
@@ -38,7 +39,10 @@ export default function TicketListCard({
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
   const ProjectDetails = useProjectById(item?.project);
   const [quickFormTicket, setQuickFormTicket] = useState(null);
+  const [quickTicketStatus, setQuickTicketStatus] = useState(null);
   const isQuickFormOpen = quickFormTicket?.navId === item.navId;
+  const isQuickStatusOpen = quickTicketStatus?.navId === item.navId;
+
   const updated = useEmployeeById(item.updatedBy);
   const { query } = useList();
   const { text } = parseQuery(query);
@@ -97,7 +101,10 @@ export default function TicketListCard({
 
   const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
   const ticketUrl = tryBuildPath(createRouteKey, { ticketId: item.navId });
-  const closeQuickForm = useCallback(() => setQuickFormTicket(null), []);
+  const closeQuickForm = useCallback(() => {
+    setQuickFormTicket(null);
+    setQuickTicketStatus(null);
+  });
   const handleQuickComment = (item) => {
     setQuickFormTicket(item);
   };
@@ -105,6 +112,7 @@ export default function TicketListCard({
     <>
       {/* <div className={`ticket-row ${focused ? "focused-row" : ""}`}> */}
       <div
+      key={item.id}
         className={`ticket-row ${focused ? "focused-row" : ""} ${
           item.isCloseRequested || item.IsCloseRequested
             ? "close-requested-row"
@@ -279,25 +287,39 @@ export default function TicketListCard({
         {/* MIDDLE BLOCK: Due Date */}
 
         <div className="flex items-end gap-3 justify-end">
-          {config?.enablequickComment && (
-            <button
-              className="p-2 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center flex-shrink-0"
-              title="Quick Comment"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleQuickComment(item);
-              }}
-            >
-              <FiMessageSquare className="text-base" />
-            </button>
-          )}
+          <div className="flex-col">
+            {config?.enablequickStatus && (
+              <button
+                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center flex-shrink-0"
+                title="Quick Comment"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setQuickTicketStatus(item);
+                }}
+              >
+                <FaHistory className="text-base" />
+              </button>
+            )}
+            {config?.enablequickComment && (
+              <button
+                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center flex-shrink-0"
+                title="Quick Comment"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleQuickComment(item);
+                }}
+              >
+                <FiMessageSquare className="text-base" />
+              </button>
+            )}
+          </div>
           <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
             <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
               {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
             </div>
             {dueStatus && (
               <div
-                className={`flex items-center text-[11px] whitespace-nowrap mt-0.5 ${dueStatus.className}`}
+                className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
               >
                 {dueStatus.icon}
                 <span>{dueStatus.text}</span>
@@ -343,7 +365,7 @@ export default function TicketListCard({
               //   width: "5px",
               //   fontSize: "10px"
               // }}
-              defaultValue={item.overallPercentage ?? 0}
+              value={item.overallPercentage ?? 0}
             />
             <div className="edit-icon">{renderEdit && renderEdit()}</div>
           </div>
@@ -360,7 +382,7 @@ export default function TicketListCard({
           </div>
         </div>
       </div>
-      {isQuickFormOpen && (
+      {(isQuickFormOpen || isQuickStatusOpen) && (
         <>
           {/* 1. Backdrop */}
           <div
@@ -380,14 +402,20 @@ export default function TicketListCard({
             >
               {/* 4. Header */}
               <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
-                <div className="flex justify-between items-center">
-                  <div>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
                     <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                      Quick Comment
+                      {isQuickFormOpen ? "Quick Comment" : "Quick Status"}
                     </h3>
-                    <p className="text-base sm:text-lg text-gray-600">
-                      Ticket #{quickFormTicket?.ticketKey} -{" "}
-                      {quickFormTicket?.title}
+                    <p className="text-base sm:text-lg text-gray-600 truncate">
+                      Ticket #
+                      {isQuickFormOpen
+                        ? quickFormTicket?.ticketKey
+                        : quickTicketStatus?.ticketKey}{" "}
+                      -{" "}
+                      {isQuickFormOpen
+                        ? quickFormTicket?.title
+                        : quickTicketStatus?.title}
                     </p>
                   </div>
                   <button
@@ -416,9 +444,38 @@ export default function TicketListCard({
                         "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3",
                     },
                     fields: ThreadFieldConfig(
-                      quickFormTicket?.navId,
-                      quickFormTicket,
-                    ).filter((field) => field.name !== "assignees"),
+                      isQuickFormOpen
+                        ? quickFormTicket?.navId
+                        : quickTicketStatus?.navId,
+                    )
+                      // 2. Keep your existing filter logic
+                      .filter((field) => {
+                        if (isQuickFormOpen) {
+                          return field.name !== "assignees";
+                        }
+                        if (isQuickStatusOpen) {
+                          return [
+                            "TicketOverallPercentage",
+                            "TicketStatusSummary",
+                            "TicketProgressHistoryWidget",
+                            "issueId",
+                          ].includes(field.name);
+                        }
+                        return true;
+                      })
+                      // 3. 👇 ADD THIS MAP BLOCK TO OVERRIDE THE OPTIONS 👇
+                      .map((field) => {
+                        if (field.name === "TicketProgressHistoryWidget") {
+                          return {
+                            ...field,
+                            options: {
+                              ...field.options, // Preserve any existing options from the config
+                              isQuickStatusOpen,
+                            },
+                          };
+                        }
+                        return field;
+                      }),
                   }}
                   module="Thread"
                   onCancel={closeQuickForm}

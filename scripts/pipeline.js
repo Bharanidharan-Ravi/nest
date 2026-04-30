@@ -8,7 +8,7 @@ import { execSync, exec } from 'child_process';
 // ==========================================
 const PROJECT_NAME    = 'WGNest'; 
 const UI_DIR          = 'D:/live work/WGNestPack/WG-Nest-pack'; 
-const API_DIR = 'D:/live work/Github/API/WGNestAPIGateway/WGNestAPIGateway';
+const API_DIR         = 'D:/live work/Github/API/WGNestAPIGateway/WGNestAPIGateway';
 const BASE_BACKUP_DIR = 'D:/live work/WGNestPack/backup';
 const RELEASE_DIR     = 'D:/live work/WGNestPack/backup/releases';
 
@@ -28,7 +28,6 @@ function executeCommand(command, workingDir) {
 }
 
 function bumpVersion(currentVersion, type) {
-    // Handles versions like "1.12" or "1.12.0"
     let parts = currentVersion.split('.').map(Number);
     let major = parts[0] || 1;
     let minor = parts[1] || 0;
@@ -53,10 +52,8 @@ async function createZip(sourcePath, outputPath, ignorePatterns, isDirectory = t
         archive.pipe(output);
 
         if (isDirectory) {
-            // Zipping source code
             archive.glob('**/*', { cwd: sourcePath, ignore: ignorePatterns });
         } else {
-            // Zipping specific build output folders into one release
             const uiDistPath = path.join(UI_DIR, 'dist');
             const apiDistPath = path.join(API_DIR, 'bin/Release/net8.0/publish');
             
@@ -88,7 +85,6 @@ function cleanOldZips(directory, prefix) {
         }))
         .sort((a, b) => b.time - a.time);
 
-    // Keep only the newest 10 files
     if (files.length > 10) {
         files.slice(10).forEach(file => {
             fs.unlinkSync(file.path);
@@ -101,18 +97,24 @@ function cleanOldZips(directory, prefix) {
 // 3. PIPELINE STAGES
 // ==========================================
 async function runPipeline() {
+    // Variables to hold original state for rollback purposes
+    let originalUiVersion = null;
+    let originalApiContent = null;
+    let uiPkgPath = path.join(UI_DIR, 'package.json');
+    let apiProjPath = null;
+
     try {
         console.log(`🚀 Starting ${PROJECT_NAME} CI/CD Pipeline...`);
         
         // --- STAGE 1: VERSION BUMPING ---
         console.log(`\n📦 [STAGE 1] Bumping ${bumpType} version...`);
         
-        // UI Version (package.json)
-        const uiPkgPath = path.join(UI_DIR, 'package.json');
+        // UI Version
         let newUiVersion = "1.0";
         if (fs.existsSync(uiPkgPath)) {
             const uiPkg = JSON.parse(fs.readFileSync(uiPkgPath, 'utf8'));
-            newUiVersion = bumpVersion(uiPkg.version || "1.0", bumpType);
+            originalUiVersion = uiPkg.version || "1.0"; // Store original for rollback
+            newUiVersion = bumpVersion(originalUiVersion, bumpType);
             uiPkg.version = newUiVersion;
             fs.writeFileSync(uiPkgPath, JSON.stringify(uiPkg, null, 2));
             console.log(`✅ UI version updated to: ${newUiVersion}`);
@@ -120,11 +122,13 @@ async function runPipeline() {
             console.log(`⚠️ UI package.json not found at ${uiPkgPath}`);
         }
 
-        // API Version (.csproj dynamically found)
+        // API Version
         const apiFiles = fs.readdirSync(API_DIR).filter(fn => fn.endsWith('.csproj'));
         if (apiFiles.length > 0) {
-            const apiProjPath = path.join(API_DIR, apiFiles[0]); // Grabs the first .csproj it finds
+            apiProjPath = path.join(API_DIR, apiFiles[0]); 
             let apiProjContent = fs.readFileSync(apiProjPath, 'utf8');
+            originalApiContent = apiProjContent; // Store original content for rollback
+
             const versionRegex = /<Version>(.*?)<\/Version>/;
             const match = apiProjContent.match(versionRegex);
             
@@ -158,6 +162,17 @@ async function runPipeline() {
 
         // --- STAGE 3: BUILD ---
         console.log(`\n🔨 [STAGE 3] Building UI and API...`);
+        
+        // FIX: Kill any running APIGateway process to release file locks
+        try {
+            console.log(`🛑 Ensuring existing API process is stopped to clear file locks...`);
+            execSync('taskkill /F /IM APIGateway.exe', { stdio: 'ignore' });
+            console.log(`✅ Existing API process terminated.`);
+        } catch (e) {
+            // It's perfectly fine if this fails (means the process wasn't running)
+            console.log(`✅ No existing API process found blocking the build.`);
+        }
+
         executeCommand('pnpm run build', UI_DIR);
         executeCommand('dotnet publish -c Release', API_DIR);
 
@@ -171,16 +186,29 @@ async function runPipeline() {
         await createZip(null, releaseZipPath, [], false);
         console.log(`✅ Release built and zipped: ${releaseZipName}`);
 
-        // Clean up old release files as well (Keep max 10 releases)
+        // Clean up old release files
         cleanOldZips(RELEASE_DIR, `${PROJECT_NAME}-Release-`);
 
         // --- STAGE 5: OPEN FOLDER ---
         console.log(`\n🎉 Pipeline Complete! Opening release folder...`);
-        // Windows command to open file explorer
         exec(`explorer "${path.win32.normalize(RELEASE_DIR)}"`);
 
     } catch (error) {
-        console.error(`\n❌ Pipeline Failed:`, error);
+        console.error(`\n❌ Pipeline Failed. Rolling back version changes...`);
+        console.error(error);
+
+        // FIX: Rollback Version Changes
+        if (originalUiVersion && fs.existsSync(uiPkgPath)) {
+            const uiPkg = JSON.parse(fs.readFileSync(uiPkgPath, 'utf8'));
+            uiPkg.version = originalUiVersion;
+            fs.writeFileSync(uiPkgPath, JSON.stringify(uiPkg, null, 2));
+            console.log(`⏪ Reverted UI version back to: ${originalUiVersion}`);
+        }
+
+        if (originalApiContent && apiProjPath && fs.existsSync(apiProjPath)) {
+            fs.writeFileSync(apiProjPath, originalApiContent);
+            console.log(`⏪ Reverted API version in .csproj back to original state`);
+        }
     }
 }
 

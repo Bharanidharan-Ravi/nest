@@ -1,31 +1,28 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import "./BatteryCompletionIndicator.css";
-import { useMemo } from "react";
 
+const COLORS_BY_RANGE = (value) => {
+  if (value === 0) return "#9ca3af";
+  if (value <= 20) return "#ef4444";
+  if (value <= 40) return "#f97316";
+  if (value <= 60) return "#eab308";
+  if (value <= 80) return "#14b8a6";
+  if (value < 100) return "#3b82f6";
+  return "#22c55e";
+};
 
-const COLORS_BY_RANGE =(value)=>{
-  if(value === 0) return "#9ca3af";
-  if(value <= 20) return "#ef4444";
-  if(value <= 40) return "#f97316";
-  if(value <= 60) return "#eab308";
-  if(value <= 80) return "#14b8a6";
-  if(value < 100) return "#3b82f6";
-  return "#22c55e"
-}
- 
-// const VALUES = [0, 10, 25, 50, 75, 100];
 export default function BatteryCompletionIndicator({
   name,
   value = 0,
   onChange,
   error,
-  options, 
+  options,
   showPercent = true,
   readOnly = false,
 }) {
   const max = options?.max || 100;
   const step = options?.step || null;
-  
+
   // 🔥 Extract dynamic styles, falling back to your CSS defaults
   const cellHeight = options?.height || "16px";
   const cellWidth = options?.width || "10px";
@@ -42,26 +39,40 @@ export default function BatteryCompletionIndicator({
     valuesList = [0, 10, 25, 50, 75, 100];
   }
 
+  // 1. Get the exact value and make sure it's within bounds
   const numericValue = Number(value) || 0;
-  const isValidValue = valuesList.includes(numericValue);
-  const activeValue = isValidValue ? numericValue : 0;
+  const clampedValue = Math.min(Math.max(numericValue, 0), max);
+
+  // 2. Sort the list to be safe
+  const sortedValues = [...valuesList].sort((a, b) => a - b);
+
+  // 3. Find the highest cell value that is LESS THAN OR EQUAL TO the exact value
+  // Example: if clampedValue is 70, this will find 60 (if using 20 steps)
+  const filledThreshold = sortedValues
+    .slice()
+    .reverse()
+    .find((v) => v <= clampedValue) ?? 0;
 
   const getColor = (val) => {
-    if (val <= 0) return "#9ca3af"; 
+    if (val <= 0) return "#9ca3af";
     const pct = (val / max) * 100;
-    if (pct <= 20) return "#ef4444"; 
-    if (pct <= 40) return "#f97316"; 
-    if (pct <= 60) return "#eab308"; 
-    if (pct <= 80) return "#3b82f6"; 
-    return "#22c55e"; 
+    if (pct <= 20) return "#ef4444";
+    if (pct <= 40) return "#f97316";
+    if (pct <= 60) return "#eab308";
+    if (pct <= 80) return "#3b82f6";
+    return "#22c55e";
   };
 
-  const currentColor = getColor(activeValue);
-  const cellValues = valuesList.slice(1);
+  // The color is based on the EXACT value, not just the filled cells
+  const currentColor = getColor(clampedValue);
+  
+  // Skip the 0 value for drawing cells
+  const cellValues = sortedValues.slice(1);
 
   function handleClick(clickedValue) {
     if (readOnly || !onChange) return;
-    const nextValue = clickedValue === activeValue ? 0 : clickedValue;
+    // If clicking the current exact value, toggle it to 0
+    const nextValue = clickedValue === clampedValue ? 0 : clickedValue;
     onChange(name, nextValue);
   }
 
@@ -70,16 +81,20 @@ export default function BatteryCompletionIndicator({
       <div className="battery-wrapper">
         <div className="battery-body" style={{ borderColor: currentColor }}>
           {cellValues.map((cellVal) => {
-            const isFilled = cellVal <= activeValue;
+            // 🔥 Check against the filledThreshold instead of strict equality
+            const isFilled = cellVal <= filledThreshold;
+            
             return (
               <div
                 key={cellVal}
-                className={`battery-cell ${readOnly ? "cursor-default" : "cursor-pointer"}`}
+                className={`battery-cell ${
+                  readOnly ? "cursor-default" : "cursor-pointer"
+                }`}
                 onClick={() => handleClick(cellVal)}
                 style={{
                   background: isFilled ? currentColor : "#e5e7eb",
-                  height: cellHeight, // 🔥 Apply dynamic height
-                  width: cellWidth,   // 🔥 Apply dynamic width
+                  height: cellHeight,
+                  width: cellWidth,
                 }}
               />
             );
@@ -87,24 +102,26 @@ export default function BatteryCompletionIndicator({
         </div>
 
         {/* Tip scales dynamically based on height and width */}
-        <div 
-          className="battery-tip" 
-          style={{ 
+        <div
+          className="battery-tip"
+          style={{
             background: currentColor,
             height: options?.height ? `calc(${cellHeight} * 0.5)` : "6px",
-            width: options?.width ? `calc(${cellWidth} * 0.3)` : "3px"
-          }} 
+            width: options?.width ? `calc(${cellWidth} * 0.3)` : "3px",
+          }}
         />
 
         {showPercent && (
-          <span 
-            className="battery-label" 
-            style={{ 
-              color: currentColor, 
-              fontSize: labelFontSize // 🔥 Apply dynamic font size
+          <span
+            className="battery-label"
+            style={{
+              color: currentColor,
+              fontSize: labelFontSize,
             }}
           >
-            {activeValue}{max === 100 ? "%" : `/${max}`}
+            {/* Show the EXACT value here instead of activeValue */}
+            {clampedValue}
+            {max === 100 ? "%" : `/${max}`}
           </span>
         )}
       </div>

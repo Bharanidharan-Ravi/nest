@@ -34,6 +34,8 @@ function App() {
       if (!parsedUser) return;
 
       connectSignalR(parsedUser, (message) => {
+        console.log("message app :",message);
+        
         handleRealtimeMessage(queryClient, message);
       });
 

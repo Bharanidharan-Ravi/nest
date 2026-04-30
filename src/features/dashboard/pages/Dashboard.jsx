@@ -23,6 +23,10 @@ import {
   useUncheckCheckedTicket,
 } from "../../../core/master/selectors/dashboardSelectors";
 import { useSearchParams } from "react-router-dom";
+import { FiX } from "react-icons/fi";
+import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
+import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config";
+import { ThreadFieldConfig } from "../../tickets/config/Thread.config";
 
 export default function Dashboard() {
   const user = readUserFromSession();
@@ -31,7 +35,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const timesheetsView = searchParams.get("timesheet_view") || "card";
-
+  const [quickTicketStatus, setQuickTicketStatus] = useState(null);
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
 
@@ -210,26 +214,76 @@ export default function Dashboard() {
   };
 
   // ✅ Static — no external dependency
-const dashboardTimesheetGraph = (filters) => {
+const dashboardTimesheetGraph = (parsedFilters) => {
     // Determine if we are looking at the whole team
-    const isAllEmployees = !filters?.assignedTo || filters?.assignedTo === "";
+    const isAllEmployees = !parsedFilters?.filters.assignedTo || parsedFilters.filters.assignedTo.trim() === "";
+    // 2. Determine if we are looking at ALL projects (projId is null/empty)
+    const isAllProjects = !parsedFilters?.filters?.project || String(parsedFilters.filters.project).trim() === "";
 
     return {
       graphType: "stackedBar",
       graphXAxisKey: "updatedAt",
       graphValueKey: "ConsumeTime",
       
-      // 1. Dynamic Grouping Keys Passed Down
-      graphGroupIdKey: isAllEmployees ? "mployeeName" : "TicketName",
-      graphLabelKey: isAllEmployees ? "employeeName" : "TicketName",
-      graphColorKey: isAllEmployees ? null : "statusColor",
+      // 3. DYNAMIC GROUPING LOGIC
+      graphGroupIdKey: isAllEmployees 
+        ? (item) => `${item.employeeId}_${item.employeeName}` // All Employees -> Group by Person
+        : isAllProjects
+            ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
+            : (item) => item.id || item.issueId,
+      // 2. COMBINED LABEL: Formats the Tooltip beautifully (e.g., "[WGN] Backend - Login Fix")
+     graphLabelKey: isAllEmployees 
+        ? "employeeName" 
+        : (item) => {
+            // 1. Process Repo Initials
+            const repo = item.repoName
+              ? item.repoName.split(" ").map((w) => w[0]?.toUpperCase()).join("")
+              : "Repo";
+
+            // 2. Process Project Name (Max 2 words)
+            const projName = item.projectName || item.project || "";
+            const project = projName.split(" ").length > 2
+              ? projName.split(" ").slice(0, 2).join(" ") + "..."
+              : projName;
+
+            // 3. Process Ticket Name (Cut in half by words if it's too long)
+            const ticketName = item.TicketName || item.title || "";
+            let truncatedTicket = ticketName;
+            const words = ticketName.split(" ");
+            
+            // If the ticket has more than 4 words, cut it in half and add "..."
+            if (words.length > 4) {
+               const halfPoint = Math.ceil(words.length / 2);
+               truncatedTicket = words.slice(0, halfPoint).join(" ") + "...";
+            } else if (ticketName.length > 30) {
+               // Fallback: If it's a few words but super long characters, cut by character
+               truncatedTicket = ticketName.substring(0, 30) + "...";
+            }
+
+            // 4. Return formatted React elements for perfect 2-line stacking!
+            return (
+              <div className="flex flex-col leading-tight">
+                <span className="text-gray-800">
+                  [{repo}] {project}
+                </span>
+                <span 
+                  className="text-[11.5px] font-medium text-gray-500 mt-0.5" 
+                  title={ticketName} // Shows full name when mouse hovers over it!
+                >
+                  {truncatedTicket}
+                </span>
+              </div>
+            );
+          },
+      // graphColorKey: isAllEmployees ? null : "statusColor",
+      graphColorKey: null,
       
       // 2. Tooltip Customization (Only show employee name if looking at specific tickets)
       tooltipSecondaryLabelKey: isAllEmployees ? null : "employeeName",
       
       // 3. Status IDs Passed Down (No hardcoding in the graph!)
-      terminalStatusKey: "StatusId",
-      terminalStatusIds: [14, 15, 16, 17],
+      terminalStatusKey: "threadStatusId",
+      terminalStatusIds: [15,16],
 
       isDateAxis: true,
       minYValue: 8,
@@ -249,7 +303,7 @@ const dashboardTimesheetGraph = (filters) => {
     enableSearch: false,
     enableTabs: false,
     enableSort: false,
-    defaultView: "card",
+    defaultView: "graph",
     tabConfig:[],
     enablePagination: timesheetsView !== "graph",
     allowViewSwitch: ["card", "graph"],
@@ -257,8 +311,13 @@ const dashboardTimesheetGraph = (filters) => {
     onEditClick: (item) => {
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
     },
-    onItemClick: (item) =>
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
+    onItemClick: (item) => {
+      if (timesheetsView === "graph") {
+        setQuickTicketStatus(item); // Open Quick Status modal
+      } else {
+        goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }); // Normal route
+      }
+    },
     filters: [
       {
         type: "weekRange",
@@ -305,6 +364,12 @@ const dashboardTimesheetGraph = (filters) => {
         view: "Project",
         showCounts: true,
         options: projectFilterOptions,
+      },
+      {
+        key: "repoId",
+        view: "Repo",
+        options: repoFilterOptions,
+        showCounts: true,
       },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
@@ -444,6 +509,80 @@ const dashboardTimesheetGraph = (filters) => {
     <div className="dashview">
       <h2>Dashboard</h2>
       <ModuleSwitcher modules={dashboardModules} />
+    {quickTicketStatus && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"
+            onClick={() => setQuickTicketStatus(null)}
+          />
+
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+            <div
+              className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                      Quick Status
+                    </h3>
+                    <p className="text-base sm:text-lg text-gray-600 truncate">
+                      Ticket #{quickTicketStatus?.ticketKey || quickTicketStatus?.id} -{" "}
+                      {quickTicketStatus?.title || quickTicketStatus?.TicketName}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setQuickTicketStatus(null)}
+                    className="closebtn w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Form Engine */}
+              <div className="flex-1 overflow-hidden flex flex-col relative bg-white min-h-0">
+                <EntityFormPage
+                  mode="Create"
+                  config={{
+                    ...ThreadFormConfig,
+                    theme: {
+                      ...ThreadFormConfig.theme,
+                      formContainer: "flex flex-col h-full min-h-0",
+                      footer: "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3",
+                    },
+                    fields: ThreadFieldConfig(quickTicketStatus?.navId || quickTicketStatus?.issueId || quickTicketStatus?.id)
+                      .filter((field) => [
+                        "TicketOverallPercentage",
+                        "TicketStatusSummary",
+                        "TicketProgressHistoryWidget",
+                        "issueId",
+                      ].includes(field.name))
+                      .map((field) => {
+                        if (field.name === "TicketProgressHistoryWidget") {
+                          return {
+                            ...field,
+                            options: { ...field.options, isQuickStatusOpen: true },
+                          };
+                        }
+                        return field;
+                      }),
+                  }}
+                  module="Thread"
+                  onCancel={() => setQuickTicketStatus(null)}
+                  onSuccessCallback={() => {
+                    setQuickTicketStatus(null);
+                    // Refresh data after submit so the graph updates immediately!
+                    queryClient.invalidateQueries({ queryKey: ["TimeSheet"] });
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

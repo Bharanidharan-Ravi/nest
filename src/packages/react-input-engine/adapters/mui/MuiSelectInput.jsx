@@ -15,7 +15,6 @@ const MuiSelectInput = ({
   multiple = false,
 }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
-console.log("options :", options);
 
   const handleChange = (_, selected) => {
     if (multiple) {

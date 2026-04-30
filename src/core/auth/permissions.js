@@ -31,7 +31,7 @@ const ADMIN_ONLY    = [1];
 
 export const ROUTE_ROLES = {
   // ── Dashboard (all roles) ────────────────────────────────────────────
-  DASHBOARD:        ALL,
+  DASHBOARD:        ADMIN_MANAGER,
 
   // ── Repository (Role 3 cannot access repo list or create) ────────────
   REPO_LIST:        ADMIN_MANAGER,   // ← Role 3 redirected to /login

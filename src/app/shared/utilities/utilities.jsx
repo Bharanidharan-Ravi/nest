@@ -222,7 +222,6 @@ export const buildOptionsResolver = (
     if (customMap) {
       return list.map(customMap);
     }
-  console.log("masterData :", list);
 
     return list.map((item) => ({
       label: item[labelKey],

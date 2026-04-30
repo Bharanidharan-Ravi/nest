@@ -93,7 +93,6 @@ export const useSmartNavigation = () => {
     const user        = readUserFromSession();
     const userRole    = user?.role ?? null;
     const allRoutes   = getAllNavRoutes();
-    console.log("user :", user, allRoutes);
 
     return allRoutes.filter((route) => {
       if (!route.inSidebar) return false;

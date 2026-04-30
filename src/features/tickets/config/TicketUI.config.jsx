@@ -18,6 +18,7 @@ export const TicketListConfig = {
   enableEdit: true,
   enableCardControls: true,
   enablequickComment: true,
+  enablequickStatus: true,
   searchFields: ["title", "description", "RepoKey"],
   filters: [
     {

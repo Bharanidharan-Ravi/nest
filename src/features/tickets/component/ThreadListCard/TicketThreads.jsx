@@ -128,7 +128,6 @@ const TicketThreads = ({
     });
   }, [threadsData, assigneesJsonString]);
   
- console.log("rawThreads :", rawThreads);
   const filteredThreads = React.useMemo(() => {
     if (!selectedWorkStream && !selectedHandoffId) return rawThreads;
 
@@ -378,7 +377,7 @@ const TicketThreads = ({
               fields: ThreadFieldConfig(ticketId),
             }}
             // Merge formContext with the isClosed flag for your config.actions
-            context={{ ...formContext, isClosed: isTerminalState }}
+            context={{ ...formContext, isClosed: isTerminalState, isQuickFormOpen: null, isQuickStatusOpen: null }}
             module="Ticket"
           />
         </div>

@@ -4,8 +4,7 @@ import { FaChevronDown, FaChevronUp, FaHistory } from "react-icons/fa";
 import { useTicketProgress } from "../../../core/master/selectors/selectors"; // Adjust path as needed
 
 const TicketProgressHistory = ({ options }) => {
- const routeParams = useParams();
-  
+ const routeParams = useParams();  
   // 🔥 1. Prioritize the ticketId from FormEngine config, fallback to URL params
   const activeTicketId = options?.ticketId || routeParams.ticketId;
   
@@ -13,7 +12,7 @@ const TicketProgressHistory = ({ options }) => {
   const { data: progressLogs = [], isLoading } = useTicketProgress(activeTicketId, {
     enabled: !!activeTicketId,
   });
-  const [showMainPanel, setShowMainPanel] = useState(false);
+  const [showMainPanel, setShowMainPanel] = useState(options.isQuickStatusOpen || false);
   const [expandedAssignees, setExpandedAssignees] = useState({});
 
   // Hide the entire component if there are no logs yet
