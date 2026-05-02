@@ -56,8 +56,9 @@ export const connectSignalR = async (
 
   // ── Incoming message ────────────────────────────────────────────────────────
   newConnection.on("EntityChanged", (message) => {
-    onMessage?.(message);
-  });
+  console.log("[SignalR RAW EVENT]:", message);
+  onMessage?.(message);
+});
 
   // ── Lifecycle hooks ─────────────────────────────────────────────────────────
   newConnection.onreconnecting((error) => {

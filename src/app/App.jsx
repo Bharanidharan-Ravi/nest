@@ -26,17 +26,30 @@ function App() {
 
     try {
       const parsedUser = JSON.parse(user);
-          // const userData = decryptUserInfo(parsedUser);
-          // const jwtToken = Array.isArray(userData)
-          //   ? userData[0]?.JwtToken
-          //   : userData?.JwtToken;
+      // const userData = decryptUserInfo(parsedUser);
+      // const jwtToken = Array.isArray(userData)
+      //   ? userData[0]?.JwtToken
+      //   : userData?.JwtToken;
 
       if (!parsedUser) return;
 
-      connectSignalR(parsedUser, (message) => {
-        console.log("message app :",message);
-        
-        handleRealtimeMessage(queryClient, message);
+      // connectSignalR(parsedUser, (message) => {
+      //   console.log("message app :",message);
+
+      //   handleRealtimeMessage(queryClient, message);
+      // });
+      connectSignalR(() => parsedUser, {
+        onMessage: (message) => {
+          console.log("message app :", message);
+          handleRealtimeMessage(queryClient, message);
+        },
+        onStateChange: (state) => {
+          console.log("SignalR State:", state);
+        },
+        onReconnected: () => {
+          console.log("SignalR Reconnected");
+          queryClient.invalidateQueries();
+        },
       });
 
       return () => {

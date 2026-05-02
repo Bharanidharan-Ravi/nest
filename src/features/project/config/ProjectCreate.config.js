@@ -88,7 +88,7 @@ export const ProjFieldConfig = () => [
       "UserID",
       "UserName",
       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-    ), 
+    ),
     initValueResolver: ({ context, masterData }) => {
       if (context.isEdit && context.entityData?.EmployeeName) {
         const empId = context.entityData?.Responsible;
@@ -121,7 +121,10 @@ export const ProjFieldConfig = () => [
     apiKey: "StartDate",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.StartDate : "",
-    customValidator: (value, data) => {
+    customValidator: (value, data, context) => {
+      if (context?.isEdit) {
+        return true;
+      }
       if (!value) return true;
       const startDate = new Date(value);
       const today = new Date();
@@ -150,7 +153,10 @@ export const ProjFieldConfig = () => [
     apiKey: "DueDate",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.DueDate : "",
-    customValidator: (value, data) => {
+    customValidator: (value, data, context) => {
+      if (context?.isEdit) {
+        return true;
+      }
       if (!value || !data.startDate) return true;
       const startDate = new Date(data.startDate);
       const dueDate = new Date(value);

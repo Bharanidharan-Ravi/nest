@@ -10,3 +10,4 @@ export const RepositoryPage   = lazy(() => import("./pages/RepositoryPage"));
 export const RepoCreate       = lazy(() => import("./pages/RepoCreate"));
 export const RepositoryLayout = lazy(() => import("./pages/RepositoryLayout"));
 export const RepoOverview     = lazy(() => import("./pages/RepoOverview"));
+export const CustomerCreate   = lazy(() => import("./pages/CustomerCreate"));

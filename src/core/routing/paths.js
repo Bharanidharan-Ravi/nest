@@ -23,6 +23,8 @@ export const ROUTE_KEYS = {
   REPO_CREATE:       "repository.create",
   REPO_DETAIL:       "repository.detail",
   REPO_OVERVIEW:     "repository.overview",
+  REPO_OVERVIEW_CREATE :     "repository.overview.create",
+  REPO_OVERVIEW_EDIT:     "repository.overview.edit",
 
     // ── Tickets (standalone) ───────────────────────────────
   TICKET_LIST:       "tickets.list",
@@ -71,6 +73,8 @@ export const PATHS = {
   REPO_CREATE:       "/repository/create",
   REPO_DETAIL:       "/repository/:repoId",
   REPO_OVERVIEW:     "/repository/:repoId/overview",
+  REPO_OVERVIEW_CREATE :     "/repository/:repoId/overview/create",
+  REPO_OVERVIEW_EDIT:     "/repository/:repoId/overview/edit/:userId",
 
   // ── Tickets (standalone) ───────────────────────────────
   TICKET_LIST:       "/tickets",

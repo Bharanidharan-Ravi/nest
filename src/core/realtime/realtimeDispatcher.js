@@ -18,15 +18,15 @@ import { queryKeys } from "../query/queryKeys";
 //      Add one line here to support a new master-data entity.
 // ─────────────────────────────────────────────────────────────────────────────
 const MASTER_ENTITY_MAP = {
-  RepoList:  "RepoList",
-  Project:   "ProjectList",
-  Employee:  "EmployeeList",
-  Label:     "LabelList",
-  // Status: "StatusList",   ← adding new master entity = ONE line
-  // Team:   "TeamList",
+  RepoList: "RepoList",
+  Project: "ProjectList",
+  Employee: "EmployeeList",
+  Label: "LabelMaster",
+  Status: "StatusMaster",
+  Team: "TeamMaster",
 };
 
-const MASTER_KEYS = Object.keys(MASTER_ENTITY_MAP); // keeps it DRY
+const MASTER_KEYS = Object.values(MASTER_ENTITY_MAP); // keeps it DRY
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  2.  ENTITY CONFIG REGISTRY
@@ -181,7 +181,6 @@ export const handleRealtimeMessage = (queryClient, message) => {
   const action   = message.Action   ?? message.action;
   const payload  = message.Payload  ?? message.payload;
   const keyField = message.KeyField ?? message.keyField;
-console.log("entity :",entity, action, payload, keyField, message);
 
   if (!entity || !action || !payload || !keyField) {
     console.warn("[Realtime] Dropped invalid message:", message);
@@ -230,7 +229,9 @@ function applyEntityConfig(queryClient, config, action, payload, keyField, messa
 // ─────────────────────────────────────────────────────────────────────────────
 function updateMasterCache(queryClient, entity, action, payload, keyField) {
   const listField = MASTER_ENTITY_MAP[entity];
-  queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {
+  console.log("entity :",listField);
+
+  queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {    
     if (!oldData || !(listField in oldData)) return oldData;
     const updated = applyAction(oldData[listField], action, payload, keyField, "desc");
     return { ...oldData, [listField]: updated };
@@ -247,6 +248,7 @@ function safeExtract(data, extractFn) {
 }
 
 function applyAction(list, action, payload, keyField, sortDir) {
+    console.log("oldData :", list, action, payload, keyField, sortDir);
   if (!Array.isArray(list)) return [];
   const targetVal = normalize(getCI(payload, keyField));
   const match     = (x) => normalize(getCI(x, keyField)) === targetVal;

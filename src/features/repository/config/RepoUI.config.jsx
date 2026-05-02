@@ -81,3 +81,76 @@ export const repoListConfig = {
   ],
   cardRenderer: (item) => <RepoCardList item={item} />
 };
+
+
+
+
+
+export const CustomerData = {
+  syncUrl: false,
+  defaultView: "table",
+  enableSearch: false,
+  enableSelection: false,
+  enableTabs: true,
+  enableEdit: true,
+  theme: {
+    extend: {
+      height: {
+        30: "30px",
+      },
+    },
+  },
+  enableSort: false,
+  enableFooter: false,
+  infinite: true,
+  tabConfig: [
+    {
+      key: "active",
+      label: "Active",
+      field: "Status",
+      filterValue: "Active",
+    },
+    {
+      key: "inactive",
+      label: "Inactive",
+      field: "Status",
+      filterValue: "Inactive",
+    },
+  ],
+
+  columns: [
+    {
+      key: "UserName",
+      label: "UserName",
+      render: (item) => <div className="h-30">{item.UserName}</div>,
+    },
+    {
+      key: "MailId",
+      label: "MailId",
+      render: (item) => <div className="h-30">{item.MailId}</div>,
+    },
+    {
+      key: "PhoneNumber",
+      label: "PhoneNumber",
+      render: (item) => <div className="h-30">{item.PhoneNumber}</div>,
+    },
+    // {
+    //   key: "RepoKey",
+    //   label: "RepoKey",
+    //   render: (item) => <div className="h-30">{item.RepoKey}</div>,
+    // },
+
+    // {
+    //   key: "Status",
+    //   label: "Status",
+    //   render: (item) => <div className="h-30">{item.Status}</div>,
+    // },
+    
+    // {
+    //   key: "WGUserName",
+    //   label: "WGUserName",
+    //   render: (item) => <div className="h-30">{item.WGUserName}</div>,
+    // },
+    
+  ],
+};

@@ -38,6 +38,8 @@ export const ROUTE_ROLES = {
   REPO_CREATE:      ADMIN_MANAGER,
   REPO_DETAIL:      ALL,             // ← Role 3 CAN open a specific repo
   REPO_OVERVIEW:    ALL,
+  REPO_CUSTOMER_CREATE:    ALL,
+  REPO_CUSTOMER_EDIT:    ALL,
 
   // ── Tickets (all roles) ──────────────────────────────────────────────
   TICKET_LIST:      ALL,

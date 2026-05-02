@@ -63,4 +63,9 @@ export const queryKeys = {
     all:    ["TicketProgress"],
     list:   (id)   => [...queryKeys.TicketProgress.all, id]
   },
+  client: {
+    all:   ["client"],
+    list:  () => [...queryKeys.client.all, "list"],
+    detail:  (id) => [...queryKeys.client.all, "detail", id],
+  }
 }

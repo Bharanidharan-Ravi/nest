@@ -76,6 +76,28 @@ export const RepositoryFeature = {
             parent: ROUTE_KEYS.REPO_DETAIL,
           },
         },
+        {
+          path: "overview/create",
+          element: RepoEl.CustomerCreate ,
+          allowedRoles: ROUTE_ROLES.REPO_OVERVIEW_CREATE,
+          nav: {
+            key: ROUTE_KEYS.REPO_OVERVIEW_CREATE,
+            title: "Create Customer",
+            parent: ROUTE_KEYS.REPO_OVERVIEW,
+          },
+        },
+
+        {
+          path: "overview/edit/:userId",
+          element: RepoEl.CustomerCreate ,
+          allowedRoles: ROUTE_ROLES.REPO_OVERVIEW_CREATE,
+          nav: {
+            key: ROUTE_KEYS.REPO_OVERVIEW_EDIT,
+            title: "Edit Customer",
+            parent: ROUTE_KEYS.REPO_OVERVIEW,
+          },
+        },
+
 
         // ── /repository/:repoId/t ──────────────────────────────────────
         {
