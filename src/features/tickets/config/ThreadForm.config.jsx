@@ -1,13 +1,14 @@
 import React from "react";
-import { FaCheckCircle, FaSave, FaTimesCircle, FaUndo } from "react-icons/fa";
+import { FaCheckCircle, FaSave, FaTelegramPlane, FaTimesCircle, FaUndo } from "react-icons/fa";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { ThreadFieldConfig } from "./Thread.config";
 
 // 🔥 HELPER: Checks if ONLY the Ticket Status Update fields are filled
 const isProgressOnlyUpdate = (formData, context) => {
+  console.log("Contextwwwwswswsw",context);
   // 1. Check Thread Data safely (handles empty strings "")
   const cleanDesc = (formData?.description || "").replace(/<[^>]*>?/gm, "").trim();
-  
+
   const hasThreadData =
     cleanDesc.length > 0 ||
     (formData?.hours || "").trim().length > 0 ||
@@ -18,7 +19,7 @@ const isProgressOnlyUpdate = (formData, context) => {
   // 2. Check Progress Data safely
   const summary = (formData?.TicketStatusSummary || "").trim();
   const currentPct = Number(formData?.TicketOverallPercentage || 0);
-  
+
   // We ONLY count the percentage as "updated" if it changed from what it was when the page loaded
   const initialPct = Number(context?.editingItem?.OverallPercentage || context?.editingItem?.CompletionPct || 0);
 
@@ -49,7 +50,7 @@ export const ThreadFormConfig = {
             <span className="flex items-center pr-3 border-r border-green-500/60 mr-1">
               <FaUndo className="text-sm opacity-90" />
             </span>
-          ),          
+          ),
           className:
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
           onClick: ({ submitForm }) =>
@@ -62,20 +63,20 @@ export const ThreadFormConfig = {
     if (role === "Tester") {
       return [
         {
-          type: "split-button", 
+          type: "split-button",
           options: [
             {
               label: "Update Progress",
               subtext: "Log hours without finishing testing",
-              colorClass: "bg-gray-700", 
+              colorClass: "bg-gray-700",
               onClick: ({ submitForm }) => {
                 const overrides = { StreamStatus: currentStreamStatus };
-                
+
                 // 🔥 Inject the flag if it's a progress-only update
                 if (isProgressOnlyUpdate(formData)) {
                   overrides.IsTicketProgressOnly = true;
                 }
-                
+
                 submitForm(overrides);
               }
             },
@@ -145,7 +146,7 @@ export const ThreadFormConfig = {
 
                   overrides.NextAssignees = formData.assignees.map((a) => ({
                     Id: a.value.id,
-                    StreamId: 5, 
+                    StreamId: 5,
                   }));
                 } else {
                   overrides.NextAssignees = null;
@@ -177,7 +178,7 @@ export const ThreadFormConfig = {
 
                   overrides.NextAssignees = formData.assignees.map((a) => ({
                     Id: a.value.id,
-                    StreamId: 5, 
+                    StreamId: 5,
                   }));
                 } else {
                   overrides.NextAssignees = null;
@@ -233,7 +234,7 @@ export const ThreadFormConfig = {
                 const overrides = {};
                 overrides.NextAssignees = formData.assignees.map((a) => ({
                   Id: a.value.id,
-                  StreamId: 8, 
+                  StreamId: 8,
                 }));
                 if (Number(formData.CompletionPercentage) === 100) {
                   overrides.StreamStatus = 6;
@@ -250,14 +251,14 @@ export const ThreadFormConfig = {
     }
 
     // ── 3. OWNER BUTTONS ──────────────────────────────────────────
-    if (role === "Owner") {
+    if (role === "Owner" && (!context.isViewer)) {
       return [
         {
           type: "split-button",
           options: [
             {
               label: "Commit Update",
-              subtext: "Save changes or reassign users",
+              subtext: "Save changes ",
               intent: "neutral",
               icon: <FaSave className="text-gray-500" />,
               onClick: ({ formData, submitForm }) => {
@@ -296,11 +297,26 @@ export const ThreadFormConfig = {
               onClick: ({ submitForm }) =>
                 submitForm(
                   {
-                    StreamStatus: 15, 
+                    StreamStatus: 15,
                     CompletionPercentage: 100,
                     Comment: formData.description || "Ticket closed by owner.",
                   },
                   true,
+                ),
+            },
+            {
+              label: "Commit to Client",
+              subtext: "Commit status to client",
+              intent: "clientCommit",
+              icon: <FaTelegramPlane className="text-blue-600" />,
+              onClick: ({ submitForm }) =>
+                submitForm(
+                  {
+                    Comment:
+                      formData.description,
+                    toClient: true,
+                  },
+
                 ),
             },
             {
@@ -311,7 +327,7 @@ export const ThreadFormConfig = {
               onClick: ({ submitForm }) =>
                 submitForm(
                   {
-                    StreamStatus: 16, 
+                    StreamStatus: 16,
                     Comment:
                       formData.description || "Ticket cancelled by owner.",
                   },
@@ -324,25 +340,84 @@ export const ThreadFormConfig = {
     }
 
     // ── 4. STANDARD/FALLBACK BUTTON ───────────────────────────────
+    //   return [
+    //     {
+    //       label: "Commit Update",
+    //       type: "button",
+    //       className:
+    //         "bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 font-medium",
+    //       onClick: ({ submitForm, formData }) => {
+    //         const overrides = {};
+
+    //         // 🔥 Inject the flag if it's a progress-only update
+    //         if (isProgressOnlyUpdate(formData)) {
+    //           overrides.IsTicketProgressOnly = true;
+    //         }
+
+    //         submitForm(overrides);
+    //       },
+    //     },
+    //   ];
+    // },
+
     return [
       {
-        label: "Commit Update",
-        type: "button",
-        className:
-          "bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 font-medium",
-        onClick: ({ submitForm, formData }) => {
-          const overrides = {};
-          
-          // 🔥 Inject the flag if it's a progress-only update
-          if (isProgressOnlyUpdate(formData)) {
-            overrides.IsTicketProgressOnly = true;
-          }
-          
-          submitForm(overrides);
-        },
+        type: "split-button",
+        // hide: Boolean(context?.isClosed || !context?.isOwner),
+        options: [
+          // Only show "Commit Update" if ticket is NOT closed
+          ...(!Boolean(context?.isClosed)
+            ? [
+              {
+                label: "Commit Update",
+                subtext: "Save changes",
+                intent: "neutral",
+                icon: <FaSave className="text-gray-500" />,
+                onClick: ({ formData, submitForm }) => {
+                  const overrides ={
+                
+                    Comment: formData.description,
+                    toClient: Boolean(context?.isViewer),
+                  };
+
+                  if (context?.onCommitIntercept) {
+                    context.onCommitIntercept((isSupport)=>{
+                      submitForm({...overrides, IsSupport:isSupport});
+                    });
+                  }else{
+                    submitForm(overrides);
+                  }
+                },
+              },
+            ]
+            : []),
+          // Only show "Complete & Close" if viewer AND owner AND ticket is NOT closed
+          ...(Boolean(context?.isOwner) && !Boolean(context?.isClosed)
+            ? [
+              {
+                label: "Complete & Close",
+                subtext: "Complete this ticket successfully",
+                intent: "success",
+                icon: <FaCheckCircle className="text-green-600" />,
+                onClick: ({ submitForm, formData }) =>
+                  submitForm(
+                    {
+                      StreamStatus: 15,
+                      CompletionPercentage: 100,
+                      Comment: formData.description || "Ticket closed by owner.",
+                    },
+                    true
+                  ),
+              },
+            ]
+            : []),
+        ],
       },
     ];
+
   },
+
+
   theme: {
     editorContainer:
       "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
@@ -385,7 +460,7 @@ export const ThreadFormConfig = {
 //             <span className="flex items-center pr-3 border-r border-green-500/60 mr-1">
 //               <FaUndo className="text-sm opacity-90" />
 //             </span>
-//           ),          
+//           ),
 //           className:
 //             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
 //           // Optional: You can pass custom overrides here if your backend needs specific flags

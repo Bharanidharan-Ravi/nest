@@ -8,7 +8,7 @@ import { useSearchParams } from "react-router-dom";
 import { WeekRangeFilter } from "./weeklyFilter";
 
 export function ListFilters() {
-  const { query, setQuery, config, filterCounts } = useList();
+  const { query, setQuery, config, filterCounts,userRole } = useList();
   const [searchQuery, setSearchQuery] = useState("");
   const [openDropdownKey, setOpenDropdownKey] = useState(null);
   const wrapperRef = useRef(null);
@@ -17,6 +17,10 @@ export function ListFilters() {
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
   if (!config?.filters) return null;
+  const visibleFilters = config.filters.filter(
+    (f) => !f.allowedRoles || f.allowedRoles.includes(userRole)
+  );
+  if (!visibleFilters.length) return null;
   const parsed = parseQuery(query);
 
   const updateQuery = (key, values, isMulti = false) => {
@@ -139,19 +143,19 @@ export function ListFilters() {
   const isAllOption = (val) => val === "" || val === null || (Array.isArray(val) && val.length === 0);
   return (
     <div className="flex gap-2 items-center" ref={wrapperRef}>
-      {config.filters.map((filter, index) => {
+      {visibleFilters.map((filter, index) => {
         const rawParsedValue = parsed.filters[filter.key];
         const selectedValues = Array.isArray(rawParsedValue)
           ? rawParsedValue.map(String)
           : rawParsedValue !== undefined &&
-              rawParsedValue !== null &&
-              rawParsedValue !== ""
+            rawParsedValue !== null &&
+            rawParsedValue !== ""
             ? [String(rawParsedValue)]
             : [];
 
         const isMultiSelect = !!filter.allowMultiple;
         const isOpen = openDropdownKey === filter.key;
-        
+
         const filteredOptions = (filter?.options || [])
           .filter((opt) =>
             opt?.label?.toLowerCase().includes(searchQuery.toLowerCase()),
@@ -166,7 +170,7 @@ export function ListFilters() {
             if (filter.showCounts) {
               const countA = filterCounts[filter.key]?.[a.value] ?? 0;
               const countB = filterCounts[filter.key]?.[b.value] ?? 0;
-              
+
               const aHasCount = countA > 0;
               const bHasCount = countB > 0;
 
@@ -224,7 +228,7 @@ export function ListFilters() {
             </div>
           );
         }
-        
+
         if (filter.type === "weekRange") {
           return (
             <WeekRangeFilter
@@ -235,7 +239,7 @@ export function ListFilters() {
             />
           );
         }
-        
+
         return (
           <div key={filter.key} className="relative">
             <button
@@ -270,7 +274,7 @@ export function ListFilters() {
                     }}
                   />
                 </div>
-                
+
                 {/* Scrollable List Wrapper */}
                 <div className="overflow-y-auto flex-1 py-1 custom-scrollbar">
                   {filteredOptions.map((opt, index) => {
@@ -310,9 +314,9 @@ export function ListFilters() {
                             );
                             newSelection = alreadySelected
                               ? currentSelected.filter(
-                                  (val) => val !== String(opt.value),
-                                ) 
-                              : [...currentSelected, String(opt.value)]; 
+                                (val) => val !== String(opt.value),
+                              )
+                              : [...currentSelected, String(opt.value)];
                           } else {
                             newSelection = [String(opt.value)];
                             setOpenDropdownKey(null);
@@ -324,13 +328,12 @@ export function ListFilters() {
                             filter.allowMultiple,
                           );
                         }}
-                        className={`px-2 py-2 mx-1 rounded-md text-xs cursor-pointer flex items-center gap-2 transition-colors ${
-                          isSelected
+                        className={`px-2 py-2 mx-1 rounded-md text-xs cursor-pointer flex items-center gap-2 transition-colors ${isSelected
                             ? "font-semibold text-brand-yellow bg-brand-yhover"
                             : isHighlighted
                               ? "bg-gray-100 text-gray-900"
                               : "text-gray-700 hover:bg-gray-50"
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between w-full transition">
                           <div className="flex items-center gap-2 truncate pr-2">

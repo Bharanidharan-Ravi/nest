@@ -6,7 +6,7 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 import { useEffect } from "react";
 import { getDateRangeApiParams } from "../components/getDateRangeApiParams";
 
-export function useListState(config, rawData = []) {
+export function useListState(config, rawData = [], userRole = null) {
   const [searchParams] = useSearchParams();
   const isUrlSyncEnabled = config.syncUrl !== false;
   // 🔥 1. Get the prefix so we can read namespaced URLs correctly (e.g., "tickets_")
@@ -47,46 +47,6 @@ export function useListState(config, rawData = []) {
     // 3. Fallback to defaults
     return fallback;
   };
-  /* --- INITIAL STATE (Run once) --- */
-  // const initialQuery = useMemo(() => {
-  //   // 🔥 HELPER: Builds the string from defaults
-  //   const buildDefaultString = (tabKey) => {
-  //     let q = tabKey ? `is:${tabKey}` : "";
-  //     if (config.filters) {
-  //       config.filters.forEach((f) => {
-  //         // ✅ Only add default if it's a real value, not the "All" placeholder
-  //         if (f.defaultValue && f.defaultValue !== "") {
-  //           const safeValue = f.defaultValue.includes(" ")
-  //             ? `"${f.defaultValue}"`
-  //             : f.defaultValue;
-  //           q += ` ${f.key}:${safeValue}`;
-  //         }
-  //       });
-  //     }
-  //     return q.trim();
-  //   };
-  //   // If child list, ignore URL and load default config
-  //   if (!isUrlSyncEnabled) {
-  //     return buildDefaultString(config.tabConfig?.[0]?.key);
-  //   }
-
-  //   // 🔥 If URL already has a query string, the URL wins!
-  //   // (Note: Use your prefix here like searchParams.get("tickets_q") if you applied the namespaces)
-
-  //   const urlQ = searchParams.get(`${prefix}q`);
-  //   if (urlQ) return urlQ;
-
-  //   // 🔥 3. Read from `${prefix}tab` instead of just "tab"
-  //   const urlTab =
-  //     searchParams.get(`${prefix}tab`) || config.tabConfig?.[0]?.key;
-  //   return buildDefaultString(urlTab);
-  // }, [
-  //   isUrlSyncEnabled,
-  //   config.tabConfig,
-  //   config.filters,
-  //   searchParams,
-  //   prefix,
-  // ]);
 
   /* --- STATES --- */
   // const [query, setQuery] = useState(initialQuery);
@@ -163,10 +123,16 @@ export function useListState(config, rawData = []) {
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
 
   /* --- QUERY PARSE & DERIVED STATE --- */
-  const parsed = parseQuery(query);
+  const parsed = parseQuery(query, config.filters, userRole);
 
   const queryFilters = parsed.filters;
   const text = parsed.text;
+
+  useEffect(() => {
+    if (parsed.sanitizedQuery !== query.trim()) {
+      setQuery(parsed.sanitizedQuery + " ");
+    }
+  }, [parsed.sanitizedQuery, query]);
 
   // Derive statusTab directly from the query. No more 'useState' or 'useEffect' loops!
   const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
@@ -467,6 +433,10 @@ export function useListState(config, rawData = []) {
         : String(bVal).localeCompare(String(aVal));
     });
 
+    if(config?.customSortFn){
+      data.sort(config.customSortFn);
+    }
+
     return data;
   }, [
     rawData,
@@ -478,8 +448,12 @@ export function useListState(config, rawData = []) {
     config,
     apiFilterEntries,
     apiFilteredData,
+    config?.customSortFn,
     // dataUpdatedAt // (Make sure this is here if we added it earlier!)
   ]);
+
+  console.log("processed642357423632524",processed,rawData);
+  
   /* --- REUSABLE FILTER MATCH CHECKER --- */
   const checkItemMatchesFilters = useCallback(
     (item, appliedFilters) => {
@@ -638,8 +612,19 @@ export function useListState(config, rawData = []) {
       filter.options.forEach((opt) => {
         const val = opt.value;
         if (val === "" || val === null) {
-          // "All" option equals the total items available for this filter
-          counts[filter.key][val] = dataForThisFilter.length;
+         if (filter.key === "customBoolean") {
+            const flagValues = filter.options
+              .map((o) => o.value)
+            counts[filter.key][val] = flagValues.reduce((total, field) => {
+              const fieldCount = dataForThisFilter.filter(
+                (item) => item[field] === true
+              ).length;
+        
+              return total + fieldCount;
+            }, 0);
+          }else {
+            counts[filter.key][val] = dataForThisFilter.length;
+          }
         } else {
           // Count items that match THIS specific option
           counts[filter.key][val] = dataForThisFilter.filter((item) =>
@@ -783,7 +768,7 @@ export function useListState(config, rawData = []) {
   // const visibleData = processed.slice(0, visibleCount);
   // 🚀 THE FIX: If the view is "graph", give it ALL the data. Otherwise, paginate it normally!
   const visibleData = config.enablePagination === false ? processed : processed.slice(0, visibleCount);
-  // console.log("visibleData :", visibleData);
+  console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
     setVisibleCount((v) => v + (config.pageSize || 20));

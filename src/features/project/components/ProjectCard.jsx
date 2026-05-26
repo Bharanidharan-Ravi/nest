@@ -4,13 +4,14 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import PauseCircleFilledIcon from "@mui/icons-material/PauseCircleFilled";
 import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 dayjs.extend(relativeTime);
 
 export default function ProjectCard({ item }) {
   const displayDate = item.UpdatedAt || item.createdAt;
   const displayUser = item.UpdatedBy || item.CreatedBy || "System";
-
+  const { isViewer } = useCurrentUser();
   const getInitials = (name) => {
     if (!name) return "U";
     const parts = name.trim().split(" ");
@@ -46,29 +47,32 @@ export default function ProjectCard({ item }) {
 
       {/* ROW 2: User Avatar & Name */}
       {/* pl-8 indents the avatar so it lines up with the text, not the icon */}
-      <div className="flex items-center gap-2 text-sm text-gray-600 pl-8 mt-1">
-        <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
-          {getInitials(item.owner || item.EmployeeName)}
-        </div>
-        <span className="font-medium">
-          {item.owner || item.EmployeeName || "Unassigned"}
-        </span>
-      </div>
+      {!isViewer && (
+        <div className="pl-8 mt-1">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <div className="w-6 h-6 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
+              {getInitials(item.owner || item.EmployeeName)}
+            </div>
+            <span className="font-medium">
+              {item.owner || item.EmployeeName || "Unassigned"}
+            </span>
+          </div>
 
-      {/* ROW 3: FOOTER */}
-      <div className="flex items-center justify-between mt-0 pt-3 border-t border-gray-100">
-        <p className="text-xs text-gray-500 m-0">
-          Updated{" "}
-          <span className="font-medium">{dayjs(displayDate).fromNow()}</span> by{" "}
-          {displayUser}
-        </p>
+          {/* ROW 3: FOOTER */}
+          <div className="flex items-center justify-between mt-0 pt-3 border-t border-gray-100">
+            <p className="text-xs text-gray-500 m-0">
+              Updated{" "}
+              <span className="font-medium">{dayjs(displayDate).fromNow()}</span> by{" "}
+              {displayUser}
+            </p>
 
-        {/* <div className="flex items-center gap-1 text-xs font-medium text-brand-yellow bg-yellow-50 border border-yellow-200 px-2 py-1 rounded-full cursor-pointer hover:bg-yellow-100 transition-colors">
+            {/* <div className="flex items-center gap-1 text-xs font-medium text-brand-yellow bg-yellow-50 border border-yellow-200 px-2 py-1 rounded-full cursor-pointer hover:bg-yellow-100 transition-colors">
            <ConfirmationNumberOutlinedIcon style={{ fontSize: '14px' }} />
            <span>Active Tickets</span>
         </div> */}
-      </div>
-
+          </div>
+        </div>
+      )}
       {/* 🔥 ROW 4: The Thin Progress Bar */}
       {/* Uses negative margins (-mx-3 -mb-3) to stretch exactly to the edges of the ListCard container's padding */}
       {/* <div className="h-1 w-[calc(100%+24px)] -ml-3 -mb-3 mt-2 bg-gray-100 rounded-b-md overflow-hidden">

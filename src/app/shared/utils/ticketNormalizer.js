@@ -28,4 +28,10 @@ export const normalizeTicket = (ticket) => ({
     teamName: ticket.Assignee_TeamName,
     overallPercentage: ticket.OverallPercentage,
     isCloseRequested: ticket.IsCloseRequested,
+    priorityRequest: ticket.PriorityRequest,
+    funcResponse: ticket.FuncResponse,
+    clientTime: ticket.Client,
+    developmentTime: ticket.Development,
+    testingTime: ticket.Testing,
+    raiseToClient: ticket.RaiseToClient,
 });

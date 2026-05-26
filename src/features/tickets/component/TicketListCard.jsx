@@ -26,6 +26,8 @@ import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../config/ThreadForm.config";
 import { ThreadFieldConfig } from "../config/Thread.config";
 import { FaHistory } from "react-icons/fa";
+import { HiPause } from "react-icons/hi";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 dayjs.extend(relativeTime);
 
@@ -42,7 +44,7 @@ export default function TicketListCard({
   const [quickTicketStatus, setQuickTicketStatus] = useState(null);
   const isQuickFormOpen = quickFormTicket?.navId === item.navId;
   const isQuickStatusOpen = quickTicketStatus?.navId === item.navId;
-
+  const { isViewer } = useCurrentUser();
   const updated = useEmployeeById(item.updatedBy);
   const { query } = useList();
   const { text } = parseQuery(query);
@@ -58,31 +60,82 @@ export default function TicketListCard({
     ).values(),
   );
   const { renderCheckbox, renderEdit, disabled } = controls || {};
-  const activeStatus = [14, 15, 16, 17];
+  const activeStatus = [15, 16, 17];
   const isCloseRequested = item.isCloseRequested;
+  const isPriorityRequested = item.priorityRequest;
+  const funcResponseRequested = item.funcResponse;
+  // let statusIcon;
+  // if (isCloseRequested) {
+  //   // 🔥 Replace the icon entirely with a red pulsing dot of the same size
+  //   statusIcon = (
+  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
+  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
+  //     </div>
+  //   );
+  // } else if (isPriorityRequested) {
+  //   statusIcon = (
+  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Priority">
+  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
+  //     </div>
+  //   );
+  // } else if (funcResponseRequested) {
+  //   statusIcon = (
+  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
+  //     </div>
+  //   );
+
   let statusIcon;
+if (item.reopenedBy) {
+  statusIcon = <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />;
+} else if (activeStatus.includes(item.statusId)) {
+  statusIcon = <GoIssueClosed className="status-icon status-closed" />;
+} else if (item.statusId === 14) {
+  statusIcon = <HiPause className="status-icon text-yellow-500" title="On Hold" />;
+} else {
+  statusIcon = <GoIssueOpened className="status-icon status-open" />;
+}
+
+// Add pulsing only if not viewer
+if (!isViewer) {
   if (isCloseRequested) {
-    // 🔥 Replace the icon entirely with a red pulsing dot of the same size
     statusIcon = (
-      <div
-        className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-        title="Close Requested by Assignee"
-      >
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
         <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
       </div>
     );
+  } else if (isPriorityRequested) {
+    statusIcon = (
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Priority">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
+      </div>
+    );
+  } else if (funcResponseRequested) {
+    statusIcon = (
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
+      </div>
+    );
+  }
   } else if (item.reopenedBy) {
     // If it has a ReopenedBy Guid, show the Reopen icon
     statusIcon = (
-      <GoIssueReopened
-        className="status-icon text-orange-500"
-        title="Reopened Ticket"
-      />
+      <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />
     );
   } else if (activeStatus.includes(item.statusId)) {
     // If it's closed/cancelled
     statusIcon = <GoIssueClosed className="status-icon status-closed" />;
+  } else if (item.statusId === 14) {
+    // 🟡 HOLD status
+    statusIcon = (
+      <HiPause className="status-icon text-yellow-500" title="On Hold" />
+    )
   } else {
     // If it's just a normal open ticket
     statusIcon = <GoIssueOpened className="status-icon status-open" />;
@@ -111,13 +164,21 @@ export default function TicketListCard({
   return (
     <>
       {/* <div className={`ticket-row ${focused ? "focused-row" : ""}`}> */}
+      {/* <div
+        key={item.id}
+        className={`ticket-row ${focused ? "focused-row" : ""}
+      ${item.isCloseRequested || item.IsCloseRequested ? "close-requested-row" : ""}
+      ${isPriorityRequested ? "priority-requested-row" : ""}
+      ${funcResponseRequested ? "response-requested-row" : ""}`}
+      > */}
+
       <div
-      key={item.id}
-        className={`ticket-row ${focused ? "focused-row" : ""} ${
-          item.isCloseRequested || item.IsCloseRequested
+        key={item.id}
+        className={`ticket-row ${focused ? "focused-row" : ""} ${!isViewer && (item.isCloseRequested || item.IsCloseRequested)
             ? "close-requested-row"
             : ""
-        }`}
+          } ${!isViewer && isPriorityRequested ? "priority-requested-row" : ""} ${!isViewer && funcResponseRequested ? "response-requested-row" : ""
+          }`}
       >
         {/* LEFT BLOCK: Main Information */}
         <div className="ticket-main">
@@ -192,7 +253,7 @@ export default function TicketListCard({
                   <span className="project-key">
                     {ProjectDetails.name.split(" ").length > 2
                       ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
-                        "..."
+                      "..."
                       : ProjectDetails.name}
                   </span>
                 </Tooltip>
@@ -207,24 +268,26 @@ export default function TicketListCard({
                 </Tooltip>
               </div>
             )}
-
-            <div className="ticket-repo-info">
-              {mainAssignee && <span>Owner: {mainAssignee.Assignee_Name}</span>}
-            </div>
-            {/* Assignees Avatars */}
-            <div className="ticket-assignees">
-              {uniqueAssignees.slice(0, 3).map((a) => (
-                <Tooltip key={a.Assignee_Id} title={a.Assignee_Name} arrow>
-                  <div className="avatar">{getInitials(a.Assignee_Name)}</div>
-                </Tooltip>
-              ))}
-              {uniqueAssignees.length > 3 && (
-                <div className="avatar avatar-more">
-                  +{item.multiAssignees.length - 3}
+            {!isViewer &&
+              <>
+                <div className="ticket-repo-info">
+                  {mainAssignee && <span>Owner: {mainAssignee.Assignee_Name}</span>}
                 </div>
-              )}
-            </div>
-
+                {/* Assignees Avatars */}
+                <div className="ticket-assignees">
+                  {uniqueAssignees.slice(0, 3).map((a) => (
+                    <Tooltip key={a.Assignee_Id} title={a.Assignee_Name} arrow>
+                      <div className="avatar">{getInitials(a.Assignee_Name)}</div>
+                    </Tooltip>
+                  ))}
+                  {uniqueAssignees.length > 3 && (
+                    <div className="avatar avatar-more">
+                      +{item.multiAssignees.length - 3}
+                    </div>
+                  )}
+                </div>
+              </>
+            }
             {/* Priority Label */}
             {priority && (
               <span
@@ -241,57 +304,57 @@ export default function TicketListCard({
             item.EndTime ||
             item.ConsumeTime ||
             item.Comment) && (
-            <div className="ticket-timesheet-info">
-              {/* working time */}
-              {item.StartTime && item.EndTime && (
-                <span className="timesheet-item">
-                  <FiClock className="due-icon" />
-                  Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                  {dayjs(item.EndTime).format("HH:mm")}
-                </span>
-              )}
-
-              {/* time taken */}
-              {item.ConsumeTime && (
-                <>
-                  <span className="meta-divider">•</span>
+              <div className="ticket-timesheet-info">
+                {/* working time */}
+                {item.StartTime && item.EndTime && (
                   <span className="timesheet-item">
-                    Time taken: {item.ConsumeTime} hr
+                    <FiClock className="due-icon" />
+                    Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                    {dayjs(item.EndTime).format("HH:mm")}
                   </span>
-                </>
-              )}
+                )}
 
-              {/* view cmnt */}
-              {item.Comment && (
-                <>
-                  <span className="meta-divider">•</span>
-                  <span
-                    className="comment-toggle"
-                    onClick={(e) => {
-                      // 👈 FIX: Add 'e' here
-                      e.stopPropagation();
-                      e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
-                      setIsCommentExpanded(!isCommentExpanded);
-                    }}
-                  >
-                    {isCommentExpanded ? "Hide Comment" : "View Comment"}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
+                {/* time taken */}
+                {item.ConsumeTime && (
+                  <>
+                    <span className="meta-divider">•</span>
+                    <span className="timesheet-item">
+                      Time taken: {item.ConsumeTime} hr
+                    </span>
+                  </>
+                )}
+
+                {/* view cmnt */}
+                {item.Comment && (
+                  <>
+                    <span className="meta-divider">•</span>
+                    <span
+                      className="comment-toggle"
+                      onClick={(e) => {
+                        // 👈 FIX: Add 'e' here
+                        e.stopPropagation();
+                        e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                        setIsCommentExpanded(!isCommentExpanded);
+                      }}
+                    >
+                      {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
           {item.Comment && isCommentExpanded && (
             <div className="comment-content">{item.Comment} </div>
           )}
         </div>
         {/* MIDDLE BLOCK: Due Date */}
 
-        <div className="flex items-end gap-3 justify-end">
+        <div className="flex  items-end gap-2">
           <div className="flex-col">
             {config?.enablequickStatus && (
               <button
-                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center flex-shrink-0"
-                title="Quick Comment"
+                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center mb-2"
+                title="Quick Status"
                 onClick={(e) => {
                   e.stopPropagation();
                   setQuickTicketStatus(item);
@@ -300,9 +363,11 @@ export default function TicketListCard({
                 <FaHistory className="text-base" />
               </button>
             )}
+
+            {/* Quick Comment button */}
             {config?.enablequickComment && (
               <button
-                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center flex-shrink-0"
+                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
                 title="Quick Comment"
                 onClick={(e) => {
                   e.stopPropagation();
@@ -313,19 +378,21 @@ export default function TicketListCard({
               </button>
             )}
           </div>
-          <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
-            <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
-              {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
-            </div>
-            {dueStatus && (
-              <div
-                className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
-              >
-                {dueStatus.icon}
-                <span>{dueStatus.text}</span>
+          {!isViewer &&
+            <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
+              <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+                {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
               </div>
-            )}
-          </div>
+              {dueStatus && (
+                <div
+                  className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
+                >
+                  {dueStatus.icon}
+                  <span>{dueStatus.text}</span>
+                </div>
+              )}
+            </div>
+          }
           {/* <div>
             <div className="ticket-due due-date-row">
               <div className="due-date">
@@ -357,29 +424,33 @@ export default function TicketListCard({
         {/* RIGHT BLOCK: Progress & Actions */}
         <div className="ticket-progress">
           <div className="battery-header">
-            <BatteryCompletionIndicator
-              // options={{
-              //   step: 10,
-              //   max: 100,
-              //   height: "10px",
-              //   width: "5px",
-              //   fontSize: "10px"
-              // }}
-              value={item.overallPercentage ?? 0}
-            />
+            {!isViewer &&
+              <BatteryCompletionIndicator
+                // options={{
+                //   step: 10,
+                //   max: 100,
+                //   height: "10px",
+                //   width: "5px",
+                //   fontSize: "10px"
+                // }}
+                value={item.overallPercentage ?? 0}
+              />
+            }
             <div className="edit-icon">{renderEdit && renderEdit()}</div>
           </div>
-          <div className="update-info">
-            <div className="ticket-assignees">
-              <Tooltip key={updated?.id} title={updated?.name} arrow>
-                <div className="avatar">{getInitials(updated?.name)} </div>
-              </Tooltip>
+          {!isViewer &&
+            <div className="update-info">
+              <div className="ticket-assignees">
+                <Tooltip key={updated?.id} title={updated?.name} arrow>
+                  <div className="avatar">{getInitials(updated?.name)} </div>
+                </Tooltip>
+              </div>
+              <p>
+                {" "}
+                Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
+              </p>
             </div>
-            <p>
-              {" "}
-              Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
-            </p>
-          </div>
+          }
         </div>
       </div>
       {(isQuickFormOpen || isQuickStatusOpen) && (

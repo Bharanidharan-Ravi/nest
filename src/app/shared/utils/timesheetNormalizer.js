@@ -16,7 +16,7 @@ export const createTimesheetNormalizer = (Timedata) => {
     Comment: Timedata.Comment,
     EndTime: Timedata.EndTime,
     statusId: Timedata.Status,
-    ConsumeTime: Timedata.ConsumeTime,
+    ConsumeTime: Timedata.ConsumeTime ?? (Timedata.ThreadId===null ? 0.1:0),
     dueDate: Timedata.Due_Date,
     ticketKey: Timedata.TicketNo,
     repoId: Timedata.RepoId,
@@ -33,5 +33,11 @@ export const createTimesheetNormalizer = (Timedata) => {
     overallPercentage: Timedata.OverallPercentage,
     total: Timedata.total,
     label: Timedata.Labels_JSON ? JSON.parse(Timedata.Labels_JSON) : [],
+    isDirectUpdate:Timedata.ThreadId===null,
+    sourceType:Timedata.sourceType,
+    CurrentStatusSummary:Timedata.CurrentStatusSummary,
+    displayComment:Timedata.ConsumeTime
+    ?Timedata.Comment
+    :`Status ${Timedata.ThreadStatusName||'Changed'}`
   };
 };

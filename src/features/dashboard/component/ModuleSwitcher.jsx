@@ -9,7 +9,9 @@ export default function ModuleSwitcher({ modules }) {
   
   // 1. Read the active module from the URL
   const currentModule = searchParams.get("module");
-  // 🔥 FIX 2: The Enforcer
+console.log("searchParams :", searchParams.getAll("tickets_q"));
+
+  // ?? FIX 2: The Enforcer
   // If there is no module in the URL, instantly append the first module's ID 
   // (which is "tickets") and replace the history state so the back button still works.
   useEffect(() => {
@@ -20,7 +22,6 @@ export default function ModuleSwitcher({ modules }) {
 
   // 3. Render logic (Fallback to the first module instantly to prevent UI flickering)
   const activeModuleId = currentModule || modules[0]?.id;
-  
   const activeModule = modules.find((mod) => mod.id === activeModuleId) || modules[0];
 
   const handleTabSwitch = (moduleId) => {
@@ -28,15 +29,19 @@ export default function ModuleSwitcher({ modules }) {
   };
 
   return (
-    <div className="module-switcher-container">
+    <div className="module-switcher-container" style={{display:"flex", flexDirection: "column", height:"100%"}}>
       {/* Tab Navigation Area */}
       <div
         className="custom-module-tabs"
         style={{
+          position:"sticky",
+          top: 0,
+          zIndex:30,
+          // height:"50px",
           display: "flex",
           gap: "8px",
           padding: "10px 15px",
-          backgroundColor: "#f8f9fa", // Match your existing grey theme
+          backgroundColor: "#f8f9fa", 
           borderBottom: "1px solid #e0e0e0",
           borderRadius: "8px 8px 0 0",
         }}
@@ -47,7 +52,7 @@ export default function ModuleSwitcher({ modules }) {
             onClick={() => handleTabSwitch(module.id)}
             style={{
               padding: "6px 16px",
-              borderRadius: "20px",
+              borderRadius: "6px",
               border: "none",
               cursor: "pointer",
               fontWeight: "bold",
@@ -64,10 +69,10 @@ export default function ModuleSwitcher({ modules }) {
       </div>
 
       {/* Content Area */}
-      <div className="active-list-wrapper">
+      <div className="active-list-wrapper" style={{flex:1, minHeight:0}}>
         {activeModule && (
           <ListProvider
-            key={activeModule.id} // Key forces a re-render when switching tabs
+            key={activeModule.id} // Key forces a re-render when switching tabss
             config={activeModule.config}
             data={activeModule.data}
           >

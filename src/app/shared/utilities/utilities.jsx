@@ -187,7 +187,22 @@ export const extractTime = (dateTime) => {
   const date = new Date(dateTime);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 };
+export const sumHHMM=(...times)=>{
+  let totalMinutes=0;
+  for (const t of times){
+    if (!t||typeof t!=="string") continue;
+    const parts=t.split(":")
+    if(parts.length !==2)continue
 
+    const[h,m]=t.split(":").map(Number);
+    if (isNaN(h)||isNaN(m))continue
+    totalMinutes +=h*60+m; 
+  }
+  if(totalMinutes===0)return null;
+  const hh = String(Math.floor(totalMinutes / 60)).padStart(2, "0");
+  const mm = String(totalMinutes % 60).padStart(2, "0");
+  return `${hh}:${mm}`;
+};
 // utilities.js
 export const formatTimeHHMM = (dateTime) => {
   if (!dateTime) return "";

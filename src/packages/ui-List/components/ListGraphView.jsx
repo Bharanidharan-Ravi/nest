@@ -75,18 +75,17 @@ const getHashColor = (str) => {
 };
 // 🚀 CLEANED UP: All hardcoded values removed. Only handles basic case mismatch.
 const getSafeValue = (obj, key) => {
-  if (!obj || !key) return undefined;
+  if (!obj || key===undefined || key===null) return undefined;
   if (obj[key] !== undefined) return obj[key];
-
-  const camel = key.charAt(0).toLowerCase() + key.slice(1);
+  const keyStr=String(key)
+  const camel = keyStr?.charAt(0).toLowerCase() + keyStr?.slice(1);
   if (obj[camel] !== undefined) return obj[camel];
 
-  const pascal = key.charAt(0).toUpperCase() + key.slice(1);
+  const pascal = keyStr?.charAt(0).toUpperCase() + keyStr?.slice(1);
   if (obj[pascal] !== undefined) return obj[pascal];
 
   return undefined;
 };
-
 // --- MODERN 3D CYLINDER GRAPH ---
 const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
   const scrollRef = useRef(null);

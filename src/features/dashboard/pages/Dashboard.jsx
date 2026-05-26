@@ -25,9 +25,13 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
-import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config";
+import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config"; 
 import { ThreadFieldConfig } from "../../tickets/config/Thread.config";
+import TimesheetTree from "../component/TimesheetTree";
 
+
+
+// dashboard edited
 export default function Dashboard() {
   const user = readUserFromSession();
   const currentUserId = user?.userId;
@@ -143,10 +147,14 @@ export default function Dashboard() {
   const LabelFilterOptions = useLabelOptions(true);
   const repoFilterOptions = useRepoOptions(true);
   const teamFilterOptions = useTeamOptions(true);
+console.log("LabelFilterOptions",LabelFilterOptions);
 
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
     ...TicketListConfig,
+        theme: {
+      stickyTop:50,
+    },
     defaultView: "card",
     syncUrl: true,
     moduleId: "dash_tickets",
@@ -170,6 +178,28 @@ export default function Dashboard() {
         options: repoFilterOptions,
         showCounts: true,
       },
+      {
+        key: "customBoolean",      
+        view: "Special Flags",    
+        showCounts: true,
+        options: [
+          { label: "All Flags", value: "" },
+          { label: "Close Requested", value: "isCloseRequested" },
+          { label: "Priority Request", value: "priorityRequest" },
+          { label: "Func Response", value: "funcResponse" },
+        ],
+        filterType: "custom",
+        allowMultiple: true,
+        customFilter: (item, selectedValues) => {
+          const values = Array.isArray(selectedValues)
+            ? selectedValues
+            : String(selectedValues).split(",").filter(Boolean);
+          if (values.length === 0) return true; // no filter applied
+
+          return values.some((field) => item[field] === true);
+        }
+      },
+
       {
         key: "assignedTo",
         view: "Assignee",
@@ -276,15 +306,28 @@ const dashboardTimesheetGraph = (parsedFilters) => {
             );
           },
       // graphColorKey: isAllEmployees ? null : "statusColor",
-      graphColorKey: null,
+      graphColorKey: (item)=>{
+        if(item.isDirectUpdate)return "#94a368";
+        if(item.threadStatusId===15||item.threadStatusId===16)
+          return "#ef4444"
+        return null
+      },
       
       // 2. Tooltip Customization (Only show employee name if looking at specific tickets)
       tooltipSecondaryLabelKey: isAllEmployees ? null : "employeeName",
+
+      tooltipFormatter:(item)=>{
+        if(item.isDirectUpdate){
+          return `Status changed ${item.threadStatusName}`
+        }
+        const h = Math.floor(item.ConsumeTime);
+        const m = Math.round((item.ConsumeTime % 1) * 60);
+        return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
+      },
       
       // 3. Status IDs Passed Down (No hardcoding in the graph!)
       terminalStatusKey: "threadStatusId",
       terminalStatusIds: [15,16],
-
       isDateAxis: true,
       minYValue: 8,
       yAxisStep: 2,
@@ -308,6 +351,8 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     enablePagination: timesheetsView !== "graph",
     allowViewSwitch: ["card", "graph"],
     graphConfig: dashboardTimesheetGraph,
+    Custommodule:()=><TimesheetTree/>,
+    // TimesheetTree:true,
     onEditClick: (item) => {
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
     },
@@ -344,7 +389,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         apiMode: "split",
         apiStartKey: "FromDate",
         apiEndKey: "ToDate",
-        apiDateFormat: "MM-DD-YYYY", // dayjs format string
+        apiDateFormat: "YYYY-MM-DD", // dayjs format string
       },
       {
         key: "assignedTo",
@@ -358,6 +403,37 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         normalizer: createTimesheetNormalizer,
         options: employeeFilterOptions,
         defaultValue: currentUserId,
+      },
+      {
+        key: "customBoolean",
+        view: "Special Flags",
+        showCounts: true,
+        options: [
+          { label: "All Flags", value: "allFlags" },
+          { label: "Close Requested", value: "isCloseRequested" },
+          { label: "Priority Request", value: "priorityRequest" },
+          { label: "Func Response", value: "funcResponse" },
+        ],
+        filterType: "custom",
+        allowMultiple: true,
+        customFilter: (item, selectedValues) => {
+          const values = Array.isArray(selectedValues)
+            ? selectedValues
+            : String(selectedValues)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean);
+      
+          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
+      
+          if (values.includes("allFlags")) {
+            return flagFields.some((field) => item[field] === true);
+          }
+      
+          if (values.length === 0) return true;
+      
+          return values.some((field) => item[field] === true);
+        },
       },
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj

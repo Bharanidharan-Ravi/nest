@@ -5,7 +5,7 @@ import TicketListCard from "../component/TicketListCard";
 import { FiMessageSquare } from "react-icons/fi";
 dayjs.extend(relativeTime);
 
-export const TicketListConfig = {
+export const TicketListConfig={
   defaultView: "card",
   pageSize: 20,
   moduleId: "tickets",
@@ -64,18 +64,41 @@ export const TicketListConfig = {
       field: "statusId",
       // Exclude OnHold(13), Closed(14), Cancelled(15), Inactive(16)
       // Anything NOT in this list will be treated as an Open/Active ticket
-      excludeValues: [14, 15, 16, 17],
+      excludeValues: [14, 15, 16, 17, 18],
     },
     {
       key: "closed",
       label: "Closed",
       field: "statusId",
       // Specifically include these IDs for the Closed tab
-      filterValue: [14, 15, 16, 17],
+      filterValue: [15, 16, 17],
+    },
+    {
+      key: "hold",
+      label: "Hold",
+      field: "statusId",
+      // Specifically include these IDs for the Closed tab
+      filterValue: [14],
+    },
+     {
+      key: "queue",
+      label: "In Queue",
+      field: "statusId",
+      filterValue: [18],
     },
   ],
 
   cardRenderer: (item, controls, config) => (
     <TicketListCard item={item} controls={controls} config={config} />
   ),
+  customSortFn:(a,b)=>{
+    if(a.isCloseRequested!=b.isCloseRequested)
+      return a.isCloseRequested ? -1:1;
+    if(a.priorityRequest!=b.priorityRequest)
+      return a.priorityRequest ? -1:1;
+    if(a.funcResponse!=b.funcResponse)
+      return a.funcResponse ? -1:1;
+    return new Date(b.updatedAt)-new Date(a.updatedAt)
+  }
+
 };

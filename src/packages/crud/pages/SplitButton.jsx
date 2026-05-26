@@ -17,9 +17,11 @@ const SplitButton = ({ action, formData, handleSubmit, isPending }) => {
         return "bg-amber-800 hover:bg-amber-600 text-white border-transparent";
       case "primary":
         return "bg-indigo-800 hover:bg-indigo-700 text-white border-transparent";
+      case "clientCommit":
+        return "bg-blue-800 hover:bg-blue-700 text-white border-transparent";
       default:
         // A softer, more elegant dark slate instead of harsh gray-800
-        return "bg-slate-700 hover:bg-slate-800 text-white border-transparent"; 
+        return "bg-slate-700 hover:bg-slate-800 text-white border-transparent";
     }
   };
 
@@ -75,11 +77,10 @@ const SplitButton = ({ action, formData, handleSubmit, isPending }) => {
                     setSelectedIndex(idx);
                     setIsOpen(false);
                   }}
-                  className={`block w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-150 ${
-                    selectedIndex === idx 
-                      ? "bg-slate-50 text-slate-900 border-l-2 border-indigo-500" 
+                  className={`block w-full text-left px-4 py-2.5 text-[13px] transition-colors duration-150 ${selectedIndex === idx
+                      ? "bg-slate-50 text-slate-900 border-l-2 border-indigo-500"
                       : "text-slate-600 hover:bg-slate-50 border-l-2 border-transparent hover:text-slate-900"
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start">
                     {opt.icon && (

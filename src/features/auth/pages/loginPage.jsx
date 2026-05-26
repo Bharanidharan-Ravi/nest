@@ -18,6 +18,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useAppStore } from "../../../core/state/useAppStore";
 import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
+import { ROLES } from "../../../core/auth/permissions";
+import { jwtDecode } from "jwt-decode";
 
 const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
@@ -66,11 +68,22 @@ const LoginPage = () => {
   };
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-    onSuccess: (data) => {      
-      loginStore(data); // store token
-      navigate("/dashboard?module=dash_tickets");
+       onSuccess: (data) => {
+      loginStore(data);
+      const encoded =jwtDecode(data);
+      const role =  encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+      if(Number(role) === ROLES.VIEWER){
+        navigate("/tickets");
+      }else{
+        navigate("/dashboard?module=dash_tickets");
+      }
     },
   });
+  //   onSuccess: (data) => {      
+  //     loginStore(data); // store token
+  //     navigate("/dashboard?module=dash_tickets");
+  //   },
+  // });
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -237,7 +237,7 @@ import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import TicketListCard from "../component/TicketListCard";
-import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
+import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import {
   useEmployeeOptions,
   useLabelOptions,
@@ -245,13 +245,14 @@ import {
   useRepoOptions,
   useTeamOptions,
 } from "../../../core/master/selectors/selectors";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
   // const { data: Master } = useMasterData();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
-
+  const { isViewer } = useCurrentUser();
   const { data } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
@@ -261,6 +262,7 @@ export default function TicketsPage() {
   const employeeFilterOptions = useEmployeeOptions(true);
   const repoFilterOptions = useRepoOptions(true);
   const teamFilterOptions = useTeamOptions(true);
+  const currentUser = readUserFromSession();
 
   const editRouteKey = projId
     ? ROUTE_KEYS.PROJ_TICKET_EDIT
@@ -279,55 +281,28 @@ export default function TicketsPage() {
   //   (item) => navigate(`${location.pathname}/${item.id}`),
   //   (item) => goTo(editRouteKey, { ticketId: item.id, repoId, projId }),
   // );
+
   const listConfigWithNav = {
     ...TicketListConfig,
+    enablequickComment: isViewer ? false : true,
+    enablequickStatus: isViewer ? false : true,
     filters: [
       ...(!repoId
         ? [
-            {
-              key: "repoId",
-              view: "Repo",
-              showCounts: true,
-              options: repoFilterOptions,
-            },
-          ]
+          {
+            key: "repoId",
+            view: "Repo",
+            showCounts: true,
+            allowedRoles: [1, 2],
+            options: repoFilterOptions,
+          },
+        ]
         : []),
-      // {
-      //   key: "assginedTo", // Ensure this matches the typo in your raw data
-      //   view: "Assignee",
-      //   options: employeeFilterOptions,
-      //   filterType: "custom", // 🔥 CRITICAL
-      //   showCounts: true,
-      //   customFilter: (item, selectedValue) => {
-      //     if (!selectedValue) return true;
-      //     const safeSelected = String(selectedValue).toLowerCase();
 
-      //     // Check primary assignee (handling null safely)
-      //     if (
-      //       item.assignedTo &&
-      //       String(item.assignedTo).toLowerCase() === safeSelected
-      //     ) {
-      //       return true;
-      //     }
-
-      //     // Check the multiAssignees array
-      //     if (Array.isArray(item.multiAssignees)) {
-      //       return item.multiAssignees.some((assignee) => {
-      //         const matchName =
-      //           assignee.Assignee_Name &&
-      //           String(assignee.Assignee_Name).toLowerCase() === safeSelected;
-      //         const matchId =
-      //           assignee.Assignee_Id &&
-      //           String(assignee.Assignee_Id).toLowerCase() === safeSelected;
-      //         return matchName || matchId;
-      //       });
-      //     }
-      //     return false;
-      //   },
-      // },
-       {
+      {
         key: "assginedTo",
         view: "owner",
+        allowedRoles: [1, 2],
         options: useEmployeeOptions(true, "Owner"),
         filterType: "custom",
         showCounts: true,
@@ -340,14 +315,15 @@ export default function TicketsPage() {
           ) {
             return true;
           }
-        
+
           return false;
         },
       },
       {
         key: "multiAssignees",
         view: "Assignee",
-        options: useEmployeeOptions(true, "Assignee"), 
+        allowedRoles: [1, 2],
+        options: useEmployeeOptions(true, "Assignee"),
         filterType: "custom",
         showCounts: true,
         customFilter: (item, selectedValue) => {
@@ -369,14 +345,47 @@ export default function TicketsPage() {
         },
       },
       {
+        key: "customBoolean",
+        view: "Special Flags",
+        showCounts: true,
+        options: [
+          { label: "All Flags", value: "allFlags" },
+          { label: "Close Requested", value: "isCloseRequested" },
+          { label: "Priority Request", value: "priorityRequest" },
+          { label: "Func Response", value: "funcResponse" },
+        ],
+        filterType: "custom",
+        allowMultiple: true,
+        customFilter: (item, selectedValues) => {
+          const values = Array.isArray(selectedValues)
+            ? selectedValues
+            : String(selectedValues)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean);
+      
+          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
+      
+          if (values.includes("allFlags")) {
+            return flagFields.some((field) => item[field] === true);
+          }
+      
+          if (values.length === 0) return true;
+      
+          return values.some((field) => item[field] === true);
+        },
+      },
+      {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
+        allowedRoles: [1, 2, 3],
         showCounts: true,
         options: projectFilterOptions,
       },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Label",
+        allowedRoles: [1, 2, 3],
         showCounts: true,
         options: LabelFilterOptions,
         filterType: "array",
@@ -386,6 +395,7 @@ export default function TicketsPage() {
       {
         key: "teamId",
         view: "Team",
+        allowedRoles: [1, 2],
         showCounts: true,
         options: teamFilterOptions,
         filterType: "custom",
@@ -437,7 +447,7 @@ export default function TicketsPage() {
 
       {/* <div className="tickets-container container"> */}
       <div className="w-full pb-10">
-        <ListProvider config={listConfigWithNav} data={TicketList}>
+        <ListProvider config={listConfigWithNav} data={TicketList} userRole={currentUser?.role}>
           <ListLayout />
         </ListProvider>
       </div>

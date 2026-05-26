@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import FloatingArrowScroll from "../../../app/shared/Component/FloatingArrowScroll";
 import AssigneesWidget from "../component/AssigneesWidget";
@@ -21,7 +21,7 @@ const TicketDetailPage = () => {
   // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
-
+  const { isViewer } = useCurrentUser();
   const [editingItem, setEditingItem] = useState(null);
   const [isStuck, setIsStuck] = useState(false);
   const sentinelRef = useRef(null);
@@ -29,8 +29,14 @@ const TicketDetailPage = () => {
   const [selectedWorkStream, setSelectedWorkStream] = useState(null);
   const [selectedHandoffId, setSelectedHandoffId] = useState(null);
 
+  //DDD
+  const [supportModalOpen, setSupportMOdalOpen] = useState(false);
+  const [pendingSubmit, setPendingSubmit] = useState(null);
+
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
+  console.log("ThreadsList", ThreadsList);
+
   const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
   const TeamMaster = useTeamMaster();
@@ -100,11 +106,14 @@ const TicketDetailPage = () => {
     (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
   const evaluatedStream = selectedWorkStream || myCurrentStream;
 
-  const isOwner = parentTicket?.Assignee_Id === user?.userId;
+  // const isOwner = parentTicket?.Assignee_Id === user?.userId;
+  const isOwner = isViewer
+    ? parentTicket?.CreatedBy === user?.userId
+    : parentTicket?.Assignee_Id === user?.userId;
   let userRole = "Standard";
   const isWorkCompleted = evaluatedStream
     ? Number(evaluatedStream.CompletionPct) === 100 ||
-      [14, 15, 16].includes(evaluatedStream.StreamStatus)
+    [14, 15, 16].includes(evaluatedStream.StreamStatus)
     : false;
 
   if (isOwner && !selectedWorkStream) userRole = "Owner";
@@ -115,13 +124,25 @@ const TicketDetailPage = () => {
       userRole = "Tester";
   }
 
+  const isAssignee = myAssignments.length > 0;
+
   const formContext = {
     userRole,
     isOwner,
+    isViewer,
     currentUser: user,
     activeWorkStream: evaluatedStream,
     selectedHandoffId: selectedHandoffId,
     lastValidStreamId: lastValidStream?.StreamId || null,
+
+    onCommitIntercept: (submitFn) => {
+      if (!isAssignee) {
+        setPendingSubmit(() => submitFn);
+        setSupportMOdalOpen(true);
+      } else {
+        submitFn(false);
+      }
+    },
   };
 
   const mainAssignee = assigneesJsonString.find(
@@ -239,6 +260,7 @@ const TicketDetailPage = () => {
         goTo={goTo}
         isOwner={isOwner}
         progressLogs={progressLogs}
+        isViewer={isViewer}
       />
 
       <div className="flex flex-col gap-8 mt-6 px-4 sm:px-6 relative">
@@ -246,7 +268,7 @@ const TicketDetailPage = () => {
           {/* ========================================= */}
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
-          <div className="w-full lg:w-3/4 flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-6">
             <TicketThreads
               ticketId={ticketId}
               threadsData={ThreadsList?.ThreadsList || []}
@@ -267,23 +289,68 @@ const TicketDetailPage = () => {
           {/* ========================================= */}
           {/* RIGHT COLUMN: Sticky Sidebar              */}
           {/* ========================================= */}
-          <div className="w-full lg:w-1/4">
-            <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
-              <AssigneesWidget
-                workStreams={assigneesJsonString}
-                data={parentTicket}
-                ticketId={ticketId}
-                formContext={formContext}
-                selectedWorkStream={selectedWorkStream}
-                onSelectWorkStream={setSelectedWorkStream}
-                selectedHandoffId={selectedHandoffId}
-                onSelectHandoff={setSelectedHandoffId}
-              />
+          {!isViewer &&
+            <div className="w-full lg:w-1/4">
+              <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
+                <AssigneesWidget
+                  workStreams={assigneesJsonString}
+                  data={parentTicket}
+                  ticketId={ticketId}
+                  formContext={formContext}
+                  selectedWorkStream={selectedWorkStream}
+                  onSelectWorkStream={setSelectedWorkStream}
+                  selectedHandoffId={selectedHandoffId}
+                  onSelectHandoff={setSelectedHandoffId}
+                />
+              </div>
             </div>
-          </div>
+          }
         </div>
       </div>
 
+      {supportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-[360px] flex flex-col gap-4 border border-gray-100">
+            <div className="flex flex-col gap-1.5">
+              <h3 className="text-base font-bold text-gray-900">
+                How would you like to commit ?
+              </h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                You are not assigned to this ticket. You can commit as a {""}
+                <strong className="text-blue-600">Support</strong> contributor, or proceed normally.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 mt-1">
+              <button
+                onClick={() => {
+                  pendingSubmit?.(true);
+                  setSupportMOdalOpen(false);
+                  setPendingSubmit(null);
+                }}
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold transition-colors">
+                Commit as Support
+              </button>
+              <button
+                onClick={() => {
+                  pendingSubmit?.(false);
+                  setSupportMOdalOpen(false);
+                  setPendingSubmit(null);
+                }}
+                className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-md text-sm font-semibold transition-colors">
+                Commit as Assignee
+              </button>
+              <button
+                onClick={() => {
+                  setSupportMOdalOpen(false);
+                  setPendingSubmit(null);
+                }}
+                className="w-full py-2 text-sm text-red-400 hover:text-gray-600 transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div id="bottomSection"></div>
       <FloatingArrowScroll targetId="bottomSection" />
     </div>

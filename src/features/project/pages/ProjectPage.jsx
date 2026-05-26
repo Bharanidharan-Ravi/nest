@@ -13,7 +13,7 @@ import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { useProjectData } from "../hooks/useProjectData";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useEmployeeOptions, useRepoOptions } from "../../../core/master/selectors/selectors";
 
 const ProjectPage = () => {
@@ -22,6 +22,7 @@ const ProjectPage = () => {
   const { data: projects } = useProjectData(repoId);
   const { goTo } = useSmartNavigation();
   const user = readUserFromSession();
+  const {isViewer} = useCurrentUser();
   const allowedUsers = ["bharanidharan", "dinesh", "poovannan"];
   const userName = user?.name?.toLowerCase() || "";
   const employeeFilterOptions = useEmployeeOptions(true);
@@ -51,7 +52,6 @@ const ProjectPage = () => {
     UpdatedAt: proj.UpdatedAt,
     UpdatedBy: proj.UpdatedBy,
   });
-
   const repos = rawList?.map(normalizeProj) || [];
 
   // Determine create route key based on context (inside repo vs standalone)
@@ -64,12 +64,13 @@ const ProjectPage = () => {
   //   : ROUTE_KEYS.PROJ_DETAIL;
 
   const listConfigWithNav = {
-    ...ProjUIConfig,
-    filters: [
+    ...ProjUIConfig ,
+    enableEdit:isViewer ? false: true
+,    filters: [
       ...(!repoId
-        ? [{ key: "repoId", view: "Repo", options: repoFilterOptions }]
+        ? [{ key: "repoId", view: "Repo", options: repoFilterOptions, allowedRoles:[1,2] }]
         : []),
-      { key: "owner", view: "Emp", options: employeeFilterOptions },
+      { key: "owner", view: "Emp", options: employeeFilterOptions, allowedRoles:[1,2] },
     ],
     onSelectionChange: (item, isChecked) => {
       console.log(

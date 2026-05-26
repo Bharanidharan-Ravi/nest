@@ -11,14 +11,14 @@ import ProjectCard from "../components/ProjectCard";
 // Activate the relative time plugin so we get "2 hours ago", "a month ago", etc.
 dayjs.extend(relativeTime);
 
-export const ProjUIConfig = {
+export const ProjUIConfig ={
   defaultView: "card",
   pageSize: 10,
   infinite: true,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,
-  enableSelection: true,
+  enableSelection: false,
   enableEdit: true,
   // allowViewSwitch: true,
   filters: [

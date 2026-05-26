@@ -85,10 +85,11 @@ export const useProjectOptions = (includeAll = false) =>
     prependOption: includeAll ? { label: "All Projects",     value: "" } : null,
   });
 
-export const useLabelOptions = (includeAll = false) =>
+export const useLabelOptions = (includeAll = false) => 
   useMasterOptions({
     masterKey:     "label",
     valueShape:    "simple",
+    filterFn:      (e) => e.isActive,
     prependOption: includeAll ? { label: "All Labels",       value: "" } : null,
   });
 

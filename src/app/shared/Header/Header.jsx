@@ -5,7 +5,7 @@ import "./Header.css";
 import { Breadcrumbs } from "../../../core/navigation/Breadcrumbs";
 import workglowlogo from "../../../assets/WORKGLOWLOGO.png";
 import { logoutUser } from "../../../core/auth/authUtils";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useRef } from "react";
 import { useEffect } from "react";
 
@@ -15,7 +15,8 @@ import { useEffect } from "react";
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
   const user = readUserFromSession();
-
+  
+  const {isViewer} =  useCurrentUser();
   const location = useLocation();
 
   const dropdownRef = useRef(null);
@@ -33,11 +34,15 @@ const Header = ({ toggleMobileMenu }) => {
 
   };
 
-  const handleLogoClick = () => {
-    if (location.pathname !== "/dashboard") {
+    const handleLogoClick = () => {
+    if(location.pathname !== "/dashboard" && isViewer){
+      navigate("/tickets");
+    }
+    else if (location.pathname !== "/dashboard") {
       navigate("/dashboard");
     }
   };
+
   const handleTicket = () => {
     if (location.pathname !== "/tickets") {
       navigate("/tickets");
@@ -88,6 +93,7 @@ const Header = ({ toggleMobileMenu }) => {
         </div>
       </div>
 
+{!isViewer && 
       <div>
         <div style={{ display: "flex", gap: "10px" }}>
           <button
@@ -105,7 +111,7 @@ const Header = ({ toggleMobileMenu }) => {
           </button>
         </div>
       </div>
-
+}
       {/* Right Side: Breadcrumbs & User Profile */}
       <div className="flex items-center gap-4">
         <Breadcrumbs />

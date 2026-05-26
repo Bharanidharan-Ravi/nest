@@ -124,10 +124,13 @@ const TicketThreads = ({
         assignees: finalAssignees,
         HandsOffId: thread.HandsOffId,
         CoContributors: parsedCoContributors,
+        IsSupport:thread.IsSupport,
+        ToClient: thread.toClient,
+        team:thread.team,
       };
     });
   }, [threadsData, assigneesJsonString]);
-  
+
   const filteredThreads = React.useMemo(() => {
     if (!selectedWorkStream && !selectedHandoffId) return rawThreads;
 
@@ -190,7 +193,7 @@ const TicketThreads = ({
 
   // 🔥 3. WEAVE THREADS & HISTORY CHRONOLOGICALLY + ADD "REPLY TO" BADGES
   const enrichedTimeline = React.useMemo(() => {
-    const combinedTimeline = [];
+    const combinedTimeline = []; ``
 
     // Add Chat Threads
     filteredThreads.forEach((thread) => {
@@ -202,19 +205,20 @@ const TicketThreads = ({
     });
 
     // Add History Events
-    (historyData || []).forEach((h) => {
-      if (h.EventType === "TICKET_CREATED") return; // Optional skip
-      combinedTimeline.push({
-        isTimelineEvent: true,
-        id: `history-${h.Id}`,
-        eventType: h.EventType,
-        summary: h.Summary,
-        actorName: h.ActorName,
-        createdAt: h.CreatedAt,
-        sortTime: new Date(h.CreatedAt).getTime(),
+    if (!formContext.isViewer) {
+      (historyData || []).forEach((h) => {
+        if (h.EventType === "TICKET_CREATED") return; // Optional skip
+        combinedTimeline.push({
+          isTimelineEvent: true,
+          id: `history-${h.Id}`,
+          eventType: h.EventType,
+          summary: h.Summary,
+          actorName: h.ActorName,
+          createdAt: h.CreatedAt,
+          sortTime: new Date(h.CreatedAt).getTime(),
+        });
       });
-    });
-
+    }
     // Sort Chronologically
     combinedTimeline.sort((a, b) => a.sortTime - b.sortTime);
 
@@ -245,11 +249,13 @@ const TicketThreads = ({
 
     const currentTopCount = INITIAL_TOP + expandCount;
     const remainingHidden = TOTAL - currentTopCount - INITIAL_BOTTOM;
-
+console.log("topPart",currentTopCount,remainingHidden,TOTAL);
     if (remainingHidden <= 0) return enrichedTimeline;
 
     const topPart = enrichedTimeline.slice(0, currentTopCount);
     const bottomPart = enrichedTimeline.slice(TOTAL - INITIAL_BOTTOM);
+    console.log("topPart",topPart,bottomPart);
+    
 
     return [
       ...topPart,
@@ -268,6 +274,8 @@ const TicketThreads = ({
     pageSize: 9999,
     infinite: false,
     cardRenderer: (item) => {
+      console.log("itemtererey454", item);
+
       // 1. Collapse Marker
       if (item.isCollapsedMarker) {
         return (
@@ -289,6 +297,7 @@ const TicketThreads = ({
 
       // 🔥 2. SQL History Event Render
       if (item.isTimelineEvent) {
+        if(formContext.isViewer) return null;
         let EventIcon = FaHistory;
         if (item.eventType === "WORKSTREAM_CREATED") EventIcon = FaArrowRight;
         if (
@@ -337,7 +346,7 @@ const TicketThreads = ({
               invalidateKeys: queryKeys.ticket.thread(ticketId),
               api: `thread/${editingItem?.id}`,
             }}
-            context={{ isEdit: true, editingItem, ...formContext }}
+            context={{ isEdit: true, parentTicket, editingItem, ...formContext }}
             module="Thread"
             onCancel={() => setEditingItem(null)}
             onSuccessCallback={() => setEditingItem(null)}
@@ -351,6 +360,7 @@ const TicketThreads = ({
           item={item}
           currentUser={currentUser?.name}
           onEdit={() => setEditingItem(item)}
+          formContext={formContext}
         />
       );
     },
@@ -360,11 +370,13 @@ const TicketThreads = ({
 
   return (
     <div className="w-full flex flex-col gap-6">
-      <div className="w-full">
+      <div className="relative pl-0">
+      <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-gray-200 z-0"/>
         <ListProvider config={listConfig} data={finalTimeline}>
           <ListCardView />
         </ListProvider>
       </div>
+
 
       {/* Reply / Reopen Form */}
       {!editingItem && (
@@ -377,7 +389,7 @@ const TicketThreads = ({
               fields: ThreadFieldConfig(ticketId),
             }}
             // Merge formContext with the isClosed flag for your config.actions
-            context={{ ...formContext, isClosed: isTerminalState, isQuickFormOpen: null, isQuickStatusOpen: null }}
+            context={{ ...formContext, isClosed: isTerminalState, parentTicket, isQuickFormOpen: null, isQuickStatusOpen: null }}
             module="Ticket"
           />
         </div>
@@ -387,3 +399,4 @@ const TicketThreads = ({
 };
 
 export default TicketThreads;
+

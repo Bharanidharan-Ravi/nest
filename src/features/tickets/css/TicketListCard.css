@@ -26,6 +26,30 @@
   box-shadow: 0 6px 16px rgba(239, 68, 68, 0.15) !important;
 }
 
+.priority-requested-row {
+  border-left: 4px solid #f97316 !important; 
+  background-color: #fff7ed !important;      
+  box-shadow: 0 4px 12px rgba(249, 115, 22, 0.1) !important; 
+  transition: all 0.2s ease-in-out;
+}
+
+.priority-requested-row:hover {
+  background-color: #ffedd5 !important; 
+  box-shadow: 0 6px 16px rgba(249, 115, 22, 0.15) !important;
+}
+
+.response-requested-row {
+  border-left: 4px solid #9b4dca !important; 
+  background-color: #f3e8ff !important;      
+  box-shadow: 0 4px 12px rgba(155, 77, 202, 0.1) !important; 
+  transition: all 0.2s ease-in-out;
+}
+
+.response-requested-row:hover {
+  background-color: #e1d4f8 !important;  
+  box-shadow: 0 6px 16px rgba(155, 77, 202, 0.15) !important;
+}
+
 /* Optional: Add a little pulsating dot next to the title to really grab attention */
 .close-request-indicator {
   display: inline-block;

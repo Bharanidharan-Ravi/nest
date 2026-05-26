@@ -47,7 +47,7 @@ export const ROUTE_ROLES = {
   TICKET_DETAIL:    ALL,
 
   // ── Projects inside a repo (all roles) ──────────────────────────────
-  REPO_PROJ_LIST:   ALL,
+  REPO_PROJ_LIST:   ADMIN_MANAGER,
   REPO_PROJ_CREATE: ALL,
 
   // ── Standalone projects (all roles) ─────────────────────────────────

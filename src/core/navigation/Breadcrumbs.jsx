@@ -5,11 +5,13 @@ import { queryKeys } from "../query/queryKeys";
 import { ROUTE_KEYS } from "../routing/paths";
 import { useMasterData } from "../master/masterCall/useMasterData";
 import { useProjectById, useRepoById } from "../master/selectors/selectors";
+import { useCurrentUser } from "../auth/useCurrentUser";
 
 export const Breadcrumbs = () => {
   const { getBreadcrumbs } = useSmartNavigation();
   const { repoId, ticketId, projId } = useParams();
   const queryClient = useQueryClient();
+  const {isViewer } = useCurrentUser(); 
   const { data } = useMasterData();
   const repodata = useRepoById(repoId); // 👈 This is a hook, but it's safe to call here because it's not conditional. It will always run when the component renders, and it will read from the cache without causing a re-render
   const ProjectKey = useProjectById(projId);
@@ -43,7 +45,11 @@ export const Breadcrumbs = () => {
     }
   };
 
-  const breadcrumbs = getBreadcrumbs(titleResolver);
+  // const breadcrumbs = getBreadcrumbs(titleResolver);
+   const breadcrumbs = getBreadcrumbs(titleResolver).filter(crumb=>{
+    return !(crumb.key ===ROUTE_KEYS.DASHBOARD && isViewer)
+  });
+
 
   return (
     <nav

@@ -5,12 +5,13 @@ import { queryKeys } from "../../../core/query/queryKeys";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMemo } from "react";
 import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 const TicketCreatePage = () => {
   const params = useParams();
   const { data: TicketWrapper } = useTicketMaster({
     ticketId: params.ticketId,
   });
-
+  const { isViewer } = useCurrentUser();
   const isEdit = !!params.ticketId;
 
   // const normalizeTicket = (ticket) => ({
@@ -48,6 +49,7 @@ const TicketCreatePage = () => {
     { label: "Active", value: { id: 1, name: "Active" } },
     { label: "InActive", value: { id: 17, name: "InActive" } },
     { label: "Hold", value: { id: 14, name: "Hold" } },
+    { label: "InQueue", value: { id: 18, name: "InQueue" } },
   ];
 
   // 2. Define the Status field that only appears during editing
@@ -59,23 +61,19 @@ const TicketCreatePage = () => {
     apiKey: "Status",
     options: statusOptions,
     required: true,
-    initValueResolver: ({context}) => {
-      
-      // 1. If creating, default to Active
+    initValueResolver: ({ context }) => {
       if (!context.isEdit || !context.entityData) {
         return statusOptions[0]; // Returns the whole { label, value: { id, name } } object
       }
-
       const apiStatus = context.entityData.statusId; // e.g., "Active" or 1
-
-      // 2. Find the matching option based on either the ID or the Label
       const matchedOption = statusOptions.find(
-        (opt) => opt.value.id === apiStatus || opt.label === apiStatus,
+        (opt) => opt.value.id === apiStatus
       );
-
-      // 3. Return the full object so MUI recognizes it
       return matchedOption || statusOptions[0];
     },
+    visibleWhen: (formData, context) => {
+      return (!context?.isViewer);
+    }
   };
 
   const dynamicConfig = {
@@ -97,7 +95,7 @@ const TicketCreatePage = () => {
         mode={isEdit ? "Update" : "Create"}
         config={dynamicConfig}
         module="Ticket"
-        context={{ params, isEdit, entityData }}
+        context={{ params, isEdit, entityData, isViewer }}
       />
     </div>
   );

@@ -1,7 +1,8 @@
 import { HtmlRenderer } from "../../../../app/shared/utilities/utilities";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { FaEdit } from "react-icons/fa";
+import { FaEdit, FaRegHandshake } from "react-icons/fa";
+import { readUserFromSession } from "../../../../core/auth/useCurrentUser";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -21,10 +22,18 @@ function formatDateRange(fromTime, toTime) {
 }
 
 // 👉 Accept the new onEdit and currentUser props!
-const ThreadListCard = ({ item, onEdit, currentUser }) => {  
+const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
   dayjs.extend(relativeTime);
+  console.log("formContext", formContext);
+  console.log("item 2221212", item);
+
   // Check if this comment was made by the logged-in user
+  // const isMe = item.CreatedBy === currentUser;
+
   const isMe = item.CreatedBy === currentUser;
+  const user = readUserFromSession();
+
+
   // 🔥 2. Check if the thread is less than or equal to 24 hours old
   const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
 
@@ -32,6 +41,14 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
   const canEdit = isMe && isWithin24Hours;
   const renderCoContributors = (coContributors) => {
     if (!coContributors || coContributors.length === 0) return null;
+
+    const isSelfSupport = coContributors.some(
+      (c) => c.id === currentUser || c.name === item.CreatedBy
+    );
+
+    const othersOnly = coContributors.filter(
+      (c) => c.id !== currentUser && c.name !== item.CreatedBy
+    );
 
     const MAX_VISIBLE = 2; // Change this to 3 if you want to show more names
     const total = coContributors.length;
@@ -41,18 +58,28 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
       .slice(0, MAX_VISIBLE)
       .map((c) => c.name)
       .join(", ");
-    const remainingCount = total - MAX_VISIBLE;
+    const remainingCount = othersOnly.length - MAX_VISIBLE;
 
     // Create a newline-separated list for the hover tooltip
-    const allNamesList = coContributors.map((c) => c.name).join("\n");
+    const allNamesList = othersOnly.map((c) => c.name).join("\n");
 
     return (
       <span
         className="text-gray-600 text-[13px] font-medium flex items-center cursor-help"
         title={`Co-Contributors:\n${allNamesList}`} // Native HTML tooltip
       >
+        {isSelfSupport && (
+          <span className = "inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-[12px] font-bold tracking-wider uppercase">
+            Support <FaRegHandshake size={20}/>
+            </span>
+        )}
+
+        {othersOnly.length > 0 && (
+          <>
         <span className="mx-1.5 text-gray-400 italic">with</span>
         <span className="truncate max-w-[200px]">{visibleNames}</span>
+        </>
+        )}
 
         {/* If there are more than 2, show the +X badge! */}
         {remainingCount > 0 && (
@@ -70,13 +97,21 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
       {/* 1. THE AVATAR (Smooth gradients with soft shadows) */}
       <div className="flex-shrink-0 relative z-10 mt-1">
         <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ${
-            isMe
-              ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 rounded-2xl rounded-tr-sm"
-              : "bg-white/70 border-2 border-gray-100 rounded-2xl rounded-tl-sm"
-          }`}
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ${isMe
+            ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 rounded-2xl rounded-tr-sm"
+            : "bg-white/70 border-2 border-gray-100 rounded-2xl rounded-tl-sm"
+            }`}
         >
-          {getInitials(item.CreatedBy)}
+          {/* {getInitials(item.CreatedBy)} */}
+          {/* {isMe ?
+            getInitials(currentUser || "You") :
+            (formContext.isViewer ? "WG" : getInitials(item.CreatedBy))
+          } */}
+          {isMe
+            ? getInitials(currentUser || "You")
+            : (user?.role === 3 && item.team !== null)
+              ? "WG"
+              : getInitials(item.CreatedBy)}
         </div>
       </div>
       {/* <div className="flex-shrink-0 relative z-10 mt-1">
@@ -92,24 +127,29 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
       </div> */}
       {/* 2. THE GLASS CHAT BUBBLE */}
       <div
-        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${
-          isMe
+        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${!formContext.isViewer && item.ToClient
+          ? "bg-green-100/80 border-green-500/60 rounded-2xl rounded-tl-sm" // Always green for ToClient
+          : isMe
             ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm" // Subtle Yellow Glass for "Me"
             : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
-        }`}
+          }`}
       >
         {/* Header - Blends seamlessly into the card instead of a hard block */}
         <div
-          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${
-            isMe ? "border-blue-200/40" : "border-gray-200/40"
-          }`}
+          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${isMe ? "border-blue-200/40" : "border-gray-200/40"
+            }`}
         >
           <div className="text-gray-500 tracking-wide">
             <strong className="text-gray-900 font-medium mr-1">
-              {isMe ? "You" : item.CreatedBy || "Unknown User"}
+              {isMe ?
+                "You"
+                : (user?.role === 3 && item.team !== null)
+                  ? "WorkGlow Support" : item.CreatedBy
+              }
             </strong>
             {renderCoContributors(item.CoContributors)}
-            <span className="text-xs opacity-75">
+            <span className="text-xs opacity-75"
+              title={dayjs(item.createdAt).format("MMMM D, YYYY h:mm A")} >
               commented {dayjs(item.createdAt).fromNow()}
             </span>
           </div>
@@ -138,23 +178,25 @@ const ThreadListCard = ({ item, onEdit, currentUser }) => {
         </div>
 
         {/* Footer (Slightly darker translucent bar at the bottom) */}
-        <div className="px-5 py-2.5 rounded-b-2xl flex justify-between text-xs text-gray-500 bg-black/[0.03]">
-          {item.fromTime && item.toTime ? (
-            <>
-              <span>{formatDateRange(item.fromTime, item.toTime)}</span>
-              <span className="font-medium text-gray-600">
-                Total Hours: {item.Hours || "-"}
-              </span>
-            </>
-          ) : (
-            <>
-              <span>&nbsp;</span> {/* Empty space for fromTime/toTime */}
-              <span className="font-medium text-gray-600">
-                Total Hours: {item.Hours || "-"}
-              </span>
-            </>
-          )}
-        </div>
+        {!formContext.isViewer &&
+          <div className="px-5 py-2.5 rounded-b-2xl flex justify-between text-xs text-gray-500 bg-black/[0.03]">
+            {item.fromTime && item.toTime ? (
+              <>
+                <span>{formatDateRange(item.fromTime, item.toTime)}</span>
+                <span className="font-medium text-gray-600">
+                  Total Hours: {item.Hours || "-"}
+                </span>
+              </>
+            ) : (
+              <>
+                <span>&nbsp;</span> {/* Empty space for fromTime/toTime */}
+                <span className="font-medium text-gray-600">
+                  {item.Hours ? `Total Hours: ${item.Hours}` : ""}
+                </span>
+              </>
+            )}
+          </div>
+        }
       </div>
     </div>
   );

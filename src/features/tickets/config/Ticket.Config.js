@@ -1,4 +1,4 @@
-import { buildOptionsResolver } from "../../../app/shared/utilities/utilities";
+import { buildOptionsResolver, sumHHMM } from "../../../app/shared/utilities/utilities";
 
 export const TicketFieldConfig = () => [
   /* --------------------------------------------------
@@ -21,6 +21,7 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.title : "",
     visibleWhen: () => true,
   },
+
   {
     label: "Label",
     name: "label",
@@ -188,6 +189,44 @@ export const TicketFieldConfig = () => [
 
     visibleWhen: () => true,
   },
+
+  {
+    label: "Rasie ticket to ",
+    name: "Rasieticket",
+    type: "priority", // Your custom type
+    ui: "mui", // Tells your engine to look outside MUI
+    required: false,
+    dataType: "boolean",
+    apiKey: "RaiseToClient",
+    initValueResolver: ({ context }) => {
+      if (context.isEdit) {
+        return context.entityData?.raiseToClient ?? false; // fallback to false if null
+      }
+      return !context?.isViewer ? false : true
+    },
+    disableWhen: (context) => {
+      console.log("context", context);
+      // return context.isEdit
+    },
+    visibleWhen: (formData, context) => {
+      return (!context?.isViewer);
+    }
+  },
+
+  {
+    label: "Priority",
+    name: "priority",
+    type: "priority", // Your custom type
+    ui: "mui", // Tells your engine to look outside MUI
+    required: true,
+    dataType: "string",
+    apiKey: "Priority",
+    initValueResolver: ({ context }) => {
+      return context.isEdit ? context.entityData?.priority : "Medium";
+    }, // Default to Medium if creating
+    visibleWhen: () => true,
+  },
+
   {
     label: "Owner",
     name: "assginedTo",
@@ -222,7 +261,16 @@ export const TicketFieldConfig = () => [
     apiKey: "Assignee_Id",
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
-    visibleWhen: () => true,
+    // visibleWhen: () => true,
+    visibleWhen: (formData, context) => {
+      if ( !context.isViewer) {
+        return true;
+      }
+      if (context.isViewer) {
+        return false;
+      }
+      return true;
+    },
   },
   {
     label: "Assignees",
@@ -278,7 +326,16 @@ export const TicketFieldConfig = () => [
       return [];
     },
     apiKey: "resourceIds",
-    visibleWhen: () => true,
+    // visibleWhen: () => true,
+    visibleWhen: (formData, context) => {
+      if (!context.isViewer) {
+        return true;
+      }
+      if (context.isViewer ) {
+        return false;
+      }
+      return true;
+    },
   },
   {
     label: "Due Date",
@@ -294,7 +351,15 @@ export const TicketFieldConfig = () => [
     // pattern: "^[A-Za-z0-9 ]+$",
     // errorMessage: "Only alphanumeric allowed",
 
-    visibleWhen: () => true,
+    visibleWhen: (formData, context) => {
+      if (!context.isViewer) {
+        return true;
+      }
+      if (context.isViewer ) {
+        return false;
+      }
+      return true;
+    },
     customValidator: (value, data, context) => {
       if (context?.isEdit) {
         return true;
@@ -317,6 +382,22 @@ export const TicketFieldConfig = () => [
     dataType: "string",
   },
 
+  // {
+  //   label: "Estimated Hours",
+  //   name: "estimateHours",
+  //   type: "flexHours",
+  //   ui: "mui",
+  //   required: true,
+  //   dataType: "string",
+  //   apiKey: "Hours",
+  //   initValueResolver: ({ context }) =>
+  //     context.isEdit ? context.entityData?.estimateHours : "",
+  //   // pattern: "^[A-Za-z0-9 ]+$",
+  //   // errorMessage: "Only alphanumeric allowed",
+  //   visibleWhen: () => true,
+  // },
+
+
   {
     label: "Estimated Hours",
     name: "estimateHours",
@@ -327,24 +408,179 @@ export const TicketFieldConfig = () => [
     apiKey: "Hours",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.estimateHours : "",
-    // pattern: "^[A-Za-z0-9 ]+$",
-    // errorMessage: "Only alphanumeric allowed",
-    visibleWhen: () => true,
+
+    effectDependencies: ["Client", "Development", "Testing"],
+    effectResolver: (formData) => {
+      return sumHHMM(formData.Client, formData.Development, formData.Testing);
+    },
+
+    visibleWhen: (formData, context) => {
+      if (!context.isViewer) {
+        return true;
+      }
+      if (context.isViewer) {
+        return false;
+      }
+      return true;
+    },
+    customValidator: (value, formData) => {
+      const hasSubFields = formData?.Client || formData?.Development || formData?.Testing
+      if (!hasSubFields) {
+        if (!value) return "Estimated hours is required"
+        return true
+      }
+
+      const expected = sumHHMM(
+        formData.Client,
+        formData.Development,
+        formData.Testing
+      )
+      if (value !== expected) {
+        return `Estimated hours is auto-calculated(${expected})from Client,Dev &Testing-manual edit not allowed.`
+      }
+      return true
+    }
+
   },
+  // {
+  //   name: "showClient",
+  //   label: "Client",
+  //   type: "toggleButton",
+  //   colSpan: 1,
+  // },
+  // {
+  //   label: "Hours",
+  //   name: "Client",
+  //   type: "flexHours",
+  //   ui: "mui",
+  //   required: false,
+  //   dataType: "string",
+  //   apiKey: "Client",
+  //   colSpan: 1,
+  //   initValueResolver: ({ context }) =>
+  //     context.isEdit ? context.entityData?.Client : "",
+  //   // pattern: "^[A-Za-z0-9 ]+$",
+  //   // errorMessage: "Only alphanumeric allowed",
+  //   visibleWhen: (formData) => !!formData.showClient,
+  // },
+
+  // {
+  //   name: "showDevelopment",
+  //   label: "Dev",
+  //   type: "toggleButton",
+  //   colSpan: 1,
+  // },
+  // {
+  //   label: "Hours",
+  //   name: "Development",
+  //   type: "flexHours",
+  //   ui: "mui",
+  //   required: false,
+  //   dataType: "string",
+  //   apiKey: "Development",
+  //   colSpan: 1,
+  //   initValueResolver: ({ context }) =>
+  //     context.isEdit ? context.entityData?.Development : "",
+  //   // pattern: "^[A-Za-z0-9 ]+$",
+  //   // errorMessage: "Only alphanumeric allowed",
+  //   visibleWhen: (formData) => !!formData.showDevelopment,
+  // },
+
+  // {
+  //   name: "showTesting",
+  //   label: "Test",
+  //   type: "toggleButton",
+  //   colSpan: 1,
+  // },
+  // {
+  //   label: "Hours",
+  //   name: "Testing",
+  //   type: "flexHours",
+  //   ui: "mui",
+  //   required: false,
+  //   dataType: "string",
+  //   apiKey: "Testing",
+  //   colSpan: 1,
+  //   initValueResolver: ({ context }) =>
+  //     context.isEdit ? context.entityData?.Testing : "",
+  //   // pattern: "^[A-Za-z0-9 ]+$",
+  //   // errorMessage: "Only alphanumeric allowed",
+  //   visibleWhen: (formData) => !!formData.showTesting,
+  // },
+
   {
-    label: "Priority",
-    name: "priority",
-    type: "priority", // Your custom type
-    ui: "mui", // Tells your engine to look outside MUI
-    required: true,
-    dataType: "string",
-    apiKey: "Priority",
-    initValueResolver: ({ context }) => {
-      return context.isEdit ? context.entityData?.priority : "Medium";
-    }, // Default to Medium if creating
-    visibleWhen: () => true,
+  name: "showClient",
+  label: "Client",
+  type: "toggleButton",
+  colSpan: 1,
+},
+{
+  label: "Hours",
+  name: "Client",
+  type: "flexHours",
+  ui: "mui",
+  required: false,
+  dataType: "string",
+  apiKey: "Client",
+  colSpan: 1,
+  initValueResolver: ({ context }) =>
+    context.isEdit ? context.entityData?.clientTime : "",
+  visibleWhen: (formData, context) => {
+    if (context.isViewer) return false;
+    if (context.isEdit ) return true;
+    return !!formData.showClient;
   },
-   {
+},
+
+{
+  name: "showDevelopment",
+  label: "Dev",
+  type: "toggleButton",
+  colSpan: 1,
+},
+{
+  label: "Hours",
+  name: "Development",
+  type: "flexHours",
+  ui: "mui",
+  required: false,
+  dataType: "string",
+  apiKey: "Development",
+  colSpan: 1,
+  initValueResolver: ({ context }) =>
+    context.isEdit ? context.entityData?.developmentTime : "",
+  visibleWhen: (formData, context) => {
+    if (context.isViewer) return false;
+    if (context.isEdit) return true;
+    return !!formData.showDevelopment;
+  },
+},
+
+{
+  name: "showTesting",
+  label: "Test",
+  type: "toggleButton",
+  colSpan: 1,
+},
+{
+  label: "Hours",
+  name: "Testing",
+  type: "flexHours",
+  ui: "mui",
+  required: false,
+  dataType: "string",
+  apiKey: "Testing",
+  colSpan: 1,
+  initValueResolver: ({ context }) =>
+    context.isEdit ? context.entityData?.testingTime : "",
+  visibleWhen: (formData, context) => {
+    if (context.isViewer) return false;
+    if (context.isEdit) return true;
+    return !!formData.showTesting;
+  },
+},
+
+  {
     name: "TicketOverallPercentage",
     label: "Overall Ticket Progress (%)",
     type: "battery", // Or "number" depending on your registry

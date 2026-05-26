@@ -6,6 +6,7 @@
  */
 import { lazy } from "react";
 import { ROUTE_KEYS } from "../../core/routing/paths";
+import { ROUTE_ROLES } from "../../core/auth/permissions";
 
 const DashboardPage = lazy(() => import("./pages/Dashboard")); // your existing page
 
@@ -17,6 +18,7 @@ export const DashboardFeature = {
     {
       path:    "",
       element: DashboardPage,
+      allowedRoles: ROUTE_ROLES.DASHBOARD,
       nav: {
         key:       ROUTE_KEYS.DASHBOARD,
         title:     "Dashboard",

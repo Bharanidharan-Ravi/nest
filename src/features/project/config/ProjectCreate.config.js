@@ -65,8 +65,8 @@ export const ProjFieldConfig = () => [
 
     apiKey: "Title",
 
-    pattern: "^[A-Za-z0-9 ]+$",
-    errorMessage: "Only alphanumeric allowed",
+    // pattern: "^[A-Za-z0-9 ]+$",
+    // errorMessage: "Only alphanumeric allowed",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.Project_Name : "",
     visibleWhen: () => true,
