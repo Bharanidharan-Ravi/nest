@@ -4,10 +4,10 @@ import { FaChevronDown, FaChevronUp, FaHistory } from "react-icons/fa";
 import { useTicketProgress } from "../../../core/master/selectors/selectors"; // Adjust path as needed
 
 const TicketProgressHistory = ({ options }) => {
- const routeParams = useParams();  
+  const routeParams = useParams();
   // 🔥 1. Prioritize the ticketId from FormEngine config, fallback to URL params
   const activeTicketId = options?.ticketId || routeParams.ticketId;
-  
+
   // 2. Fetch the data using the resolved ID
   const { data: progressLogs = [], isLoading } = useTicketProgress(activeTicketId, {
     enabled: !!activeTicketId,
@@ -29,7 +29,7 @@ const TicketProgressHistory = ({ options }) => {
         history: [],
       };
     }
-    
+
     if (log.IsActive) {
       acc[log.Assignee_Id].activeLog = log;
     } else {
@@ -52,6 +52,19 @@ const TicketProgressHistory = ({ options }) => {
     });
   };
 
+  const getFlagStyles = (flag) => {
+    switch (flag) {
+      case "Priority":
+        return "bg-orange-100 text-orange-800";
+      case "Close Request":
+        return "bg-red-100 text-red-800";
+      case "Notify Functional":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-blue-100 text-blue-800";
+    }
+  };
+
   return (
     <div className="w-full mt-2">
       {/* 1. Main Toggle Button */}
@@ -72,7 +85,7 @@ const TicketProgressHistory = ({ options }) => {
           ) : (
             Object.entries(groupedLogs).map(([assigneeId, data]) => (
               <div key={assigneeId} className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
-                
+
                 {/* A. Active Log (Always visible when main panel is open) */}
                 <div className="p-3 border-l-4 border-green-500 flex flex-col sm:flex-row sm:items-start justify-between gap-2 bg-green-50/30">
                   <div className="flex-1">
@@ -81,8 +94,16 @@ const TicketProgressHistory = ({ options }) => {
                       <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
                         Current Status: {data.activeLog?.Percentage ?? 0}%
                       </span>
+
+                      {data.activeLog?.Flag && data.activeLog.Flag.split(",").map((flag, idx) => (
+                          <span key={idx} className={`text-xs px-2 py-0.5 rounded-full font-medium ${getFlagStyles(flag.trim())}`}
+                          >
+                            {flag.trim()}
+                          </span>
+                        ))}
+
                       {data.activeLog?.CreatedAt && (
-                         <span className="text-xs text-gray-400">{formatDate(data.activeLog.CreatedAt)}</span>
+                        <span className="text-xs text-gray-400">{formatDate(data.activeLog.CreatedAt)}</span>
                       )}
                     </div>
                     <p className="text-sm text-gray-700">
@@ -114,6 +135,12 @@ const TicketProgressHistory = ({ options }) => {
                         <div className="absolute -left-[5px] top-1.5 w-2 h-2 bg-gray-300 rounded-full"></div>
                         <div className="flex items-center gap-2 mb-0.5">
                           <span className="text-sm font-semibold text-gray-600">{log.Percentage}%</span>
+
+                          {log.Flag && (
+                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                              {log.Flag}
+                            </span>
+                          )}
                           <span className="text-xs text-gray-400">{formatDate(log.CreatedAt)}</span>
                         </div>
                         <p className="text-sm text-gray-500">{log.StatusSummary}</p>
@@ -121,7 +148,7 @@ const TicketProgressHistory = ({ options }) => {
                     ))}
                   </div>
                 )}
-                
+
               </div>
             ))
           )}

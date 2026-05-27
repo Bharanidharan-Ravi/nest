@@ -32,6 +32,7 @@ export const normalizeTicket = (ticket) => ({
     funcResponse: ticket.FuncResponse,
     clientTime: ticket.Client,
     developmentTime: ticket.Development,
-    testingTime: ticket.Testing,
+    technicalTime: ticket.Technical,
+   functionalTime: ticket.Functional,
     raiseToClient: ticket.RaiseToClient,
 });

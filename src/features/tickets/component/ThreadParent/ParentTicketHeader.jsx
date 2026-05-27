@@ -31,8 +31,8 @@ const ParentTicketHeader = ({
   progressLogs,
   isViewer
 }) => {
-  console.log("parentTicket",parentTicket);
-  
+  console.log("parentTicket", parentTicket);
+
   // 🔥 1. State for the History Modal and Mobile Expand
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
@@ -52,6 +52,18 @@ const ParentTicketHeader = ({
   const latestLog = progressLogs?.length > 0 ? progressLogs[0] : null;
   const statusSummary = latestLog?.StatusSummary || latestLog?.statusSummary || parentTicket?.CurrentStatusSummary;
   const overallPct = latestLog?.Percentage ?? latestLog?.percentage ?? parentTicket?.OverallPercentage ?? parentTicket?.CompletionPct ?? 0;
+  const getFlagStyles = (flag) => {
+    switch (flag) {
+      case "Priority":
+        return "bg-orange-100 text-orange-800";
+      case "Close Request":
+        return "bg-red-100 text-red-800";
+      case "Notify Functional":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-blue-100 text-blue-800";
+    }
+  };
 
   return (
     <>
@@ -292,11 +304,11 @@ const ParentTicketHeader = ({
           document.body
         )}
 
-        {(parentTicket?.IsCloseRequested || parentTicket?.isCloseRequested) &&  !isViewer && (
+        {(parentTicket?.IsCloseRequested || parentTicket?.isCloseRequested) && !isViewer && (
           <div
             className={`bg-red-50 border border-red-100 border-l-4 border-l-red-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
-              ? "mt-2 px-3 py-1.5 rounded-lg"
-              : "mt-3 px-4 py-2.5 rounded-xl"
+              ? "mt-2 px-3 py-1.5"
+              : "mt-3 px-4 py-2.5"
               }`}
           >
             <div className="flex items-center gap-3 truncate">
@@ -326,8 +338,8 @@ const ParentTicketHeader = ({
             )}
           </div>
         )}
-        
-              {(parentTicket?.priorityRequest || parentTicket?.PriorityRequest) && !isViewer && (
+
+        {(parentTicket?.priorityRequest || parentTicket?.PriorityRequest) && !isViewer && (
           <div
             className={`bg-orange-50 border border-orange-100 border-l-4 border-l-orange-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
               ? "mt-2 px-3 py-1.5"
@@ -387,8 +399,14 @@ const ParentTicketHeader = ({
                 <h4
                   className={`text-purple-900 font-bold whitespace-nowrap transition-all ${isStuck ? "text-xs" : "text-sm"}`}
                 >
-                  An assignee is awaiting for Response.
+                  Awaiting Functional Response.
                 </h4>
+                <span className="hidden sm:inline text-purple-300 text-sm">•</span>
+                <p
+                  className={`text-purple-700 truncate transition-all hidden sm:block ${isStuck ? "text-[11px]" : "text-xs"}`}
+                >
+                  An assignee is waiting for response.
+                </p>
               </div>
             </div>
 
@@ -448,6 +466,16 @@ const ParentTicketHeader = ({
                     </div>
                     <div className="text-xs text-gray-500 flex justify-between items-center mt-1 pt-2 border-t border-gray-50">
                       <span>Logged by: <span className="font-medium text-gray-700">{log.AssigneeName || "System"}</span></span>
+                      <div className="flex flex-wrap gap-1">
+                        {log.Flag && log.Flag.split(",").map((flag, idx) => (
+                            <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getFlagStyles(
+                                flag.trim()
+                              )}`}
+                            >
+                              {flag.trim()}
+                            </span>
+                          ))}
+                      </div>
                       <span>{dayjs(log.CreatedAt).format("MMM D, YYYY h:mm A")}</span>
                     </div>
                   </div>

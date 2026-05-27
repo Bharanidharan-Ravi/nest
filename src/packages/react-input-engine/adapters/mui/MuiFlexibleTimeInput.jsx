@@ -2,7 +2,7 @@ import { TextField } from "@mui/material";
 
 
 
-const MuiFlexibleHoursInput = ({ name, label, value, error, onChange, theme = {} }) => {
+const MuiFlexibleHoursInput = ({ name, label, value, error, onChange, theme = {},disabled }) => {
 
   const handleFocus = (e) => e.target.select();
   const handleMouseUp = (e) => e.preventDefault();
@@ -60,6 +60,7 @@ const MuiFlexibleHoursInput = ({ name, label, value, error, onChange, theme = {}
       helperText={error}
       onChange={handleChange}
       onBlur={handleBlur}
+      disabled={disabled}
       onFocus={handleFocus}
       onMouseUp={handleMouseUp}
     />

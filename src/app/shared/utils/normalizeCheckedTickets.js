@@ -15,4 +15,6 @@ export const normalizeCheckedTickets = (item) => ({
       createdAt: item.CreatedAt,
       ticketKey: item.Issue_Code,
       updatedBy: item.UpdatedBy,
+      UserId:item.UserId,
+      Checked_Person:item.Checked_Person,
 });

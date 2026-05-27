@@ -292,6 +292,7 @@ export default function TicketsPage() {
           {
             key: "repoId",
             view: "Repo",
+            allowMultiple: true,
             showCounts: true,
             allowedRoles: [1, 2],
             options: repoFilterOptions,
@@ -303,8 +304,9 @@ export default function TicketsPage() {
         key: "assginedTo",
         view: "owner",
         allowedRoles: [1, 2],
-        options: useEmployeeOptions(true, "Owner"),
+        options: [...useEmployeeOptions(true, "Owner"), { label: "No Owner", value: "__no_owner__" },],
         filterType: "custom",
+        allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValue) => {
           if (!selectedValue) return true;
@@ -315,7 +317,9 @@ export default function TicketsPage() {
           ) {
             return true;
           }
-
+          if (selectedValue === "__no_owner__") {
+            return !item.assignedTo|| item.assignedTo === ""|| item.assignedTo === null; // Show items with no owner
+          }
           return false;
         },
       },
@@ -325,6 +329,7 @@ export default function TicketsPage() {
         allowedRoles: [1, 2],
         options: useEmployeeOptions(true, "Assignee"),
         filterType: "custom",
+        allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValue) => {
           if (!selectedValue) return true;
@@ -379,6 +384,7 @@ export default function TicketsPage() {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
         allowedRoles: [1, 2, 3],
+        allowMultiple: true,
         showCounts: true,
         options: projectFilterOptions,
       },
@@ -399,6 +405,7 @@ export default function TicketsPage() {
         showCounts: true,
         options: teamFilterOptions,
         filterType: "custom",
+        allowMultiple: true,
         customFilter: (item, value) => {
           if (!value || value === "") return true;
           // Check if ANY assignee on this ticket belongs to the selected team

@@ -88,7 +88,19 @@ export function ListSearchBar() {
   const handleClearAll = () => {
     // Clear all filters but KEEP is:open
     const tab = filters.is;
-    setQuery(tab ? `is:${tab}` : "");
+    let defaultQuery=tab ? `is:${tab}` : ""
+    if(config?.filters){
+      config.filters.forEach((filter)=>{
+        if(
+          filter.defaultValue!==undefined&&
+          filter.defaultValue!==null &&
+          filter.defaultValue!==""
+        ){
+          defaultQuery+=` ${filter.key}:${filter.defaultValue}`;
+        }
+      })
+    }
+    setQuery(defaultQuery.trim());
     setInputValue("");
   };
 

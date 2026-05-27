@@ -1,11 +1,19 @@
 import React, { useState } from "react";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 
 export default function ModuleSwitcher({ modules }) {
  const [searchParams, setSearchParams] = useSearchParams();
+ const location = useLocation();
+ const navigate = useNavigate();
+ const handleTicketCreate=()=>{
+  if(location.pathname!=="/tickets/create"){
+    navigate("/tickets/create")
+  }
+}
+
   
   // 1. Read the active module from the URL
   const currentModule = searchParams.get("module");
@@ -31,6 +39,7 @@ console.log("searchParams :", searchParams.getAll("tickets_q"));
   return (
     <div className="module-switcher-container" style={{display:"flex", flexDirection: "column", height:"100%"}}>
       {/* Tab Navigation Area */}
+    
       <div
         className="custom-module-tabs"
         style={{
@@ -65,9 +74,18 @@ console.log("searchParams :", searchParams.getAll("tickets_q"));
           >
             {module.label}
           </button>
+          
         ))}
+        <button
+            onClick={ handleTicketCreate}
+            style={{marginLeft:"auto"}}
+            className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors" >
+            CreateTicket
+          </button>
       </div>
-
+      
+      
+         
       {/* Content Area */}
       <div className="active-list-wrapper" style={{flex:1, minHeight:0}}>
         {activeModule && (

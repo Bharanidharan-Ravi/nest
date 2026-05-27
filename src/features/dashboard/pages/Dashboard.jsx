@@ -28,6 +28,7 @@ import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config"; 
 import { ThreadFieldConfig } from "../../tickets/config/Thread.config";
 import TimesheetTree from "../component/TimesheetTree";
+import TicketListCard from "../../tickets/component/TicketListCard";
 
 
 
@@ -147,7 +148,6 @@ export default function Dashboard() {
   const LabelFilterOptions = useLabelOptions(true);
   const repoFilterOptions = useRepoOptions(true);
   const teamFilterOptions = useTeamOptions(true);
-console.log("LabelFilterOptions",LabelFilterOptions);
 
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
@@ -177,13 +177,14 @@ console.log("LabelFilterOptions",LabelFilterOptions);
         view: "Repo",
         options: repoFilterOptions,
         showCounts: true,
+        allowMultiple: true,
       },
-      {
-        key: "customBoolean",      
-        view: "Special Flags",    
+     {
+        key: "customBoolean",
+        view: "Special Flags",
         showCounts: true,
         options: [
-          { label: "All Flags", value: "" },
+          { label: "All Flags", value: "allFlags" },
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
@@ -193,11 +194,21 @@ console.log("LabelFilterOptions",LabelFilterOptions);
         customFilter: (item, selectedValues) => {
           const values = Array.isArray(selectedValues)
             ? selectedValues
-            : String(selectedValues).split(",").filter(Boolean);
-          if (values.length === 0) return true; // no filter applied
-
+            : String(selectedValues)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean);
+      
+          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
+      
+          if (values.includes("allFlags")) {
+            return flagFields.some((field) => item[field] === true);
+          }
+      
+          if (values.length === 0) return true;
+      
           return values.some((field) => item[field] === true);
-        }
+        },
       },
 
       {
@@ -213,9 +224,35 @@ console.log("LabelFilterOptions",LabelFilterOptions);
         normalizer: normalizeTicket,
       },
       {
+        key: "multiAssignees",
+        view: "Assignee",
+        options: useEmployeeOptions(true, "Assignee"),
+        filterType: "custom",
+        showCounts: true,
+        allowMultiple: true,
+        customFilter: (item, selectedValue) => {
+          if (!selectedValue) return true;
+          const safeSelected = String(selectedValue).toLowerCase();
+          if (Array.isArray(item.multiAssignees)) {
+            return item.multiAssignees.some((assignee) => {
+              if (assignee.Assignee_Type === "Main Assignee") return false; // Skip main assignee, already handled in the primary filter
+              const matchName =
+                assignee.Assignee_Name &&
+                String(assignee.Assignee_Name).toLowerCase() === safeSelected;
+              const matchId =
+                assignee.Assignee_Id &&
+                String(assignee.Assignee_Id).toLowerCase() === safeSelected;
+              return matchName || matchId;
+            });
+          }
+          return false;
+        },
+      },
+      {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
         showCounts: true,
+             allowMultiple: true,
         options: projectFilterOptions,
       },
       {
@@ -226,6 +263,23 @@ console.log("LabelFilterOptions",LabelFilterOptions);
         filterType: "array",
         allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
+      },
+       {
+        key: "teamId",
+        view: "Team",
+        showCounts: true,
+        options: teamFilterOptions,
+        filterType: "custom",
+        allowMultiple: true,
+        customFilter: (item, value) => {
+          if (!value || value === "") return true;
+          // Check if ANY assignee on this ticket belongs to the selected team
+          return item.multiAssignees?.some(
+            (a) =>
+              String(a.Assignee_TeamId) === String(value) &&
+              a.Assignee_Type === "Main Assignee",
+          );
+        },
       },
     ],
     tabsExtra: () => (
@@ -317,11 +371,13 @@ const dashboardTimesheetGraph = (parsedFilters) => {
       tooltipSecondaryLabelKey: isAllEmployees ? null : "employeeName",
 
       tooltipFormatter:(item)=>{
-        if(item.isDirectUpdate){
-          return `Status changed ${item.threadStatusName}`
-        }
-        const h = Math.floor(item.ConsumeTime);
-        const m = Math.round((item.ConsumeTime % 1) * 60);
+        // if(item.isDirectUpdate){
+        //   return `Status changed ${item.threadStatusName}`
+        // }
+        const rawTime=(!item.ConsumeTime||item.ConsumeTime===0.1)?0
+        :item.ConsumeTime
+        const h = Math.floor(rawTime);
+        const m = Math.round((rawTime % 1) * 60);
         return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
       },
       
@@ -329,9 +385,10 @@ const dashboardTimesheetGraph = (parsedFilters) => {
       terminalStatusKey: "threadStatusId",
       terminalStatusIds: [15,16],
       isDateAxis: true,
-      minYValue: 8,
+      minYValue: 0,
       yAxisStep: 2,
       valueFormatter: (val) => {
+        if(!val||val===0.1)return""
         const h = Math.floor(val);
         const m = Math.round((val % 1) * 60);
         return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
@@ -405,37 +462,6 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         defaultValue: currentUserId,
       },
       {
-        key: "customBoolean",
-        view: "Special Flags",
-        showCounts: true,
-        options: [
-          { label: "All Flags", value: "allFlags" },
-          { label: "Close Requested", value: "isCloseRequested" },
-          { label: "Priority Request", value: "priorityRequest" },
-          { label: "Func Response", value: "funcResponse" },
-        ],
-        filterType: "custom",
-        allowMultiple: true,
-        customFilter: (item, selectedValues) => {
-          const values = Array.isArray(selectedValues)
-            ? selectedValues
-            : String(selectedValues)
-                .split(",")
-                .map((v) => v.trim())
-                .filter(Boolean);
-      
-          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
-      
-          if (values.includes("allFlags")) {
-            return flagFields.some((field) => item[field] === true);
-          }
-      
-          if (values.length === 0) return true;
-      
-          return values.some((field) => item[field] === true);
-        },
-      },
-      {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
         showCounts: true,
@@ -456,30 +482,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
-      // {
-      //   key: "fromDate",
-      //   apiKey: "FromDate",
-      //   view: "From Date",
-      //   type: "date",
-      //   filterType: "api",
-      //   api: "/sync/v2",
-      //   configKey: "TimeSheet",
-      //   source: "TimeSheet",
-      //   normalizer: createTimesheetNormalizer,
-      //   defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
-      // },
-      // {
-      //   key: "toDate",
-      //   apiKey: "ToDate",
-      //   view: "To Date",
-      //   type: "date",
-      //   filterType: "api",
-      //   api: "/sync/v2",
-      //   configKey: "TimeSheet",
-      //   source: "TimeSheet",
-      //   normalizer: createTimesheetNormalizer,
-      //   defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
-      // },
+     
     ],
   };
 
@@ -498,6 +501,30 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     },
     onItemClick: (item) =>
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
+    cardRenderer:(item,controls,config)=>(
+      <div style={{position:"relative"}}>
+        <TicketListCard item={item} controls={controls} config={config}/>
+        {item.Checked_Person &&(
+          <div style={{
+            position:"absolute",
+            bottom:0,
+            right:300,
+            background:"#absolute",
+            color:"#92400E",
+            fontWeight:500,
+            fontSize:"11px",
+            padding:"2px 8px",
+            borderRadius:"4px",
+            display:"flex",
+            zIndex:10,
+            alignItems:"center",
+            gap:"4px"
+          }}>
+            {item.Checked_Person }
+            </div>
+        )}
+      </div>
+    ),
     tabsExtra: () => (
       <button
         onClick={handleUncheckTickets}
