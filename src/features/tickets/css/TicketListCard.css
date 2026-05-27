@@ -149,27 +149,33 @@
 .ticket-id {
   font-size: 13px;
   color: #9ca3af;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  /* font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; */
+  font-family: "JetBrains Mono", monospace;
   margin-right: 6px;
 }
 
 .ticket-title {
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: 15px;
+  line-height: 1.35;
+  color: #0f172a;
+}
+/* .ticket-title {
+  font-weight: 600;
+  font-size: 0.875rem;
   color: #111827;
   margin-right: 8px;
   word-break: break-all;
   overflow-wrap: anywhere;
   vertical-align: super;
-  /* Ensures Title aligns with ID and Badges */
-}
+} */
 
 /* Forces badges to act like "words" in the text flow */
 .ticket-title-and-badges .badge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  vertical-align: super;
+  /* vertical-align: super; */
   /* Snaps the badge to the vertical center of the text */
   margin-right: 6px;
   /* margin-bottom: 2px; */
@@ -195,7 +201,7 @@
   color: #9ca3af;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   margin-right: 6px;
-  vertical-align: super;
+  /* vertical-align: super; */
   /* Ensures ID aligns with Title */
 }
 

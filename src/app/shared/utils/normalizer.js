@@ -78,6 +78,7 @@ export const normalizeCheckedTickets = (item) => ({
 export const createTimesheetNormalizer = (Timedata) => {
   return {
     id: Timedata.ThreadId,
+    rawId: Timedata.RowNum,
     ticketId: Timedata.Issue_Id,
     issueId: Timedata.Issue_Id,
     navId: Timedata.Issue_Id,

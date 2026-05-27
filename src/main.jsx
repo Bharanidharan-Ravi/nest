@@ -6,6 +6,11 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./core/api/queryClient.js";
 import { bootstrapApp } from "./app/bootstrap.js";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import "@fontsource/inter";
+import "@fontsource/inter/500.css";
+import "@fontsource/inter/600.css";
+
+import "@fontsource/jetbrains-mono";
 // import 'bootstrap/dist/css/bootstrap.min.css';
 
 bootstrapApp();

@@ -7,12 +7,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+html {
+  text-rendering: optimizeLegibility;
+}
 @layer base {
 
   /* 1. Global App Background and Text Color */
   body {
-    @apply bg-brand-gray-light text-brand-black font-sans antialiased m-0 p-0 min-h-screen;
-    /* Global font size applies to inputs, buttons, and paragraphs automatically */
+    font-family: "Inter", sans-serif;
+
+    @apply bg-brand-gray-light text-brand-black antialiased m-0 p-0 min-h-screen;
+
     @apply text-sm md:text-base;
   }
 
