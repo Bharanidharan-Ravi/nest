@@ -220,7 +220,6 @@ export default MuiGroupInput;
 //       ? value
 //       : [createEmptyGroup(fields)];
 
-//       console.log("value :", value, values);
 
 //   const handleChange = (index, key, val) => {
 //     const updated = [...values];

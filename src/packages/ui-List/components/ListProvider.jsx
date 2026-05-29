@@ -5,7 +5,6 @@ import { useUrlSync } from "../hooks/useUrlSync";
 
 export function ListProvider({ config, data, children, userRole }) {
   const state = useListState(config, data, userRole);
-  console.log("12345", data, state);
 
   useUrlSync(state);
 

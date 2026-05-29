@@ -1,8 +1,6 @@
 import { useState,useEffect } from "react";
 const AvatarCell=({PreviewUrl})=>{
-    const[compressedsrc,setcompressedsrc]=useState(null);
-    console.log("PreviewUrl",PreviewUrl);
-    
+    const[compressedsrc,setcompressedsrc]=useState(null);    
 
     useEffect(()=>{
         if(!PreviewUrl) return;

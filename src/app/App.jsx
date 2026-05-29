@@ -1,76 +1,39 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import AuthGuard from "../core/auth/AuthGuard";
 import RouteRenderer from "../core/routing/RouteRenderer";
-import { useEffect } from "react";
 import "./App.css";
 
 import LoginPage from "../features/auth/pages/loginPage";
 import MainLayout from "./layout/MainLayout";
 import RouteDataLoader from "../core/routing/RouteDataLoader";
 import AppBootstrap from "../core/master/AppBootstrap";
-import { useQueryClient } from "@tanstack/react-query";
-import {
-  connectSignalR,
-  disconnectSignalR,
-} from "../core/realtime/realtimeManager";
-import { handleRealtimeMessage } from "../core/realtime/realtimeDispatcher";
 import { GlobalUI } from "./shared/GlobalUI/GlobalUI";
 import DND from "../features/auth/pages/login";
+import useHeartbeat from "../core/auth/hooks/useHeartbeat";
+import { useRealtimeSync } from "../core/realtime/useRealtimeSync";
 
 function App() {
-  const queryClient = useQueryClient();
+  useHeartbeat();
 
-  useEffect(() => {
-    const user = sessionStorage.getItem("user");
-    if (!user) return;
-
-    try {
-      const parsedUser = JSON.parse(user);
-      // const userData = decryptUserInfo(parsedUser);
-      // const jwtToken = Array.isArray(userData)
-      //   ? userData[0]?.JwtToken
-      //   : userData?.JwtToken;
-
-      if (!parsedUser) return;
-
-      // connectSignalR(parsedUser, (message) => {
-      //   console.log("message app :",message);
-
-      //   handleRealtimeMessage(queryClient, message);
-      // });
-      connectSignalR(() => parsedUser, {
-        onMessage: (message) => {
-          console.log("message app :", message);
-          handleRealtimeMessage(queryClient, message);
-        },
-        onStateChange: (state) => {
-          console.log("SignalR State:", state);
-        },
-        onReconnected: () => {
-          console.log("SignalR Reconnected");
-          queryClient.invalidateQueries();
-        },
-      });
-
-      return () => {
-        disconnectSignalR();
-      };
-    } catch (error) {
-      console.error("Realtime bootstrap failed:", error);
-    }
-  }, [queryClient]);
+  useRealtimeSync(() => {
+    return sessionStorage.getItem("user");
+  });
 
   return (
     <BrowserRouter>
       <GlobalUI />
+
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+
         <Route path="/Dnd" element={<DND />} />
 
         <Route element={<AuthGuard />}>
           <Route element={<AppBootstrap />}>
             <Route element={<RouteDataLoader />}>
-              <Route element={<MainLayout />}>{RouteRenderer()}</Route>
+              <Route element={<MainLayout />}>
+                {RouteRenderer()}
+              </Route>
             </Route>
           </Route>
         </Route>
@@ -80,36 +43,5 @@ function App() {
     </BrowserRouter>
   );
 }
+
 export default App;
-
-// function App() {
-//   const initialized = useRef(false);
-
-//   // useEffect(() => {
-//   //   if (!initialized.current) {
-//   //     bootstrapApp();
-//   //     initialized.current = true;
-//   //   }
-//   // }, []);
-//   return (
-//     <BrowserRouter>
-//       <Routes>
-//         <Route path="/login" element={<LoginPage />} />
-//         {/* Protected */}
-//         <Route
-//           path="/*"
-//           element={
-//             // <AuthGuard>
-//             <RouteRenderer />
-//             // </AuthGuard>
-//           }
-//         />
-
-//         {/* Fallback */}
-//         <Route path="*" element={<Navigate to="/login" />} />
-//       </Routes>
-//     </BrowserRouter>
-//   );
-// }
-
-// export default App;

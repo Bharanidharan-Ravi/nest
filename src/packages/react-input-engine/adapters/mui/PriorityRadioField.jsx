@@ -149,7 +149,6 @@ const ClientIcon = ({ color }) => (
  */
 export default function PriorityRadioField({ label, name, value, onChange, error,disabled}) {
   // Decide options dynamically
-  console.log("value",disabled);
   
   const options = label === "Priority"
     ? [

@@ -27,7 +27,6 @@ import { CustomerConfig } from "./CreateCustomer.Config";
 
 // Logging the CustomerConfig fields to ensure they are set up correctly
 const customerConfigFields = CustomerConfig();
-console.log("CustomerConfig Fields:", customerConfigFields); // Log the fields
 
 export const CustomerFormConfig = {
   key: "ClientData",

@@ -64,6 +64,9 @@ export default function TicketListCard({
   const isCloseRequested = item.isCloseRequested;
   const isPriorityRequested = item.priorityRequest;
   const funcResponseRequested = item.funcResponse;
+  const technicalResponseRequested = item.technicalResponse;
+  const webResponseRequested = item.webResponse;
+  const adminResponseRequested = item.adminResponse;
   // let statusIcon;
   // if (isCloseRequested) {
   //   // 🔥 Replace the icon entirely with a red pulsing dot of the same size
@@ -122,6 +125,27 @@ if (!isViewer) {
         <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
       </div>
     );
+  } else if (technicalResponseRequested) {
+    statusIcon = (
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-green-500"></span>
+      </div>
+    );
+  } else if (webResponseRequested) {
+    statusIcon = (
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-blue-500"></span>
+      </div>
+    );
+  } else if (adminResponseRequested) {
+    statusIcon = (
+      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-yellow-500"></span>
+      </div>
+    );
   }
   } else if (item.reopenedBy) {
     // If it has a ReopenedBy Guid, show the Reopen icon
@@ -174,10 +198,31 @@ if (!isViewer) {
 
       <div
         key={item.id}
-        className={`ticket-row ${focused ? "focused-row" : ""} ${!isViewer && (item.isCloseRequested || item.IsCloseRequested)
+        className={`ticket-row 
+          ${focused ? "focused-row" : ""} 
+          ${!isViewer && (item.isCloseRequested || item.IsCloseRequested)
             ? "close-requested-row"
             : ""
-          } ${!isViewer && isPriorityRequested ? "priority-requested-row" : ""} ${!isViewer && funcResponseRequested ? "response-requested-row" : ""
+          } 
+          ${!isViewer && isPriorityRequested
+            ? "priority-requested-row"
+            : ""
+          } 
+          ${!isViewer && funcResponseRequested
+            ? "response-requested-row"
+            : ""
+          }
+          ${!isViewer && technicalResponseRequested
+            ? "technical-response-requested-row"
+            : ""
+          }
+          ${!isViewer && webResponseRequested
+            ? "web-response-requested-row"
+            : ""
+          }
+          ${!isViewer && adminResponseRequested
+            ? "admin-response-requested-row"
+            : ""
           }`}
       >
         {/* LEFT BLOCK: Main Information */}

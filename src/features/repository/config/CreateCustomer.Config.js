@@ -115,7 +115,6 @@ export const CustomerConfig = () => [
     apiKey: "CustomerName",
     initValueResolver: ({context}) => {
       const value = context.isEdit ? context.entityData?.UserName : "";
-      console.log("CustomerName Initial Value:", value,context); // Log the resolved value
       return value;
     },
   },
@@ -130,7 +129,6 @@ export const CustomerConfig = () => [
     apiKey: "MailId",
     initValueResolver: ({context})=> {
       const value = context.isEdit ? context.entityData?.MailId : "";
-      console.log("MailId Initial Value:", value); // Log the resolved value
       return value;
     },
   },
@@ -145,7 +143,6 @@ export const CustomerConfig = () => [
     apiKey: "PhoneNumber",
     initValueResolver: ({context}) => {
       const value = context.isEdit ? context.entityData?.PhoneNumber : "";
-      console.log("PhoneNumber Initial Value:", value); // Log the resolved value
       return value;
     },
   },
@@ -160,7 +157,6 @@ export const CustomerConfig = () => [
     apiKey: "UserName",
     initValueResolver: ({context})=> {
       const value = context.isEdit ? context.entityData?.WGUserName : "";
-      console.log("UserName Initial Value:", value); // Log the resolved value
       return value;
     },
     visibleWhen: (formData, context) => !context?.isEdit,
@@ -202,7 +198,6 @@ export const CustomerConfig = () => [
     apiKey: "Repo_Id",
     initValueResolver: ({context}) => {
       const value = context.repoId ?? "";
-      console.log("Repo_Id Initial Value:", value,context); // Log the resolved value
       return value;
     },
   },
@@ -214,7 +209,6 @@ export const CustomerConfig = () => [
     defaultValue: "3",
     apiKey: "Role",
     initValueResolver: ({context}) => {
-      console.log("Resolved Role Value:", context.params?.Role || "3"); // Log resolved Role value
       return context.params?.Role ?? "3"; // Default to "3" if Role is not provided
     },
   },

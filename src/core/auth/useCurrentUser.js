@@ -17,17 +17,19 @@ export function readUserFromSession() {
     const token = sessionStorage.getItem("user");
     if (!token) return null;
 
-
     const decoded = jwtDecode(token);
-      const role =
+    const role =
       decoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
 
     const name =
       decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name"];
 
     const userId =
-      decoded["http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"];
-
+      decoded[
+        "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier"
+      ];
+    const sessionId = decoded["SessionId"];
+    const jwtId = decoded["JwtId"];
     return {
       token,
       role: Number(role) || 0,
@@ -36,8 +38,9 @@ export function readUserFromSession() {
       dbName: decoded.DbName || "",
       team: decoded.Team || "",
       exp: decoded.exp || null,
-      PreviewUrl:decoded.PreviewUrl || null
-//anbu
+      PreviewUrl: decoded.PreviewUrl || null,
+      sessionId,
+      jwtId,
     };
   } catch (err) {
     console.error("Failed to decode JWT:", err);
@@ -61,18 +64,18 @@ export function useCurrentUser() {
   // On navigation React mounts a new component instance → fresh read.
   const user = useMemo(() => readUserFromSession(), []);
   const can = (allowedRoles) => {
-    if (!allowedRoles?.length) return true;           // no restriction = open
-    if (!user || isNaN(user.role)) return false;      // no session = no access
+    if (!allowedRoles?.length) return true; // no restriction = open
+    if (!user || isNaN(user.role)) return false; // no session = no access
     return allowedRoles.includes(user.role);
   };
 
   return {
-    role:      user?.role ?? null,
-    name:      user?.name ?? "",
-    email:     user?.email ?? "",
+    role: user?.role ?? null,
+    name: user?.name ?? "",
+    email: user?.email ?? "",
     can,
-    isAdmin:   user?.role === 1,
+    isAdmin: user?.role === 1,
     isManager: user?.role === 2,
-    isViewer:  user?.role === 3,
+    isViewer: user?.role === 3,
   };
 }

@@ -26,7 +26,6 @@ const RepoOverview = () => {
   const listConfigWithNav = {
     ...CustomerData,
     onEditClick: (item) => {
-      console.log("item",item);
       goTo(ROUTE_KEYS.REPO_OVERVIEW_EDIT, { 
         repoId:item.Repo_Id,
         userId: item.UserId,

@@ -31,7 +31,6 @@ const ParentTicketHeader = ({
   progressLogs,
   isViewer
 }) => {
-  console.log("parentTicket", parentTicket);
 
   // 🔥 1. State for the History Modal and Mobile Expand
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -56,12 +55,24 @@ const ParentTicketHeader = ({
     switch (flag) {
       case "Priority":
         return "bg-orange-100 text-orange-800";
+  
       case "Close Request":
         return "bg-red-100 text-red-800";
+  
       case "Notify Functional":
         return "bg-purple-100 text-purple-800";
-      default:
+  
+      case "Notify Admin":
+        return "bg-yellow-100 text-yellow-800";
+  
+      case "Notify Web":
         return "bg-blue-100 text-blue-800";
+  
+      case "Notify Technical":
+        return "bg-green-100 text-green-800";
+  
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -425,6 +436,134 @@ const ParentTicketHeader = ({
           </div>
         )}
 
+        {(parentTicket?.technicalResponse || parentTicket?.TechnicalResponse) && !isViewer && (
+          <div
+            className={`bg-green-50 border border-green-100 border-l-4 border-l-green-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
+              ? "mt-2 px-3 py-1.5 "
+              : "mt-3 px-4 py-2.5 "
+              }`}
+          >
+            <div className="flex items-center gap-3 truncate">
+              <div className="relative flex h-3 w-3 flex-shrink-0 ml-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+              </div>
+
+              <div className="flex items-baseline gap-2 truncate">
+                <h4
+                  className={`text-green-900 font-bold whitespace-nowrap transition-all ${isStuck ? "text-xs" : "text-sm"}`}
+                >
+                  Awaiting Technical Response.
+                </h4>
+                <span className="hidden sm:inline text-green-300 text-sm">•</span>
+                <p
+                  className={`text-green-700 truncate transition-all hidden sm:block ${isStuck ? "text-[11px]" : "text-xs"}`}
+                >
+                  An assignee is waiting for response.
+                </p>
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="flex-shrink-0 ml-3">
+                <span
+                  className={`bg-white border border-green-200 text-green-700 font-extrabold uppercase tracking-wider shadow-sm transition-all ${isStuck
+                    ? "text-[9px] px-2.5 py-0.5 rounded-full"
+                    : "text-[10px] px-3 py-1 rounded-full"
+                    }`}
+                >
+                  Response Needed
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(parentTicket?.webResponse || parentTicket?.WebResponse) && !isViewer && (
+          <div
+            className={`bg-blue-50 border border-blue-100 border-l-4 border-l-blue-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
+              ? "mt-2 px-3 py-1.5 "
+              : "mt-3 px-4 py-2.5 "
+              }`}
+          >
+            <div className="flex items-center gap-3 truncate">
+              <div className="relative flex h-3 w-3 flex-shrink-0 ml-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
+              </div>
+
+              <div className="flex items-baseline gap-2 truncate">
+                <h4
+                  className={`text-blue-900 font-bold whitespace-nowrap transition-all ${isStuck ? "text-xs" : "text-sm"}`}
+                >
+                  Awaiting Web Response.
+                </h4>
+                <span className="hidden sm:inline text-blue-300 text-sm">•</span>
+                <p
+                  className={`text-blue-700 truncate transition-all hidden sm:block ${isStuck ? "text-[11px]" : "text-xs"}`}
+                >
+                  An assignee is waiting for response.
+                </p>
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="flex-shrink-0 ml-3">
+                <span
+                  className={`bg-white border border-blue-200 text-blue-700 font-extrabold uppercase tracking-wider shadow-sm transition-all ${isStuck
+                    ? "text-[9px] px-2.5 py-0.5 rounded-full"
+                    : "text-[10px] px-3 py-1 rounded-full"
+                    }`}
+                >
+                  Response Needed
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(parentTicket?.adminResponse || parentTicket?.AdminResponse) && !isViewer && (
+          <div
+            className={`bg-yellow-50 border border-yellow-100 border-l-4 border-l-yellow-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
+              ? "mt-2 px-3 py-1.5 "
+              : "mt-3 px-4 py-2.5 "
+              }`}
+          >
+            <div className="flex items-center gap-3 truncate">
+              <div className="relative flex h-3 w-3 flex-shrink-0 ml-1">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-yellow-500"></span>
+              </div>
+
+              <div className="flex items-baseline gap-2 truncate">
+                <h4
+                  className={`text-yellow-900 font-bold whitespace-nowrap transition-all ${isStuck ? "text-xs" : "text-sm"}`}
+                >
+                  Awaiting Admin Response.
+                </h4>
+                <span className="hidden sm:inline text-yellow-300 text-sm">•</span>
+                <p
+                  className={`text-yellow-700 truncate transition-all hidden sm:block ${isStuck ? "text-[11px]" : "text-xs"}`}
+                >
+                  An assignee is waiting for response.
+                </p>
+              </div>
+            </div>
+
+            {isOwner && (
+              <div className="flex-shrink-0 ml-3">
+                <span
+                  className={`bg-white border border-yellow-200 text-yellow-700 font-extrabold uppercase tracking-wider shadow-sm transition-all ${isStuck
+                    ? "text-[9px] px-2.5 py-0.5 rounded-full"
+                    : "text-[10px] px-3 py-1 rounded-full"
+                    }`}
+                >
+                  Response Needed
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
@@ -468,13 +607,13 @@ const ParentTicketHeader = ({
                       <span>Logged by: <span className="font-medium text-gray-700">{log.AssigneeName || "System"}</span></span>
                       <div className="flex flex-wrap gap-1">
                         {log.Flag && log.Flag.split(",").map((flag, idx) => (
-                            <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getFlagStyles(
-                                flag.trim()
-                              )}`}
-                            >
-                              {flag.trim()}
-                            </span>
-                          ))}
+                          <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getFlagStyles(
+                            flag.trim()
+                          )}`}
+                          >
+                            {flag.trim()}
+                          </span>
+                        ))}
                       </div>
                       <span>{dayjs(log.CreatedAt).format("MMM D, YYYY h:mm A")}</span>
                     </div>

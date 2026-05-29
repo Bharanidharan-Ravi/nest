@@ -111,7 +111,6 @@ export function useListState(config, rawData = [], userRole = null) {
   //             }
   //         });
   //     }
-  //     console.log("initial :", initial);
 
   //     return initial; // This will now contain { assignedTo: currentUserName }
   // });
@@ -163,7 +162,6 @@ export function useListState(config, rawData = [], userRole = null) {
         config.filters.find((f) => f.key === key)?.filterType === "api",
     );
   }, [filters, queryFilters, config.filters]);
-  //  console.log("combinedFiltersForApi :", combinedFiltersForApi, apiFilterEntries);
   const apiFilterConfig =
     apiFilterEntries.length > 0
       ? config.filters.find((f) => f.key === apiFilterEntries[0][0])
@@ -228,7 +226,6 @@ export function useListState(config, rawData = [], userRole = null) {
     },
   });
 
-  // console.log("apiFilteredData :", apiFilteredData);
 
   /* --- PROCESS DATA (Local Filtering & Sorting) --- */
   const processed = useMemo(() => {
@@ -452,7 +449,6 @@ export function useListState(config, rawData = [], userRole = null) {
     // dataUpdatedAt // (Make sure this is here if we added it earlier!)
   ]);
 
-  console.log("processed642357423632524",processed,rawData);
   
   /* --- REUSABLE FILTER MATCH CHECKER --- */
   const checkItemMatchesFilters = useCallback(
@@ -658,7 +654,6 @@ export function useListState(config, rawData = [], userRole = null) {
   //   } else {
   //     data = [...rawData];
   //   }
-  //   console.log("Filtered Data:", data, rawData);
   //   const combinedFilters = { ...filters, ...queryFilters };
 
   //   Object.entries(combinedFilters).forEach(([key, value]) => {

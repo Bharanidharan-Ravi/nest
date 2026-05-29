@@ -8,6 +8,7 @@ import { logoutUser } from "../../../core/auth/authUtils";
 import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useRef } from "react";
 import { useEffect } from "react";
+import { executeApi } from "../../../core/api/executor";
 
 
 
@@ -28,10 +29,18 @@ const Header = ({ toggleMobileMenu }) => {
     setDropdownVisible((prev) => !prev);
   };
 
-  const handleLogout = () => {
-    logoutUser();
-    navigate("/");
+  const handleLogout = async () => {
+    // const user = readUserFromSession();
 
+    await executeApi({
+    url: "/Login/logout",
+    method: "POST",
+    payload: {
+      sessionId: user.sessionId
+    },
+  });
+    logoutUser();
+    // navigate("/");
   };
 
     const handleLogoClick = () => {

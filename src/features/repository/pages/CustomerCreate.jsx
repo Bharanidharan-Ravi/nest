@@ -52,14 +52,9 @@ import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 
 const CustomerCreatePage = () => {
   const params = useParams();
-  console.log("params",params);
-  console.log("useParams",useParams);
   const repoId=params.repoId
   const userId=params.userId
   const isEdit = !!userId;
-  console.log("params",repoId);
-  console.log("userId",userId); 
-  console.log("isEdit",isEdit);
  
   const { data: useClientDataWrapper } = useClientData(repoId);
   // const currentRepo=data?.RepoList?.find(repo=>repo.Repo_Id===repoId);

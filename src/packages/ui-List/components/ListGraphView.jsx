@@ -75,9 +75,9 @@ const getHashColor = (str) => {
 };
 // 🚀 CLEANED UP: All hardcoded values removed. Only handles basic case mismatch.
 const getSafeValue = (obj, key) => {
-  if (!obj || key===undefined || key===null) return undefined;
+  if (!obj || key === undefined || key === null) return undefined;
   if (obj[key] !== undefined) return obj[key];
-  const keyStr=String(key)
+  const keyStr = String(key);
   const camel = keyStr?.charAt(0).toLowerCase() + keyStr?.slice(1);
   if (obj[camel] !== undefined) return obj[camel];
 
@@ -117,7 +117,6 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
         data
           .map((item) => {
             const rawDate = getSafeValue(item, graphConfig.graphXAxisKey);
-            // console.log("rawDate :", rawDate);
 
             return graphConfig.isDateAxis
               ? rawDate
@@ -157,7 +156,7 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
             ? graphConfig.graphGroupIdKey(item)
             : getSafeValue(item, graphConfig.graphGroupIdKey);
 
-        const uniqueId = rawGroupId || item.id || "unknown";
+        const uniqueId = rawGroupId || item.rawId || "unknown";
 
         const finalColor =
           getSafeValue(item, graphConfig.graphColorKey) ||
@@ -187,8 +186,19 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
         const rawStatus = getSafeValue(item, graphConfig.terminalStatusKey);
         const terminalIds = graphConfig.terminalStatusIds || [];
 
-        if (terminalIds.includes(Number(rawStatus))) {
-          grouped[xKey][uniqueId].terminalCount += 1;
+        // if (terminalIds.includes(Number(rawStatus))) {
+        //   grouped[xKey][uniqueId].terminalCount += 1;
+        // }
+        if (Number(rawStatus) === 15 || Number(rawStatus) === 16) {
+          grouped[xKey][uniqueId].markerType = "C";
+        }
+
+        if (
+          String(item.threadStatusName || "")
+            .toLowerCase()
+            .includes("reopened")
+        ) {
+          grouped[xKey][uniqueId].markerType = "R";
         }
       }
     });
@@ -197,8 +207,9 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
     Object.keys(grouped).forEach((xKey) => {
       finalGrouped[xKey] = Object.values(grouped[xKey]);
       finalGrouped[xKey].forEach((seg) => {
-        seg.isTerminal =
-          seg.terminalCount > 0 && seg.terminalCount === seg.recordCount;
+        // seg.isTerminal =
+        //   seg.terminalCount > 0 && seg.terminalCount === seg.recordCount;
+        seg.markerType = seg.markerType || null;
         seg.display = graphConfig.valueFormatter
           ? graphConfig.valueFormatter(seg.value)
           : seg.value;
@@ -430,7 +441,8 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
                               fill="url(#topShine)"
                             />
 
-                            {item.isTerminal && (
+                            {/* {item.isTerminal && ( */}
+                            {item.markerType && (
                               <g className="pointer-events-none">
                                 <path
                                   d={`M ${x} ${y} L ${x} ${y + h} A ${rx} ${ry} 0 0 0 ${x + barW} ${y + h} L ${x + barW} ${y} Z`}
@@ -460,7 +472,7 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
                                   stroke="#ffffff"
                                   strokeWidth="1"
                                 />
-                                <text
+                                {/* <text
                                   x={x + barW + 18}
                                   y={y + h / 2 + 2.5}
                                   fill="#ffffff"
@@ -469,6 +481,16 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
                                   textAnchor="middle"
                                 >
                                   C
+                                </text> */}
+                                <text
+                                  x={x + barW + 18}
+                                  y={y + h / 2 + 2.5}
+                                  fill="#ffffff"
+                                  fontSize="7"
+                                  fontWeight="bold"
+                                  textAnchor="middle"
+                                >
+                                  {item.markerType}
                                 </text>
                               </g>
                             )}

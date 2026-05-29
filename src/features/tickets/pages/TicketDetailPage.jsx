@@ -11,6 +11,7 @@ import AssigneesWidget from "../component/AssigneesWidget";
 // Import your new split components
 import ParentTicketHeader from "../component/ThreadParent/ParentTicketHeader";
 import TicketThreads from "../component/ThreadListCard/TicketThreads";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 import {
   useProjectMaster,
   useTeamMaster,
@@ -21,6 +22,7 @@ const TicketDetailPage = () => {
   // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
+  const editRouteKey=ROUTE_KEYS.TICKET_EDIT
   const { isViewer } = useCurrentUser();
   const [editingItem, setEditingItem] = useState(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -35,7 +37,6 @@ const TicketDetailPage = () => {
 
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
-  console.log("ThreadsList", ThreadsList);
 
   const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
@@ -85,6 +86,9 @@ const TicketDetailPage = () => {
       Repo_Name: projectDetails?.repoName || "Unknown Repo",
     };
   }, [ticketMasterData, ticketId]);
+  const isTicketIncomplete=!parentTicket?.Assignee_Id||
+  !parentTicket?.Hours||
+  !parentTicket?.Due_Date;
 
   // 2. Process Assignees and Roles
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
@@ -269,6 +273,15 @@ const TicketDetailPage = () => {
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
+            {isTicketIncomplete?(
+              <div className="flex flex-col items-center justify-center gap-4 py-12 px-6
+              border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+              <button onClick={()=> goTo(editRouteKey, { ticketId })}
+              className="bg-brand-yellow text-white px-4 py-2 rounded-md
+              font-medium hover:opacity-90 transition-colors">
+             Complete Ticket Details
+            </button>
+            </div>):(
             <TicketThreads
               ticketId={ticketId}
               threadsData={ThreadsList?.ThreadsList || []}
@@ -284,6 +297,7 @@ const TicketDetailPage = () => {
               setEditingItem={setEditingItem}
               currentUser={user}
             />
+            )}
           </div>
 
           {/* ========================================= */}
@@ -400,7 +414,6 @@ export default TicketDetailPage;
 //   const [selectedHandoffId, setSelectedHandoffId] = useState(null);
 //   // 🔥 1. Add state to track middle-expansion
 //   const [expandCount, setExpandCount] = useState(0);
-// console.log("TicketHistory :", ThreadsList);
 
 //   // 🔥 2. Reset the expansion if they click a different person in the sidebar
 //   useEffect(() => {
@@ -459,7 +472,6 @@ export default TicketDetailPage;
 //   // 1. Parse the array safely
 //   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
 
-// console.log("assigneesJsonString :", assigneesJsonString, ThreadsList);
 
 //   // 2. Find ALL assignments for the logged-in user
 //   const myAssignments = assigneesJsonString.filter(
@@ -529,16 +541,6 @@ export default TicketDetailPage;
 //     lastValidStreamId: lastValidStream?.StreamId || null,
 //   };
 
-//   // console.log(
-//   //   "parentTicket :",
-//   //   parentTicket,
-//   //   assigneesJsonString,
-//   //   myCurrentStream,
-//   //   isOwner,
-//   //   myAssignments,
-//   //   userRole,
-//   // );
-
 //   // --- 1. Thread Data Processing ---
 //   const threads = ThreadsList?.ThreadsList || [];
 //   // const rawList = threads.map((thread) => ({
@@ -572,7 +574,6 @@ export default TicketDetailPage;
 //       name: assignee.Assignee_Name,
 //       type: assignee.Assignee_Type,
 //     }));
-//     console.log("parsedAssignees :", parsedAssignees, thread);
 
 //     return {
 //       Id: thread.ThreadId,

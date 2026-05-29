@@ -7,10 +7,11 @@ import { parseQuery } from "../hooks/useQueryParser";
 
 export function ListSearchBar() {
   const { query, setQuery, config } = useList();
-  const [inputValue, setInputValue] = useState("");
   const inputRef = useRef(null);
 
   const { filters, text } = parseQuery(query);
+  const [inputValue, setInputValue] = useState(text || "");
+
 
   // ── Tab chip (is:open / is:closed) ──────────────────────────────────────
   const tabChip = filters.is

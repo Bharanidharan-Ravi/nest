@@ -194,43 +194,6 @@ export const ThreadFieldConfig = (ticketId) => [
       return Boolean(formData?.fromTime && formData?.toTime);
     },
     forceSubmit: (context) => context.isEdit !== true,
-    // 🔥 Throw an error if they entered a description but no time
-    // customValidator: (value, formData, context) => {
-    //   if (context.isViewer) return true
-    //   if (isTimeLocked(context)) return true;
-
-    //   const hasTime = !!value || (!!formData.fromTime && !!formData.toTime);
-    //   const cleanDesc = formData.description?.replace(/<[^>]*>?/gm, "").trim();
-    //   const hasDescription = !!cleanDesc;
-
-    //   if (hasDescription && !hasTime) {
-    //     return "Time logging is mandatory when entering a description.";
-    //   }
-
-    //   return true;
-    // },
-    // customValidator: (value, formData, context) => {
-    //   if (context.isViewer) return true;
-    //   if (isTimeLocked(context)) return true;
-    
-    //   const skipTimeValidation =
-    //     formData?.requestClose ||
-    //     formData?.Priority ||
-    //     formData?.["Functional Response"];
-    
-    //   if (skipTimeValidation) return true;
-    
-    //   const cleanDesc = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
-    //   const hasDescription = !!cleanDesc;
-    
-    //   const hasTime = !!value || (!!formData.fromTime && !!formData.toTime);
-    
-    //   if (hasDescription && !hasTime) {
-    //     return "Time logging is mandatory when entering a description.";
-    //   }
-    
-    //   return true; 
-    // },
     customValidator: (value, formData, context) => {
       if (context.isViewer) return true;
       if (isTimeLocked(context)) return true;
@@ -238,7 +201,10 @@ export const ThreadFieldConfig = (ticketId) => [
       const skipTimeValidation =
         formData?.requestClose ||
         formData?.Priority ||
-        formData?.["Functional Response"];
+        formData?.["Functional Response"] ||
+        formData?.["Technical Response"] ||
+        formData?.["Web Response"] ||
+        formData?.["Admin Response"];
     
       if (skipTimeValidation) return true;
     
@@ -365,29 +331,6 @@ export const ThreadFieldConfig = (ticketId) => [
     },
   },
   {
-    name: "requestClose",
-    apiKey: "IsCloseRequested",
-    apiKey: "IsCloseRequested", 
-    label: "Request Ticket Closure",
-    type: "switch",
-    ui: "mui",
-    colSpan: 4,
-    initValueResolver: ({ context }) => {
-      const isRequested =
-        context?.parentTicket?.IsCloseRequested ||
-        context?.parentTicket?.isCloseRequested;
-        return isRequested ? true : null;
-    },
-    visibleWhen: (formData, context) => {
-      const isViewer = context?.isViewer;
-      const isEdit = context?.isEdit;
-      if (isViewer || isEdit) return false;
-      return true;
-    },
-
-    transform:(value) => value === true ? true : false
-  },
-  {
     name: "Priority",
     apiKey: "PriorityRequest",
     label: "Notify Priority",
@@ -403,6 +346,30 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return context?.currentUser?.role === 1;
     },
+    transform:(value) => value === true ? true : false
+  },
+
+  {
+    name: "requestClose",
+    apiKey: "IsCloseRequested", 
+    label: "Request Ticket Closure",
+    type: "switch",
+    ui: "mui",
+    colSpan: 4,
+    initValueResolver: ({ context }) => {
+      const isRequested =
+        context?.parentTicket?.IsCloseRequested ||
+        context?.parentTicket?.isCloseRequested;
+        return isRequested ? true : null;
+    },
+
+    visibleWhen: (formData, context) => {
+      const isViewer = context?.isViewer;
+      const isEdit = context?.isEdit;
+      if (isViewer || isEdit) return false;
+      return true;
+    },
+
     transform:(value) => value === true ? true : false
   },
 
@@ -425,13 +392,73 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     transform:(value) => value === true ? true : false
   },
+
+  {
+    name: "Technical Response",
+    apiKey: "TechnicalResponse",
+    label: "Notify Technical",
+    type: "switch",
+    ui: "mui",
+    colSpan: 4,
+    // initValueResolver: () => false,
+    initValueResolver: ({ context }) => {
+     const isActive = 
+        context?.parentTicket?.TechnicalResponse ||
+        context?.parentTicket?.technicalResponse
+      return isActive ? true : null;
+    },
+    visibleWhen: (formData, context) => {
+      return !context?.isViewer && !context?.isEdit;
+    },
+    transform:(value) => value === true ? true : false
+  },
+
+  {
+    name: "Web Response",
+    apiKey: "WebResponse",
+    label: "Notify Web",
+    type: "switch",
+    ui: "mui",
+    colSpan: 4,
+    // initValueResolver: () => false,
+    initValueResolver: ({ context }) => {
+     const isActive = 
+        context?.parentTicket?.WebResponse ||
+        context?.parentTicket?.webResponse
+      return isActive ? true : null;
+    },
+    visibleWhen: (formData, context) => {
+      return !context?.isViewer && !context?.isEdit;
+    },
+    transform:(value) => value === true ? true : false
+  },
+
+  {
+    name: "Admin Response",
+    apiKey: "AdminResponse",
+    label: "Notify Admin",
+    type: "switch",
+    ui: "mui",
+    colSpan: 4,
+    // initValueResolver: () => false,
+    initValueResolver: ({ context }) => {
+     const isActive = 
+        context?.parentTicket?.AdminResponse ||
+        context?.parentTicket?.adminResponse
+      return isActive ? true : null;
+    },
+    visibleWhen: (formData, context) => {
+      return !context?.isViewer && !context?.isEdit;
+    },
+    transform:(value) => value === true ? true : false
+  },
+
   {
     name: "TicketProgressHistoryWidget",
     type: "custom", // You can name this whatever you want now
     customComponent: TicketProgressHistory, // 👈 PASS THE REACT COMPONENT HERE
     colSpan: 12,
     visibleWhen: (formData, context) => {
-      console.log("context", context);
       return !context?.isEdit && !context?.isViewer;
     },
 
@@ -440,6 +467,7 @@ export const ThreadFieldConfig = (ticketId) => [
       ticketId: ticketId, // 👈 Pass the ticketId here so FormEngine forwards it
     },
   },
+
   {
     name: "copyDescription",
     label: "Use Description as Status Summary",
@@ -501,6 +529,21 @@ export const ThreadFieldConfig = (ticketId) => [
         context?.parentTicket?.FuncResponse ||
         context?.parentTicket?.funcResponse
       );
+
+      const originalWebResponse = !!(
+        context?.parentTicket?.WebResponse ||
+        context?.parentTicket?.webResponse
+      );
+
+      const originalTechnicalResponse = !!(
+        context?.parentTicket?.TechnicalResponse ||
+        context?.parentTicket?.technicalResponse
+      );
+
+      const originalAdminResponse = !!(
+        context?.parentTicket?.AdminResponse ||
+        context?.parentTicket?.adminResponse
+      );
     
       // -----------------------------
       // CURRENT FORM STATES
@@ -509,6 +552,10 @@ export const ThreadFieldConfig = (ticketId) => [
       const currentRequestClose = formData?.requestClose === true;
       const currentPriority = formData?.Priority === true;
       const currentFuncResponse = formData?.["Functional Response"] === true;
+
+      const currentWebResponse = formData?.["Technical Response"] === true;
+      const currentTechnicalResponse = formData?.["Web Response"] === true;
+      const currentAdminResponse = formData?.["Admin Response"] === true;
     
       // -----------------------------
       // DETECT CHANGES (ON or OFF)
@@ -521,9 +568,18 @@ export const ThreadFieldConfig = (ticketId) => [
     
       const funcResponseChanged =
         currentFuncResponse !== originalFuncResponse;
+
+        const webResponseChanged =
+        currentWebResponse !== originalWebResponse;
+
+        const technicalResponseChanged =
+        currentTechnicalResponse !== originalTechnicalResponse;
+
+        const adminResponseChanged =
+        currentAdminResponse !== originalAdminResponse;
     
       const toggleInteracted =
-        requestCloseChanged || priorityChanged || funcResponseChanged;
+        requestCloseChanged || priorityChanged || funcResponseChanged || webResponseChanged || technicalResponseChanged || adminResponseChanged ;
     
       // -----------------------------
       // VALIDATION RULE

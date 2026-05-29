@@ -5,7 +5,6 @@ import { ThreadFieldConfig } from "./Thread.config";
 
 // 🔥 HELPER: Checks if ONLY the Ticket Status Update fields are filled
 const isProgressOnlyUpdate = (formData, context) => {
-  console.log("Contextwwwwswswsw",context);
   // 1. Check Thread Data safely (handles empty strings "")
   const cleanDesc = (formData?.description || "").replace(/<[^>]*>?/gm, "").trim();
 
@@ -14,7 +13,8 @@ const isProgressOnlyUpdate = (formData, context) => {
     (formData?.hours || "").trim().length > 0 ||
     (formData?.fromTime || "").trim().length > 0 ||
     (formData?.toTime || "").trim().length > 0 ||
-    (formData?.assignees?.length || 0) > 0;
+    (formData?.assignees?.length || 0) > 0
+    ;
 
   // 2. Check Progress Data safely
   const summary = (formData?.TicketStatusSummary || "").trim();
@@ -73,9 +73,9 @@ export const ThreadFormConfig = {
                 const overrides = { StreamStatus: currentStreamStatus };
 
                 // 🔥 Inject the flag if it's a progress-only update
-                if (isProgressOnlyUpdate(formData)) {
-                  overrides.IsTicketProgressOnly = true;
-                }
+                // if (isProgressOnlyUpdate(formData)) {
+                //   overrides.IsTicketProgressOnly = true;
+                // }
 
                 submitForm(overrides);
               }
@@ -129,9 +129,9 @@ export const ThreadFormConfig = {
                 const overrides = { StreamStatus: 5 };
 
                 // 🔥 Inject the flag if it's a progress-only update
-                if (isProgressOnlyUpdate(formData)) {
-                  overrides.IsTicketProgressOnly = true;
-                }
+                // if (isProgressOnlyUpdate(formData)) {
+                //   overrides.IsTicketProgressOnly = true;
+                // }
 
                 if (formData.assignees && formData.assignees.length > 0) {
                   const myUserId = context?.currentUser?.userId?.toLowerCase();
@@ -250,41 +250,39 @@ export const ThreadFormConfig = {
       ];
     }
 
-    // ── 3. OWNER BUTTONS ──────────────────────────────────────────
-    if (role === "Owner" && (!context.isViewer)) {
+    if (role === "Owner" && !context.isViewer) {
       return [
+        // ── SEPARATE BUTTON (LEFT SIDE) ──
+        {
+          type: "button",
+          label: "Commit to Client",
+          subtext: "Commit status to client",
+          intent: "clientCommit",
+          className:
+            "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
+          icon: <FaTelegramPlane className="text-black-600" />,
+          onClick: ({ submitForm, formData }) =>
+            submitForm({
+              Comment: formData.description,
+              toClient: true,
+            }),
+        },
+
+        // ── SPLIT BUTTON ──
         {
           type: "split-button",
           options: [
             {
               label: "Commit Update",
-              subtext: "Save changes ",
+              subtext: "Save changes",
               intent: "neutral",
               icon: <FaSave className="text-gray-500" />,
               onClick: ({ formData, submitForm }) => {
                 let overrides = {};
 
-                const cleanComment = formData.description
-                  ?.replace(/<[^>]*>?/gm, "")
-                  .trim();
-                const hasComment = !!cleanComment;
-                const hasHours = !!formData.hours || !!formData.fromTime;
-                const hasAssignee = formData.assignees?.length > 0;
-
-                // 🔥 Inject the flag if it's a progress-only update
-                if (isProgressOnlyUpdate(formData)) {
-                  overrides.IsTicketProgressOnly = true;
-                }
-                // ── ASSIGN ONLY MODE ──
-                else if (context.isOwner && !hasComment && !hasHours && hasAssignee) {
-                  overrides.AssignOnly = true;
-                  overrides.Comment = null;
-                } else if (hasComment) {
-                  overrides.WorkStreamId =
-                    context?.activeWorkStream?.StreamId ||
-                    context?.lastValidStreamId ||
-                    null;
-                }
+                // if (isProgressOnlyUpdate(formData)) {
+                //   overrides.IsTicketProgressOnly = true;
+                // }
 
                 submitForm(overrides);
               },
@@ -294,29 +292,15 @@ export const ThreadFormConfig = {
               subtext: "Complete this ticket successfully",
               intent: "success",
               icon: <FaCheckCircle className="text-green-600" />,
-              onClick: ({ submitForm }) =>
+              onClick: ({ submitForm, formData }) =>
                 submitForm(
                   {
                     StreamStatus: 15,
                     CompletionPercentage: 100,
-                    Comment: formData.description || "Ticket closed by owner.",
-                  },
-                  true,
-                ),
-            },
-            {
-              label: "Commit to Client",
-              subtext: "Commit status to client",
-              intent: "clientCommit",
-              icon: <FaTelegramPlane className="text-blue-600" />,
-              onClick: ({ submitForm }) =>
-                submitForm(
-                  {
                     Comment:
-                      formData.description,
-                    toClient: true,
+                      formData.description || "Ticket closed by owner.",
                   },
-
+                  true
                 ),
             },
             {
@@ -324,14 +308,14 @@ export const ThreadFormConfig = {
               subtext: "Mark this ticket as cancelled",
               intent: "danger",
               icon: <FaTimesCircle className="text-red-600" />,
-              onClick: ({ submitForm }) =>
+              onClick: ({ submitForm, formData }) =>
                 submitForm(
                   {
                     StreamStatus: 16,
                     Comment:
                       formData.description || "Ticket cancelled by owner.",
                   },
-                  true,
+                  true
                 ),
             },
           ],
@@ -339,82 +323,69 @@ export const ThreadFormConfig = {
       ];
     }
 
-    // ── 4. STANDARD/FALLBACK BUTTON ───────────────────────────────
-    //   return [
-    //     {
-    //       label: "Commit Update",
-    //       type: "button",
-    //       className:
-    //         "bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-900 font-medium",
-    //       onClick: ({ submitForm, formData }) => {
-    //         const overrides = {};
+    const isClosed = Boolean(context?.isClosed);
+    const isOwner = Boolean(context?.isOwner);
+    const isViewer = Boolean(context?.isViewer);
 
-    //         // 🔥 Inject the flag if it's a progress-only update
-    //         if (isProgressOnlyUpdate(formData)) {
-    //           overrides.IsTicketProgressOnly = true;
-    //         }
+    if (isClosed) return [];
 
-    //         submitForm(overrides);
-    //       },
-    //     },
-    //   ];
-    // },
+    // shared action
+    const commitAction = {
+      label: "Commit Update",
+      subtext: "Save changes",
+      intent: "neutral",
+      icon: <FaSave className="text-gray-500" />,
+      onClick: ({ formData, submitForm }) => {
+        const overrides = {
+          Comment: formData.description,
+          toClient: isViewer,
+        };
+        // if (isProgressOnlyUpdate(formData)) {
+        //   overrides.IsTicketProgressOnly = true;
+        // }
+        if (context?.onCommitIntercept) {
+          context.onCommitIntercept((isSupport) => {
+            submitForm({ ...overrides, IsSupport: isSupport });
+          });
+        } else {
+          submitForm(overrides);
+        }
+      },
+    };
 
+    const closeAction = {
+      label: "Complete & Close",
+      subtext: "Complete this ticket successfully",
+      intent: "success",
+      icon: <FaCheckCircle className="text-green-600" />,
+      onClick: ({ submitForm, formData }) =>
+        submitForm(
+          {
+            StreamStatus: 15,
+            CompletionPercentage: 100,
+            Comment: formData.description || "Ticket closed by owner.",
+          },
+          true
+        ),
+    };
+
+    // ✅ ONLY when BOTH owner + viewer → split button
+    if (isOwner && isViewer) {
+      return [
+        {
+          type: "split-button",
+          options: [commitAction, closeAction],
+        },
+      ];
+    }
+
+    // ✅ otherwise → normal single button
     return [
       {
-        type: "split-button",
-        // hide: Boolean(context?.isClosed || !context?.isOwner),
-        options: [
-          // Only show "Commit Update" if ticket is NOT closed
-          ...(!Boolean(context?.isClosed)
-            ? [
-              {
-                label: "Commit Update",
-                subtext: "Save changes",
-                intent: "neutral",
-                icon: <FaSave className="text-gray-500" />,
-                onClick: ({ formData, submitForm }) => {
-                  const overrides ={
-                
-                    Comment: formData.description,
-                    toClient: Boolean(context?.isViewer),
-                  };
-
-                  if (context?.onCommitIntercept) {
-                    context.onCommitIntercept((isSupport)=>{
-                      submitForm({...overrides, IsSupport:isSupport});
-                    });
-                  }else{
-                    submitForm(overrides);
-                  }
-                },
-              },
-            ]
-            : []),
-          // Only show "Complete & Close" if viewer AND owner AND ticket is NOT closed
-          ...(Boolean(context?.isOwner) && !Boolean(context?.isClosed)
-            ? [
-              {
-                label: "Complete & Close",
-                subtext: "Complete this ticket successfully",
-                intent: "success",
-                icon: <FaCheckCircle className="text-green-600" />,
-                onClick: ({ submitForm, formData }) =>
-                  submitForm(
-                    {
-                      StreamStatus: 15,
-                      CompletionPercentage: 100,
-                      Comment: formData.description || "Ticket closed by owner.",
-                    },
-                    true
-                  ),
-              },
-            ]
-            : []),
-        ],
+        type: "button",
+        ...commitAction,
       },
     ];
-
   },
 
 
@@ -447,8 +418,7 @@ export const ThreadFormConfig = {
 //   actions: ({ formData, context }) => {
 //     const statusId = formData?.StreamStatus?.value?.id;
 //     const role = context?.userRole;
-//     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
-//     console.log("context :", context);
+//     const currentStreamStatus = context?.activeWorkStream?.StreamStatus
 
 //     if (context?.isClosed) {
 //       return [

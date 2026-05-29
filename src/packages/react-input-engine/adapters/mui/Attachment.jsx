@@ -20,7 +20,6 @@
 //       if (file.type.startsWith("image/")) {
 //         // uploadFile(file);
 //         const response=await uploadFile(file)
-//         console.log("response",response);
 
 //       } else {
 //         onFileSelect(file);
@@ -95,7 +94,6 @@
 
 //         // Optionally upload the image
 //         const response = await uploadFile(file);
-//         console.log("response", response);
 //       } else {
 //         onFileSelect(file); // Handle non-image files
 //       }
@@ -265,7 +263,6 @@ const FileAttachmentInput = ({ onFileSelect, uploadFile, value }) => {
 //   const fileInputRef = useRef(null);
 //   const Default_Image = '/DefaultUser.png';  // Default image path
 //   const [imagePreview, setImagePreview] = useState(Default_Image);  // State to store image preview
-// console.log("uploadFile :", uploadFile, value);
 
 //   // Trigger the file input when the button is clicked
 //   const triggerFileUpload = () => {
@@ -288,7 +285,6 @@ const FileAttachmentInput = ({ onFileSelect, uploadFile, value }) => {
 
 //         // Optionally upload the image
 //         const response = await uploadFile(file);
-//         console.log("response", response);
 //       } else {
 //         onFileSelect(file);  // Handle non-image files
 //       }

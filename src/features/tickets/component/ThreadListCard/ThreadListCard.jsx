@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FaEdit, FaRegHandshake } from "react-icons/fa";
 import { readUserFromSession } from "../../../../core/auth/useCurrentUser";
+import MuiSwitch from "../../../../packages/react-input-engine/adapters/mui/MuiSwitch";
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -22,18 +23,15 @@ function formatDateRange(fromTime, toTime) {
 }
 
 // 👉 Accept the new onEdit and currentUser props!
-const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
+const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }) => {
   dayjs.extend(relativeTime);
-  console.log("formContext", formContext);
-  console.log("item 2221212", item);
-
   // Check if this comment was made by the logged-in user
   // const isMe = item.CreatedBy === currentUser;
 
   const isMe = item.CreatedBy === currentUser;
   const user = readUserFromSession();
 
-
+  // const toggleMeta ={isMe,isViewer:!!formContext?.isViewer}
   // 🔥 2. Check if the thread is less than or equal to 24 hours old
   const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
 
@@ -69,16 +67,16 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
         title={`Co-Contributors:\n${allNamesList}`} // Native HTML tooltip
       >
         {isSelfSupport && (
-          <span className = "inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-[12px] font-bold tracking-wider uppercase">
-            Support <FaRegHandshake size={20}/>
-            </span>
+          <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-[12px] font-bold tracking-wider uppercase">
+            Support <FaRegHandshake size={20} />
+          </span>
         )}
 
         {othersOnly.length > 0 && (
           <>
-        <span className="mx-1.5 text-gray-400 italic">with</span>
-        <span className="truncate max-w-[200px]">{visibleNames}</span>
-        </>
+            <span className="mx-1.5 text-gray-400 italic">with</span>
+            <span className="truncate max-w-[200px]">{visibleNames}</span>
+          </>
         )}
 
         {/* If there are more than 2, show the +X badge! */}
@@ -102,11 +100,7 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
             : "bg-white/70 border-2 border-gray-100 rounded-2xl rounded-tl-sm"
             }`}
         >
-          {/* {getInitials(item.CreatedBy)} */}
-          {/* {isMe ?
-            getInitials(currentUser || "You") :
-            (formContext.isViewer ? "WG" : getInitials(item.CreatedBy))
-          } */}
+
           {isMe
             ? getInitials(currentUser || "You")
             : (user?.role === 3 && item.team !== null)
@@ -126,8 +120,9 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
         </div>
       </div> */}
       {/* 2. THE GLASS CHAT BUBBLE */}
+
       <div
-        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${!formContext.isViewer && item.ToClient
+        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${!formContext.isViewer && item.toClient
           ? "bg-green-100/80 border-green-500/60 rounded-2xl rounded-tl-sm" // Always green for ToClient
           : isMe
             ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm" // Subtle Yellow Glass for "Me"
@@ -153,27 +148,38 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext }) => {
               commented {dayjs(item.createdAt).fromNow()}
             </span>
           </div>
+          <div className="flex items-center gap-3">
+            {toggles
+              .filter((toggle) => toggle.VisibleWhen(item, isMe))
+              .map((toggle) => (
+                <div key={toggle.name} className="flex items-center">
+                  <MuiSwitch
+                    name={toggle.name}
+                    label={toggle.label}
+                    value={item.toClient}
+                    onChange={(name, checked) =>
+                      toggle.onCommit(item, checked, name)
+                    }
+                  />
+                </div>
+              ))}
 
-          {canEdit && (
             <button
               onClick={onEdit}
-              className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded-full hover:bg-black/5"
+              disabled={!canEdit}
+              className={`flex items-center justify-center p-1 rounded-full transition-colors ${canEdit
+                  ? "text-gray-400 hover:text-blue-600 hover:bg-black/5"
+                  : "invisible"
+                }`}
               title="Edit Comment"
             >
               <FaEdit size={14} />
             </button>
-          )}
-          {/* <button
-            onClick={onEdit}
-            className="text-gray-400 hover:text-blue-600 transition-colors p-1 rounded-full hover:bg-black/5"
-            title="Edit Comment"
-          >
-            <FaEdit size={14} />
-          </button> */}
+          </div>
         </div>
 
         {/* Body */}
-        <div className="p-5 text-sm text-gray-800 break-words leading-relaxed">
+        < div className="p-5 text-sm text-gray-800 break-words leading-relaxed" >
           <HtmlRenderer html={item.description} />
         </div>
 

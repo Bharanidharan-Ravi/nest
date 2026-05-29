@@ -50,6 +50,41 @@
   box-shadow: 0 6px 16px rgba(155, 77, 202, 0.15) !important;
 }
 
+.technical-response-requested-row {
+  border-left: 4px solid #22c55e !important; 
+  background-color: #dcfce7 !important;      
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1) !important; 
+  transition: all 0.2s ease-in-out;
+}
+
+.technical-response-requested-row:hover {
+  background-color: #bbf7d0 !important;  
+  box-shadow: 0 6px 16px rgba(34, 197, 94, 0.15) !important;
+}
+
+.web-response-requested-row {
+  border-left: 4px solid #3b82f6 !important; 
+  background-color: #dbeafe !important;      
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important; 
+  transition: all 0.2s ease-in-out;
+}
+
+.web-response-requested-row:hover {
+  background-color: #bfdbfe !important;  
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.15) !important;
+}
+
+.admin-response-requested-row {
+  border-left: 4px solid #eab308 !important; 
+  background-color: #fef9c3 !important;      
+  box-shadow: 0 4px 12px rgba(234, 179, 8, 0.1) !important; 
+  transition: all 0.2s ease-in-out;
+}
+
+.admin-response-requested-row:hover {
+  background-color: #fde68a !important;  
+  box-shadow: 0 6px 16px rgba(234, 179, 8, 0.15) !important;
+}
 /* Optional: Add a little pulsating dot next to the title to really grab attention */
 .close-request-indicator {
   display: inline-block;

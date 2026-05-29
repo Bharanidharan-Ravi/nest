@@ -1,7 +1,7 @@
 import { buildOptionsResolver, sumHHMM } from "../../../app/shared/utilities/utilities";
 const makeAtLeastOneValidator =(fieldLabel)=>(value,formData)=>{
   const hasAtLeastOne = 
-         formData?.Client || formData?.Development || formData?.Testing;
+         formData?.Client || formData?.Web || formData?.Functional || formData?.Technical;
          if(!hasAtLeastOne){
           return `${fieldLabel} hours is required`
          }
@@ -411,18 +411,18 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.estimateHours : "",
     disabled:true,
     forceSubmit: true,
-    effectDependencies: ["Client", "Development", "Technical","Functional"],
+    effectDependencies: ["Client", "Web", "Technical","Functional"],
     effectResolver: (formData) => {
 
       const client = formData.Client;
-      const dev = formData.Development;
+      const web = formData.Web;
       const tech = formData.Technical;
       const func = formData.Functional;
-      const hasAnyValue = client || dev || tech || func;
+      const hasAnyValue = client || web || tech || func;
       if (!hasAnyValue) {
         return ""; // or null depending on your system
       }
-      return sumHHMM(client, dev, tech,func);
+      return sumHHMM(client, web, tech,func);
     },
     // effectResolver: (formData) => {
     //   return sumHHMM(formData.Client, formData.Development, formData.Testing);
@@ -506,22 +506,22 @@ export const TicketFieldConfig = () => [
 //   colSpan: 1,
 // },
 {
-  label: "Dev Hours",
-  name: "Development",
+  label: "Web Hours",
+  name: "Web",
   type: "flexHours",
   ui: "mui",
   required: false,
   dataType: "string",
-  apiKey: "Development",
+  apiKey: "Web",
   colSpan: 2,
   initValueResolver: ({ context }) =>
-    context.isEdit ? context.entityData?.developmentTime : "",
+    context.isEdit ? context.entityData?.webTime : "",
   visibleWhen: (formData, context) => {
     if (context.isViewer) return false;
     if (context.isEdit) return true;
     return true;
   },
-  customValidator:makeAtLeastOneValidator("Development")
+  customValidator:makeAtLeastOneValidator("Web")
 },
 {
   label: "Tech Hours",

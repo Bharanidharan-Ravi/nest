@@ -50,40 +50,48 @@ const MASTER_KEYS = Object.values(MASTER_ENTITY_MAP); // keeps it DRY
 //    sort        : "asc" | "desc"
 // ─────────────────────────────────────────────────────────────────────────────
 const REALTIME_ENTITY_CONFIG = {
-
   // ── Ticket lists ────────────────────────────────────────────────────────────
   Ticket: {
     type: "queries",
     // Pull the prefix straight from queryKeys – if ticket.all ever changes, this follows.
-    queryKey: [...queryKeys.ticket.all, "list"],   // ["ticket","list"] – partial prefix
+    queryKey: [...queryKeys.ticket.all, "list"], // ["ticket","list"] – partial prefix
 
     sort: "desc",
 
     extractList: (data) => {
-      if (Array.isArray(data))
-        return { list: data, shape: "array" };
+      if (Array.isArray(data)) return { list: data, shape: "array" };
       if (Array.isArray(data?.TicketsList?.Data))
         return { list: data.TicketsList.Data, shape: "ticketsList" };
-      if (Array.isArray(data?.Data))
-        return { list: data.Data, shape: "data" };
+      if (Array.isArray(data?.Data)) return { list: data.Data, shape: "data" };
       return { list: null, shape: null };
     },
 
     wrapList: (oldData, list, shape) => {
       if (shape === "array") return list;
       if (shape === "ticketsList")
-        return { ...oldData, TicketsList: { ...oldData.TicketsList, Data: list } };
+        return {
+          ...oldData,
+          TicketsList: { ...oldData.TicketsList, Data: list },
+        };
       return { ...oldData, Data: list };
     },
 
     // Don't push a Project-B ticket into a Project-A cached list
     scopeGuard: (oldData, payload) => {
-      const extracted = safeExtract(oldData, REALTIME_ENTITY_CONFIG.Ticket.extractList);
+      const extracted = safeExtract(
+        oldData,
+        REALTIME_ENTITY_CONFIG.Ticket.extractList,
+      );
       const list = extracted.list;
       if (!list || list.length === 0) return true; // empty cache – always allow
-      const sampleProject  = normalize(getCI(list[0], "project") ?? getCI(list[0], "projectId"));
-      const payloadProject = normalize(getCI(payload, "project") ?? getCI(payload, "projectId"));
-      if (sampleProject && payloadProject && sampleProject !== payloadProject) return false;
+      const sampleProject = normalize(
+        getCI(list[0], "project") ?? getCI(list[0], "projectId"),
+      );
+      const payloadProject = normalize(
+        getCI(payload, "project") ?? getCI(payload, "projectId"),
+      );
+      if (sampleProject && payloadProject && sampleProject !== payloadProject)
+        return false;
       return true;
     },
   },
@@ -125,19 +133,41 @@ const REALTIME_ENTITY_CONFIG = {
   // ── Employee-scoped ticket list ─────────────────────────────────────────────
   TicketByEmployee: {
     type: "query",
-    queryKey: (msg) => queryKeys.ticket.byEmployee(msg.EmployeeId ?? msg.employeeId),
+    queryKey: (msg) =>
+      queryKeys.ticket.byEmployee(msg.EmployeeId ?? msg.employeeId),
 
     sort: "desc",
 
     extractList: (data) => ({
-      list: Array.isArray(data) ? data : (Array.isArray(data?.Data) ? data.Data : []),
+      list: Array.isArray(data)
+        ? data
+        : Array.isArray(data?.Data)
+          ? data.Data
+          : [],
       shape: Array.isArray(data) ? "array" : "data",
     }),
 
     wrapList: (oldData, list, shape) =>
       shape === "array" ? list : { ...oldData, Data: list },
   },
+  TicketProgress: {
+    type: "query",
 
+    queryKey: (msg) =>
+      queryKeys.TicketProgress.list(
+        msg.IssueId ?? msg.issueId ?? msg.Payload?.Issue_Id,
+      ),
+
+    sort: "desc",
+
+    extractList: (data) => ({
+      list: Array.isArray(data) ? data : data ? [data] : [],
+      shape: Array.isArray(data) ? "array" : "single",
+    }),
+
+    wrapList: (_oldData, list, shape) =>
+      shape === "array" ? list : (list[0] ?? null),
+  },
   // ─────────────────────────────────────────────────────────────────────────
   //  ADDING A NEW ENTITY IN THE FUTURE
   //  Copy-paste one of the blocks below, fill in the queryKey and list shape.
@@ -177,9 +207,9 @@ const REALTIME_ENTITY_CONFIG = {
 //  3.  PUBLIC ENTRY POINT
 // ─────────────────────────────────────────────────────────────────────────────
 export const handleRealtimeMessage = (queryClient, message) => {
-  const entity   = message.Entity   ?? message.entity;
-  const action   = message.Action   ?? message.action;
-  const payload  = message.Payload  ?? message.payload;
+  const entity = message.Entity ?? message.entity;
+  const action = message.Action ?? message.action;
+  const payload = message.Payload ?? message.payload;
   const keyField = message.KeyField ?? message.keyField;
 
   if (!entity || !action || !payload || !keyField) {
@@ -202,21 +232,37 @@ export const handleRealtimeMessage = (queryClient, message) => {
 // ─────────────────────────────────────────────────────────────────────────────
 //  4.  GENERIC QUERY ENGINE  (processes ALL entity types – never edit this)
 // ─────────────────────────────────────────────────────────────────────────────
-function applyEntityConfig(queryClient, config, action, payload, keyField, message) {
+function applyEntityConfig(
+  queryClient,
+  config,
+  action,
+  payload,
+  keyField,
+  message,
+) {
   const updater = (oldData) => {
-    if (config.scopeGuard && !config.scopeGuard(oldData, payload)) return oldData;
+    if (config.scopeGuard && !config.scopeGuard(oldData, payload))
+      return oldData;
 
     const { list, shape } = safeExtract(oldData, config.extractList);
     if (!list) return oldData;
 
-    const updatedList = applyAction(list, action, payload, keyField, config.sort);
+    const updatedList = applyAction(
+      list,
+      action,
+      payload,
+      keyField,
+      config.sort,
+    );
     return config.wrapList(oldData, updatedList, shape);
   };
 
   if (config.type === "queries") {
     // Partial prefix → hits every cached list that starts with this prefix
-    queryClient.setQueriesData({ queryKey: config.queryKey, exact: false }, updater);
-
+    queryClient.setQueriesData(
+      { queryKey: config.queryKey, exact: false },
+      updater,
+    );
   } else if (config.type === "query") {
     // Exact key derived from the message payload
     const key = config.queryKey(message);
@@ -229,11 +275,17 @@ function applyEntityConfig(queryClient, config, action, payload, keyField, messa
 // ─────────────────────────────────────────────────────────────────────────────
 function updateMasterCache(queryClient, entity, action, payload, keyField) {
   const listField = MASTER_ENTITY_MAP[entity];
-  console.log("entity :",listField);
+  console.log("entity :", listField);
 
-  queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {    
+  queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {
     if (!oldData || !(listField in oldData)) return oldData;
-    const updated = applyAction(oldData[listField], action, payload, keyField, "desc");
+    const updated = applyAction(
+      oldData[listField],
+      action,
+      payload,
+      keyField,
+      "desc",
+    );
     return { ...oldData, [listField]: updated };
   });
 }
@@ -243,22 +295,27 @@ function updateMasterCache(queryClient, entity, action, payload, keyField) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function safeExtract(data, extractFn) {
-  try { return extractFn(data) ?? { list: null, shape: null }; }
-  catch { return { list: null, shape: null }; }
+  try {
+    return extractFn(data) ?? { list: null, shape: null };
+  } catch {
+    return { list: null, shape: null };
+  }
 }
 
 function applyAction(list, action, payload, keyField, sortDir) {
-    console.log("oldData :", list, action, payload, keyField, sortDir);
+  console.log("oldData :", list, action, payload, keyField, sortDir);
   if (!Array.isArray(list)) return [];
   const targetVal = normalize(getCI(payload, keyField));
-  const match     = (x) => normalize(getCI(x, keyField)) === targetVal;
+  const match = (x) => normalize(getCI(x, keyField)) === targetVal;
   const formatted = list.length > 0 ? syncCasing(payload, list[0]) : payload;
 
   let result;
-  if      (action === "Create") result = list.some(match) ? list : [formatted, ...list];
-  else if (action === "Update") result = list.map((x) => (match(x) ? { ...x, ...formatted } : x));
+  if (action === "Create")
+    result = list.some(match) ? list : [formatted, ...list];
+  else if (action === "Update")
+    result = list.map((x) => (match(x) ? { ...x, ...formatted } : x));
   else if (action === "Delete") result = list.filter((x) => !match(x));
-  else                          result = list;
+  else result = list;
 
   return sortByUpdatedAt(result, sortDir);
 }
@@ -273,7 +330,9 @@ function syncCasing(source, reference) {
   if (!reference) return source;
   const out = {};
   for (const key of Object.keys(source)) {
-    const refKey = Object.keys(reference).find((k) => k.toLowerCase() === key.toLowerCase());
+    const refKey = Object.keys(reference).find(
+      (k) => k.toLowerCase() === key.toLowerCase(),
+    );
     out[refKey ?? key] = source[key];
   }
   return out;
@@ -285,8 +344,12 @@ function normalize(val) {
 
 function sortByUpdatedAt(list, direction = "desc") {
   return [...list].sort((a, b) => {
-    const tA = getCI(a, "UpdatedAt") ? new Date(getCI(a, "UpdatedAt")).getTime() : 0;
-    const tB = getCI(b, "UpdatedAt") ? new Date(getCI(b, "UpdatedAt")).getTime() : 0;
+    const tA = getCI(a, "UpdatedAt")
+      ? new Date(getCI(a, "UpdatedAt")).getTime()
+      : 0;
+    const tB = getCI(b, "UpdatedAt")
+      ? new Date(getCI(b, "UpdatedAt")).getTime()
+      : 0;
     return direction === "asc" ? tA - tB : tB - tA;
   });
 }

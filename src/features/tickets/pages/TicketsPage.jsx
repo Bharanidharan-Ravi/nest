@@ -304,12 +304,13 @@ export default function TicketsPage() {
         key: "assginedTo",
         view: "owner",
         allowedRoles: [1, 2],
-        options: [...useEmployeeOptions(true, "Owner"), { label: "No Owner", value: "__no_owner__" },],
+        options: [...useEmployeeOptions(true, "Owner"),{label:"No Owner",value:"__no_owner__"},],
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValue) => {
           if (!selectedValue) return true;
+         
           const safeSelected = String(selectedValue).toLowerCase();
           if (
             item.assignedTo &&
@@ -317,9 +318,10 @@ export default function TicketsPage() {
           ) {
             return true;
           }
-          if (selectedValue === "__no_owner__") {
-            return !item.assignedTo|| item.assignedTo === ""|| item.assignedTo === null; // Show items with no owner
+          if(selectedValue==="__no_owner__"){
+            return !item.assignedTo||item.assignedTo===""||item.assignedTo===null
           }
+
           return false;
         },
       },
@@ -358,6 +360,9 @@ export default function TicketsPage() {
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
+          { label: "Technical Response", value: "webResponse" },
+          { label: "Web Response", value: "technicalResponse" },
+          { label: "Admin Response", value: "adminResponse" },
         ],
         filterType: "custom",
         allowMultiple: true,
@@ -369,7 +374,7 @@ export default function TicketsPage() {
                 .map((v) => v.trim())
                 .filter(Boolean);
       
-          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
+          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse", "webResponse", "technicalResponse", "adminResponse"];
       
           if (values.includes("allFlags")) {
             return flagFields.some((field) => item[field] === true);

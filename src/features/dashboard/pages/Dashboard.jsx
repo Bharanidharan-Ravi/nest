@@ -188,6 +188,9 @@ export default function Dashboard() {
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
+           { label: "Technical Response", value: "webResponse" },
+          { label: "Web Response", value: "technicalResponse" },
+          { label: "Admin Response", value: "adminResponse" },
         ],
         filterType: "custom",
         allowMultiple: true,
@@ -199,7 +202,7 @@ export default function Dashboard() {
                 .map((v) => v.trim())
                 .filter(Boolean);
       
-          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse"];
+          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse", "webResponse", "technicalResponse", "adminResponse"];
       
           if (values.includes("allFlags")) {
             return flagFields.some((field) => item[field] === true);
@@ -230,21 +233,30 @@ export default function Dashboard() {
         filterType: "custom",
         showCounts: true,
         allowMultiple: true,
-        customFilter: (item, selectedValue) => {
-          if (!selectedValue) return true;
-          const safeSelected = String(selectedValue).toLowerCase();
+        customFilter: (item, selectedValues) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+        
+          // normalize into array
+          const values = Array.isArray(selectedValues)
+            ? selectedValues.map((v) => String(v).toLowerCase())
+            : [String(selectedValues).toLowerCase()];
+        
           if (Array.isArray(item.multiAssignees)) {
             return item.multiAssignees.some((assignee) => {
-              if (assignee.Assignee_Type === "Main Assignee") return false; // Skip main assignee, already handled in the primary filter
-              const matchName =
-                assignee.Assignee_Name &&
-                String(assignee.Assignee_Name).toLowerCase() === safeSelected;
-              const matchId =
-                assignee.Assignee_Id &&
-                String(assignee.Assignee_Id).toLowerCase() === safeSelected;
-              return matchName || matchId;
+              if (assignee.Assignee_Type === "Main Assignee") return false;
+        
+              const assigneeName = String(
+                assignee.Assignee_Name || "",
+              ).toLowerCase();
+        
+              const assigneeId = String(
+                assignee.Assignee_Id || "",
+              ).toLowerCase();
+        
+              return values.includes(assigneeName) || values.includes(assigneeId);
             });
           }
+        
           return false;
         },
       },
@@ -271,12 +283,16 @@ export default function Dashboard() {
         options: teamFilterOptions,
         filterType: "custom",
         allowMultiple: true,
-        customFilter: (item, value) => {
-          if (!value || value === "") return true;
-          // Check if ANY assignee on this ticket belongs to the selected team
+        customFilter: (item, selectedValues) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+        
+          const values = Array.isArray(selectedValues)
+            ? selectedValues.map(String)
+            : [String(selectedValues)];
+        
           return item.multiAssignees?.some(
             (a) =>
-              String(a.Assignee_TeamId) === String(value) &&
+              values.includes(String(a.Assignee_TeamId)) &&
               a.Assignee_Type === "Main Assignee",
           );
         },

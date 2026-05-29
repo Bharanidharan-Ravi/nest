@@ -15,6 +15,8 @@ const MuiSwitch = ({
 
   const handleChange = (e) => {
     // Pass the boolean state back to FormEngine (true/false)
+    console.log("checked :", e.target.checked, "name :", name);
+    
     onChange(name, e.target.checked);
   };
 
