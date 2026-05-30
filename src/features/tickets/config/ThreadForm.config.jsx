@@ -1,27 +1,37 @@
 import React from "react";
-import { FaCheckCircle, FaSave, FaTelegramPlane, FaTimesCircle, FaUndo } from "react-icons/fa";
+import {
+  FaCheckCircle,
+  FaSave,
+  FaTelegramPlane,
+  FaTimesCircle,
+  FaUndo,
+} from "react-icons/fa";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { ThreadFieldConfig } from "./Thread.config";
 
 // 🔥 HELPER: Checks if ONLY the Ticket Status Update fields are filled
 const isProgressOnlyUpdate = (formData, context) => {
   // 1. Check Thread Data safely (handles empty strings "")
-  const cleanDesc = (formData?.description || "").replace(/<[^>]*>?/gm, "").trim();
+  const cleanDesc = (formData?.description || "")
+    .replace(/<[^>]*>?/gm, "")
+    .trim();
 
   const hasThreadData =
     cleanDesc.length > 0 ||
     (formData?.hours || "").trim().length > 0 ||
     (formData?.fromTime || "").trim().length > 0 ||
     (formData?.toTime || "").trim().length > 0 ||
-    (formData?.assignees?.length || 0) > 0
-    ;
-
+    (formData?.assignees?.length || 0) > 0;
   // 2. Check Progress Data safely
   const summary = (formData?.TicketStatusSummary || "").trim();
   const currentPct = Number(formData?.TicketOverallPercentage || 0);
 
   // We ONLY count the percentage as "updated" if it changed from what it was when the page loaded
-  const initialPct = Number(context?.editingItem?.OverallPercentage || context?.editingItem?.CompletionPct || 0);
+  const initialPct = Number(
+    context?.editingItem?.OverallPercentage ||
+      context?.editingItem?.CompletionPct ||
+      0,
+  );
 
   const hasProgressData = summary.length > 0 || currentPct !== initialPct;
 
@@ -40,7 +50,7 @@ export const ThreadFormConfig = {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
-
+    const openiDialog = context?.openDialog;
     if (context?.isClosed) {
       return [
         {
@@ -53,8 +63,7 @@ export const ThreadFormConfig = {
           ),
           className:
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
-          onClick: ({ submitForm }) =>
-            submitForm({ IsReopenRequest: true }),
+          onClick: ({ submitForm }) => submitForm({ IsReopenRequest: true }),
         },
       ];
     }
@@ -78,7 +87,7 @@ export const ThreadFormConfig = {
                 // }
 
                 submitForm(overrides);
-              }
+              },
             },
             {
               label: "Pass & Complete",
@@ -262,9 +271,18 @@ export const ThreadFormConfig = {
             "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
           icon: <FaTelegramPlane className="text-black-600" />,
           onClick: ({ submitForm, formData }) =>
-            submitForm({
-              Comment: formData.description,
-              toClient: true,
+            openiDialog({
+              varient: "info",
+              title: "Commit this thread to the client?",
+              description: "This will update the thread for all participants",
+              confirmText: "Yes, Commit",
+              cancelText: "Cancel",
+              onConfirm: () =>
+                submitForm({
+                  Comment: formData.description,
+                  toClient: true,
+                }),
+              onCancel: () => {},
             }),
         },
 
@@ -297,10 +315,9 @@ export const ThreadFormConfig = {
                   {
                     StreamStatus: 15,
                     CompletionPercentage: 100,
-                    Comment:
-                      formData.description || "Ticket closed by owner.",
+                    Comment: formData.description || "Ticket closed by owner.",
                   },
-                  true
+                  true,
                 ),
             },
             {
@@ -315,7 +332,7 @@ export const ThreadFormConfig = {
                     Comment:
                       formData.description || "Ticket cancelled by owner.",
                   },
-                  true
+                  true,
                 ),
             },
           ],
@@ -365,7 +382,7 @@ export const ThreadFormConfig = {
             CompletionPercentage: 100,
             Comment: formData.description || "Ticket closed by owner.",
           },
-          true
+          true,
         ),
     };
 
@@ -388,7 +405,6 @@ export const ThreadFormConfig = {
     ];
   },
 
-
   theme: {
     editorContainer:
       "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
@@ -396,10 +412,6 @@ export const ThreadFormConfig = {
       "flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-gray-50",
   },
 };
-
-
-
-
 
 // import React from "react";
 // import { FaCheckCircle, FaSave, FaTimesCircle, FaUndo } from "react-icons/fa";

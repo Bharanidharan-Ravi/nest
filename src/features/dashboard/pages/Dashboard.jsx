@@ -220,6 +220,7 @@ export default function Dashboard() {
         options: employeeFilterOptions,
         defaultValue: currentUserId,
         filterType: "api",
+        persistOnClear: true,
         api: "/sync/v2",
         apiKey: "EmployeeId",
         configKey: "TicketsList",

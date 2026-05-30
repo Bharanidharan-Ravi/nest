@@ -52,29 +52,39 @@ const TicketProgressHistory = ({ options }) => {
     });
   };
 
+  const flagColors = {
+    Priority: {
+      badge: "bg-orange-100 text-orange-800",
+      border: "border-orange-500",
+    },
+    "Close Request": {
+      badge: "bg-red-100 text-red-800",
+      border: "border-red-500",
+    },
+    "Notify Functional": {
+      badge: "bg-purple-100 text-purple-800",
+      border: "border-purple-500",
+    },
+    "Notify Admin": {
+      badge: "bg-yellow-100 text-yellow-800",
+      border: "border-yellow-500",
+    },
+    "Notify Web": {
+      badge: "bg-blue-100 text-blue-800",
+      border: "border-blue-500",
+    },
+    "Notify Technical": {
+      badge: "bg-green-100 text-green-800",
+      border: "border-green-500",
+    },
+  };
+
   const getFlagStyles = (flag) => {
-    switch (flag) {
-      case "Priority":
-        return "bg-orange-100 text-orange-800";
-  
-      case "Close Request":
-        return "bg-red-100 text-red-800";
-  
-      case "Notify Functional":
-        return "bg-purple-100 text-purple-800";
-  
-      case "Notify Admin":
-        return "bg-yellow-100 text-yellow-800";
-  
-      case "Notify Web":
-        return "bg-blue-100 text-blue-800";
-  
-      case "Notify Technical":
-        return "bg-green-100 text-green-800";
-  
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    return flagColors[flag]?.badge || "bg-gray-100 text-gray-800";
+  };
+
+  const getFlagBorderColor = (flag) => {
+    return flagColors[flag]?.border || "border-gray-500";
   };
 
   return (
@@ -95,74 +105,81 @@ const TicketProgressHistory = ({ options }) => {
           {isLoading ? (
             <div className="text-sm text-gray-500">Loading history...</div>
           ) : (
-            Object.entries(groupedLogs).map(([assigneeId, data]) => (
-              <div key={assigneeId} className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
+            Object.entries(groupedLogs).map(([assigneeId, data]) => {
+              const lastFlag = data.activeLog?.Flag
+                ?.split(",")
+                .map((f) => f.trim())
+                .pop();
 
-                {/* A. Active Log (Always visible when main panel is open) */}
-                <div className="p-3 border-l-4 border-green-500 flex flex-col sm:flex-row sm:items-start justify-between gap-2 bg-green-50/30">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-bold text-gray-800">{data.assigneeName}</span>
-                      <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full font-medium">
-                        Current Status: {data.activeLog?.Percentage ?? 0}%
-                      </span>
+              return (
+                <div key={assigneeId} className="bg-white border border-gray-200 rounded-md overflow-hidden shadow-sm">
 
-                      {data.activeLog?.Flag && data.activeLog.Flag.split(",").map((flag, idx) => (
+                  {/* A. Active Log (Always visible when main panel is open) */}
+                  <div className={`p-3 border-l-4 flex flex-col sm:flex-row sm:items-start justify-between gap-2 bg-green-50/30 ${getFlagBorderColor(lastFlag)}`}>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-gray-800">{data.assigneeName}</span>
+                        <span className="text-xs bg-white text-black border border-slate-300 px-2 py-0.5 rounded-full font-medium">
+                          Current Status: {data.activeLog?.Percentage ?? 0}%
+                        </span>
+
+                        {data.activeLog?.Flag && data.activeLog.Flag.split(",").map((flag, idx) => (
                           <span key={idx} className={`text-xs px-2 py-0.5 rounded-full font-medium ${getFlagStyles(flag.trim())}`}
                           >
                             {flag.trim()}
                           </span>
                         ))}
 
-                      {data.activeLog?.CreatedAt && (
-                        <span className="text-xs text-gray-400">{formatDate(data.activeLog.CreatedAt)}</span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-700">
-                      {data.activeLog?.StatusSummary || "No summary provided."}
-                    </p>
-                  </div>
-
-                  {/* B. Toggle Button for Older History */}
-                  {data.history.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => toggleAssigneeHistory(assigneeId)}
-                      className="text-xs flex items-center text-gray-500 hover:text-gray-800 bg-gray-100 px-2 py-1 rounded"
-                    >
-                      {expandedAssignees[assigneeId] ? (
-                        <><FaChevronUp className="mr-1" /> Hide Previous</>
-                      ) : (
-                        <><FaChevronDown className="mr-1" /> {data.history.length} Previous</>
-                      )}
-                    </button>
-                  )}
-                </div>
-
-                {/* C. Inactive Logs (Visible only if assignee history is expanded) */}
-                {expandedAssignees[assigneeId] && data.history.length > 0 && (
-                  <div className="bg-gray-50 p-3 space-y-3 border-t border-gray-200">
-                    {data.history.map((log) => (
-                      <div key={log.LogId} className="pl-4 border-l-2 border-gray-300 relative">
-                        <div className="absolute -left-[5px] top-1.5 w-2 h-2 bg-gray-300 rounded-full"></div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="text-sm font-semibold text-gray-600">{log.Percentage}%</span>
-
-                          {log.Flag && (
-                            <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
-                              {log.Flag}
-                            </span>
-                          )}
-                          <span className="text-xs text-gray-400">{formatDate(log.CreatedAt)}</span>
-                        </div>
-                        <p className="text-sm text-gray-500">{log.StatusSummary}</p>
+                        {data.activeLog?.CreatedAt && (
+                          <span className="text-xs text-gray-400">{formatDate(data.activeLog.CreatedAt)}</span>
+                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
+                      <p className="text-sm text-gray-700">
+                        {data.activeLog?.StatusSummary || "No summary provided."}
+                      </p>
+                    </div>
 
-              </div>
-            ))
+                    {/* B. Toggle Button for Older History */}
+                    {data.history.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleAssigneeHistory(assigneeId)}
+                        className="text-xs flex items-center text-gray-500 hover:text-gray-800 bg-gray-100 px-2 py-1 rounded"
+                      >
+                        {expandedAssignees[assigneeId] ? (
+                          <><FaChevronUp className="mr-1" /> Hide Previous</>
+                        ) : (
+                          <><FaChevronDown className="mr-1" /> {data.history.length} Previous</>
+                        )}
+                      </button>
+                    )}
+                  </div>
+
+                  {/* C. Inactive Logs (Visible only if assignee history is expanded) */}
+                  {expandedAssignees[assigneeId] && data.history.length > 0 && (
+                    <div className="bg-gray-50 p-3 space-y-3 border-t border-gray-200">
+                      {data.history.map((log) => (
+                        <div key={log.LogId} className="pl-4 border-l-2 border-gray-300 relative">
+                          <div className="absolute -left-[5px] top-1.5 w-2 h-2 bg-gray-300 rounded-full"></div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-sm font-semibold text-gray-600">{log.Percentage}%</span>
+
+                            {log.Flag && (
+                              <span className="text-xs bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full">
+                                {log.Flag}
+                              </span>
+                            )}
+                            <span className="text-xs text-gray-400">{formatDate(log.CreatedAt)}</span>
+                          </div>
+                          <p className="text-sm text-gray-500">{log.StatusSummary}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                </div>
+              );
+            })
           )}
         </div>
       )}

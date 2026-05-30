@@ -16,6 +16,9 @@ export default function useHeartbeat() {
           payload: {
             sessionId: user.sessionId,
           },
+          config: {
+            _silent: true,
+          },
         });
       } catch (err) {
         console.error("[Heartbeat]", err);

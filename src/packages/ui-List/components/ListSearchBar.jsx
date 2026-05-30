@@ -85,26 +85,21 @@ export function ListSearchBar() {
       removeChip(last.key, last.value);
     }
   };
-
   const handleClearAll = () => {
-    // Clear all filters but KEEP is:open
-    const tab = filters.is;
-    let defaultQuery=tab ? `is:${tab}` : ""
-    if(config?.filters){
-      config.filters.forEach((filter)=>{
-        if(
-          filter.defaultValue!==undefined&&
-          filter.defaultValue!==null &&
-          filter.defaultValue!==""
-        ){
-          defaultQuery+=` ${filter.key}:${filter.defaultValue}`;
-        }
-      })
-    }
-    setQuery(defaultQuery.trim());
+    const { filters: cur } = parseQuery(query);
+    const newQueryParts = [];
+    Object.entries(cur).forEach(([key, value]) => {
+      const filterDef = config.filters?.find(f => f.key === key);
+      if (filterDef?.persistOnClear) {
+        newQueryParts.push(`${key}:${value}`);
+      }
+    });
+    // Always keep tab if exists
+    if (cur.is) newQueryParts.push(`is:${cur.is}`);
+  
+    setQuery(newQueryParts.join(" "));
     setInputValue("");
   };
-
   return (
     <div
       className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-gray-200 bg-white rounded-t-lg min-h-[44px] cursor-text"

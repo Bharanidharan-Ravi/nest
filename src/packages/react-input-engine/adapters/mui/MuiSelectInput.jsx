@@ -144,11 +144,11 @@ const MuiSelectInput = ({
      slotProps={{
         popper: {
           style: { zIndex: 10005 }, 
-          placement: "bottom-start", // 👈 Force it to open downwards
+          // placement: "bottom-start", 
           modifiers: [
             {
               name: "flip",
-              enabled: false, // 👈 Disable the auto-flip behavior completely
+              enabled: true, 
             },
           ],
         },

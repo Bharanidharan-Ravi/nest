@@ -37,6 +37,7 @@ const ParentTicketHeader = ({
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [expandedAssignees, setExpandedAssignees] = useState({});
 
   // 🔥 2. Function to scroll to the bottom form
   const handleScrollToUpdate = () => {
@@ -55,26 +56,52 @@ const ParentTicketHeader = ({
     switch (flag) {
       case "Priority":
         return "bg-orange-100 text-orange-800";
-  
+
       case "Close Request":
         return "bg-red-100 text-red-800";
-  
+
       case "Notify Functional":
         return "bg-purple-100 text-purple-800";
-  
+
       case "Notify Admin":
         return "bg-yellow-100 text-yellow-800";
-  
+
       case "Notify Web":
         return "bg-blue-100 text-blue-800";
-  
+
       case "Notify Technical":
         return "bg-green-100 text-green-800";
-  
+
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
+
+  const groupedLogs = progressLogs?.reduce((acc, log) => {
+    if (!acc[log.Assignee_Id]) {
+      acc[log.Assignee_Id] = {
+        assigneeName: log.AssigneeName || "Unknown",
+        activeLog: null,
+        history: [],
+      };
+    }
+
+    if (log.IsActive) {
+      acc[log.Assignee_Id].activeLog = log;
+    } else {
+      acc[log.Assignee_Id].history.push(log);
+    }
+
+    return acc;
+  }, {});
+
+  const toggleAssignee = (id) => {
+    setExpandedAssignees((prev) => ({
+      ...prev,
+      [id]: !prev[id],
+    }));
+  };
+
 
   return (
     <>
@@ -593,39 +620,108 @@ const ParentTicketHeader = ({
             {/* Modal Body (Scrollable) */}
             <div className="p-6 overflow-y-auto wg-scrollbar flex flex-col gap-4">
               {progressLogs?.length > 0 ? (
-                progressLogs.map((log, index) => (
-                  <div key={log.LogId || index} className="flex flex-col gap-2 p-4 rounded-xl border border-gray-100 bg-white shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex justify-between items-start gap-4">
-                      <span className="font-bold text-gray-800 text-sm break-all">
-                        {log.StatusSummary || log.statusSummary || "No Summary"}
-                      </span>
-                      <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-700 rounded-md whitespace-nowrap flex-shrink-0">
-                        {log.Percentage ?? log.percentage ?? 0}%
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 flex justify-between items-center mt-1 pt-2 border-t border-gray-50">
-                      <span>Logged by: <span className="font-medium text-gray-700">{log.AssigneeName || "System"}</span></span>
+                groupedLogs &&
+                Object.entries(groupedLogs).map(([assigneeId, data]) => {
+                  const key = assigneeId || data.assigneeName || "unknown";
+                  return (
+                    <div
+                      key={key}
+                      className="flex flex-col gap-3 p-4 rounded-xl border border-gray-100 bg-white shadow-sm"
+                    >
+                      {/* ACTIVE LOG */}
+                      <div className="flex justify-between items-start gap-4">
+                        <div>
+                          <div className="font-bold text-gray-800 text-sm">
+                            {data.assigneeName}
+                          </div>
+
+                          <div className="text-gray-600 text-xs mt-1">
+                            {data.activeLog?.StatusSummary || "No Summary"}
+                          </div>
+
+                          {/* DATE TIME */}
+                          <div className="text-[11px] text-gray-400 mt-1">
+                            {data.activeLog?.CreatedAt
+                              ? dayjs(data.activeLog.CreatedAt).format("MMM D, YYYY h:mm A")
+                              : ""}
+                          </div>
+                        </div>
+
+                        <span className="text-xs font-bold px-2 py-1 bg-blue-50 text-blue-700 rounded-md">
+                          {data.activeLog?.Percentage ?? 0}%
+                        </span>
+                      </div>
+
+                      {/* FLAGS */}
                       <div className="flex flex-wrap gap-1">
-                        {log.Flag && log.Flag.split(",").map((flag, idx) => (
-                          <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getFlagStyles(
-                            flag.trim()
-                          )}`}
+                        {data.activeLog?.Flag?.split(",").map((flag, idx) => (
+                          <span
+                            key={idx}
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getFlagStyles(
+                              flag.trim()
+                            )}`}
                           >
                             {flag.trim()}
                           </span>
                         ))}
                       </div>
-                      <span>{dayjs(log.CreatedAt).format("MMM D, YYYY h:mm A")}</span>
+
+                      {/* TOGGLE HISTORY */}
+                      {data.history.length > 0 && (
+                        <button
+                          onClick={() => toggleAssignee(String(assigneeId))}
+                          className="text-xs text-blue-600 font-semibold self-start"
+                        >
+                          {expandedAssignees[String(assigneeId)]
+                            ? "Hide Previous"
+                            : `Show Previous (${data.history.length})`}
+                        </button>
+                      )}
+
+                      {/* HISTORY */}
+                      {expandedAssignees[assigneeId] && data.history.length > 0 && (
+                        <div className="border-t pt-2 mt-2 space-y-2">
+                          {data.history.map((log) => (
+                            <div
+                              key={log.LogId}
+                              className="text-xs text-gray-600 border-l-2 pl-3 border-gray-200"
+                            >
+                              <div className="flex justify-between gap-3">
+                                <div className="flex-1">
+                                  <div>{log.StatusSummary}</div>
+
+                                  {/* DATE TIME */}
+                                  <div className="text-[10px] text-gray-400 mt-1">
+                                    {log.CreatedAt
+                                      ? dayjs(log.CreatedAt).format("MMM D, YYYY h:mm A")
+                                      : ""}
+                                  </div>
+                                </div>
+
+                                <span className="text-gray-400 whitespace-nowrap">
+                                  {log.Percentage}%
+                                </span>
+                              </div>
+
+                              <div className="flex gap-1 mt-1 flex-wrap">
+                                {log.Flag?.split(",").map((f, i) => (
+                                  <span
+                                    key={i}
+                                    className="text-[10px] bg-gray-100 px-2 rounded"
+                                  >
+                                    {f.trim()}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
-                <div className="text-center py-10 flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
-                    <FaHistory className="text-gray-300" size={20} />
-                  </div>
-                  <p className="text-gray-500 font-medium">No status history available.</p>
-                </div>
+                <div className="text-gray-500 text-center py-6">No history available</div>
               )}
             </div>
           </div>

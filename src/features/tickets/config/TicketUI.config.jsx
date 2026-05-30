@@ -19,7 +19,8 @@ export const TicketListConfig={
   enableCardControls: true,
   enablequickComment: true,
   enablequickStatus: true,
-  searchFields: ["title", "description", "RepoKey"],
+  // searchFields: ["title", "description", "RepoKey","ticketKey" ],
+  searchFields: ["title","ticketKey"],
   filters: [
     {
       key: "status",
@@ -92,12 +93,18 @@ export const TicketListConfig={
     <TicketListCard item={item} controls={controls} config={config} />
   ),
   customSortFn:(a,b)=>{
-    if(a.isCloseRequested!=b.isCloseRequested)
-      return a.isCloseRequested ? -1:1;
     if(a.priorityRequest!=b.priorityRequest)
       return a.priorityRequest ? -1:1;
+    if(a.isCloseRequested!=b.isCloseRequested)
+      return a.isCloseRequested ? -1:1;
+    if(a.adminResponse!=b.adminResponse)
+      return a.adminResponse ? -1:1;
     if(a.funcResponse!=b.funcResponse)
       return a.funcResponse ? -1:1;
+        if(a.technicalResponse!=b.technicalResponse)
+      return a.technicalResponse ? -1:1;
+        if(a.webResponse!=b.webResponse)
+      return a.webResponse ? -1:1;
     return new Date(b.updatedAt)-new Date(a.updatedAt)
   }
 

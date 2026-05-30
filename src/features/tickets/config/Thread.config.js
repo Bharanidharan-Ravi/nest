@@ -1,3 +1,5 @@
+
+
 import {
   buildOptionsResolver,
   calcHHMM,
@@ -44,20 +46,47 @@ export const ThreadFieldConfig = (ticketId) => [
       return !!formData?.hours || !!formData?.fromTime;
     },
 
-    // 🔥 Throw an error if they entered time but no description
+
     customValidator: (value, formData, context) => {
       const hasTime = !!formData?.hours || !!formData?.fromTime;
-      const cleanDesc = value?.replace(/<[^>]*>?/gm, "").trim();
-      if (context.isViewer
-        && !cleanDesc) {
+      const hasAnyToggle =
+        formData?.Priority === true ||
+        formData?.requestClose === true ||
+        formData?.["Functional Response"] === true ||
+        formData?.["Technical Response"] === true ||
+        formData?.["Web Response"] === true ||
+        formData?.["Admin Response"] === true;
+
+      // ✅ Skip validation if any toggle is ON
+      if (hasAnyToggle) {
+        return true;
+      }
+      const hasTicketSummary = formData?.TicketStatusSummary
+      if (hasTicketSummary || formData.TicketOverallPercentage) {
+        return true;
+      }
+      const isEmpty =
+        value
+          ?.replace(/<[^>]*>/g, "")
+          .replace(/&nbsp;/gi, "")
+          .replace(/&zwnj;/gi, "")
+          .trim()
+          .length === 0;
+
+      // Viewer validation
+      if (context.isViewer && isEmpty) {
         return "Description is mandatory";
       }
-      if ((!
-        context.isViewer
-      ) && hasTime && !cleanDesc) {
+
+      // If hours entered, description required
+      if (!context.isViewer && hasTime && isEmpty) {
         return "Description is mandatory when logging hours.";
       }
-      return true; // valid
+      if (isEmpty) {
+        return "Description is mandatory";
+      }
+
+      return true;
     },
   },
 
@@ -197,7 +226,7 @@ export const ThreadFieldConfig = (ticketId) => [
     customValidator: (value, formData, context) => {
       if (context.isViewer) return true;
       if (isTimeLocked(context)) return true;
-    
+
       const skipTimeValidation =
         formData?.requestClose ||
         formData?.Priority ||
@@ -205,23 +234,23 @@ export const ThreadFieldConfig = (ticketId) => [
         formData?.["Technical Response"] ||
         formData?.["Web Response"] ||
         formData?.["Admin Response"];
-    
+
       if (skipTimeValidation) return true;
-    
+
       const cleanDesc = formData?.description
         ?.replace(/<[^>]*>?/gm, "")
         .trim();
-    
+
       const hasDescription = !!cleanDesc;
-    
+
       const hasTime =
         !!value || (!!formData.fromTime && !!formData.toTime);
-    
+
       // ✅ NEW RULE
       if (hasDescription && !hasTime) {
         return "Hours are mandatory when description is entered.";
       }
-    
+
       return true;
     }
   },
@@ -337,6 +366,7 @@ export const ThreadFieldConfig = (ticketId) => [
     type: "switch",
     ui: "mui",
     colSpan: 4,
+    // customValidator: createToggleValidator("Notify Priority"),
     initValueResolver: ({ context }) => {
       const isActive =
         context?.parentTicket?.PriorityRequest ||
@@ -346,12 +376,12 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return context?.currentUser?.role === 1;
     },
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
     name: "requestClose",
-    apiKey: "IsCloseRequested", 
+    apiKey: "IsCloseRequested",
     label: "Request Ticket Closure",
     type: "switch",
     ui: "mui",
@@ -360,9 +390,9 @@ export const ThreadFieldConfig = (ticketId) => [
       const isRequested =
         context?.parentTicket?.IsCloseRequested ||
         context?.parentTicket?.isCloseRequested;
-        return isRequested ? true : null;
+      return isRequested ? true : null;
     },
-
+    // customValidator: createToggleValidator("Request Ticket Closure"),
     visibleWhen: (formData, context) => {
       const isViewer = context?.isViewer;
       const isEdit = context?.isEdit;
@@ -370,7 +400,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return true;
     },
 
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
@@ -380,9 +410,9 @@ export const ThreadFieldConfig = (ticketId) => [
     type: "switch",
     ui: "mui",
     colSpan: 4,
-    // initValueResolver: () => false,
+    // customValidator: createToggleValidator("Notify Functional"),
     initValueResolver: ({ context }) => {
-     const isActive = 
+      const isActive =
         context?.parentTicket?.FuncResponse ||
         context?.parentTicket?.funcResponse
       return isActive ? true : null;
@@ -390,7 +420,7 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return !context?.isViewer && !context?.isEdit;
     },
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
@@ -400,9 +430,9 @@ export const ThreadFieldConfig = (ticketId) => [
     type: "switch",
     ui: "mui",
     colSpan: 4,
-    // initValueResolver: () => false,
+    // customValidator: createToggleValidator("Notify Technical"),
     initValueResolver: ({ context }) => {
-     const isActive = 
+      const isActive =
         context?.parentTicket?.TechnicalResponse ||
         context?.parentTicket?.technicalResponse
       return isActive ? true : null;
@@ -410,7 +440,7 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return !context?.isViewer && !context?.isEdit;
     },
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
@@ -420,9 +450,9 @@ export const ThreadFieldConfig = (ticketId) => [
     type: "switch",
     ui: "mui",
     colSpan: 4,
-    // initValueResolver: () => false,
+    // customValidator: createToggleValidator("Notify Web"),
     initValueResolver: ({ context }) => {
-     const isActive = 
+      const isActive =
         context?.parentTicket?.WebResponse ||
         context?.parentTicket?.webResponse
       return isActive ? true : null;
@@ -430,7 +460,7 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return !context?.isViewer && !context?.isEdit;
     },
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
@@ -440,9 +470,9 @@ export const ThreadFieldConfig = (ticketId) => [
     type: "switch",
     ui: "mui",
     colSpan: 4,
-    // initValueResolver: () => false,
+    // customValidator: createToggleValidator("Notify Admin"),
     initValueResolver: ({ context }) => {
-     const isActive = 
+      const isActive =
         context?.parentTicket?.AdminResponse ||
         context?.parentTicket?.adminResponse
       return isActive ? true : null;
@@ -450,7 +480,7 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       return !context?.isViewer && !context?.isEdit;
     },
-    transform:(value) => value === true ? true : false
+    transform: (value) => value === true ? true : false
   },
 
   {
@@ -478,9 +508,9 @@ export const ThreadFieldConfig = (ticketId) => [
 
     // Only show this checkbox if there is actual text in the description
     visibleWhen: (formData, context) => {
-     if (context?.isEdit || context?.isViewer) return false;
+      if (context?.isEdit || context?.isViewer) return false;
       const cleanDesc = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
-      return !!cleanDesc ;
+      return !!cleanDesc;
     },
   },
 
@@ -504,14 +534,34 @@ export const ThreadFieldConfig = (ticketId) => [
       return formData.TicketStatusSummary || "";
     },
     customValidator: (value, formData, context) => {
+      const cleanDesc = formData?.description
+        ?.replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;/gi, "")
+        .replace(/&zwnj;/gi, "")
+        .trim();
+
+        const contributorChanged =
+        JSON.stringify(formData?.Contributor || []) !==
+        JSON.stringify(context?.editingItem?.CoContributors || []);
+
+        if (contributorChanged) return true;
+
+      // ✅ If Description has value, skip ALL TicketStatusSummary validation
+      if (cleanDesc && cleanDesc.length > 0) {
+        return true;
+      }
+
+      // Clean summary
       const cleanSummary = value?.replace(/<[^>]*>?/gm, "").trim();
-    
+
+      // ❌ If Description is empty AND Summary is also empty → show error
+   
       const batteryHasValue = !!formData.TicketOverallPercentage;
-    
+
       if (batteryHasValue && !cleanSummary) {
         return "Status Summary is mandatory when Overall Ticket Progress is set.";
       }
-    
+
       // -----------------------------
       // ORIGINAL STATES (from backend)
       // -----------------------------
@@ -519,12 +569,12 @@ export const ThreadFieldConfig = (ticketId) => [
         context?.parentTicket?.IsCloseRequested ||
         context?.parentTicket?.isCloseRequested
       );
-    
+
       const originalPriority = !!(
         context?.parentTicket?.PriorityRequest ||
         context?.parentTicket?.priorityRequest
       );
-    
+
       const originalFuncResponse = !!(
         context?.parentTicket?.FuncResponse ||
         context?.parentTicket?.funcResponse
@@ -544,7 +594,7 @@ export const ThreadFieldConfig = (ticketId) => [
         context?.parentTicket?.AdminResponse ||
         context?.parentTicket?.adminResponse
       );
-    
+
       // -----------------------------
       // CURRENT FORM STATES
       // (normalize to boolean)
@@ -556,38 +606,41 @@ export const ThreadFieldConfig = (ticketId) => [
       const currentWebResponse = formData?.["Technical Response"] === true;
       const currentTechnicalResponse = formData?.["Web Response"] === true;
       const currentAdminResponse = formData?.["Admin Response"] === true;
-    
+
       // -----------------------------
       // DETECT CHANGES (ON or OFF)
       // -----------------------------
       const requestCloseChanged =
         currentRequestClose !== originalRequestClose;
-    
+
       const priorityChanged =
         currentPriority !== originalPriority;
-    
+
       const funcResponseChanged =
         currentFuncResponse !== originalFuncResponse;
 
-        const webResponseChanged =
+      const webResponseChanged =
         currentWebResponse !== originalWebResponse;
 
-        const technicalResponseChanged =
+      const technicalResponseChanged =
         currentTechnicalResponse !== originalTechnicalResponse;
 
-        const adminResponseChanged =
+      const adminResponseChanged =
         currentAdminResponse !== originalAdminResponse;
-    
+
       const toggleInteracted =
-        requestCloseChanged || priorityChanged || funcResponseChanged || webResponseChanged || technicalResponseChanged || adminResponseChanged ;
-    
+        requestCloseChanged || priorityChanged || funcResponseChanged || webResponseChanged || technicalResponseChanged || adminResponseChanged;
+
       // -----------------------------
       // VALIDATION RULE
       // -----------------------------
+      if (!cleanDesc && !cleanSummary && !toggleInteracted) {
+        return "Status Summary is required";
+      }
       if (toggleInteracted && !cleanSummary) {
         return "Status Summary is mandatory when a toggle is changed";
       }
-    
+
       return true;
     },
   },
@@ -609,17 +662,5 @@ export const ThreadFieldConfig = (ticketId) => [
       fontSize: "14px",
     },
     groupName: "Ticket Status Update", // 👈 This triggers the Header
-
-    // customValidator: (value, formData, context) => {
-    //   if (context.isViewer) return true;
-
-    //   const hasSummary = formData.TicketStatusSummary?.trim();
-    //   if (hasSummary && (value === null || value === undefined || value === "")) {
-    //     return "Overall Ticket Progress is mandatory when Status Summary has value.";
-    //   }
-
-    //   return true;
-    // },
-
   },
 ];

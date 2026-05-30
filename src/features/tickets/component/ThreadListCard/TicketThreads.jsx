@@ -690,6 +690,7 @@ console.log("item, checked:",  checked);
               parentTicket,
               isQuickFormOpen: null,
               isQuickStatusOpen: null,
+              openiDialog,
             }}
             module="Ticket"
           />

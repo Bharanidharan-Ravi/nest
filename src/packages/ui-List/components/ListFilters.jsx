@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useList } from "../context/ListContext";
 import { parseQuery } from "../hooks/useQueryParser";
 import DatePicker from "react-datepicker";
@@ -15,6 +16,8 @@ export function ListFilters() {
   const searchInputRef = useRef(null);
   const optionsRefs = useRef([]);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [dropdownPosition, setDropdownPosition] = useState({top:0, left:0, width:0});
+  const triggerRefs = useRef({});
 
   if (!config?.filters) return null;
   const visibleFilters = config.filters.filter(
@@ -52,7 +55,10 @@ export function ListFilters() {
 
   useEffect(() => {
     function handleClickOutside(e) {
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+      const portal = document.getElementById("list-filter-portal");
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target) && 
+      (!portal || !portal.contains(e.target))
+    ) {
         setOpenDropdownKey(null);
       }
     }
@@ -186,10 +192,13 @@ export function ListFilters() {
         const activeOption = filter.options?.find((opt) =>
           selectedValues.includes(String(opt.value)),
         ) || filter.options?.[0] || { label: "No options", value: "" };
-
+        const entityLabel = filter.options
+          ?.find((opt) => /^all\s+/i.test(opt.label))
+          ?.label?.replace(/^all\s+/i, "")
+          .trim();
         const selectedLabel =
-          isMultiSelect && selectedValues.length > 0
-            ? `${selectedValues.length} selected`
+          isMultiSelect && selectedValues.length > 1
+            ? `${selectedValues.length} ${entityLabel}`
             : activeOption?.label;
 
         const currentValue = parsed.filters[filter.key] || "";
@@ -243,7 +252,21 @@ export function ListFilters() {
         return (
           <div key={filter.key} className="relative">
             <button
-              onClick={() => setOpenDropdownKey(isOpen ? null : filter.key)}
+              ref = {(el) => (triggerRefs.current[filter.key] = el)}
+              onClick={()=>{
+                if (isOpen){
+                  setOpenDropdownKey(null);
+                } else {
+                  const rect = triggerRefs.current[filter.key]?.getBoundingClientRect();
+                  if (rect) {
+                    setDropdownPosition({
+                      top:rect.bottom + 4,
+                      left: isRightAligned ? rect.right - 224 : rect.left,
+                    });
+                  }
+                  setOpenDropdownKey(filter.key);
+                }
+              }}
               className={buttonClasses}
               aria-haspopup="listbox"
               aria-expanded={isOpen}
@@ -251,13 +274,20 @@ export function ListFilters() {
               {selectedLabel} <span className="text-xs ml-1">▾</span>
             </button>
 
-            {isOpen && (
+            {isOpen && createPortal (
               <div
+                id="list-filter-portal"
                 role="listbox"
                 tabIndex={0}
-                // 🚀 THE FIX: Switched to flex-col with overflow-hidden so the search bar permanently locks to the top without gaps
-                className={`absolute ${isRightAligned ? "right-0" : "left-0"} mt-2 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl z-[99999] flex flex-col overflow-hidden`}
-                style={{ maxHeight: "350px" }}
+                className="bg-white border border-gray-200 rounded-lg shadow-2xl flex flex-col overflow-hidden"
+                style={{ 
+                  position:"fixed",
+                  top:dropdownPosition.top,
+                  left:dropdownPosition.left,
+                  width:"224px",
+                  maxHeight: "350px",
+                  zIndex: 99999 
+                }}
                 onKeyDown={handleKeyDown}
                 aria-activedescendant={filteredOptions[highlightedIndex]?.value}
               >
@@ -329,10 +359,10 @@ export function ListFilters() {
                           );
                         }}
                         className={`px-2 py-2 mx-1 rounded-md text-xs cursor-pointer flex items-center gap-2 transition-colors ${isSelected
-                            ? "font-semibold text-brand-yellow bg-brand-yhover"
-                            : isHighlighted
-                              ? "bg-gray-100 text-gray-900"
-                              : "text-gray-700 hover:bg-gray-50"
+                          ? "font-semibold text-brand-yellow bg-brand-yhover"
+                          : isHighlighted
+                            ? "bg-gray-100 text-gray-900"
+                            : "text-gray-700 hover:bg-gray-50"
                           }`}
                       >
                         <div className="flex items-center justify-between w-full transition">
@@ -354,7 +384,8 @@ export function ListFilters() {
                     );
                   })}
                 </div>
-              </div>
+              </div>,
+              document.body
             )}
           </div>
         );

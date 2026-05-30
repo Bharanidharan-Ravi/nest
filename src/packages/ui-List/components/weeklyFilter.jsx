@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { useRef, useEffect, useState, useCallback } from "react";
+import {createPortal} from "react-dom";
 dayjs.extend(isBetween);
 
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -37,6 +38,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   const [yearPage, setYearPage] = useState(0);
   const [dragStart, setDragStart] = useState(null);
   const [hoverDay, setHoverDay] = useState(null);
+  const [calPosition, setCalPosition] = useState({top:0, left:0});
+  const triggerRef = useRef(null);
 
   const ref = useRef(null);
   const gridRef = useRef(null);
@@ -97,7 +100,9 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   // ── Outside-click → close calendar ───────────────────────────────────────
   useEffect(() => {
     const close = (e) => {
-      if (ref.current && !ref.current.contains(e.target)) {
+      if (ref.current && !ref.current.contains(e.target) &&
+    !document.getElementById("weekrange-cal-portal")?.contains(e.target)
+    ) {
         setShowCal(false);
         setCalMode("day");
       }
@@ -300,7 +305,20 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
         )}
 
         <button
-          onClick={() => { setShowCal((v) => !v); setMonth(start); setCalMode("day"); }}
+          ref = {triggerRef}
+          onClick={() => { if (!showCal) {
+            const rect = triggerRef.current?.getBoundingClientRect();
+            if (rect) {
+              setCalPosition({
+                top: rect.bottom + 4,
+                left: Math.min(rect.left, window.innerWidth - 296),
+              });
+            }
+          }
+          setShowCal((v)=> !v);
+          setMonth(start);
+          setCalMode("day");
+        }}
           className="px-3 h-full flex items-center justify-center text-[11px] font-bold text-gray-600 uppercase tracking-tight min-w-[144px] hover:bg-gray-50 active:bg-gray-100 transition-colors"
         >
           {label}
@@ -329,9 +347,15 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
         )}
       </div>
       {/* ── Calendar Popup ────────────────────────────────────────────── */}
-      {showCal && (
+      {showCal && createPortal(
         <div
           className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-4 w-[288px]"
+          style={{
+            position: "fixed",
+            top:calPosition.top,
+            left:calPosition.left,
+            zIndex:99999,
+          }}
           onMouseLeave={() => {
             // Cancel hover preview when mouse leaves the calendar
             if (dragStart) setHoverDay(null);
@@ -539,7 +563,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
               );
             })}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { Sidebar } from "./Sidebar";
 import Footer from "../shared/Footer/Footer";
 import Header from "../shared/Header/Header";
@@ -6,6 +6,7 @@ import { useState } from "react";
 
 export default function MainLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
+  const {pathname} = useLocation();
 
   const toggleMobileMenu = () => {
     setOpenSidebar((prev) => !prev);
@@ -22,7 +23,7 @@ export default function MainLayout() {
         <Sidebar isOpen={openSidebar} onClose={() => setOpenSidebar(false)} />
         <div className="container mx-auto bg-white flex flex-col h-full w-full shadow-lg overflow-hidden relative">
           {/* 4. The main content area is now a flex container that passes height down */}
-          <main id="main-scroll-container" className="flex-1 overflow-y-auto bg-brand-gray-light wg-scrollbar relative">
+          <main key={pathname} id="main-scroll-container" className="flex-1 overflow-y-auto bg-brand-gray-light wg-scrollbar relative">
             <Outlet />
           </main>
         </div>

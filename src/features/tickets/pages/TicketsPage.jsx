@@ -309,21 +309,33 @@ export default function TicketsPage() {
         allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValue) => {
-          if (!selectedValue) return true;
-         
-          const safeSelected = String(selectedValue).toLowerCase();
           if (
-            item.assignedTo &&
-            String(item.assignedTo).toLowerCase() === safeSelected
+            selectedValue == null ||
+            (Array.isArray(selectedValue) && selectedValue.length === 0)
           ) {
             return true;
           }
-          if(selectedValue==="__no_owner__"){
-            return !item.assignedTo||item.assignedTo===""||item.assignedTo===null
-          }
-
-          return false;
-        },
+        
+          const selectedValues = Array.isArray(selectedValue)
+            ? selectedValue
+            : String(selectedValue).split(",").map(v => v.trim());
+        
+          return selectedValues.some((val) => {
+            const assignedTo = item.assignedTo
+              ? String(item.assignedTo).toLowerCase()
+              : "";
+        
+            const safeVal = String(val).toLowerCase();
+        
+            // ✅ special case: "no owner"
+            if (safeVal === "__no_owner__") {
+              return !item.assignedTo || item.assignedTo === "";
+            }
+        
+            // normal match
+            return assignedTo === safeVal;
+          });
+        }
       },
       {
         key: "multiAssignees",
@@ -333,21 +345,28 @@ export default function TicketsPage() {
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
-        customFilter: (item, selectedValue) => {
-          if (!selectedValue) return true;
-          const safeSelected = String(selectedValue).toLowerCase();
+        customFilter: (item, selectedValues) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+          // normalize into array
+          const values = Array.isArray(selectedValues)
+            ? selectedValues.map((v) => String(v).toLowerCase())
+            : [String(selectedValues).toLowerCase()];
           if (Array.isArray(item.multiAssignees)) {
             return item.multiAssignees.some((assignee) => {
-              if (assignee.Assignee_Type === "Main Assignee") return false; // Skip main assignee, already handled in the primary filter
-              const matchName =
-                assignee.Assignee_Name &&
-                String(assignee.Assignee_Name).toLowerCase() === safeSelected;
-              const matchId =
-                assignee.Assignee_Id &&
-                String(assignee.Assignee_Id).toLowerCase() === safeSelected;
-              return matchName || matchId;
+              if (assignee.Assignee_Type === "Main Assignee") return false;
+        
+              const assigneeName = String(
+                assignee.Assignee_Name || "",
+              ).toLowerCase();
+        
+              const assigneeId = String(
+                assignee.Assignee_Id || "",
+              ).toLowerCase();
+        
+              return values.includes(assigneeName) || values.includes(assigneeId);
             });
           }
+        
           return false;
         },
       },

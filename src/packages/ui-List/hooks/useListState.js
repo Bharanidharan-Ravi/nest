@@ -334,9 +334,28 @@ export function useListState(config, rawData = [], userRole = null) {
     });
 
     // Text search
+    // if (text) {
+    //   data = data.filter((item) =>
+    //     item.title?.toLowerCase().includes(text.toLowerCase()),
+    //   );
+    // }
+
     if (text) {
+      const searchText = text
+        .toLowerCase()
+        .replace(/^#/, "")
+        .trim();
+    
       data = data.filter((item) =>
-        item.title?.toLowerCase().includes(text.toLowerCase()),
+        config.searchFields?.some((field) => {
+          const value = item[field];
+    
+          if (value === null || value === undefined) return false;
+    
+          return String(value)
+            .toLowerCase()
+            .includes(searchText);
+        })
       );
     }
 
