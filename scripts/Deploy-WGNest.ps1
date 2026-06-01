@@ -56,10 +56,10 @@ function Invoke-Deployment {
             Write-Host "Live folder is empty. Skipping backup." -ForegroundColor Yellow
         }
 
-        # 4. Clean up old backups (Keep only latest 5)
+        # 4. Clean up old backups (Keep only latest 10)
         $oldBackups = Get-ChildItem -Path $backupFolder -Filter "*.zip" | Sort-Object CreationTime -Descending
-        if ($oldBackups.Count -gt 5) {
-            $backupsToDelete = $oldBackups | Select-Object -Skip 5
+        if ($oldBackups.Count -gt 10) {
+            $backupsToDelete = $oldBackups | Select-Object -Skip 10
             foreach ($file in $backupsToDelete) {
                 Remove-Item $file.FullName -Force
                 Write-Host "Deleted old $($Type) backup: $($file.Name)" -ForegroundColor DarkGray

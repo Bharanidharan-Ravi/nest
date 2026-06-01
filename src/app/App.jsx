@@ -11,13 +11,14 @@ import { GlobalUI } from "./shared/GlobalUI/GlobalUI";
 import DND from "../features/auth/pages/login";
 import useHeartbeat from "../core/auth/hooks/useHeartbeat";
 import { useRealtimeSync } from "../core/realtime/useRealtimeSync";
+import { useAppStore } from "../core/state/useAppStore";
 
 function App() {
   useHeartbeat();
 
-  useRealtimeSync(() => {
-    return sessionStorage.getItem("user");
-  });
+  const token = useAppStore((s) => s.token);
+
+  useRealtimeSync(token);
 
   return (
     <BrowserRouter>
@@ -31,9 +32,7 @@ function App() {
         <Route element={<AuthGuard />}>
           <Route element={<AppBootstrap />}>
             <Route element={<RouteDataLoader />}>
-              <Route element={<MainLayout />}>
-                {RouteRenderer()}
-              </Route>
+              <Route element={<MainLayout />}>{RouteRenderer()}</Route>
             </Route>
           </Route>
         </Route>

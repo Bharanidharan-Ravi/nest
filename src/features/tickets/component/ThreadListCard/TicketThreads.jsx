@@ -66,7 +66,7 @@ const TicketThreads = ({
     const threadsArray = Array.isArray(threadsData)
       ? threadsData
       : [];
-
+ 
     const allHandoffs = [];
 
     (assigneesJsonString || []).forEach((assignee) => {
@@ -690,7 +690,7 @@ console.log("item, checked:",  checked);
               parentTicket,
               isQuickFormOpen: null,
               isQuickStatusOpen: null,
-              openiDialog,
+              openDialog
             }}
             module="Ticket"
           />

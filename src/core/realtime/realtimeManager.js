@@ -39,7 +39,7 @@ export const connectSignalR = async (
   const newConnection = new signalR.HubConnectionBuilder()
     .withUrl(realtimeUrl, {
       accessTokenFactory: () =>
-        JSON.parse(token),
+        token,
     })
     .withAutomaticReconnect([0, 2000, 5000, 10000, 30000, 60000, 120000])
     .configureLogging(signalR.LogLevel.Warning)

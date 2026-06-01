@@ -50,7 +50,7 @@ export const ThreadFormConfig = {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
-    const openiDialog = context?.openDialog;
+    const openDialog = context?.openDialog;
     if (context?.isClosed) {
       return [
         {
@@ -271,7 +271,7 @@ export const ThreadFormConfig = {
             "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
           icon: <FaTelegramPlane className="text-black-600" />,
           onClick: ({ submitForm, formData }) =>
-            openiDialog({
+            openDialog({
               varient: "info",
               title: "Commit this thread to the client?",
               description: "This will update the thread for all participants",
