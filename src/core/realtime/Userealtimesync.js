@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import {
-  connectSignalR,
-  ConnectionState,
-} from "./realtimeManager";
+import { connectSignalR, ConnectionState } from "./realtimeManager";
 import { handleRealtimeMessage } from "./realtimeDispatcher";
+import { readUserFromSession } from "../auth/useCurrentUser";
+import { useNotificationStore } from "../state/useNotificationStore";
 
 const DEDUP_MAX_SIZE = 300;
 
@@ -14,7 +13,7 @@ export const useRealtimeSync = (getToken) => {
   const [connectionState, setConnectionState] = useState(
     ConnectionState.Disconnected,
   );
-
+  const currentUser = readUserFromSession();
   const seen = useRef(new Set());
 
   const deduped = useCallback(
@@ -44,7 +43,17 @@ export const useRealtimeSync = (getToken) => {
       }
 
       console.log("[Realtime Message]", message);
+      if ((message.Entity ?? message.entity) === "Notification") {
+        const payload = message.Payload ?? message.payload;
 
+        const createdBy = payload?.CreatedByUserId;
+
+        if (createdBy && createdBy !== currentUser?.userId) {
+          useNotificationStore.getState().increment();
+        }
+
+        return;
+      }
       handleRealtimeMessage(queryClient, message);
     },
     [queryClient],
@@ -60,10 +69,7 @@ export const useRealtimeSync = (getToken) => {
     let disposed = false;
 
     const startRealtime = async () => {
-      const token =
-        typeof getToken === "function"
-          ? getToken()
-          : getToken;
+      const token = typeof getToken === "function" ? getToken() : getToken;
 
       if (!token) {
         console.log("[RealtimeSync] No JWT found");

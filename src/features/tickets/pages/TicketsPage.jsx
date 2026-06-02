@@ -245,7 +245,10 @@ import {
   useRepoOptions,
   useTeamOptions,
 } from "../../../core/master/selectors/selectors";
-import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
+import {
+  readUserFromSession,
+  useCurrentUser,
+} from "../../../core/auth/useCurrentUser";
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
@@ -289,22 +292,25 @@ export default function TicketsPage() {
     filters: [
       ...(!repoId
         ? [
-          {
-            key: "repoId",
-            view: "Repo",
-            allowMultiple: true,
-            showCounts: true,
-            allowedRoles: [1, 2],
-            options: repoFilterOptions,
-          },
-        ]
+            {
+              key: "repoId",
+              view: "Repo",
+              allowMultiple: true,
+              showCounts: true,
+              allowedRoles: [1, 2],
+              options: repoFilterOptions,
+            },
+          ]
         : []),
 
       {
         key: "assginedTo",
         view: "owner",
         allowedRoles: [1, 2],
-        options: [...useEmployeeOptions(true, "Owner"),{label:"No Owner",value:"__no_owner__"},],
+        options: [
+          ...useEmployeeOptions(true, "Owner"),
+          { label: "No Owner", value: "__no_owner__" },
+        ],
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
@@ -315,27 +321,29 @@ export default function TicketsPage() {
           ) {
             return true;
           }
-        
+
           const selectedValues = Array.isArray(selectedValue)
             ? selectedValue
-            : String(selectedValue).split(",").map(v => v.trim());
-        
+            : String(selectedValue)
+                .split(",")
+                .map((v) => v.trim());
+
           return selectedValues.some((val) => {
             const assignedTo = item.assignedTo
               ? String(item.assignedTo).toLowerCase()
               : "";
-        
+
             const safeVal = String(val).toLowerCase();
-        
+
             // ✅ special case: "no owner"
             if (safeVal === "__no_owner__") {
               return !item.assignedTo || item.assignedTo === "";
             }
-        
+
             // normal match
             return assignedTo === safeVal;
           });
-        }
+        },
       },
       {
         key: "multiAssignees",
@@ -354,19 +362,21 @@ export default function TicketsPage() {
           if (Array.isArray(item.multiAssignees)) {
             return item.multiAssignees.some((assignee) => {
               if (assignee.Assignee_Type === "Main Assignee") return false;
-        
+
               const assigneeName = String(
                 assignee.Assignee_Name || "",
               ).toLowerCase();
-        
+
               const assigneeId = String(
                 assignee.Assignee_Id || "",
               ).toLowerCase();
-        
-              return values.includes(assigneeName) || values.includes(assigneeId);
+
+              return (
+                values.includes(assigneeName) || values.includes(assigneeId)
+              );
             });
           }
-        
+
           return false;
         },
       },
@@ -392,15 +402,22 @@ export default function TicketsPage() {
                 .split(",")
                 .map((v) => v.trim())
                 .filter(Boolean);
-      
-          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse", "webResponse", "technicalResponse", "adminResponse"];
-      
+
+          const flagFields = [
+            "isCloseRequested",
+            "priorityRequest",
+            "funcResponse",
+            "webResponse",
+            "technicalResponse",
+            "adminResponse",
+          ];
+
           if (values.includes("allFlags")) {
             return flagFields.some((field) => item[field] === true);
           }
-      
+
           if (values.length === 0) return true;
-      
+
           return values.some((field) => item[field] === true);
         },
       },
@@ -478,7 +495,11 @@ export default function TicketsPage() {
 
       {/* <div className="tickets-container container"> */}
       <div className="w-full pb-10">
-        <ListProvider config={listConfigWithNav} data={TicketList} userRole={currentUser?.role}>
+        <ListProvider
+          config={listConfigWithNav}
+          data={TicketList}
+          userRole={currentUser?.role}
+        >
           <ListLayout />
         </ListProvider>
       </div>

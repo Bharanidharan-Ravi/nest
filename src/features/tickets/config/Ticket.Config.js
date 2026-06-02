@@ -1,12 +1,23 @@
 import { buildOptionsResolver, sumHHMM } from "../../../app/shared/utilities/utilities";
-const makeAtLeastOneValidator =(fieldLabel)=>(value,formData)=>{
-  const hasAtLeastOne = 
-         formData?.Client || formData?.Web || formData?.Functional || formData?.Technical;
-         if(!hasAtLeastOne){
-          return `${fieldLabel} hours is required`
-         }
-         return true;
-}
+const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
+  if (!context?.isEdit) {
+    // Not in edit mode ? skip validation
+    return true;
+  }
+
+  // In edit mode ? check if all fields are empty
+  const allEmpty =
+    !formData?.Client &&
+    !formData?.Web &&
+    !formData?.Functional &&
+    !formData?.Technical;
+
+  if (allEmpty) {
+    return `${fieldLabel} is required`; // Validate
+  }
+
+  return true; // At least one has value ? no validation error
+};
 export const TicketFieldConfig = () => [
   /* --------------------------------------------------
      Repository Title

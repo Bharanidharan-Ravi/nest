@@ -25,7 +25,7 @@ import {
 import { useSearchParams } from "react-router-dom";
 import { FiX } from "react-icons/fi";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
-import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config"; 
+import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config";
 import { ThreadFieldConfig } from "../../tickets/config/Thread.config";
 import TimesheetTree from "../component/TimesheetTree";
 import TicketListCard from "../../tickets/component/TicketListCard";
@@ -152,8 +152,8 @@ export default function Dashboard() {
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
     ...TicketListConfig,
-        theme: {
-      stickyTop:50,
+    theme: {
+      stickyTop: 50,
     },
     defaultView: "card",
     syncUrl: true,
@@ -179,7 +179,7 @@ export default function Dashboard() {
         showCounts: true,
         allowMultiple: true,
       },
-     {
+      {
         key: "customBoolean",
         view: "Special Flags",
         showCounts: true,
@@ -188,7 +188,7 @@ export default function Dashboard() {
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
-           { label: "Technical Response", value: "webResponse" },
+          { label: "Technical Response", value: "webResponse" },
           { label: "Web Response", value: "technicalResponse" },
           { label: "Admin Response", value: "adminResponse" },
         ],
@@ -198,18 +198,18 @@ export default function Dashboard() {
           const values = Array.isArray(selectedValues)
             ? selectedValues
             : String(selectedValues)
-                .split(",")
-                .map((v) => v.trim())
-                .filter(Boolean);
-      
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean);
+
           const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse", "webResponse", "technicalResponse", "adminResponse"];
-      
+
           if (values.includes("allFlags")) {
             return flagFields.some((field) => item[field] === true);
           }
-      
+
           if (values.length === 0) return true;
-      
+
           return values.some((field) => item[field] === true);
         },
       },
@@ -220,7 +220,6 @@ export default function Dashboard() {
         options: employeeFilterOptions,
         defaultValue: currentUserId,
         filterType: "api",
-        persistOnClear: true,
         api: "/sync/v2",
         apiKey: "EmployeeId",
         configKey: "TicketsList",
@@ -236,28 +235,28 @@ export default function Dashboard() {
         allowMultiple: true,
         customFilter: (item, selectedValues) => {
           if (!selectedValues || selectedValues.length === 0) return true;
-        
+
           // normalize into array
           const values = Array.isArray(selectedValues)
             ? selectedValues.map((v) => String(v).toLowerCase())
             : [String(selectedValues).toLowerCase()];
-        
+
           if (Array.isArray(item.multiAssignees)) {
             return item.multiAssignees.some((assignee) => {
               if (assignee.Assignee_Type === "Main Assignee") return false;
-        
+
               const assigneeName = String(
                 assignee.Assignee_Name || "",
               ).toLowerCase();
-        
+
               const assigneeId = String(
                 assignee.Assignee_Id || "",
               ).toLowerCase();
-        
+
               return values.includes(assigneeName) || values.includes(assigneeId);
             });
           }
-        
+
           return false;
         },
       },
@@ -265,7 +264,7 @@ export default function Dashboard() {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
         view: "Project",
         showCounts: true,
-             allowMultiple: true,
+        allowMultiple: true,
         options: projectFilterOptions,
       },
       {
@@ -277,7 +276,7 @@ export default function Dashboard() {
         allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
-       {
+      {
         key: "teamId",
         view: "Team",
         showCounts: true,
@@ -286,11 +285,11 @@ export default function Dashboard() {
         allowMultiple: true,
         customFilter: (item, selectedValues) => {
           if (!selectedValues || selectedValues.length === 0) return true;
-        
+
           const values = Array.isArray(selectedValues)
             ? selectedValues.map(String)
             : [String(selectedValues)];
-        
+
           return item.multiAssignees?.some(
             (a) =>
               values.includes(String(a.Assignee_TeamId)) &&
@@ -307,7 +306,7 @@ export default function Dashboard() {
           selectedTickets.length === 0 || isCommitting
             ? "opacity-50 cursor-not-allowed"
             : "hover:bg-yellow-500 shadow-sm"
-        }`}
+          }`}
       >
         {isCommitting ? "Saving…" : "Commit"}
       </button>
@@ -315,7 +314,7 @@ export default function Dashboard() {
   };
 
   // ✅ Static — no external dependency
-const dashboardTimesheetGraph = (parsedFilters) => {
+  const dashboardTimesheetGraph = (parsedFilters) => {
     // Determine if we are looking at the whole team
     const isAllEmployees = !parsedFilters?.filters.assignedTo || parsedFilters.filters.assignedTo.trim() === "";
     // 2. Determine if we are looking at ALL projects (projId is null/empty)
@@ -325,57 +324,57 @@ const dashboardTimesheetGraph = (parsedFilters) => {
       graphType: "stackedBar",
       graphXAxisKey: "updatedAt",
       graphValueKey: "ConsumeTime",
-      
+
       // 3. DYNAMIC GROUPING LOGIC
-      graphGroupIdKey: isAllEmployees 
+      graphGroupIdKey: isAllEmployees
         ? (item) => `${item.employeeId}_${item.employeeName}` // All Employees -> Group by Person
         : isAllProjects
-            ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
-            : (item) => item.id || item.issueId,
+          ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
+          : (item) => item.id || item.issueId,
       // 2. COMBINED LABEL: Formats the Tooltip beautifully (e.g., "[WGN] Backend - Login Fix")
-     graphLabelKey: isAllEmployees 
-        ? "employeeName" 
+      graphLabelKey: isAllEmployees
+        ? "employeeName"
         : (item) => {
-            // 1. Process Repo Initials
-            const repo = item.repoName
-              ? item.repoName.split(" ").map((w) => w[0]?.toUpperCase()).join("")
-              : "Repo";
+          // 1. Process Repo Initials
+          const repo = item.repoName
+            ? item.repoName.split(" ").map((w) => w[0]?.toUpperCase()).join("")
+            : "Repo";
 
-            // 2. Process Project Name (Max 2 words)
-            const projName = item.projectName || item.project || "";
-            const project = projName.split(" ").length > 2
-              ? projName.split(" ").slice(0, 2).join(" ") + "..."
-              : projName;
+          // 2. Process Project Name (Max 2 words)
+          const projName = item.projectName || item.project || "";
+          const project = projName.split(" ").length > 2
+            ? projName.split(" ").slice(0, 2).join(" ") + "..."
+            : projName;
 
-            // 3. Process Ticket Name (Cut in half by words if it's too long)
-            const ticketName = item.TicketName || item.title || "";
-            let truncatedTicket = ticketName;
-            const words = ticketName.split(" ");
-            
-            // If the ticket has more than 4 words, cut it in half and add "..."
-            if (words.length > 4) {
-               const halfPoint = Math.ceil(words.length / 2);
-               truncatedTicket = words.slice(0, halfPoint).join(" ") + "...";
-            } else if (ticketName.length > 30) {
-               // Fallback: If it's a few words but super long characters, cut by character
-               truncatedTicket = ticketName.substring(0, 30) + "...";
-            }
+          // 3. Process Ticket Name (Cut in half by words if it's too long)
+          const ticketName = item.TicketName || item.title || "";
+          let truncatedTicket = ticketName;
+          const words = ticketName.split(" ");
 
-            // 4. Return formatted React elements for perfect 2-line stacking!
-            return (
-              <div className="flex flex-col leading-tight">
-                <span className="text-gray-800">
-                  [{repo}] {project}
-                </span>
-                <span 
-                  className="text-[11.5px] font-medium text-gray-500 mt-0.5" 
-                  title={ticketName} // Shows full name when mouse hovers over it!
-                >
-                  {truncatedTicket}
-                </span>
-              </div>
-            );
-          },
+          // If the ticket has more than 4 words, cut it in half and add "..."
+          if (words.length > 4) {
+            const halfPoint = Math.ceil(words.length / 2);
+            truncatedTicket = words.slice(0, halfPoint).join(" ") + "...";
+          } else if (ticketName.length > 30) {
+            // Fallback: If it's a few words but super long characters, cut by character
+            truncatedTicket = ticketName.substring(0, 30) + "...";
+          }
+
+          // 4. Return formatted React elements for perfect 2-line stacking!
+          return (
+            <div className="flex flex-col leading-tight">
+              <span className="text-gray-800">
+                [{repo}] {project}
+              </span>
+              <span
+                className="text-[11.5px] font-medium text-gray-500 mt-0.5"
+                title={ticketName} // Shows full name when mouse hovers over it!
+              >
+                {truncatedTicket}
+              </span>
+            </div>
+          );
+        },
       // graphColorKey: isAllEmployees ? null : "statusColor",
       graphColorKey: (item)=>{
         if(item.isDirectUpdate)return "#94a368";
@@ -383,7 +382,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
           return "#ef4444"
         return null
       },
-      
+
       // 2. Tooltip Customization (Only show employee name if looking at specific tickets)
       tooltipSecondaryLabelKey: isAllEmployees ? null : "employeeName",
 
@@ -397,7 +396,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         const m = Math.round((rawTime % 1) * 60);
         return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
       },
-      
+
       // 3. Status IDs Passed Down (No hardcoding in the graph!)
       terminalStatusKey: "threadStatusId",
       terminalStatusIds: [15,16],
@@ -415,6 +414,9 @@ const dashboardTimesheetGraph = (parsedFilters) => {
 
   const dashboardTimesheet = {
     ...TicketListConfig,
+    theme: {
+      stickyTop: 50,
+    },
     syncUrl: true,
     moduleId: "timesheet",
     enableSearch: false,
@@ -499,12 +501,15 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         allowMultiple: true,
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
-     
+
     ],
   };
 
   const dashboardPickedList = {
     ...TicketListConfig,
+     theme: {
+      stickyTop: 50,
+    },
     syncUrl: false,
     moduleId: "picklist",
     enableSearch: false,
@@ -538,7 +543,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
             gap:"4px"
           }}>
             {item.Checked_Person }
-            </div>
+          </div>
         )}
       </div>
     ),
@@ -550,7 +555,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
           selectedUncheckTickets.length === 0
             ? "opacity-50 cursor-not-allowed"
             : "hover:bg-yellow-500 shadow-sm"
-        }`}
+          }`}
       >
         Uncheck
       </button>
@@ -629,7 +634,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     <div className="dashview">
       <h2>Dashboard</h2>
       <ModuleSwitcher modules={dashboardModules} />
-    {quickTicketStatus && (
+      {quickTicketStatus && (
         <>
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"

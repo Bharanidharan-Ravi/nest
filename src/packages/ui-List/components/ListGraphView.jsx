@@ -266,7 +266,7 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
   }, [maxY, axisSignature, containerW]);
 
   return (
-    <div className="w-full mx-auto rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col relative">
+    <div className="w-full z-10 mx-auto rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden flex flex-col relative">
       <div ref={measureRef} className="w-full h-0 pointer-events-none" />
 
       <style>{`

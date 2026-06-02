@@ -48,8 +48,28 @@ const FormEngine = ({
 
       const fieldTheme = field.theme || globalTheme || {};
       const fielderror = getError(field);
+      if (field.type === "switch") {
+        renderElements.push(
+          <div
+            key={field.name}
+            className={`${colSpanClasses[field.colSpan] }`}
+          >
+            <Component
+              name={field.name}
+              label={field.label}
+              value={values[field.name]}
+              error={fielderror}
+              onChange={onChange}
+              switchColor ={field.switchColor}
+              disabled={field.disabled}
+              theme={fieldTheme}
+            />
+          </div>
+        );
 
-      // 1. Determine the column span
+        return; // skip grid logic completely
+      }
+
       let currentSpan = field.colSpan || 6;
       if (
         field.type === "adEditor" ||

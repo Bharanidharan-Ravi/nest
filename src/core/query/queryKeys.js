@@ -67,5 +67,18 @@ export const queryKeys = {
     all:   ["client"],
     list:  () => [...queryKeys.client.all, "list"],
     detail:  (id) => [...queryKeys.client.all, "detail", id],
-  }
+  },
+  notification: {
+  all: ["notification"],
+
+  unreadCount: () => [
+    ...queryKeys.notification.all,
+    "unread-count"
+  ],
+
+  list: () => [
+    ...queryKeys.notification.all,
+    "list"
+  ]
+}
 }

@@ -268,7 +268,11 @@ if (!isViewer) {
                   <span
                     key={label.LABEL_ID}
                     className="ticket-label badge"
-                    style={getLabelStyle(label.LABEL_COLOR)}
+                    // style={getLabelStyle(label.LABEL_COLOR)}
+                    style={{
+                      ...getLabelStyle(label.LABEL_COLOR),
+                      marginLeft: "5px" 
+                    }}
                   >
                     {label.LABEL_TITLE}
                   </span>

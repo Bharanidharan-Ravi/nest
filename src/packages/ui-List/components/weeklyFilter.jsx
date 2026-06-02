@@ -45,6 +45,11 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   const gridRef = useRef(null);
   // ── Ref mirror for dragStart so touch-move handler never goes stale ──────
   const dragStartRef = useRef(null);
+  const hoverDayRef = useRef(null);
+  const setHover = (d) => {
+    hoverDayRef.current = d;
+    setHoverDay(d);
+  };
 
   // ── Feature flags ─────────────────────────────────────────────────────────
   const enableDaily = !!filter.enableDailyNav;
@@ -100,9 +105,13 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   // ── Outside-click → close calendar ───────────────────────────────────────
   useEffect(() => {
     const close = (e) => {
-      if (ref.current && !ref.current.contains(e.target) &&
-    !document.getElementById("weekrange-cal-portal")?.contains(e.target)
-    ) {
+      if (dragStartRef.current) return;
+      const portal = document.getElementById("weekrange-cal-portal");
+      if (
+        ref.current &&
+        !ref.current.contains(e.target) &&
+        (!portal || !portal.contains(e.target))
+      ) {
         setShowCal(false);
         setCalMode("day");
       }
@@ -131,7 +140,7 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
       if (!el) return;
       const dateStr = el.closest("[data-date]")?.getAttribute("data-date");
       if (dateStr) {
-        setHoverDay(dayjs(dateStr));
+        setHover(dayjs(dateStr));
       }
     };
 
@@ -141,16 +150,18 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
 
   // ── Apply range → write to query string ───────────────────────────────────
   const applyRange = useCallback(
-    (s, e) => {
+    (s, e, closeCal = true) => {
       updateQuery(
         filter.key,
         `${s.format("YYYY-MM-DD")}~${e.format("YYYY-MM-DD")}`,
       );
-      setShowCal(false);
+      if (closeCal) {
+        setShowCal(false);
+        setCalMode("day");
+      }
       dragStartRef.current = null;
       setDragStart(null);
-      setHoverDay(null);
-      setCalMode("day");
+      setHover(null);
     },
     [filter.key, updateQuery],
   );
@@ -271,6 +282,24 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
     [applyRange],
   );
 
+  useEffect(()=>{
+   const onMouseUp = ()=>{
+    if (!dragStartRef.current) return;
+    const ds = dragStartRef.current;
+    const hd = hoverDayRef.current;
+    const isDrag = ds && hd && !ds.isSame(hd, "day");
+    if (isDrag) {
+      const s = ds.isBefore(hd, "day") ? ds : hd;
+      const e = ds.isBefore(hd, "day") ? hd : ds;
+      applyRange(s, e, false);
+    } else if (ds) {
+      applyRange(ds, ds, true);
+    }
+   };
+   document.addEventListener("mouseup", onMouseUp);
+   return ()=> document.removeEventListener("mouseup", onMouseUp);
+  }, [applyRange]);
+
   // ── Dynamic reset-button label (short enough to fit the pill) ────────────
   // "Week" for week mode, "Today" for daily/unset — both fit in ~32px width.
   const resetLabel = filterDefaultRange === "week" ? "Week" : "Today";
@@ -358,7 +387,7 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
           }}
           onMouseLeave={() => {
             // Cancel hover preview when mouse leaves the calendar
-            if (dragStart) setHoverDay(null);
+            if (dragStartRef.current) setHover(null);
           }}
         >
           {/* ── Header: month / year navigation + mode switcher ── */}
@@ -496,9 +525,9 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
                 ref={gridRef}
                 className="grid grid-cols-7"
                 /* ── Mouse: finish drag on mouseup anywhere in grid ── */
-                onMouseUp={() => {
-                  finishDrag(dragStart, hoverDay);
-                }}
+                // onMouseUp={() => {
+                //   finishDrag(dragStart, hoverDay);
+                // }}
                 /* ── Touch: finish drag on touchend anywhere in grid ── */
                 onTouchEnd={() => {
                   finishDrag(dragStartRef.current, hoverDay);
@@ -517,9 +546,11 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
                       onMouseDown={() => {
                         dragStartRef.current = date;
                         setDragStart(date);
-                        setHoverDay(date);
+                        // setHoverDay(date);
+                        setHover(date);
                       }}
-                      onMouseEnter={() => dragStart && setHoverDay(date)}
+                      // onMouseEnter={() => dragStart && setHoverDay(date)}
+                      onMouseEnter={() => dragStartRef.current && setHover (date)}
                       /* ── Touch events ──
                          onTouchStart fires per-cell (where the finger lands).
                          onTouchMove is registered via useEffect with passive:false
@@ -531,7 +562,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
                         e.preventDefault();
                         dragStartRef.current = date;
                         setDragStart(date);
-                        setHoverDay(date);
+                        // setHoverDay(date);
+                        setHover(date);
                       }}
                     >
                       {date.date()}

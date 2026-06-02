@@ -20,8 +20,9 @@ function App() {
 
   useRealtimeSync(token);
 
+  const isTestEnv = window.location.pathname.startsWith('/test');
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={isTestEnv ? "/test" : "/"}>
       <GlobalUI />
 
       <Routes>

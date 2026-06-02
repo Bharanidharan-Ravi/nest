@@ -103,7 +103,7 @@ export function matchNavRoute(pathname) {
  * Build a concrete URL from a nav key + param values.
  * Throws if a required param is missing.
  */
-export function buildPath(key, params = {}) {
+export function buildPath(key, params = {}, queryParams = {}) {
   const node = _registry.get(key);
   if (!node) throw new Error(`[routeRegistry] Unknown nav key: "${key}"`);
 
@@ -115,6 +115,10 @@ export function buildPath(key, params = {}) {
 
   if (missing.length) {
     throw new Error(`[buildPath] "${key}" needs params [${missing.join(", ")}]. Got: ${JSON.stringify(params)}`);
+  }
+  if (Object.keys(queryParams).length > 0) {
+    const queryString = new URLSearchParams(queryParams).toString();
+    path = `${path}?${queryString}`;
   }
   return path;
 }

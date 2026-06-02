@@ -26,12 +26,29 @@ export const useSmartNavigation = () => {
 
   // ─── Path building ────────────────────────────────────────────────────
 
-  const getPath = (key, extraParams = {}) =>
-    buildPath(key, { ...routeParams, ...extraParams });
+// const getPath = (key, extraParams = {}, queryParams = {}) =>
+//     buildPath(key, { ...routeParams, ...extraParams }, queryParams);
+
+const getPath = (key, extraParams = {}) => {
+    // 1. Build the base path normally (e.g., "/tickets/123")
+    let path = buildPath(key, { ...routeParams, ...extraParams });
+
+    // 2. AUTOMATIC ENVIRONMENT PRESERVATION
+    // Check if the current URL has an environment flag (like ?env=test)
+    const currentParams = new URLSearchParams(location.search);
+    const envFlag = currentParams.get('env');
+    
+    // If we are in test/demo, automatically append it to the new path
+    if (envFlag) {
+        path = `${path}?env=${envFlag}`;
+    }
+
+    return path;
+  };
 
   // ─── Navigation ───────────────────────────────────────────────────────
 
-  const goTo = (key, extraParams = {}, options = {}) => {
+const goTo = (key, extraParams = {}, options = {}) => {
     navigate(getPath(key, extraParams), options);
   };
 

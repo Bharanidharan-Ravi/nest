@@ -23,8 +23,7 @@ export const connectSignalR = async (
   getToken,
   { onMessage, onStateChange, onReconnected } = {},
 ) => {
-  const token =
-    typeof getToken === "function" ? getToken() : getToken;
+  const token = typeof getToken === "function" ? getToken() : getToken;
 
   if (!token || !realtimeUrl) return;
 
@@ -36,10 +35,15 @@ export const connectSignalR = async (
 
   onStateChange?.(ConnectionState.Connecting);
 
+  const isTestEnv = window.location.pathname.startsWith("/test");
+  const envQueryParam = isTestEnv ? "Test" : "Live";
+
+  // Safely append to the URL whether it already has query parameters or not
+  const separator = realtimeUrl.includes("?") ? "&" : "?";
+  const finalRealtimeUrl = `${realtimeUrl}${separator}env=${envQueryParam}`;
   const newConnection = new signalR.HubConnectionBuilder()
     .withUrl(realtimeUrl, {
-      accessTokenFactory: () =>
-        token,
+      accessTokenFactory: () => token,
     })
     .withAutomaticReconnect([0, 2000, 5000, 10000, 30000, 60000, 120000])
     .configureLogging(signalR.LogLevel.Warning)

@@ -365,8 +365,9 @@ export const ThreadFieldConfig = (ticketId) => [
     label: "Notify Priority",
     type: "switch",
     ui: "mui",
-    colSpan: 4,
+    colSpan: 2,
     // customValidator: createToggleValidator("Notify Priority"),
+    switchColor: "bg-orange-100 text-orange-800 toggle-orange-500",
     initValueResolver: ({ context }) => {
       const isActive =
         context?.parentTicket?.PriorityRequest ||
@@ -382,10 +383,11 @@ export const ThreadFieldConfig = (ticketId) => [
   {
     name: "requestClose",
     apiKey: "IsCloseRequested",
-    label: "Request Ticket Closure",
+    label: "Ticket Closure",
     type: "switch",
     ui: "mui",
-    colSpan: 4,
+    colSpan: 2,
+    switchColor: "bg-red-100 text-red-800 toggle-red-500",
     initValueResolver: ({ context }) => {
       const isRequested =
         context?.parentTicket?.IsCloseRequested ||
@@ -407,9 +409,10 @@ export const ThreadFieldConfig = (ticketId) => [
     name: "Functional Response",
     apiKey: "FuncResponse",
     label: "Notify Functional",
+    switchColor: "bg-purple-100 text-purple-800 toggle-purple-500",
     type: "switch",
     ui: "mui",
-    colSpan: 4,
+    colSpan: 2,
     // customValidator: createToggleValidator("Notify Functional"),
     initValueResolver: ({ context }) => {
       const isActive =
@@ -428,8 +431,9 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "TechnicalResponse",
     label: "Notify Technical",
     type: "switch",
+    switchColor: "bg-green-100 text-green-800 toggle-green-500",
     ui: "mui",
-    colSpan: 4,
+    colSpan: 2,
     // customValidator: createToggleValidator("Notify Technical"),
     initValueResolver: ({ context }) => {
       const isActive =
@@ -448,8 +452,9 @@ export const ThreadFieldConfig = (ticketId) => [
     apiKey: "WebResponse",
     label: "Notify Web",
     type: "switch",
+    switchColor: "bg-blue-100 text-blue-800 toggle-blue-500",
     ui: "mui",
-    colSpan: 4,
+    colSpan: 2,
     // customValidator: createToggleValidator("Notify Web"),
     initValueResolver: ({ context }) => {
       const isActive =
@@ -469,7 +474,8 @@ export const ThreadFieldConfig = (ticketId) => [
     label: "Notify Admin",
     type: "switch",
     ui: "mui",
-    colSpan: 4,
+    switchColor: "bg-yellow-100 text-yellow-800 toggle-yellow-500",
+    colSpan: 2,
     // customValidator: createToggleValidator("Notify Admin"),
     initValueResolver: ({ context }) => {
       const isActive =
@@ -540,12 +546,6 @@ export const ThreadFieldConfig = (ticketId) => [
         .replace(/&zwnj;/gi, "")
         .trim();
 
-        const contributorChanged =
-        JSON.stringify(formData?.Contributor || []) !==
-        JSON.stringify(context?.editingItem?.CoContributors || []);
-
-        if (contributorChanged) return true;
-
       // ✅ If Description has value, skip ALL TicketStatusSummary validation
       if (cleanDesc && cleanDesc.length > 0) {
         return true;
@@ -555,7 +555,7 @@ export const ThreadFieldConfig = (ticketId) => [
       const cleanSummary = value?.replace(/<[^>]*>?/gm, "").trim();
 
       // ❌ If Description is empty AND Summary is also empty → show error
-   
+
       const batteryHasValue = !!formData.TicketOverallPercentage;
 
       if (batteryHasValue && !cleanSummary) {

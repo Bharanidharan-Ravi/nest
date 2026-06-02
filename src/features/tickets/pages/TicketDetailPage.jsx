@@ -22,7 +22,7 @@ const TicketDetailPage = () => {
   // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
-  const editRouteKey=ROUTE_KEYS.TICKET_EDIT
+  const editRouteKey = ROUTE_KEYS.TICKET_EDIT
   const { isViewer } = useCurrentUser();
   const [editingItem, setEditingItem] = useState(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -86,9 +86,16 @@ const TicketDetailPage = () => {
       Repo_Name: projectDetails?.repoName || "Unknown Repo",
     };
   }, [ticketMasterData, ticketId]);
-  const isTicketIncomplete=!parentTicket?.Assignee_Id||
-  !parentTicket?.Hours||
-  !parentTicket?.Due_Date;
+  const isTicketIncomplete =
+    !parentTicket?.Assignee_Id ||
+    !parentTicket?.Due_Date ||
+    (
+      !parentTicket?.Client &&
+      !parentTicket?.Functional &&
+      !parentTicket?.Technical &&
+      !parentTicket?.Web
+    );
+
 
   // 2. Process Assignees and Roles
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
@@ -273,30 +280,30 @@ const TicketDetailPage = () => {
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
-            {isTicketIncomplete?(
+            {isTicketIncomplete ? (
               <div className="flex flex-col items-center justify-center gap-4 py-12 px-6
               border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-              <button onClick={()=> goTo(editRouteKey, { ticketId })}
-              className="bg-brand-yellow text-white px-4 py-2 rounded-md
+                <button onClick={() => goTo(editRouteKey, { ticketId })}
+                  className="bg-brand-yellow text-white px-4 py-2 rounded-md
               font-medium hover:opacity-90 transition-colors">
-             Complete Ticket Details
-            </button>
-            </div>):(
-            <TicketThreads
-              ticketId={ticketId}
-              threadsData={ThreadsList?.ThreadsList || []}
-              historyData={
-                ThreadsList?.TicketHistory || ThreadsList?.ticketHistory || []
-              }
-              assigneesJsonString={assigneesJsonString}
-              selectedWorkStream={selectedWorkStream}
-              selectedHandoffId={selectedHandoffId}
-              parentTicket={parentTicket}
-              formContext={formContext}
-              editingItem={editingItem}
-              setEditingItem={setEditingItem}
-              currentUser={user}
-            />
+                  Complete Ticket Details
+                </button>
+              </div>) : (
+              <TicketThreads
+                ticketId={ticketId}
+                threadsData={ThreadsList?.ThreadsList || []}
+                historyData={
+                  ThreadsList?.TicketHistory || ThreadsList?.ticketHistory || []
+                }
+                assigneesJsonString={assigneesJsonString}
+                selectedWorkStream={selectedWorkStream}
+                selectedHandoffId={selectedHandoffId}
+                parentTicket={parentTicket}
+                formContext={formContext}
+                editingItem={editingItem}
+                setEditingItem={setEditingItem}
+                currentUser={user}
+              />
             )}
           </div>
 
