@@ -219,6 +219,7 @@ export default function Dashboard() {
         view: "Assignee",
         options: employeeFilterOptions,
         defaultValue: currentUserId,
+        persistOnClear: true,
         filterType: "api",
         api: "/sync/v2",
         apiKey: "EmployeeId",

@@ -33,7 +33,22 @@ const Header = ({ toggleMobileMenu }) => {
   const { data } = useNotificationCount();
   const { data: notificationList } = getNotification(showNotifications);
   console.log("Notification Count Data:", data, notificationList);
+  const markSeen = async () => {
+    await executeApi({
+      url: "/Notification/mark-seen",
+      method: "POST",
+      payload: {
+        sessionId: user.sessionId,
+      },
+    });
+  }
+  useEffect(() => {
+    if (!showNotifications) return;
 
+    markSeen();
+
+    useNotificationStore.getState().reset();
+  }, [showNotifications]);
   const setCount = useNotificationStore((s) => s.setCount);
   const count = useNotificationStore((s) => s.count);
   useEffect(() => {

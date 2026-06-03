@@ -28,9 +28,9 @@ export function ListSearchBar() {
       const values = Array.isArray(value)
         ? value
         : String(value)
-            .split(",")
-            .map((v) => v.trim())
-            .filter(Boolean);
+          .split(",")
+          .map((v) => v.trim())
+          .filter(Boolean);
 
       return values
         .filter((v) => v !== "")
@@ -39,12 +39,18 @@ export function ListSearchBar() {
             (o) => String(o.value) === String(v),
           );
           const displayLabel = option ? option.label : v;
-          return { key, value: v, display: `${displayKey}: ${displayLabel}` };
+          return { key, value: v, display: `${displayKey}: ${displayLabel}`, persistOnClear: filterDef?.persistOnClear || false };
         });
     });
 
   // Replace removeChip's setQuery call with:
   const removeChip = (chipKey, chipValue) => {
+    const filterDef = config.filters?.find((f) => {
+      return f.key === chipKey;
+    });
+    if (filterDef?.persistOnClear) {
+      return;
+    }
     const { filters: cur, text: curText } = parseQuery(query);
 
     const rebuilt = Object.entries(cur)
@@ -53,16 +59,16 @@ export function ListSearchBar() {
         const vals = Array.isArray(v)
           ? v
           : String(v)
-              .split(",")
-              .map((x) => x.trim())
-              .filter(Boolean);
+            .split(",")
+            .map((x) => x.trim())
+            .filter(Boolean);
         const remaining = vals.filter((x) => x !== chipValue);
         return remaining.length > 0 ? `${k}:${remaining.join(",")}` : null;
       })
       .filter(Boolean);
 
     setQuery([...rebuilt, curText].filter(Boolean).join(" ").trim());
-    setInputValue(curText); // ✅ Keep input in sync with remaining free text
+    setInputValue(curText); 
   };
   // ── Free text enter ───────────────────────────────────────────────────────
   const handleInputChange = (e) => {
@@ -74,7 +80,6 @@ export function ListSearchBar() {
     const existingFilters = Object.entries(cur).map(
       ([k, v]) => `${k}:${Array.isArray(v) ? v.join(",") : v}`,
     );
-    // ✅ Update text part live as user types
     setQuery([...existingFilters, val].filter(Boolean).join(" ").trim());
   };
 
@@ -96,7 +101,7 @@ export function ListSearchBar() {
     });
     // Always keep tab if exists
     if (cur.is) newQueryParts.push(`is:${cur.is}`);
-  
+
     setQuery(newQueryParts.join(" "));
     setInputValue("");
   };
@@ -119,15 +124,17 @@ export function ListSearchBar() {
           className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-white text-gray-700 border border-gray-300 shadow-sm"
         >
           {chip.display}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              removeChip(chip.key, chip.value);
-            }}
-            className="text-gray-400 hover:text-gray-700 transition-colors leading-none ml-0.5"
-          >
-            ✕
-          </button>
+          {!chip.persistOnClear && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removeChip(chip.key, chip.value);
+              }}
+              className="text-gray-400 hover:text-gray-700 transition-colors leading-none ml-0.5"
+            >
+              ✕
+            </button>
+          )}
         </span>
       ))}
 

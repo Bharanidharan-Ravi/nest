@@ -86,6 +86,9 @@ const TicketDetailPage = () => {
       Repo_Name: projectDetails?.repoName || "Unknown Repo",
     };
   }, [ticketMasterData, ticketId]);
+
+  const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(parentTicket?.StatusId);
+
   const isTicketIncomplete =
     !parentTicket?.Assignee_Id ||
     !parentTicket?.Due_Date ||
@@ -96,7 +99,8 @@ const TicketDetailPage = () => {
       !parentTicket?.Web
     );
 
-
+const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
+console.log("parentTicket1212121",parentTicket);
   // 2. Process Assignees and Roles
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
   const myAssignments = assigneesJsonString.filter(
@@ -280,7 +284,7 @@ const TicketDetailPage = () => {
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
-            {isTicketIncomplete ? (
+          {shouldBlockThreads ? (
               <div className="flex flex-col items-center justify-center gap-4 py-12 px-6
               border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
                 <button onClick={() => goTo(editRouteKey, { ticketId })}

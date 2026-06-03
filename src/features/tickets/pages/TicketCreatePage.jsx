@@ -45,42 +45,42 @@ const TicketCreatePage = () => {
     return normalizeTicket(TicketWrapper[0]);
   }, [TicketWrapper, isEdit]);
 
-  const statusOptions = [
-    { label: "Active", value: { id: 1, name: "Active" } },
-    { label: "InActive", value: { id: 17, name: "InActive" } },
-    { label: "Hold", value: { id: 14, name: "Hold" } },
-    { label: "InQueue", value: { id: 18, name: "InQueue" } },
-  ];
+  // const statusOptions = [
+  //   { label: "Active", value: { id: 1, name: "Active" } },
+  //   { label: "InActive", value: { id: 17, name: "InActive" } },
+  //   { label: "Hold", value: { id: 14, name: "Hold" } },
+  //   { label: "InQueue", value: { id: 18, name: "InQueue" } },
+  // ];
 
   // 2. Define the Status field that only appears during editing
-  const statusField = {
-    name: "Status",
-    label: "Ticket Status",
-    type: "select", // Assuming your form engine uses 'select'
-    ui: "mui",
-    apiKey: "Status",
-    options: statusOptions,
-    required: true,
-    initValueResolver: ({ context }) => {
-      if (!context.isEdit || !context.entityData) {
-        return statusOptions[0]; // Returns the whole { label, value: { id, name } } object
-      }
-      const apiStatus = context.entityData.statusId; // e.g., "Active" or 1
-      const matchedOption = statusOptions.find(
-        (opt) => opt.value.id === apiStatus
-      );
-      return matchedOption || statusOptions[0];
-    },
-    visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
-    }
-  };
+  // const statusField = {
+  //   name: "Status",
+  //   label: "Ticket Status",
+  //   type: "select", // Assuming your form engine uses 'select'
+  //   ui: "mui",
+  //   apiKey: "Status",
+  //   options: statusOptions,
+  //   required: true,
+  //   initValueResolver: ({ context }) => {
+  //     if (!context.isEdit || !context.entityData) {
+  //       return statusOptions[0]; // Returns the whole { label, value: { id, name } } object
+  //     }
+  //     const apiStatus = context.entityData.statusId; // e.g., "Active" or 1
+  //     const matchedOption = statusOptions.find(
+  //       (opt) => opt.value.id === apiStatus
+  //     );
+  //     return matchedOption || statusOptions[0];
+  //   },
+  //   visibleWhen: (formData, context) => {
+  //     return (!context?.isViewer);
+  //   }
+  // };
 
   const dynamicConfig = {
     ...TicketFormConfig,
     api: isEdit ? `Ticket/${params.ticketId}` : TicketFormConfig.api,
     fields: isEdit
-      ? [...TicketFormConfig.fields, statusField] // Add status field on edit
+      ? [...TicketFormConfig.fields] // Add status field on edit
       : TicketFormConfig.fields,
   };
   return (

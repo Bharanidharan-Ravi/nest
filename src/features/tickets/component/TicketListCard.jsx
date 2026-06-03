@@ -67,86 +67,75 @@ export default function TicketListCard({
   const technicalResponseRequested = item.technicalResponse;
   const webResponseRequested = item.webResponse;
   const adminResponseRequested = item.adminResponse;
-  // let statusIcon;
-  // if (isCloseRequested) {
-  //   // 🔥 Replace the icon entirely with a red pulsing dot of the same size
-  //   statusIcon = (
-  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
-  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
-  //     </div>
-  //   );
-  // } else if (isPriorityRequested) {
-  //   statusIcon = (
-  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Priority">
-  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
-  //     </div>
-  //   );
-  // } else if (funcResponseRequested) {
-  //   statusIcon = (
-  //     <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
-  //       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-  //       <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
-  //     </div>
-  //   );
+  const rowTooltip =
+    [
+      isCloseRequested && "Close Requested",
+      isPriorityRequested && "Priority Requested",
+      funcResponseRequested && "Awaiting Functional Response",
+      technicalResponseRequested && "Awaiting Technical Response",
+      webResponseRequested && "Awaiting Web Response",
+      adminResponseRequested && "Awaiting Admin Response",
+      activeStatus.includes(item.statusId) && "Closed Ticket",
+    ]
+      .filter(Boolean) // remove null/false
+      .join(" • ");
 
   let statusIcon;
-if (item.reopenedBy) {
-  statusIcon = <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />;
-} else if (activeStatus.includes(item.statusId)) {
-  statusIcon = <GoIssueClosed className="status-icon status-closed" />;
-} else if (item.statusId === 14) {
-  statusIcon = <HiPause className="status-icon text-yellow-500" title="On Hold" />;
-} else {
-  statusIcon = <GoIssueOpened className="status-icon status-open" />;
-}
-
-// Add pulsing only if not viewer
-if (!isViewer) {
-  if (isCloseRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
-      </div>
-    );
-  } else if (isPriorityRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Priority">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
-      </div>
-    );
-  } else if (funcResponseRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
-      </div>
-    );
-  } else if (technicalResponseRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-green-500"></span>
-      </div>
-    );
-  } else if (webResponseRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-blue-500"></span>
-      </div>
-    );
-  } else if (adminResponseRequested) {
-    statusIcon = (
-      <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-        <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-yellow-500"></span>
-      </div>
-    );
+  if (item.reopenedBy) {
+    statusIcon = <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />;
+  } else if (activeStatus.includes(item.statusId)) {
+    statusIcon = <GoIssueClosed className="status-icon status-closed" />;
+  } else if (item.statusId === 14) {
+    statusIcon = <HiPause className="status-icon text-yellow-500" title="On Hold" />;
+  } else {
+    statusIcon = <GoIssueOpened className="status-icon status-open" />;
   }
+
+  // Add pulsing only if not viewer
+  if (!isViewer) {
+    if (isCloseRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Close Requested by Assignee">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
+        </div>
+      );
+    } else if (isPriorityRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Priority">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
+        </div>
+      );
+    } else if (funcResponseRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
+        </div>
+      );
+    } else if (technicalResponseRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-green-500"></span>
+        </div>
+      );
+    } else if (webResponseRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-blue-500"></span>
+        </div>
+      );
+    } else if (adminResponseRequested) {
+      statusIcon = (
+        <div className="relative flex h-[10px] w-[10px] mx-1 mt-1" title="Awaiting Response">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-yellow-500"></span>
+        </div>
+      );
+    }
   } else if (item.reopenedBy) {
     // If it has a ReopenedBy Guid, show the Reopen icon
     statusIcon = (
@@ -195,421 +184,391 @@ if (!isViewer) {
       ${isPriorityRequested ? "priority-requested-row" : ""}
       ${funcResponseRequested ? "response-requested-row" : ""}`}
       > */}
-
-      <div
-        key={item.id}
-        className={`ticket-row 
+      <Tooltip title={rowTooltip || ""} arrow>
+        <div
+          key={item.id}
+          className={`ticket-row 
           ${focused ? "focused-row" : ""} 
           ${!isViewer && (item.isCloseRequested || item.IsCloseRequested)
-            ? "close-requested-row"
-            : ""
-          } 
+              ? "close-requested-row"
+              : ""
+            } 
           ${!isViewer && isPriorityRequested
-            ? "priority-requested-row"
-            : ""
-          } 
+              ? "priority-requested-row"
+              : ""
+            } 
           ${!isViewer && funcResponseRequested
-            ? "response-requested-row"
-            : ""
-          }
-          ${!isViewer && technicalResponseRequested
-            ? "technical-response-requested-row"
-            : ""
-          }
-          ${!isViewer && webResponseRequested
-            ? "web-response-requested-row"
-            : ""
-          }
-          ${!isViewer && adminResponseRequested
-            ? "admin-response-requested-row"
-            : ""
-          }`}
-      >
-        {/* LEFT BLOCK: Main Information */}
-        <div className="ticket-main">
-          {/* Row 1: Status, ID, Title, Labels, Department */}
-          <div className="ticket-title-wrapper">
-            {/* 1. Icon & Checkbox stay locked to the left */}
-            <div className="ticket-controls">
-              {/* {renderCheckbox && renderCheckbox()} */}
-              {disabled ? (
-                <Tooltip title="Already Committed" placement="top" arrow>
-                  <div className="cursor-not-allowed opacity-60">
-                    {/* pointer-events-none ensures the tooltip triggers on the wrapper, not the disabled input */}
-                    <div className="pointer-events-none">
-                      {renderCheckbox && renderCheckbox()}
-                    </div>
-                  </div>
-                </Tooltip>
-              ) : (
-                renderCheckbox && renderCheckbox()
-              )}
-              {statusIcon}
-            </div>
-
-            {/* 2. Text and Badges flow together in ONE paragraph-like container */}
-            <div className="ticket-title-and-badges">
-              <a
-                href={ticketUrl}
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  openInNewTab(ticketUrl);
-                }}
-              >
-                <span className="ticket-id">#{item.ticketKey}</span>
-                <span className="ticket-title" title={item.title}>
-                  <HighlightText text={item.title} highlight={text} />
-                </span>
-              </a>
-              {/* Badges immediately follow the text */}
-              {item.label?.length > 0 &&
-                item.label.map((label) => (
-                  <span
-                    key={label.LABEL_ID}
-                    className="ticket-label badge"
-                    // style={getLabelStyle(label.LABEL_COLOR)}
-                    style={{
-                      ...getLabelStyle(label.LABEL_COLOR),
-                      marginLeft: "5px" 
-                    }}
-                  >
-                    {label.LABEL_TITLE}
-                  </span>
-                ))}
-
-              {/* Department Badge */}
-              {/* {department && (
-                <span className="department-badge badge">{department}</span>
-              )} */}
-            </div>
-          </div>
-
-          {/* Row 2: Project Info, Assignees, Priority */}
-          <div className="ticket-meta-row">
-            {ProjectDetails && (
-              <div className="ticket-repo-info">
-                <Tooltip title={ProjectDetails.repoName} arrow>
-                  <span className="repo-key">
-                    {ProjectDetails?.repoName
-                      ?.split(" ")
-                      .map((word) => word[0]?.toUpperCase())
-                      .join("")}
-                  </span>
-                </Tooltip>
-                <span className="meta-divider">•</span>
-                <Tooltip title={ProjectDetails.name} arrow>
-                  <span className="project-key">
-                    {ProjectDetails.name.split(" ").length > 2
-                      ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
-                      "..."
-                      : ProjectDetails.name}
-                  </span>
-                </Tooltip>
-                <span className="meta-divider">•</span>
-                <Tooltip
-                  title={dayjs(item.createdAt).format("YYYY-MM-DD")}
-                  arrow
-                >
-                  <span className="created-key">
-                    Created {dayjs(item.createdAt).fromNow()}
-                  </span>
-                </Tooltip>
-              </div>
-            )}
-            {!isViewer &&
-              <>
-                <div className="ticket-repo-info">
-                  {mainAssignee && <span>Owner: {mainAssignee.Assignee_Name}</span>}
-                </div>
-                {/* Assignees Avatars */}
-                <div className="ticket-assignees">
-                  {uniqueAssignees.slice(0, 3).map((a) => (
-                    <Tooltip key={a.Assignee_Id} title={a.Assignee_Name} arrow>
-                      <div className="avatar">{getInitials(a.Assignee_Name)}</div>
-                    </Tooltip>
-                  ))}
-                  {uniqueAssignees.length > 3 && (
-                    <div className="avatar avatar-more">
-                      +{item.multiAssignees.length - 3}
-                    </div>
-                  )}
-                </div>
-              </>
+              ? "response-requested-row"
+              : ""
             }
-            {/* Priority Label */}
-            {priority && (
-              <span
-                className={`priority-badge priority-${priority.toLowerCase()}`}
-              >
-                {priority}
-              </span>
-            )}
-          </div>
+          ${!isViewer && technicalResponseRequested
+              ? "technical-response-requested-row"
+              : ""
+            }
+          ${!isViewer && webResponseRequested
+              ? "web-response-requested-row"
+              : ""
+            }
+          ${!isViewer && adminResponseRequested
+              ? "admin-response-requested-row"
+              : ""
+            }`}
+        >
+          {/* LEFT BLOCK: Main Information */}
+          <div className="ticket-main">
+            {/* Row 1: Status, ID, Title, Labels, Department */}
+            <div className="ticket-title-wrapper">
+              {/* 1. Icon & Checkbox stay locked to the left */}
+              <div className="ticket-controls">
+                {/* {renderCheckbox && renderCheckbox()} */}
+                {disabled ? (
+                  <Tooltip title="Already Committed" placement="top" arrow>
+                    <div className="cursor-not-allowed opacity-60">
+                      {/* pointer-events-none ensures the tooltip triggers on the wrapper, not the disabled input */}
+                      <div className="pointer-events-none">
+                        {renderCheckbox && renderCheckbox()}
+                      </div>
+                    </div>
+                  </Tooltip>
+                ) : (
+                  renderCheckbox && renderCheckbox()
+                )}
+                {statusIcon}
+              </div>
 
-          {/* Timesheet */}
-
-          {(item.StartTime ||
-            item.EndTime ||
-            item.ConsumeTime ||
-            item.Comment) && (
-              <div className="ticket-timesheet-info">
-                {/* working time */}
-                {item.StartTime && item.EndTime && (
-                  <span className="timesheet-item">
-                    <FiClock className="due-icon" />
-                    Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                    {dayjs(item.EndTime).format("HH:mm")}
+              {/* 2. Text and Badges flow together in ONE paragraph-like container */}
+              <div className="ticket-title-and-badges">
+                <a
+                  href={ticketUrl}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openInNewTab(ticketUrl);
+                  }}
+                >
+                  <span className="ticket-id">#{item.ticketKey}</span>
+                  <span className="ticket-title" title={item.title}>
+                    <HighlightText text={item.title} highlight={text} />
                   </span>
-                )}
-
-                {/* time taken */}
-                {item.ConsumeTime && (
-                  <>
-                    <span className="meta-divider">•</span>
-                    <span className="timesheet-item">
-                      Time taken: {item.ConsumeTime} hr
-                    </span>
-                  </>
-                )}
-
-                {/* view cmnt */}
-                {item.Comment && (
-                  <>
-                    <span className="meta-divider">•</span>
+                </a>
+                {/* Badges immediately follow the text */}
+                {item.label?.length > 0 &&
+                  item.label.map((label) => (
                     <span
-                      className="comment-toggle"
-                      onClick={(e) => {
-                        // 👈 FIX: Add 'e' here
-                        e.stopPropagation();
-                        e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
-                        setIsCommentExpanded(!isCommentExpanded);
+                      key={label.LABEL_ID}
+                      className="ticket-label badge"
+                      // style={getLabelStyle(label.LABEL_COLOR)}
+                      style={{
+                        ...getLabelStyle(label.LABEL_COLOR),
+                        marginLeft: "5px"
                       }}
                     >
-                      {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                      {label.LABEL_TITLE}
                     </span>
-                  </>
-                )}
-              </div>
-            )}
-          {item.Comment && isCommentExpanded && (
-            <div className="comment-content">{item.Comment} </div>
-          )}
-        </div>
-        {/* MIDDLE BLOCK: Due Date */}
+                  ))}
 
-        <div className="flex  items-end gap-2">
-          <div className="flex-col">
-            {config?.enablequickStatus && (
-              <button
-                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center mb-2"
-                title="Quick Status"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setQuickTicketStatus(item);
-                }}
-              >
-                <FaHistory className="text-base" />
-              </button>
-            )}
-
-            {/* Quick Comment button */}
-            {config?.enablequickComment && (
-              <button
-                className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
-                title="Quick Comment"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuickComment(item);
-                }}
-              >
-                <FiMessageSquare className="text-base" />
-              </button>
-            )}
-          </div>
-          {!isViewer &&
-            <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
-              <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
-                {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
+                {/* Department Badge */}
+                {/* {department && (
+                <span className="department-badge badge">{department}</span>
+              )} */}
               </div>
-              {dueStatus && (
-                <div
-                  className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
-                >
-                  {dueStatus.icon}
-                  <span>{dueStatus.text}</span>
+            </div>
+
+            {/* Row 2: Project Info, Assignees, Priority */}
+            <div className="ticket-meta-row">
+              {ProjectDetails && (
+                <div className="ticket-repo-info">
+                  <Tooltip title={ProjectDetails.repoName} arrow>
+                    <span className="repo-key">
+                      {ProjectDetails?.repoName
+                        ?.split(" ")
+                        .map((word) => word[0]?.toUpperCase())
+                        .join("")}
+                    </span>
+                  </Tooltip>
+                  <span className="meta-divider">•</span>
+                  <Tooltip title={ProjectDetails.name} arrow>
+                    <span className="project-key">
+                      {ProjectDetails.name.split(" ").length > 2
+                        ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
+                        "..."
+                        : ProjectDetails.name}
+                    </span>
+                  </Tooltip>
+                  <span className="meta-divider">•</span>
+                  <Tooltip
+                    title={dayjs(item.createdAt).format("YYYY-MM-DD")}
+                    arrow
+                  >
+                    <span className="created-key">
+                      Created {dayjs(item.createdAt).fromNow()}
+                    </span>
+                  </Tooltip>
                 </div>
               )}
-            </div>
-          }
-          {/* <div>
-            <div className="ticket-due due-date-row">
-              <div className="due-date">
-                {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
-              </div>
-            </div>
-            {dueStatus && (
-              <div className={`due-status ${dueStatus.className}`}>
-                {dueStatus.icon}
-                <span>{dueStatus.text}</span>
-              </div>
-            )}
-          </div> */}
-        </div>
-        {/* <div className="ticket-due">
-          <div className="due-date-row">         
-            <div className="due-date">
-              {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
-            </div>
-          </div>
-          {dueStatus && (
-            <div className={`due-status ${dueStatus.className}`}>
-              {dueStatus.icon}
-              <span>{dueStatus.text}</span>
-            </div>
-          )}
-        </div> */}
-
-        {/* RIGHT BLOCK: Progress & Actions */}
-        <div className="ticket-progress">
-          <div className="battery-header">
-            {!isViewer &&
-              <BatteryCompletionIndicator
-                // options={{
-                //   step: 10,
-                //   max: 100,
-                //   height: "10px",
-                //   width: "5px",
-                //   fontSize: "10px"
-                // }}
-                value={item.overallPercentage ?? 0}
-              />
-            }
-            <div className="edit-icon">{renderEdit && renderEdit()}</div>
-          </div>
-          {!isViewer &&
-            <div className="update-info">
-              <div className="ticket-assignees">
-                <Tooltip key={updated?.id} title={updated?.name} arrow>
-                  <div className="avatar">{getInitials(updated?.name)} </div>
-                </Tooltip>
-              </div>
-              <p>
-                {" "}
-                Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
-              </p>
-            </div>
-          }
-        </div>
-      </div>
-      {(isQuickFormOpen || isQuickStatusOpen) && (
-        <>
-          {/* 1. Backdrop */}
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent backdrop click from opening ticket
-              closeQuickForm();
-            }}
-          />
-
-          {/* 2. Modal Wrapper */}
-          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
-            {/* 3. The Modal Box - 🔥 ADD e.stopPropagation() HERE 🔥 */}
-            <div
-              className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden pointer-events-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* 4. Header */}
-              <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-                      {isQuickFormOpen ? "Quick Comment" : "Quick Status"}
-                    </h3>
-                    <p className="text-base sm:text-lg text-gray-600 truncate">
-                      Ticket #
-                      {isQuickFormOpen
-                        ? quickFormTicket?.ticketKey
-                        : quickTicketStatus?.ticketKey}{" "}
-                      -{" "}
-                      {isQuickFormOpen
-                        ? quickFormTicket?.title
-                        : quickTicketStatus?.title}
-                    </p>
+              {!isViewer &&
+                <>
+                  <div className="ticket-repo-info">
+                    {mainAssignee && <span>Owner: {mainAssignee.Assignee_Name}</span>}
                   </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent close button from opening ticket
+                  {/* Assignees Avatars */}
+                  <div className="ticket-assignees">
+                    {uniqueAssignees.slice(0, 3).map((a) => (
+                      <Tooltip key={a.Assignee_Id} title={a.Assignee_Name} arrow>
+                        <div className="avatar">{getInitials(a.Assignee_Name)}</div>
+                      </Tooltip>
+                    ))}
+                    {uniqueAssignees.length > 3 && (
+                      <div className="avatar avatar-more">
+                        +{item.multiAssignees.length - 3}
+                      </div>
+                    )}
+                  </div>
+                </>
+              }
+              {/* Priority Label */}
+              {priority && (
+                <span
+                  className={`priority-badge priority-${priority.toLowerCase()}`}
+                >
+                  {priority}
+                </span>
+              )}
+            </div>
+
+            {/* Timesheet */}
+
+            {(item.StartTime ||
+              item.EndTime ||
+              item.ConsumeTime ||
+              item.Comment) && (
+                <div className="ticket-timesheet-info">
+                  {/* working time */}
+                  {item.StartTime && item.EndTime && (
+                    <span className="timesheet-item">
+                      <FiClock className="due-icon" />
+                      Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                      {dayjs(item.EndTime).format("HH:mm")}
+                    </span>
+                  )}
+
+                  {/* time taken */}
+                  {item.ConsumeTime && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span className="timesheet-item">
+                        Time taken: {item.ConsumeTime} hr
+                      </span>
+                    </>
+                  )}
+
+                  {/* view cmnt */}
+                  {item.Comment && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span
+                        className="comment-toggle"
+                        onClick={(e) => {
+                          // 👈 FIX: Add 'e' here
+                          e.stopPropagation();
+                          e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                          setIsCommentExpanded(!isCommentExpanded);
+                        }}
+                      >
+                        {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+            {item.Comment && isCommentExpanded && (
+              <div className="comment-content">{item.Comment} </div>
+            )}
+          </div>
+          {/* MIDDLE BLOCK: Due Date */}
+
+          <div className="flex  items-end gap-2">
+            <div className="flex-col">
+              {config?.enablequickStatus && (
+                <button
+                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center mb-2"
+                  title="Quick Status"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickTicketStatus(item);
+                  }}
+                >
+                  <FaHistory className="text-base" />
+                </button>
+              )}
+
+              {/* Quick Comment button */}
+              {config?.enablequickComment && (
+                <button
+                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
+                  title="Quick Comment"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickComment(item);
+                  }}
+                >
+                  <FiMessageSquare className="text-base" />
+                </button>
+              )}
+            </div>
+            {!isViewer &&
+              <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
+                <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+                  {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
+                </div>
+                {dueStatus && (
+                  <div
+                    className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
+                  >
+                    {dueStatus.icon}
+                    <span>{dueStatus.text}</span>
+                  </div>
+                )}
+              </div>
+            }
+
+          </div>
+
+          {/* RIGHT BLOCK: Progress & Actions */}
+          <div className="ticket-progress">
+            <div className="battery-header">
+              {!isViewer &&
+                <BatteryCompletionIndicator
+
+                  value={item.overallPercentage ?? 0}
+                />
+              }
+              <div className="edit-icon">{renderEdit && renderEdit()}</div>
+            </div>
+            {!isViewer &&
+              <div className="update-info">
+                <div className="ticket-assignees">
+                  <Tooltip key={updated?.id} title={updated?.name} arrow>
+                    <div className="avatar">{getInitials(updated?.name)} </div>
+                  </Tooltip>
+                </div>
+                <p>
+                  {" "}
+                  Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+        </Tooltip>
+        {(isQuickFormOpen || isQuickStatusOpen) && (
+          <>
+            {/* 1. Backdrop */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent backdrop click from opening ticket
+                closeQuickForm();
+              }}
+            />
+
+            {/* 2. Modal Wrapper */}
+            <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+              {/* 3. The Modal Box - 🔥 ADD e.stopPropagation() HERE 🔥 */}
+              <div
+                className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden pointer-events-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* 4. Header */}
+                <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                        {isQuickFormOpen ? "Quick Comment" : "Quick Status"}
+                      </h3>
+                      <p className="text-base sm:text-lg text-gray-600 truncate">
+                        Ticket #
+                        {isQuickFormOpen
+                          ? quickFormTicket?.ticketKey
+                          : quickTicketStatus?.ticketKey}{" "}
+                        -{" "}
+                        {isQuickFormOpen
+                          ? quickFormTicket?.title
+                          : quickTicketStatus?.title}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent close button from opening ticket
+                        closeQuickForm();
+                      }}
+                      className="closebtn w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all"
+                    >
+                      <FiX size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* 5. Form Wrapper */}
+                <div className="flex-1 overflow-hidden flex flex-col relative bg-white min-h-0">
+                  <EntityFormPage
+                    mode="Create"
+                    config={{
+                      ...ThreadFormConfig,
+                      theme: {
+                        ...ThreadFormConfig.theme,
+                        // 🔥 FIX 2: Added min-h-0 to the formContainer theme
+                        formContainer: "flex flex-col h-full min-h-0",
+                        footer:
+                          "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3",
+                      },
+                      fields: ThreadFieldConfig(
+                        isQuickFormOpen
+                          ? quickFormTicket?.navId
+                          : quickTicketStatus?.navId,
+                      )
+                        // 2. Keep your existing filter logic
+                        .filter((field) => {
+                          if (isQuickFormOpen) {
+                            return field.name !== "assignees";
+                          }
+                          if (isQuickStatusOpen) {
+                            return [
+                              "TicketOverallPercentage",
+                              "TicketStatusSummary",
+                              "TicketProgressHistoryWidget",
+                              "issueId",
+                            ].includes(field.name);
+                          }
+                          return true;
+                        })
+                        // 3. 👇 ADD THIS MAP BLOCK TO OVERRIDE THE OPTIONS 👇
+                        .map((field) => {
+                          if (field.name === "TicketProgressHistoryWidget") {
+                            return {
+                              ...field,
+                              options: {
+                                ...field.options, // Preserve any existing options from the config
+                                isQuickStatusOpen,
+                              },
+                            };
+                          }
+                          return field;
+                        }),
+                    }}
+                    module="Thread"
+                    onCancel={closeQuickForm}
+                    onSuccessCallback={() => {
                       closeQuickForm();
                     }}
-                    className="closebtn w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all"
-                  >
-                    <FiX size={18} />
-                  </button>
+                  />
                 </div>
               </div>
-
-              {/* 5. Form Wrapper */}
-              <div className="flex-1 overflow-hidden flex flex-col relative bg-white min-h-0">
-                <EntityFormPage
-                  mode="Create"
-                  config={{
-                    ...ThreadFormConfig,
-                    theme: {
-                      ...ThreadFormConfig.theme,
-                      // 🔥 FIX 2: Added min-h-0 to the formContainer theme
-                      formContainer: "flex flex-col h-full min-h-0",
-                      footer:
-                        "flex-shrink-0 p-4 border-t border-gray-200 bg-gray-50 flex justify-end items-center gap-3",
-                    },
-                    fields: ThreadFieldConfig(
-                      isQuickFormOpen
-                        ? quickFormTicket?.navId
-                        : quickTicketStatus?.navId,
-                    )
-                      // 2. Keep your existing filter logic
-                      .filter((field) => {
-                        if (isQuickFormOpen) {
-                          return field.name !== "assignees";
-                        }
-                        if (isQuickStatusOpen) {
-                          return [
-                            "TicketOverallPercentage",
-                            "TicketStatusSummary",
-                            "TicketProgressHistoryWidget",
-                            "issueId",
-                          ].includes(field.name);
-                        }
-                        return true;
-                      })
-                      // 3. 👇 ADD THIS MAP BLOCK TO OVERRIDE THE OPTIONS 👇
-                      .map((field) => {
-                        if (field.name === "TicketProgressHistoryWidget") {
-                          return {
-                            ...field,
-                            options: {
-                              ...field.options, // Preserve any existing options from the config
-                              isQuickStatusOpen,
-                            },
-                          };
-                        }
-                        return field;
-                      }),
-                  }}
-                  module="Thread"
-                  onCancel={closeQuickForm}
-                  onSuccessCallback={() => {
-                    closeQuickForm();
-                  }}
-                />
-              </div>
             </div>
-          </div>
-        </>
-      )}
-    </>
-  );
+          </>
+        )}
+      </>
+      );
 }
 
 ///////////////////////-----------------------------------//////////////////

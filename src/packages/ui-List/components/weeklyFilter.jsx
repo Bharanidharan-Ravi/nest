@@ -107,11 +107,9 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
     const close = (e) => {
       if (dragStartRef.current) return;
       const portal = document.getElementById("weekrange-cal-portal");
-      if (
-        ref.current &&
-        !ref.current.contains(e.target) &&
-        (!portal || !portal.contains(e.target))
-      ) {
+      const clickedInsideTrigger = ref.current?.contains(e.target);
+      const clickedInsidePortal = portal?.contains(e.target);
+      if (!clickedInsideTrigger && !clickedInsidePortal) {
         setShowCal(false);
         setCalMode("day");
       }
@@ -378,6 +376,7 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
       {/* ── Calendar Popup ────────────────────────────────────────────── */}
       {showCal && createPortal(
         <div
+        id="weekrange-cal-portal"
           className="absolute top-full mt-2 right-0 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 p-4 w-[288px]"
           style={{
             position: "fixed",

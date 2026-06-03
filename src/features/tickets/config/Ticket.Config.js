@@ -18,6 +18,13 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
 
   return true; // At least one has value ? no validation error
 };
+const statusOptions = [
+  { label: "Active", value: { id: 1, name: "Active" } },
+  { label: "InActive", value: { id: 17, name: "InActive" } },
+  { label: "Hold", value: { id: 14, name: "Hold" } },
+  { label: "InQueue", value: { id: 18, name: "InQueue" } },
+];
+
 export const TicketFieldConfig = () => [
   /* --------------------------------------------------
      Repository Title
@@ -554,26 +561,6 @@ export const TicketFieldConfig = () => [
   customValidator:makeAtLeastOneValidator("Technical")
 },
 
-
-// {
-//   label: "Test Hours",
-//   name: "Testing",
-//   type: "flexHours",
-//   ui: "mui",
-//   required: false,
-//   dataType: "string",
-//   apiKey: "Testing",
-//   colSpan: 2,
-//   initValueResolver: ({ context }) =>
-//     context.isEdit ? context.entityData?.testingTime : "",
-//   visibleWhen: (formData, context) => {
-//     if (context.isViewer) return false;
-//     if (context.isEdit) return true;
-//     return true;
-//   },
-//   customValidator:makeAtLeastOneValidator("Testing")
-// },
-
   {
     name: "TicketOverallPercentage",
     label: "Overall Ticket Progress (%)",
@@ -608,4 +595,26 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
   },
-];
+  {
+    name: "Status",
+    label: "Ticket Status",
+    type: "select",
+    ui: "mui",
+    apiKey: "Status",
+    options: statusOptions,
+    required: true,
+    initValueResolver: ({ context }) => {
+      if (!context.isEdit || !context.entityData) {
+        return statusOptions[0]; // default Active
+      }
+      const apiStatus = context.entityData.statusId;
+      return statusOptions.find(opt => opt.value.id === Number(apiStatus)) || statusOptions[0];
+    },
+    visibleWhen: (formData, context) => {
+      return (!context?.isViewer);
+    }
+  
+  }
+]
+  
+

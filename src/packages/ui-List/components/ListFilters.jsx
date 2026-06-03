@@ -55,9 +55,12 @@ export function ListFilters() {
 
   useEffect(() => {
     function handleClickOutside(e) {
-      const portal = document.getElementById("list-filter-portal");
-      if (wrapperRef.current && !wrapperRef.current.contains(e.target) && 
-      (!portal || !portal.contains(e.target))
+      const calPortal = document.getElementById("weekrange-cal-portal");
+      const filterPortal = document.getElementById("list-filter-portal");
+      if (
+        wrapperRef.current && !wrapperRef.current.contains(e.target) && 
+        (!calPortal || !calPortal.contains(e.target)) &&
+        (!filterPortal || !filterPortal.contains(e.target))
     ) {
         setOpenDropdownKey(null);
       }
