@@ -1,4 +1,7 @@
-import { buildOptionsResolver, sumHHMM } from "../../../app/shared/utilities/utilities";
+import {
+  buildOptionsResolver,
+  sumHHMM,
+} from "../../../app/shared/utilities/utilities";
 const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
   if (!context?.isEdit) {
     // Not in edit mode ? skip validation
@@ -183,7 +186,6 @@ export const TicketFieldConfig = () => [
     apiKey: "Project_Id",
     // 🔥 Disable if projid is passed (locking the specific project)
 
-
     // 🔥 Smart Initial Value (Sets project if projid exists)
     initValueResolver: ({ context, masterData, formData }) => {
       const targetProjId =
@@ -221,15 +223,15 @@ export const TicketFieldConfig = () => [
       if (context.isEdit) {
         return context.entityData?.raiseToClient ?? false; // fallback to false if null
       }
-      return !context?.isViewer ? false : true
+      return !context?.isViewer ? false : true;
     },
     disableWhen: (context) => {
       console.log("context", context);
       // return context.isEdit
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
-    }
+      return !context?.isViewer;
+    },
   },
 
   {
@@ -248,7 +250,7 @@ export const TicketFieldConfig = () => [
 
   {
     label: "Owner",
-    name: "assginedTo",
+    name: "assignedTo",
     type: "select",
     ui: "mui",
     optionsResolver: buildOptionsResolver(
@@ -282,7 +284,7 @@ export const TicketFieldConfig = () => [
     // errorMessage: "Only alphanumeric allowed",
     // visibleWhen: () => true,
     visibleWhen: (formData, context) => {
-      if ( !context.isViewer) {
+      if (!context.isViewer) {
         return true;
       }
       if (context.isViewer) {
@@ -307,7 +309,6 @@ export const TicketFieldConfig = () => [
       (user, { formData }) => {
         // 1. Check if they are Active
         if (user.Status !== "Active") return false;
-
         // 2. Check if they are already selected in the "assginedTo" field
         const targetId = formData?.assginedTo?.value?.id;
         if (targetId && user.UserID === targetId) {
@@ -350,7 +351,7 @@ export const TicketFieldConfig = () => [
       if (!context.isViewer) {
         return true;
       }
-      if (context.isViewer ) {
+      if (context.isViewer) {
         return false;
       }
       return true;
@@ -374,7 +375,7 @@ export const TicketFieldConfig = () => [
       if (!context.isViewer) {
         return true;
       }
-      if (context.isViewer ) {
+      if (context.isViewer) {
         return false;
       }
       return true;
@@ -416,7 +417,6 @@ export const TicketFieldConfig = () => [
   //   visibleWhen: () => true,
   // },
 
-
   {
     label: "Estimated Hours",
     name: "estimateHours",
@@ -427,11 +427,10 @@ export const TicketFieldConfig = () => [
     apiKey: "Hours",
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.estimateHours : "",
-    disabled:true,
+    disabled: true,
     forceSubmit: true,
-    effectDependencies: ["Client", "Web", "Technical","Functional"],
+    effectDependencies: ["Client", "Web", "Technical", "Functional"],
     effectResolver: (formData) => {
-
       const client = formData.Client;
       const web = formData.Web;
       const tech = formData.Technical;
@@ -440,7 +439,7 @@ export const TicketFieldConfig = () => [
       if (!hasAnyValue) {
         return ""; // or null depending on your system
       }
-      return sumHHMM(client, web, tech,func);
+      return sumHHMM(client, web, tech, func);
     },
     // effectResolver: (formData) => {
     //   return sumHHMM(formData.Client, formData.Development, formData.Testing);
@@ -471,95 +470,94 @@ export const TicketFieldConfig = () => [
     //   }
     //   return true
     // }
+  },
+  //   {
+  //   name: "showClient",
+  //   label: "Client",
+  //   type: "toggleButton",
+  //   colSpan: 1,
+  // },
 
+  {
+    label: "Client Hours",
+    name: "Client",
+    type: "flexHours",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    apiKey: "Client",
+    colSpan: 2,
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.clientTime : "",
+    visibleWhen: (formData, context) => {
+      if (context.isViewer) return false;
+      if (context.isEdit) return true;
+      return true;
+    },
+    customValidator: makeAtLeastOneValidator("Client"),
   },
-//   {
-//   name: "showClient",
-//   label: "Client",
-//   type: "toggleButton",
-//   colSpan: 1,
-// },
+  {
+    label: "Func Hours",
+    name: "Functional",
+    type: "flexHours",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    apiKey: "Functional",
+    colSpan: 2,
 
-{
-  label: "Client Hours",
-  name: "Client",
-  type: "flexHours",
-  ui: "mui",
-  required: false,
-  dataType: "string",
-  apiKey: "Client",
-  colSpan: 2,
-  initValueResolver: ({ context }) =>
-    context.isEdit ? context.entityData?.clientTime : "",
-  visibleWhen: (formData, context) => {
-    if (context.isViewer) return false;
-    if (context.isEdit ) return true;
-    return true;
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.functionalTime : "",
+    visibleWhen: (formData, context) => {
+      if (context.isViewer) return false;
+      if (context.isEdit) return true;
+      return true;
+    },
+    customValidator: makeAtLeastOneValidator("Functional"),
   },
-  customValidator:makeAtLeastOneValidator("Client")
-},
-{
-  label: "Func Hours",
-  name: "Functional",
-  type: "flexHours",
-  ui: "mui",
-  required: false,
-  dataType: "string",
-  apiKey: "Functional",
-  colSpan: 2,
+  // {
+  //   name: "showDevelopment",
+  //   label: "Dev",
+  //   type: "toggleButton",
+  //   colSpan: 1,
+  // },
+  {
+    label: "Web Hours",
+    name: "Web",
+    type: "flexHours",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    apiKey: "Web",
+    colSpan: 2,
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.webTime : "",
+    visibleWhen: (formData, context) => {
+      if (context.isViewer) return false;
+      if (context.isEdit) return true;
+      return true;
+    },
+    customValidator: makeAtLeastOneValidator("Web"),
+  },
+  {
+    label: "Tech Hours",
+    name: "Technical",
+    type: "flexHours",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    apiKey: "Technical",
+    colSpan: 2,
 
-  initValueResolver: ({ context }) =>
-    context.isEdit ? context.entityData?.functionalTime : "",
-  visibleWhen: (formData, context) => {
-    if (context.isViewer) return false;
-    if (context.isEdit) return true;
-    return true;
+    initValueResolver: ({ context }) =>
+      context.isEdit ? context.entityData?.technicalTime : "",
+    visibleWhen: (formData, context) => {
+      if (context.isViewer) return false;
+      if (context.isEdit) return true;
+      return true;
+    },
+    customValidator: makeAtLeastOneValidator("Technical"),
   },
-  customValidator:makeAtLeastOneValidator("Functional")
-},
-// {
-//   name: "showDevelopment",
-//   label: "Dev",
-//   type: "toggleButton",
-//   colSpan: 1,
-// },
-{
-  label: "Web Hours",
-  name: "Web",
-  type: "flexHours",
-  ui: "mui",
-  required: false,
-  dataType: "string",
-  apiKey: "Web",
-  colSpan: 2,
-  initValueResolver: ({ context }) =>
-    context.isEdit ? context.entityData?.webTime : "",
-  visibleWhen: (formData, context) => {
-    if (context.isViewer) return false;
-    if (context.isEdit) return true;
-    return true;
-  },
-  customValidator:makeAtLeastOneValidator("Web")
-},
-{
-  label: "Tech Hours",
-  name: "Technical",
-  type: "flexHours",
-  ui: "mui",
-  required: false,
-  dataType: "string",
-  apiKey: "Technical",
-  colSpan: 2,
-
-  initValueResolver: ({ context }) =>
-    context.isEdit ? context.entityData?.technicalTime : "",
-  visibleWhen: (formData, context) => {
-    if (context.isViewer) return false;
-    if (context.isEdit) return true;
-    return true;
-  },
-  customValidator:makeAtLeastOneValidator("Technical")
-},
 
   {
     name: "TicketOverallPercentage",
@@ -603,18 +601,23 @@ export const TicketFieldConfig = () => [
     apiKey: "Status",
     options: statusOptions,
     required: true,
+    optionsResolver: ({ context }) => {
+      return context?.isEdit
+        ? statusOptions // Edit => show all including InActive
+        : statusOptions.filter((opt) => opt.value.id !== 17); // Create => hide InActive
+    },
     initValueResolver: ({ context }) => {
       if (!context.isEdit || !context.entityData) {
         return statusOptions[0]; // default Active
       }
       const apiStatus = context.entityData.statusId;
-      return statusOptions.find(opt => opt.value.id === Number(apiStatus)) || statusOptions[0];
+      return (
+        statusOptions.find((opt) => opt.value.id === Number(apiStatus)) ||
+        statusOptions[0]
+      );
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
-    }
-  
-  }
-]
-  
-
+      return !context?.isViewer;
+    },
+  },
+];

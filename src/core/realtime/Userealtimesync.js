@@ -4,6 +4,9 @@ import { connectSignalR, ConnectionState } from "./realtimeManager";
 import { handleRealtimeMessage } from "./realtimeDispatcher";
 import { readUserFromSession } from "../auth/useCurrentUser";
 import { useNotificationStore } from "../state/useNotificationStore";
+import { useAppStore } from "../state/useAppStore";
+import { APP_VERSION } from "../../app/shared/Version";
+import { CheckVersion, versionChecker } from "../../app/Hooks/VersionChecker";
 
 const DEDUP_MAX_SIZE = 300;
 
@@ -59,10 +62,11 @@ export const useRealtimeSync = (getToken) => {
     [queryClient],
   );
 
-  const handleReconnected = useCallback(() => {
+  const handleReconnected = useCallback(async () => {
     console.info("[RealtimeSync] Reconnected");
 
     queryClient.invalidateQueries();
+    await versionChecker();
   }, [queryClient]);
 
   useEffect(() => {

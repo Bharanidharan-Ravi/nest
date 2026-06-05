@@ -1,4 +1,6 @@
 import * as signalR from "@microsoft/signalr";
+import { useAppStore } from "../state/useAppStore";
+import { APP_VERSION } from "../../app/shared/Version";
 
 let connection = null;
 let isConnecting = false;
@@ -54,6 +56,14 @@ export const connectSignalR = async (
     onMessage?.(message);
   });
 
+  newConnection.on("VersionUpdated", (latestVersion) => {
+    if (latestVersion.Version !== APP_VERSION) {
+      useAppStore.getState().showVersionModal({
+        currentVersion: APP_VERSION,
+        latestVersion,
+      });
+    }
+  });
   newConnection.onreconnecting((error) => {
     console.warn("[SignalR] Reconnecting...", error);
     onStateChange?.(ConnectionState.Reconnecting);

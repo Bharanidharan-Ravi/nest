@@ -20,6 +20,8 @@ import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
 import { ROLES } from "../../../core/auth/permissions";
 import { jwtDecode } from "jwt-decode";
+import { APP_VERSION } from "../../../app/shared/Version";
+import { versionChecker } from "../../../app/Hooks/VersionChecker";
 
 const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
@@ -46,6 +48,8 @@ const LoginPage = () => {
   });
   const userAgent = window.navigator.userAgent;
   const loginStore = useAppStore((s) => s.login);
+  console.log("APP_VERSION :", APP_VERSION);
+  
   const handleChange = (e, setValue, setError, fieldName, characterLimit) => {
     const { name, value, type, checked } = e.target;
 
@@ -68,8 +72,15 @@ const LoginPage = () => {
   };
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-       onSuccess: (data) => {
+       onSuccess:async (data) => {
       loginStore(data);
+      const isValid =
+        await versionChecker();
+
+      if (!isValid) {
+        return;
+      }
+
       const encoded =jwtDecode(data);
       const role =  encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
       if(Number(role) === ROLES.VIEWER){

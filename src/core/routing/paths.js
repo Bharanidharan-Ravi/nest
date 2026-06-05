@@ -17,13 +17,14 @@
 export const ROUTE_KEYS = {
   // ── App shell ─────────────────────────────────────────────
   DASHBOARD:         "app.dashboard",
+  NOTIFICATIONS:     "app.notifications",
 
   // ── Repository ────────────────────────────────────────────
   REPO_LIST:         "repository.list",
   REPO_CREATE:       "repository.create",
   REPO_DETAIL:       "repository.detail",
   REPO_OVERVIEW:     "repository.overview",
-  REPO_OVERVIEW_CREATE :     "repository.overview.create",
+  REPO_OVERVIEW_CREATE : "repository.overview.create",
   REPO_OVERVIEW_EDIT:     "repository.overview.edit",
 
     // ── Tickets (standalone) ───────────────────────────────
@@ -67,6 +68,7 @@ export const ROUTE_KEYS = {
 export const PATHS = {
   // ── App shell ─────────────────────────────────────────────
   DASHBOARD:         "/dashboard",
+  NOTIFICATIONS:     "/notifications",
 
   // ── Repository ────────────────────────────────────────────
   REPO_LIST:         "/repository",

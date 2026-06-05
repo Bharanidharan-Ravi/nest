@@ -275,7 +275,6 @@ function applyEntityConfig(
 // ─────────────────────────────────────────────────────────────────────────────
 function updateMasterCache(queryClient, entity, action, payload, keyField) {
   const listField = MASTER_ENTITY_MAP[entity];
-  console.log("entity :", listField);
 
   queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {
     if (!oldData || !(listField in oldData)) return oldData;

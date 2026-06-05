@@ -18,11 +18,14 @@ import {
   useNotificationCount,
 } from "../../Hooks/useNotificationCount";
 import { useNotificationStore } from "../../../core/state/useNotificationStore";
+import { handleLogout } from "../../Hooks/Logout";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
+import dayjs from "dayjs";
 
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
   const user = readUserFromSession();
-
   const { isViewer } = useCurrentUser();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -32,7 +35,8 @@ const Header = ({ toggleMobileMenu }) => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
   const { data: notificationList } = getNotification(showNotifications);
-  console.log("Notification Count Data:", data, notificationList);
+  const notificationRef = useRef(null);
+  const { goTo } = useSmartNavigation();
   const markSeen = async () => {
     await executeApi({
       url: "/Notification/mark-seen",
@@ -41,7 +45,29 @@ const Header = ({ toggleMobileMenu }) => {
         sessionId: user.sessionId,
       },
     });
-  }
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownVisible(false);
+      }
+
+      if (
+        notificationRef.current &&
+        !notificationRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
   useEffect(() => {
     if (!showNotifications) return;
 
@@ -56,20 +82,6 @@ const Header = ({ toggleMobileMenu }) => {
   }, [data, setCount]);
   const handleIconClick = () => {
     setDropdownVisible((prev) => !prev);
-  };
-
-  const handleLogout = async () => {
-    // const user = readUserFromSession();
-
-    await executeApi({
-      url: "/Login/logout",
-      method: "POST",
-      payload: {
-        sessionId: user.sessionId,
-      },
-    });
-    logoutUser();
-    // navigate("/");
   };
 
   const handleLogoClick = () => {
@@ -89,6 +101,11 @@ const Header = ({ toggleMobileMenu }) => {
     if (location.pathname !== "projects") {
       navigate("projects");
     }
+  };
+
+  const handleViewAllNotifications = () => {
+    goTo(ROUTE_KEYS.NOTIFICATIONS);
+    setShowNotifications(false);
   };
 
   const firstLetter = UserName.charAt(0).toUpperCase();
@@ -147,38 +164,129 @@ const Header = ({ toggleMobileMenu }) => {
       {/* Right Side: Breadcrumbs & User Profile */}
       <div className="flex items-center gap-4">
         <Breadcrumbs />
-        <div
-          className="relative cursor-pointer"
-          // onClick={() => navigate("/notifications")}
-        >
-          <IoNotificationsOutline
-            size={24}
-            onClick={() => setShowNotifications(!showNotifications)}
-          />
+        {!isViewer && (
+          <div className="relative cursor-pointer" ref={notificationRef}>
+            <IoNotificationsOutline
+              size={24}
+              onClick={() => setShowNotifications((prev) => !prev)}
+            />
 
-          {count > 0 && (
-            <span
-              className="
-      absolute
-      -top-2
-      -right-2
-      bg-red-500
-      text-white
-      text-xs
-      rounded-full
-      min-w-[18px]
-      h-[18px]
-      flex
-      items-center
-      justify-center
-      px-1
-    "
-            >
-              {count > 99 ? "99+" : count}
-            </span>
-          )}
-        </div>
-        {showNotifications && (
+            {count > 0 && (
+              <span
+                className="
+                  absolute
+                  -top-2
+                  -right-2
+                  bg-red-500
+                  text-white
+                  text-xs
+                  rounded-full
+                  min-w-[18px]
+                  h-[18px]
+                  flex
+                  items-center
+                  justify-center
+                  px-1
+                "
+              >
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
+
+            {showNotifications && (
+              <div
+                className="
+                  absolute
+                  right-0
+                  top-12
+                  w-[420px]
+                  bg-white
+                  rounded-xl
+                  shadow-2xl
+                  border
+                  border-gray-200
+                  z-50
+                  overflow-hidden
+                "
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                  <h3 className="font-semibold text-sm">Notifications</h3>
+
+                  <span
+                    className="
+                      bg-blue-100
+                      text-blue-600
+                      text-[10px]
+                      px-2
+                      py-0.5
+                      rounded-full
+                    "
+                  >
+                    {count || 0}
+                  </span>
+                </div>
+
+                {/* Body */}
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notificationList?.length > 0 ? (
+                    notificationList.map((item) => (
+                      <div
+                        key={item.NotificationId}
+                        className="
+                          px-4
+                          py-2.5
+                          border-b
+                          hover:bg-gray-50
+                          cursor-pointer
+                          transition
+                        "
+                      >
+                        <div className="font-medium text-sm text-gray-800 truncate">
+                          {item.Title}
+                        </div>
+
+                        <div className="text-xs text-gray-500 mt-1 truncate">
+                          {item.Message}
+                        </div>
+
+                        <span className="text-xs text-gray-400">
+                          {dayjs(item.CreatedAt).fromNow()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      No notifications found
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="
+          border-t
+          bg-gray-50
+          p-3
+        "
+                >
+                  <button
+                    onClick={handleViewAllNotifications}
+                    className="
+            w-full
+            text-blue-600
+            font-medium
+            hover:text-blue-700
+          "
+                  >
+                    View All Notifications →
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {/* {showNotifications && (
           <div
             className="
             absolute
@@ -212,7 +320,7 @@ const Header = ({ toggleMobileMenu }) => {
               </div>
             ))}
           </div>
-        )}
+        )} */}
         {/* Dropdown Container (Needs 'relative' for absolute positioning of the menu) */}
         <div className="relative" ref={dropdownRef}>
           <div

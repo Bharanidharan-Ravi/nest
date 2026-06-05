@@ -12,6 +12,7 @@ import DND from "../features/auth/pages/login";
 import useHeartbeat from "../core/auth/hooks/useHeartbeat";
 import { useRealtimeSync } from "../core/realtime/useRealtimeSync";
 import { useAppStore } from "../core/state/useAppStore";
+import VersionUpdateDialog from "./shared/GlobalUI/VersionUpdateDialog";
 
 function App() {
   useHeartbeat();
@@ -20,11 +21,11 @@ function App() {
 
   useRealtimeSync(token);
 
-  const isTestEnv = window.location.pathname.startsWith('/test');
+  const isTestEnv = window.location.pathname.startsWith("/test");
   return (
     <BrowserRouter basename={isTestEnv ? "/test" : "/"}>
       <GlobalUI />
-
+      <VersionUpdateDialog />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
 
