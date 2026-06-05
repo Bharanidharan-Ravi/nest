@@ -97,14 +97,16 @@ export const TicketListConfig={
       return a.priorityRequest ? -1:1;
     if(a.isCloseRequested!=b.isCloseRequested)
       return a.isCloseRequested ? -1:1;
-    if(a.adminResponse!=b.adminResponse)
-      return a.adminResponse ? -1:1;
+    if(a.AdminResponse!=b.AdminResponse)
+      return a.AdminResponse ? -1:1;
     if(a.funcResponse!=b.funcResponse)
       return a.funcResponse ? -1:1;
-        if(a.technicalResponse!=b.technicalResponse)
-      return a.technicalResponse ? -1:1;
-        if(a.webResponse!=b.webResponse)
-      return a.webResponse ? -1:1;
+    if(a.TechnicalResponse!=b.TechnicalResponse)
+      return a.TechnicalResponse ? -1:1;
+    if(a.WebResponse!=b.WebResponse)
+      return a.WebResponse ? -1:1;
+   
+    
     return new Date(b.updatedAt)-new Date(a.updatedAt)
   }
 

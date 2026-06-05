@@ -19,7 +19,7 @@ export default function EntityFormPage({
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
-  const { formData, fields, handleChange, errors, validate, buildDto, reset } =
+  const { formData, fields, handleChange, errors,setErrors, validate, buildDto, reset } =
     useEntityForm(config, context);
   const [tempFiles, setTempFiles] = useState([]);
   const handleFormReset = () => {
@@ -173,6 +173,8 @@ export default function EntityFormPage({
                     formData={formData}
                     handleSubmit={handleSubmit}
                     isPending={isPending}
+                    context={context}
+                    setErrors={setErrors}
                     // currentActiveOption={action.icon}
                   />
                 );
@@ -194,13 +196,20 @@ export default function EntityFormPage({
                       handleSubmit({}, action.skipValidation);
                     } else if (action.onClick) {
                       // 🔥 2. Allow the config's onClick to pass the skipValidation flag
+                      // action.onClick({
+                      //   formData,
+                      //   submitForm: (overrides, skipVal = false) =>
+                      //     handleSubmit(
+                      //       overrides,
+                      //       skipVal || action.skipValidation,
+                      //     ),
+                      // });
                       action.onClick({
                         formData,
+                        context,
+                        setErrors,
                         submitForm: (overrides, skipVal = false) =>
-                          handleSubmit(
-                            overrides,
-                            skipVal || action.skipValidation,
-                          ),
+                          handleSubmit(overrides, skipVal || action.skipValidation),
                       });
                     }
                   }}

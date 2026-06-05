@@ -1,42 +1,141 @@
 import React from "react";
-import {
-  FaCheckCircle,
-  FaSave,
-  FaTelegramPlane,
-  FaTimesCircle,
-  FaUndo,
-} from "react-icons/fa";
+import { FaCheckCircle, FaSave, FaTelegramPlane, FaTimesCircle, FaUndo } from "react-icons/fa";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { ThreadFieldConfig } from "./Thread.config";
 
 // 🔥 HELPER: Checks if ONLY the Ticket Status Update fields are filled
 const isProgressOnlyUpdate = (formData, context) => {
   // 1. Check Thread Data safely (handles empty strings "")
-  const cleanDesc = (formData?.description || "")
-    .replace(/<[^>]*>?/gm, "")
-    .trim();
+  const cleanDesc = (formData?.description || "").replace(/<[^>]*>?/gm, "").trim();
 
   const hasThreadData =
     cleanDesc.length > 0 ||
     (formData?.hours || "").trim().length > 0 ||
     (formData?.fromTime || "").trim().length > 0 ||
     (formData?.toTime || "").trim().length > 0 ||
-    (formData?.assignees?.length || 0) > 0;
+    (formData?.assignees?.length || 0) > 0
+    ;
+
   // 2. Check Progress Data safely
   const summary = (formData?.TicketStatusSummary || "").trim();
   const currentPct = Number(formData?.TicketOverallPercentage || 0);
 
   // We ONLY count the percentage as "updated" if it changed from what it was when the page loaded
-  const initialPct = Number(
-    context?.editingItem?.OverallPercentage ||
-      context?.editingItem?.CompletionPct ||
-      0,
-  );
+  const initialPct = Number(context?.editingItem?.OverallPercentage || context?.editingItem?.CompletionPct || 0);
 
   const hasProgressData = summary.length > 0 || currentPct !== initialPct;
 
   // 3. Return true ONLY if they typed progress data BUT left all thread data completely empty
   return !hasThreadData && hasProgressData;
+};
+const stripHtml = (str = "") =>
+  str.replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&zwnj;/gi, "")
+    .trim();
+
+export const validateThreadForm = (formData, context) => {
+  const errors = {};
+
+
+  const description = stripHtml(formData.description);
+  const summary = stripHtml(formData.TicketStatusSummary);
+
+  const hasDescription = !!description;
+  const hasSummary = !!summary;
+
+
+  const hasTime =
+    !!formData.hours ||
+    (!!formData.fromTime && !!formData.toTime);
+
+  const hasProgress =
+    !!formData.TicketOverallPercentage;
+
+  const original = {
+    requestClose: !!(
+      context?.parentTicket?.IsCloseRequested ||
+      context?.parentTicket?.isCloseRequested
+    ),
+    priority: !!(
+      context?.parentTicket?.PriorityRequest ||
+      context?.parentTicket?.priorityRequest
+    ),
+    functional: !!(
+      context?.parentTicket?.FuncResponse ||
+      context?.parentTicket?.funcResponse
+    ),
+    web: !!(
+      context?.parentTicket?.WebResponse ||
+      context?.parentTicket?.webResponse
+    ),
+    technical: !!(
+      context?.parentTicket?.TechnicalResponse ||
+      context?.parentTicket?.technicalResponse
+    ),
+    admin: !!(
+      context?.parentTicket?.AdminResponse ||
+      context?.parentTicket?.adminResponse
+    ),
+  };
+
+  const current = {
+    requestClose: !!formData.requestClose,
+    priority: !!formData.Priority,
+    functional: !!formData["Functional Response"],
+    web: !!formData["Web Response"],
+    technical: !!formData["Technical Response"],
+    admin: !!formData["Admin Response"],
+  };
+
+  const togglesChanged = Object.keys(original).some(
+    key => original[key] !== current[key]
+  );
+
+  // Description required
+  if (
+    !hasDescription &&
+    !hasSummary &&
+    !togglesChanged && !hasProgress
+  ) {
+    errors.description = "Description is mandatory.";
+  }
+
+  // Description required when logging hours
+  if (
+    !hasDescription &&
+    hasTime &&
+    !hasSummary &&
+    !togglesChanged
+  ) {
+    errors.description =
+      "Description is mandatory when logging hours.";
+  }
+
+  // Hours required when description entered
+  if (hasDescription && !hasTime) {
+    errors.hours =
+      "Hours are mandatory when description is entered.";
+  }
+
+  // Summary required when progress/toggle changed and no description
+  if (
+    // !hasDescription &&
+    (hasProgress) &&
+    !hasSummary
+  ) {
+    errors.TicketStatusSummary =
+      "Status Summary is required.";
+  }
+
+  if (togglesChanged &&
+    !hasSummary
+  ) {
+    errors.TicketStatusSummary =
+      "Status Summary is mandatory when a toggle is changed.";
+  }
+
+
+  return errors;
 };
 
 export const ThreadFormConfig = {
@@ -45,7 +144,6 @@ export const ThreadFormConfig = {
   api: "/WorkStream",
   redirectTo: ROUTE_KEYS.TICKET_DETAIL,
   fields: ThreadFieldConfig(),
-
   actions: ({ formData, context }) => {
     const statusId = formData?.StreamStatus?.value?.id;
     const role = context?.userRole;
@@ -63,7 +161,8 @@ export const ThreadFormConfig = {
           ),
           className:
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
-          onClick: ({ submitForm }) => submitForm({ IsReopenRequest: true }),
+          onClick: ({ submitForm }) =>
+            submitForm({ IsReopenRequest: true }),
         },
       ];
     }
@@ -80,14 +179,11 @@ export const ThreadFormConfig = {
               colorClass: "bg-gray-700",
               onClick: ({ submitForm }) => {
                 const overrides = { StreamStatus: currentStreamStatus };
-
-                // 🔥 Inject the flag if it's a progress-only update
                 // if (isProgressOnlyUpdate(formData)) {
                 //   overrides.IsTicketProgressOnly = true;
                 // }
-
                 submitForm(overrides);
-              },
+              }
             },
             {
               label: "Pass & Complete",
@@ -116,7 +212,6 @@ export const ThreadFormConfig = {
         },
       ];
     }
-
     // ── 2. DEVELOPER BUTTONS ──────────────────────────────────────
     if (role === "Dev") {
       return [
@@ -136,12 +231,9 @@ export const ThreadFormConfig = {
                 }
 
                 const overrides = { StreamStatus: 5 };
-
-                // 🔥 Inject the flag if it's a progress-only update
                 // if (isProgressOnlyUpdate(formData)) {
                 //   overrides.IsTicketProgressOnly = true;
                 // }
-
                 if (formData.assignees && formData.assignees.length > 0) {
                   const myUserId = context?.currentUser?.userId?.toLowerCase();
                   const isAssigningSelf = formData.assignees.some(
@@ -260,6 +352,7 @@ export const ThreadFormConfig = {
     }
 
     if (role === "Owner" && !context.isViewer) {
+
       return [
         // ── SEPARATE BUTTON (LEFT SIDE) ──
         {
@@ -270,9 +363,19 @@ export const ThreadFormConfig = {
           className:
             "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
           icon: <FaTelegramPlane className="text-black-600" />,
-          onClick: ({ submitForm, formData }) =>
+          onClick: ({ formData, setErrors, context, submitForm, openDialog }) => {
+           
+        
+            if (!stripHtml(formData.description)) {
+              setErrors((prev) => ({
+                ...prev,
+                description: "Description is mandatory.",
+              }));
+              return; // 🚨 stop execution if validation fails
+            }
+        
             openDialog({
-              varient: "info",
+              variant: "info",
               title: "Commit this thread to the client?",
               description: "This will update the thread for all participants",
               confirmText: "Yes, Commit",
@@ -283,9 +386,9 @@ export const ThreadFormConfig = {
                   toClient: true,
                 }),
               onCancel: () => {},
-            }),
+            });
+          },
         },
-
         // ── SPLIT BUTTON ──
         {
           type: "split-button",
@@ -295,13 +398,22 @@ export const ThreadFormConfig = {
               subtext: "Save changes",
               intent: "neutral",
               icon: <FaSave className="text-gray-500" />,
-              onClick: ({ formData, submitForm }) => {
+              onClick: ({ formData, setErrors, context, submitForm }) => {
+                const validationErrors = validateThreadForm(formData, context);
+
+                if (Object.keys(validationErrors).length > 0) {
+                  setErrors((prev) => ({
+                    ...prev,
+                    ...validationErrors,
+                  }));
+
+                  return; // 🚨 STOP HERE
+
+                }
                 let overrides = {};
-
-                // if (isProgressOnlyUpdate(formData)) {
-                //   overrides.IsTicketProgressOnly = true;
-                // }
-
+                // // if (isProgressOnlyUpdate(formData)) {
+                // //   overrides.IsTicketProgressOnly = true;
+                // // }
                 submitForm(overrides);
               },
             },
@@ -315,9 +427,10 @@ export const ThreadFormConfig = {
                   {
                     StreamStatus: 15,
                     CompletionPercentage: 100,
-                    Comment: formData.description || "Ticket closed by owner.",
+                    Comment:
+                      formData.description || "Ticket closed by owner.",
                   },
-                  true,
+                  true
                 ),
             },
             {
@@ -332,7 +445,7 @@ export const ThreadFormConfig = {
                     Comment:
                       formData.description || "Ticket cancelled by owner.",
                   },
-                  true,
+                  true
                 ),
             },
           ],
@@ -345,14 +458,20 @@ export const ThreadFormConfig = {
     const isViewer = Boolean(context?.isViewer);
 
     if (isClosed) return [];
-
-    // shared action
     const commitAction = {
       label: "Commit Update",
       subtext: "Save changes",
       intent: "neutral",
       icon: <FaSave className="text-gray-500" />,
-      onClick: ({ formData, submitForm }) => {
+      onClick: ({ formData, setErrors, context, submitForm }) => {
+        const validationErrors = validateThreadForm(formData, context);
+        if (Object.keys(validationErrors).length > 0) {
+          setErrors((prev) => ({
+            ...prev,
+            ...validationErrors,
+          }));
+          return;
+        }
         const overrides = {
           Comment: formData.description,
           toClient: isViewer,
@@ -382,7 +501,7 @@ export const ThreadFormConfig = {
             CompletionPercentage: 100,
             Comment: formData.description || "Ticket closed by owner.",
           },
-          true,
+          true
         ),
     };
 
@@ -395,8 +514,6 @@ export const ThreadFormConfig = {
         },
       ];
     }
-
-    // ✅ otherwise → normal single button
     return [
       {
         type: "button",
@@ -405,6 +522,7 @@ export const ThreadFormConfig = {
     ];
   },
 
+
   theme: {
     editorContainer:
       "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
@@ -412,6 +530,10 @@ export const ThreadFormConfig = {
       "flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-gray-50",
   },
 };
+
+
+
+
 
 // import React from "react";
 // import { FaCheckCircle, FaSave, FaTimesCircle, FaUndo } from "react-icons/fa";

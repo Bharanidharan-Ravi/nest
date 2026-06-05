@@ -40,56 +40,21 @@ export const ThreadFieldConfig = (ticketId) => [
     dataType: "string",
     apiKey: "CommentText",
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
-
-    // 🔥 Show the red asterisk if they entered time
     requiredWhen: (context, formData) => {
+      // Red asterisk shows if they entered time
       return !!formData?.hours || !!formData?.fromTime;
     },
-
-
-    customValidator: (value, formData, context) => {
-      const hasTime = !!formData?.hours || !!formData?.fromTime;
-      const hasAnyToggle =
-        formData?.Priority === true ||
-        formData?.requestClose === true ||
-        formData?.["Functional Response"] === true ||
-        formData?.["Technical Response"] === true ||
-        formData?.["Web Response"] === true ||
-        formData?.["Admin Response"] === true;
-
-      // ✅ Skip validation if any toggle is ON
-      if (hasAnyToggle) {
-        return true;
-      }
-      const hasTicketSummary = formData?.TicketStatusSummary
-      if (hasTicketSummary || formData.TicketOverallPercentage) {
-        return true;
-      }
-      const isEmpty =
-        value
-          ?.replace(/<[^>]*>/g, "")
-          .replace(/&nbsp;/gi, "")
-          .replace(/&zwnj;/gi, "")
-          .trim()
-          .length === 0;
-
-      // Viewer validation
-      if (context.isViewer && isEmpty) {
-        return "Description is mandatory";
-      }
-
-      // If hours entered, description required
-      if (!context.isViewer && hasTime && isEmpty) {
-        return "Description is mandatory when logging hours.";
-      }
-      if (isEmpty) {
-        return "Description is mandatory";
-      }
-
-      return true;
-    },
   },
+  {
+    name: "issueId",
+    apiKey: "IssueId",
+    hidden: true,
+    defaultValue: ticketId,
+    dataType: "string",
+    initValueResolver: ({ context }) =>
+      context?.editingItem?.Issue_Id || ticketId,
 
+  },
   {
     name: "issueId",
     apiKey: "IssueId",
@@ -224,29 +189,10 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     forceSubmit: (context) => context.isEdit !== true,
     customValidator: (value, formData, context) => {
-      if (context.isViewer) return true;
-      if (isTimeLocked(context)) return true;
-
-      const skipTimeValidation =
-        formData?.requestClose ||
-        formData?.Priority ||
-        formData?.["Functional Response"] ||
-        formData?.["Technical Response"] ||
-        formData?.["Web Response"] ||
-        formData?.["Admin Response"];
-
-      if (skipTimeValidation) return true;
-
-      const cleanDesc = formData?.description
-        ?.replace(/<[^>]*>?/gm, "")
-        .trim();
-
-      const hasDescription = !!cleanDesc;
-
-      const hasTime =
-        !!value || (!!formData.fromTime && !!formData.toTime);
-
-      // ✅ NEW RULE
+      if (context.isViewer || isTimeLocked(context)) return true;
+      const description = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
+      const hasDescription = !!description;
+      const hasTime = !!value || (!!formData.fromTime && !!formData.toTime);
       if (hasDescription && !hasTime) {
         return "Hours are mandatory when description is entered.";
       }
@@ -254,6 +200,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return true;
     }
   },
+
   {
     name: "CompletionPercentage",
     label: "% Completed",
@@ -538,110 +485,6 @@ export const ThreadFieldConfig = (ticketId) => [
         return cleanDesc || "";
       }
       return formData.TicketStatusSummary || "";
-    },
-    customValidator: (value, formData, context) => {
-      const cleanDesc = formData?.description
-        ?.replace(/<[^>]*>/g, "")
-        .replace(/&nbsp;/gi, "")
-        .replace(/&zwnj;/gi, "")
-        .trim();
-
-      // ✅ If Description has value, skip ALL TicketStatusSummary validation
-      if (cleanDesc && cleanDesc.length > 0) {
-        return true;
-      }
-
-      // Clean summary
-      const cleanSummary = value?.replace(/<[^>]*>?/gm, "").trim();
-
-      // ❌ If Description is empty AND Summary is also empty → show error
-
-      const batteryHasValue = !!formData.TicketOverallPercentage;
-
-      if (batteryHasValue && !cleanSummary) {
-        return "Status Summary is mandatory when Overall Ticket Progress is set.";
-      }
-
-      // -----------------------------
-      // ORIGINAL STATES (from backend)
-      // -----------------------------
-      const originalRequestClose = !!(
-        context?.parentTicket?.IsCloseRequested ||
-        context?.parentTicket?.isCloseRequested
-      );
-
-      const originalPriority = !!(
-        context?.parentTicket?.PriorityRequest ||
-        context?.parentTicket?.priorityRequest
-      );
-
-      const originalFuncResponse = !!(
-        context?.parentTicket?.FuncResponse ||
-        context?.parentTicket?.funcResponse
-      );
-
-      const originalWebResponse = !!(
-        context?.parentTicket?.WebResponse ||
-        context?.parentTicket?.webResponse
-      );
-
-      const originalTechnicalResponse = !!(
-        context?.parentTicket?.TechnicalResponse ||
-        context?.parentTicket?.technicalResponse
-      );
-
-      const originalAdminResponse = !!(
-        context?.parentTicket?.AdminResponse ||
-        context?.parentTicket?.adminResponse
-      );
-
-      // -----------------------------
-      // CURRENT FORM STATES
-      // (normalize to boolean)
-      // -----------------------------
-      const currentRequestClose = formData?.requestClose === true;
-      const currentPriority = formData?.Priority === true;
-      const currentFuncResponse = formData?.["Functional Response"] === true;
-
-      const currentWebResponse = formData?.["Technical Response"] === true;
-      const currentTechnicalResponse = formData?.["Web Response"] === true;
-      const currentAdminResponse = formData?.["Admin Response"] === true;
-
-      // -----------------------------
-      // DETECT CHANGES (ON or OFF)
-      // -----------------------------
-      const requestCloseChanged =
-        currentRequestClose !== originalRequestClose;
-
-      const priorityChanged =
-        currentPriority !== originalPriority;
-
-      const funcResponseChanged =
-        currentFuncResponse !== originalFuncResponse;
-
-      const webResponseChanged =
-        currentWebResponse !== originalWebResponse;
-
-      const technicalResponseChanged =
-        currentTechnicalResponse !== originalTechnicalResponse;
-
-      const adminResponseChanged =
-        currentAdminResponse !== originalAdminResponse;
-
-      const toggleInteracted =
-        requestCloseChanged || priorityChanged || funcResponseChanged || webResponseChanged || technicalResponseChanged || adminResponseChanged;
-
-      // -----------------------------
-      // VALIDATION RULE
-      // -----------------------------
-      if (!cleanDesc && !cleanSummary && !toggleInteracted) {
-        return "Status Summary is required";
-      }
-      if (toggleInteracted && !cleanSummary) {
-        return "Status Summary is mandatory when a toggle is changed";
-      }
-
-      return true;
     },
   },
   {

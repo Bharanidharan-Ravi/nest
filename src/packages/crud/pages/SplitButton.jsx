@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 // ── Modern, Elegant Split Button Component ─────────────────────────────
-const SplitButton = ({ action, formData, handleSubmit, isPending }) => {
+const SplitButton = ({ action, formData, handleSubmit, isPending, context, setErrors }) => {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const selectedOption = action.options[selectedIndex];
@@ -35,7 +35,7 @@ const SplitButton = ({ action, formData, handleSubmit, isPending }) => {
         disabled={isPending}
         onClick={() => {
           setIsOpen(false);
-          selectedOption.onClick({ formData, submitForm: handleSubmit });
+          selectedOption.onClick({ formData,setErrors,context,submitForm: handleSubmit });
         }}
         // Smaller padding (px-3 py-1.5), softer font (font-medium), and text-[13px]
         className={`relative inline-flex items-center px-3 py-1.5 rounded-l-lg border text-[13px] font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-slate-400 ${colorClasses}`}

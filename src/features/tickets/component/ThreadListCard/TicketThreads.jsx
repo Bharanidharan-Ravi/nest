@@ -66,7 +66,7 @@ const TicketThreads = ({
     const threadsArray = Array.isArray(threadsData)
       ? threadsData
       : [];
- 
+
     const allHandoffs = [];
 
     (assigneesJsonString || []).forEach((assignee) => {
@@ -403,28 +403,6 @@ console.log("item, checked:",  checked);
     [queryClient, ticketId, setOverRide]
   )
 
-  //  const { mutate, isPending } = useApiMutation({
-  //   url: `thread/${item.id}`,
-  //   method: "POST",
-  //   payload: {}, // Payload will be set dynamically in onCommit
-  //   invalidateKeys: config.invalidateKeys || [],
-  //   onSuccess: (data) => {
-  //     handleFormReset();
-
-  //     if (onSuccessCallback) {
-  //       onSuccessCallback(data);
-  //     }
-  //     if (!config.redirectTo) return;
-  //     if (typeof config.redirectTo === "function") {
-  //       config.redirectTo(smartNav); // 👈 pass navigation API
-  //     } else {
-  //       smartNav.goTo(config.redirectTo);
-  //     }
-  //     // if (config.redirectTo) {
-  //     //   navigate(config.redirectTo);
-  //     // }
-  //   },
-  // });
   const togglesConfig = [
     {
       field: "toClient",
@@ -432,8 +410,6 @@ console.log("item, checked:",  checked);
       label: "Commit to Client",
       VisibleWhen: (item, isMe) => !formContext?.isViewer && isMe,
       onCommit: (item, checked, name) => {
-        console.log("item, checked, name :", checked, name);
-        
         openDialog({
           variant: checked ? "info" : "warning",
       
@@ -452,16 +428,7 @@ console.log("item, checked:",  checked);
           onCancel: () => setOverRide(item.id,!checked,name),
         });
       
-        // toggleUrlRef.current = `thread/${item.id}`;
-        // commitToggle(
-        //   { toClient: checked },
-        //   {
-        //     onSuccess: () => {
-        //       setOverRide(item.id, name, checked);
-        //     }
-        //   }
-        // )
-        // commitToggle(item,name,checked)
+       
       }
     },
   ];
@@ -690,7 +657,7 @@ console.log("item, checked:",  checked);
               parentTicket,
               isQuickFormOpen: null,
               isQuickStatusOpen: null,
-              openDialog
+              openDialog, 
             }}
             module="Ticket"
           />

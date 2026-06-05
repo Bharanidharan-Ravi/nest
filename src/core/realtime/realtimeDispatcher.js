@@ -168,8 +168,7 @@ const REALTIME_ENTITY_CONFIG = {
     wrapList: (_oldData, list, shape) =>
       shape === "array" ? list : (list[0] ?? null),
   },
-  // ────
-  // ─────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────────────────
   //  ADDING A NEW ENTITY IN THE FUTURE
   //  Copy-paste one of the blocks below, fill in the queryKey and list shape.
   //  That's it.  No new functions, no edits anywhere else.

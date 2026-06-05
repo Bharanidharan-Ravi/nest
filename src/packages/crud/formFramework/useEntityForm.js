@@ -11,26 +11,7 @@ export const useEntityForm = (config, context = {}) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const { data: masterData } = useMasterData();
-
-  // const resolvedInitialData = useMemo(() => {
-  //   const initialValues = {};
-
-  //   (config.fields || []).forEach((field) => {
-  //     if (!field.initValueResolver) return;
-
-  //     const initialValue = field.initValueResolver({
-  //       context,
-  //       masterData,
-  //       formData,
-  //     });
-
-  //     if (initialValue !== null && initialValue !== undefined) {
-  //       initialValues[field.name] = initialValue;
-  //     }
-  //   });
-
-  //   return initialValues;
-  // }, [config.fields, context, masterData, formData]);
+ 
   const resolvedInitialData = useMemo(() => {
     // 🔥 RECURSIVE HELPER
     const resolveFields = (fieldsArray) => {
@@ -121,37 +102,6 @@ export const useEntityForm = (config, context = {}) => {
 
     return updated;
   }, [mergedFormData, config.fields, masterData, context]);
-  // const processedFields = useMemo(() => {
-  //   const baseFields = config.fields || [];
-
-  //   let updated = applyDependencies(mergedFormData, baseFields);
-
-  //   updated = updated.map((field) => {
-  //     let newField = { ...field };
-
-  //     if (field.optionsResolver && masterData) {
-
-  //       newField.options = field.optionsResolver({
-  //         masterData,
-  //         context,
-  //         formData,
-  //       });
-  //     }
-
-  //     if (field.disableWhen) {
-  //       newField.disabled = field.disableWhen(context, mergedFormData);
-  //     }
-  //     if (field.requiredWhen) {
-  //       newField.required = field.requiredWhen(context, mergedFormData);
-  //     }
-  //     return newField;
-  //   });
-
-  //   updated = applyVisibilityRules(mergedFormData, updated, context);
-
-  //   return updated;
-  // }, [mergedFormData, config.fields, masterData, context]);
-
   const handleChange = (name, value, metadata = {}) => {
     setFormData((prev) => {
       // 1. Calculate the new state for this specific field
@@ -290,6 +240,7 @@ export const useEntityForm = (config, context = {}) => {
   return {
     formData: mergedFormData,
     errors,
+    setErrors,
     fields: processedFields,
     handleChange,
     validate,
