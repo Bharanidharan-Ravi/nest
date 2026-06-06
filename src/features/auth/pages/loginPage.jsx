@@ -1,6 +1,6 @@
 // import { TextField } from "@mui/material";
 import Bowser from "bowser";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import "./loginPage.css";
 import {
   Avatar,
@@ -20,8 +20,6 @@ import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
 import { ROLES } from "../../../core/auth/permissions";
 import { jwtDecode } from "jwt-decode";
-import { APP_VERSION } from "../../../app/shared/Version";
-import { versionChecker } from "../../../app/Hooks/VersionChecker";
 
 const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
@@ -39,6 +37,7 @@ const LoginPage = () => {
     password: "",
     remember: false,
   });
+  const hasTyped = useRef(false);
   const navigate = useNavigate();
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -48,7 +47,15 @@ const LoginPage = () => {
   });
   const userAgent = window.navigator.userAgent;
   const loginStore = useAppStore((s) => s.login);
-  console.log("APP_VERSION :", APP_VERSION);
+  const syncClass = ()=>{
+    const el = document.querySelector(".login-container");
+    if (!el) return;
+    if(hasTyped.current){
+      el.classList.add("is-typing");
+    }else {
+      el.classList.remove("is-typing");
+    }
+  };
   
   const handleChange = (e, setValue, setError, fieldName, characterLimit) => {
     const { name, value, type, checked } = e.target;
@@ -62,6 +69,10 @@ const LoginPage = () => {
       });
       setError("");
       setShakeField({ ...shakeField, [name]: false }); // stop shaking if valid
+      const u = name === "username" ? value : formData.username;
+      const p = name === "password" ? value : formData.password;
+      hasTyped.current = u.trim().length > 0 || p.trim().length > 0;
+      syncClass();
     } else {
       setError(
         `Maximum ${characterLimit} characters allowed for ${fieldName}.`,
@@ -72,20 +83,13 @@ const LoginPage = () => {
   };
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-       onSuccess:async (data) => {
+    onSuccess: (data) => {
       loginStore(data);
-      const isValid =
-        await versionChecker();
-
-      if (!isValid) {
-        return;
-      }
-
-      const encoded =jwtDecode(data);
-      const role =  encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
-      if(Number(role) === ROLES.VIEWER){
+      const encoded = jwtDecode(data);
+      const role = encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
+      if (Number(role) === ROLES.VIEWER) {
         navigate("/tickets");
-      }else{
+      } else {
         navigate("/dashboard?module=dash_tickets");
       }
     },
@@ -131,26 +135,16 @@ const LoginPage = () => {
 
   return (
     <Box
-      className="login-container"
-      // sx={{
-      //   background: 'linear-gradient(135deg, #000000, #1c1c1c)',
-      //   height: '100vh',
-      //   display: 'flex',
-      //   alignItems: 'center',
-      //   justifyContent: 'center',
-      // }}
-    >
-      <Container component="main" maxWidth="xs">
+      className="login-container">
+      <div className="login-panel login-panel--top-a" />
+      <div className="login-panel login-panel--top-b" />
+      <div className="login-panel login-panel--top-a" />
+      <div className="login-panel login-panel--top-b" />
+
+      <Container component="main" maxWidth="xs" className="login-center">
         <Paper
           elevation={10}
-          className="login-paper"
-          // sx={{
-          //   p: 4,
-          //   borderRadius: 4,
-          //   backgroundColor: '#121212',
-          //   color: '#fff',
-          // }}
-        >
+          className="login-paper">
           <Box
             sx={{
               display: "flex",
@@ -158,21 +152,11 @@ const LoginPage = () => {
               alignItems: "center",
             }}
           >
-            <Avatar sx={{ m: 1, bgcolor: "#f1c40f" }}>
-              <LockOutlinedIcon sx={{ color: "#000" }} />
-            </Avatar>
-             {/* <Avatar sx={{ m: 1, background: "transparent", width: 84, height: 54 }}>
-              <img src="/favicon.ico?v=2" alt="" />
-            </Avatar> */}
-            <Typography
-              component="h1"
-              variant="h5"
-              sx={{ fontWeight: "bold", mb: 2 }}
-            >
-              Sign In
-            </Typography>
+            <Box className="login-logo">
+              <img src="/WORKGLOW LOGO.png" alt="logo-wg" className="login-logo-img" />
+            </Box>
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
+            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: "100%" }}>
               <TextField
                 margin="normal"
                 required
@@ -228,22 +212,6 @@ const LoginPage = () => {
                   style: { color: "#000", borderColor: "#f1c40f" },
                 }}
               />
-
-              {/* <FormControlLabel
-                  control={
-                    <Checkbox
-                      name="remember"
-                      color="default"
-                      checked={formData.remember}
-                      onChange={handleChange}
-                      sx={{
-                        color: '#f1c40f',
-                        '&.Mui-checked': { color: '#f1c40f' },
-                      }}
-                    />
-                  }
-                  label="Remember me"
-                /> */}
               <YellowButton
                 type="submit"
                 fullWidth

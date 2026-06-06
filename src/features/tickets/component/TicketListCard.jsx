@@ -76,10 +76,15 @@ export default function TicketListCard({
       webResponseRequested && "Awaiting Web Response",
       adminResponseRequested && "Awaiting Admin Response",
       activeStatus.includes(item.statusId) && "Closed Ticket",
+      item.commenttext&&`${item.commenttext}`,
     ]
       .filter(Boolean) // remove null/false
       .join(" • ");
+      console.log("item", item);
 
+      console.log("item   ooo",item);
+      
+      
   let statusIcon;
   if (item.reopenedBy) {
     statusIcon = <GoIssueReopened className="status-icon text-orange-500" title="Reopened Ticket" />;

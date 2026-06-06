@@ -53,7 +53,7 @@ export const validateThreadForm = (formData, context) => {
 
   const hasProgress =
     !!formData.TicketOverallPercentage;
-
+  
   const original = {
     requestClose: !!(
       context?.parentTicket?.IsCloseRequested ||
@@ -373,9 +373,7 @@ export const ThreadFormConfig = {
                 ...prev,
                 ...validationErrors,
               }));
-
               return; // 🚨 STOP HERE
-
             }
             openDialog({
               variant: "info",
@@ -413,11 +411,18 @@ export const ThreadFormConfig = {
                   return; // 🚨 STOP HERE
 
                 }
-                let overrides = {};
+                let overrides = {
+                 
+                };
                 // // if (isProgressOnlyUpdate(formData)) {
                 // //   overrides.IsTicketProgressOnly = true;
                 // // }
-                submitForm(overrides);
+                if(context?.onCommitIntercept){
+                  context.onCommitIntercept((isSupport)=>{
+                    submitForm({...overrides,IsSupport:isSupport})
+                  })
+                }else{
+                submitForm(overrides);}
               },
             },
             {
@@ -425,7 +430,20 @@ export const ThreadFormConfig = {
               subtext: "Complete this ticket successfully",
               intent: "success",
               icon: <FaCheckCircle className="text-green-600" />,
-              onClick: ({ submitForm, formData }) =>
+              onClick: ({ submitForm, formData,setErrors }) =>{
+                const errors={};
+                const percentage=formData?.TicketOverallPercentage
+                const summary=stripHtml(formData?.TicketStatusSummary)
+                if(!percentage||Number(percentage)<100){
+                  errors.TicketOverallPercentage="Overall progress must be 100% before closing"
+                }
+                if(!summary){
+                  errors.TicketStatusSummary="Status Summary mandatory before closing"
+                }
+                if (Object.keys(errors).length>0){
+                  setErrors(prev=>({...prev,...errors}))
+                  return
+                }
                 submitForm(
                   {
                     StreamStatus: 15,
@@ -434,7 +452,7 @@ export const ThreadFormConfig = {
                       formData.description || "Ticket closed by owner.",
                   },
                   true
-                ),
+                )},
             },
             {
               label: "Cancel & Close",

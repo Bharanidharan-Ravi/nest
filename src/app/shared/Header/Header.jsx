@@ -22,6 +22,7 @@ import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import dayjs from "dayjs";
+import { useQueryClient } from "@tanstack/react-query";
 
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
@@ -37,14 +38,20 @@ const Header = ({ toggleMobileMenu }) => {
   const { data: notificationList } = getNotification(showNotifications);
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
-  const markSeen = async () => {
-    await executeApi({
-      url: "/Notification/mark-seen",
-      method: "POST",
-      payload: {
-        sessionId: user.sessionId,
-      },
-    });
+  const queryClient = useQueryClient();
+ const markSeen = async () => {
+    try {
+        await executeApi({
+          url: "/Notification/mark-seen",
+          method: "POST",
+          payload: { sessionId: user.sessionId },
+        });
+        
+        // 🔥 FIX 4: Refresh React Query so it knows the count is now 0
+        queryClient.invalidateQueries({ queryKey: ["notification"] });
+    } catch (error) {
+        console.error("Failed to mark notifications seen", error);
+    }
   };
 
   useEffect(() => {
@@ -164,7 +171,7 @@ const Header = ({ toggleMobileMenu }) => {
       {/* Right Side: Breadcrumbs & User Profile */}
       <div className="flex items-center gap-4">
         <Breadcrumbs />
-        {!isViewer && (
+        {/* {!isViewer && ( */}
           <div className="relative cursor-pointer" ref={notificationRef}>
             <IoNotificationsOutline
               size={24}
@@ -251,7 +258,7 @@ const Header = ({ toggleMobileMenu }) => {
                         </div>
 
                         <span className="text-xs text-gray-400">
-                          {dayjs(item.CreatedAt).fromNow()}
+                          {dayjs(item?.CreatedAt).fromNow()}
                         </span>
                       </div>
                     ))
@@ -285,7 +292,7 @@ const Header = ({ toggleMobileMenu }) => {
               </div>
             )}
           </div>
-        )}
+        {/* )} */}
         {/* {showNotifications && (
           <div
             className="

@@ -285,7 +285,7 @@ console.log("parentTicket1212121",parentTicket);
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
-          {shouldBlockThreads ? (
+          {!isViewer && shouldBlockThreads? (
               <div className="flex flex-col items-center justify-center gap-4 py-12 px-6
               border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
                 <button onClick={() => goTo(editRouteKey, { ticketId })}

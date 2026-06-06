@@ -479,13 +479,36 @@ export const ThreadFieldConfig = (ticketId) => [
       return !context?.isEdit && !context?.isViewer;
     },
     effectDependencies: ["copyDescription", "description"],
-    effectResolver: (formData) => {
+     effectResolver: (formData) => {
       if (formData.copyDescription) {
-        const cleanDesc = formData.description?.replace(/<[^>]*>?/gm, "").trim();
+        console.log("formData.copyDescription", JSON.stringify(formData.copyDescription));
+        
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(formData.description || "", "text/html");
+        
+        // Remove elements including video and audio
+        doc.querySelectorAll('a[href],.zip,img,.attachment,[data-type="attachment"],figure,video,audio').forEach(el => el.remove());
+        
+        // Get the cleaned text content
+        let cleanDesc = doc.body.textContent || doc.body.innerText || "";
+        
+        // Remove any remaining HTML tags and attachment-related text
+        cleanDesc = cleanDesc
+          .replace(/<[^>]*>/g, "")
+          .replace(/\[.*?\]/g, "")
+          .replace(/\(.*?\)/g, "")
+          .replace(/attachment/gi, "")
+          .replace(/file/gi, "")
+          .replace(/image/gi, "")
+          .replace(/download/gi, "")
+          .replace(/video/gi, "")
+          .replace(/audio/gi, "")
+          .replace(/\s+/g, " ")
+          .trim();
+        
         return cleanDesc || "";
       }
-      return formData.TicketStatusSummary || "";
-    },
+    }
   },
   {
     name: "TicketOverallPercentage",

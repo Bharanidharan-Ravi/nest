@@ -38,6 +38,7 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }
   // 🔥 3. Can Edit ONLY if they are the creator AND it's within 24 hours
   const canEdit = isMe && isWithin24Hours;
   const renderCoContributors = (coContributors) => {
+    if(formContext?.isViewer) return null; // Don't show co-contributors in viewer mode
     if (!coContributors || coContributors.length === 0) return null;
 
     const isSelfSupport = coContributors.some(

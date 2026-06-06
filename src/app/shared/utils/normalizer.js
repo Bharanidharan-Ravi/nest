@@ -40,6 +40,7 @@ export const normalizeTicket = (ticket) => ({
     webTime: ticket.Web,
     technicalTime: ticket.Technical,
     functionalTime: ticket.Functional,
+    commenttext:ticket.commenttext
 
 });
 
