@@ -99,7 +99,8 @@ const TicketDetailPage = () => {
       !parentTicket?.Web
     );
 
-const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
+// const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
+const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketIncomplete;
 console.log("parentTicket1212121",parentTicket);
   // 2. Process Assignees and Roles
   const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
@@ -333,7 +334,8 @@ console.log("parentTicket1212121",parentTicket);
         </div>
       </div>
 
-      {supportModalOpen && (
+      {/* {supportModalOpen && ( */}
+      {!isViewer && supportModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl p-6 w-[360px] flex flex-col gap-4 border border-gray-100">
             <div className="flex flex-col gap-1.5">

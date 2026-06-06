@@ -283,7 +283,7 @@ export default function TicketsPage() {
   // );
 
   const listConfigWithNav = {
-    ...TicketListConfig,
+    ...TicketListConfig(isViewer),
     enablequickComment: isViewer ? false : true,
     enablequickStatus: isViewer ? false : true,
     filters: [
@@ -384,6 +384,7 @@ export default function TicketsPage() {
           { label: "Admin Response", value: "adminResponse" },
         ],
         filterType: "custom",
+        allowedRoles: [1, 2],
         allowMultiple: true,
         customFilter: (item, selectedValues) => {
           const values = Array.isArray(selectedValues)

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import dayjs from "dayjs";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import "./Dashboard.css";
 import { TicketListConfig } from "../../tickets/config/TicketUI.config";
 import ModuleSwitcher from "../component/ModuleSwitcher";
@@ -43,7 +43,7 @@ export default function Dashboard() {
   const [quickTicketStatus, setQuickTicketStatus] = useState(null);
   const [selectedTickets, setSelectedTickets] = useState([]);
   const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
-
+  const { isViewer } = useCurrentUser();
   const today = dayjs().startOf("day").format("YYYY-MM-DD");
 
   // ── Query — feeds committedIds only ───────────────────────────────────────
@@ -151,7 +151,7 @@ export default function Dashboard() {
 
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
-    ...TicketListConfig,
+    ...TicketListConfig(isViewer),
     theme: {
       stickyTop: 50,
     },
@@ -414,7 +414,7 @@ export default function Dashboard() {
   };
 
   const dashboardTimesheet = {
-    ...TicketListConfig,
+    ...TicketListConfig(isViewer),
     theme: {
       stickyTop: 50,
     },
@@ -507,7 +507,7 @@ export default function Dashboard() {
   };
 
   const dashboardPickedList = {
-    ...TicketListConfig,
+    ...TicketListConfig(isViewer),
      theme: {
       stickyTop: 50,
     },

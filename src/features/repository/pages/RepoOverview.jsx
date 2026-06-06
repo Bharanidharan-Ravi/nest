@@ -18,7 +18,7 @@ const RepoOverview = () => {
       RepoKey: Ctm.RepoKey,
       Status:  Ctm.Status,
       UserName:  Ctm.UserName,
-      WGUserName:  Ctm.WGUserNamem,
+      WGUserName:  Ctm.WGUserName,
       UserId:Ctm.UserId,
     };
   };

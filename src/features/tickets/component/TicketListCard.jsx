@@ -184,7 +184,7 @@ export default function TicketListCard({
       ${isPriorityRequested ? "priority-requested-row" : ""}
       ${funcResponseRequested ? "response-requested-row" : ""}`}
       > */}
-      <Tooltip title={rowTooltip || ""} arrow>
+     <Tooltip title={!isViewer ? rowTooltip : ""} arrow>
         <div
           key={item.id}
           className={`ticket-row 

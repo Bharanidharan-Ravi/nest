@@ -34,6 +34,9 @@ const stripHtml = (str = "") =>
     .trim();
 
 export const validateThreadForm = (formData, context) => {
+  if (context?.isViewer) {
+    return {};
+  }
   const errors = {};
 
 
@@ -363,17 +366,17 @@ export const ThreadFormConfig = {
           className:
             "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
           icon: <FaTelegramPlane className="text-black-600" />,
-          onClick: ({ formData, setErrors, context, submitForm, openDialog }) => {
-           
-        
-            if (!stripHtml(formData.description)) {
+          onClick: ({ formData, setErrors, context, submitForm }) => {
+            const validationErrors = validateThreadForm(formData, context);
+            if (Object.keys(validationErrors).length > 0) {
               setErrors((prev) => ({
                 ...prev,
-                description: "Description is mandatory.",
+                ...validationErrors,
               }));
-              return; // 🚨 stop execution if validation fails
+
+              return; // 🚨 STOP HERE
+
             }
-        
             openDialog({
               variant: "info",
               title: "Commit this thread to the client?",
@@ -385,7 +388,7 @@ export const ThreadFormConfig = {
                   Comment: formData.description,
                   toClient: true,
                 }),
-              onCancel: () => {},
+              onCancel: () => { },
             });
           },
         },
@@ -476,6 +479,12 @@ export const ThreadFormConfig = {
           Comment: formData.description,
           toClient: isViewer,
         };
+
+        if (context?.isViewer) {
+          submitForm(overrides);
+          return;
+        }
+
         // if (isProgressOnlyUpdate(formData)) {
         //   overrides.IsTicketProgressOnly = true;
         // }

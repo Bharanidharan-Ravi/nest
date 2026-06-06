@@ -146,11 +146,11 @@ export const CustomerData = {
     //   render: (item) => <div className="h-30">{item.Status}</div>,
     // },
     
-    // {
-    //   key: "WGUserName",
-    //   label: "WGUserName",
-    //   render: (item) => <div className="h-30">{item.WGUserName}</div>,
-    // },
+    {
+      key: "WGUserName",
+      label: "Login Username",
+      render: (item) => <div className="h-30">{item.WGUserName}</div>,
+    },
     
   ],
 };
