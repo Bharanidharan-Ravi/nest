@@ -2,6 +2,7 @@
 
 import { useApiQuery } from "../../core/query/useApiQuery";
 import { queryKeys } from "../../core/query/queryKeys";
+import { normalizeNotificationList, normalizeTimelineList } from "../shared/utils/normalizer";
 
 export const useNotificationCount = () => {
   return useApiQuery({
@@ -28,6 +29,26 @@ export const getNotification = (showNotifications) => {
     silent: true,
     options: {
       enabled: showNotifications,
+      select: (rawData) => normalizeNotificationList(rawData),
+    },
+  });
+};
+
+export const getTimeline = (showTimeline) => {
+  console.log("showTimeline :", showTimeline);
+  
+  return useApiQuery({
+    queryKey: queryKeys.notification.timeline(),
+    url: "/sync/v2",
+    method: "POST",
+    silent: true,
+    source: "TicketHistory",
+    payload: {
+      ConfigKeys: ["TicketHistory"],
+    },
+    options: {
+      enabled: showTimeline,
+      select: (rawData) => normalizeTimelineList(rawData),
     },
   });
 };

@@ -57,7 +57,7 @@ export const useThreadMaster = (ticketId) => {
   });
 };
 
-export const useTicketHistory = (ticketId) => {
+export const useTicketHistory = (tickeId) => {
   const config = "TicketHistory";
   return useApiQuery({
     queryKey: queryKeys.ticket.history(ticketId),

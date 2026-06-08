@@ -2,9 +2,9 @@ export const queryKeys = {
   repo: {
     all: ["repo"],
     list: () => [...queryKeys.repo.all, "list"],
-    detail: (id) => [...queryKeys.repo.all, "detail", id]
+    detail: (id) => [...queryKeys.repo.all, "detail", id],
   },
-   ticket: {
+  ticket: {
     all: ["ticket"],
 
     // Ticket list
@@ -12,73 +12,57 @@ export const queryKeys = {
       ...queryKeys.ticket.all,
       "list",
       repoId,
-      projectId
+      projectId,
     ],
 
     // Single ticket
-    detail: (ticketId) => [
-      ...queryKeys.ticket.all,
-      "detail",
-      ticketId
-    ],
+    detail: (ticketId) => [...queryKeys.ticket.all, "detail", ticketId],
 
     // Ticket thread/comments
-    thread: (ticketId) => [
-      ...queryKeys.ticket.all,
-      "thread",
-      ticketId
-    ],
+    thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId],
     byEmployee: (employeeId) => [
-      ...queryKeys.ticket.all, 
-      "TicketsList", 
-      { EmployeeId: employeeId }
-    ],
-    history: (ticketId) => [
       ...queryKeys.ticket.all,
-      "history",
-      ticketId
+      "TicketsList",
+      { EmployeeId: employeeId },
     ],
+    history: (ticketId) => [...queryKeys.ticket.all, "history", ticketId],
   },
   project: {
     all: ["project"],
     list: (repoId) => [...queryKeys.project.all, "list", repoId],
-    detail: (id) => [...queryKeys.project.all, "detail", id]
+    detail: (id) => [...queryKeys.project.all, "detail", id],
   },
   dashboard: {
-    all: ["dashboard"]
+    all: ["dashboard"],
   },
-   label: {
-    all:    ["label"],
-    list:   ()   => [...queryKeys.label.all, "list"],
-    detail: (id) => [...queryKeys.label.all, "detail", id]
+  label: {
+    all: ["label"],
+    list: () => [...queryKeys.label.all, "list"],
+    detail: (id) => [...queryKeys.label.all, "detail", id],
   },
-   employee: {
-    all:    ["EmployeeList"],
-    list:   (id)   => [...queryKeys.employee.all, "list",id]
-  },team: {
-    all:    ["TeamList"],
+  employee: {
+    all: ["EmployeeList"],
+    list: (id) => [...queryKeys.employee.all, "list", id],
+  },
+  team: {
+    all: ["TeamList"],
     // list:   (id)   => [...queryKeys.employee.all, "list",id]
   },
   TicketProgress: {
-    all:    ["TicketProgress"],
-    list:   (id)   => [...queryKeys.TicketProgress.all, id]
+    all: ["TicketProgress"],
+    list: (id) => [...queryKeys.TicketProgress.all, id],
   },
   client: {
-    all:   ["client"],
-    list:  () => [...queryKeys.client.all, "list"],
-    detail:  (id) => [...queryKeys.client.all, "detail", id],
+    all: ["client"],
+    list: () => [...queryKeys.client.all, "list"],
+    detail: (id) => [...queryKeys.client.all, "detail", id],
   },
   notification: {
-  all: ["notification"],
+    all: ["notification"],
 
-  unreadCount: () => [
-    ...queryKeys.notification.all,
-    "unread-count"
-  ],
+    unreadCount: () => [...queryKeys.notification.all, "unread-count"],
 
-  list: () => [
-    ...queryKeys.notification.all,
-    "list"
-  ]
-}
-}
+    list: () => [...queryKeys.notification.all, "list"],
+    timeline: () => [...queryKeys.notification.all, "timeline"],
+  },
+};

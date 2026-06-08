@@ -58,6 +58,7 @@ export const useApiQuery = ({
   silent = false,
   options = {},
 }) => {
+  
   return useQuery({
     queryKey,
     queryFn: async () => {
@@ -82,7 +83,6 @@ export const useApiQuery = ({
           return extracted;
         }
       }
-
       return res;
     },
     ...options,

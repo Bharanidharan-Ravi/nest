@@ -113,3 +113,39 @@ export const createTimesheetNormalizer = (Timedata) => {
     label: Timedata.Labels_JSON ? JSON.parse(Timedata.Labels_JSON) : [],
   };
 };
+
+export const normalizeNotification = (notif) => ({
+    id: notif.NotificationId || notif.notificationId,
+    notificationId: notif.NotificationId || notif.notificationId,
+    title: notif.Title || notif.title || "No Title",
+    message: notif.Message || notif.message || "",
+    entityType: notif.EntityType || notif.entityType || "UNKNOWN",
+    entityId: notif.EntityId || notif.entityId,
+    createdAt: notif.CreatedAt || notif.createdAt,
+    actorId: notif.ActorId || notif.actorId,
+    actorName: notif.ActorName || notif.actorName,
+    // Add a safe fallback in case you ever add an unread boolean from the API
+    isUnread: notif.IsUnread ?? notif.isUnread ?? false,
+});
+
+// Helper to normalize an entire array
+export const normalizeNotificationList = (notifications) => {
+    if (!Array.isArray(notifications)) return [];
+    return notifications.map(normalizeNotification);
+};
+
+export const normalizeTimelineList = (historyList) => {
+  if (!Array.isArray(historyList)) return [];
+  
+  return historyList.map((item) => ({
+    id: item.Id,
+    ticketId: item.IssueId,
+    eventType: item.EventType,
+    title: item.Summary || "No Action", // This will show as the main text
+    actorName: item.ActorName || "System",
+    createdAt: item.CreatedAt,
+    oldValue: item.OldValue,
+    newValue: item.NewValue,
+    metaJson: item.MetaJson ? JSON.parse(item.MetaJson) : null,
+  }));
+};

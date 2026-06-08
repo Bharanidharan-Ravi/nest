@@ -23,6 +23,10 @@ import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation"
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import dayjs from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
+import relativeTime from "dayjs/plugin/relativeTime";
+
+// 🔥 THIS IS THE MISSING PART
+dayjs.extend(relativeTime);
 
 const Header = ({ toggleMobileMenu }) => {
   const navigate = useNavigate();
@@ -39,18 +43,19 @@ const Header = ({ toggleMobileMenu }) => {
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
- const markSeen = async () => {
+  
+  const markSeen = async () => {
     try {
-        await executeApi({
-          url: "/Notification/mark-seen",
-          method: "POST",
-          payload: { sessionId: user.sessionId },
-        });
-        
-        // 🔥 FIX 4: Refresh React Query so it knows the count is now 0
-        queryClient.invalidateQueries({ queryKey: ["notification"] });
+      await executeApi({
+        url: "/Notification/mark-seen",
+        method: "POST",
+        payload: { sessionId: user.sessionId },
+      });
+
+      // 🔥 FIX 4: Refresh React Query so it knows the count is now 0
+      queryClient.invalidateQueries({ queryKey: ["notification"] });
     } catch (error) {
-        console.error("Failed to mark notifications seen", error);
+      console.error("Failed to mark notifications seen", error);
     }
   };
 
@@ -172,15 +177,15 @@ const Header = ({ toggleMobileMenu }) => {
       <div className="flex items-center gap-4">
         <Breadcrumbs />
         {/* {!isViewer && ( */}
-          <div className="relative cursor-pointer" ref={notificationRef}>
-            <IoNotificationsOutline
-              size={24}
-              onClick={() => setShowNotifications((prev) => !prev)}
-            />
+        <div className="relative cursor-pointer" ref={notificationRef}>
+          <IoNotificationsOutline
+            size={24}
+            onClick={() => setShowNotifications((prev) => !prev)}
+          />
 
-            {count > 0 && (
-              <span
-                className="
+          {count > 0 && (
+            <span
+              className="
                   absolute
                   -top-2
                   -right-2
@@ -195,14 +200,14 @@ const Header = ({ toggleMobileMenu }) => {
                   justify-center
                   px-1
                 "
-              >
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
+            >
+              {count > 99 ? "99+" : count}
+            </span>
+          )}
 
-            {showNotifications && (
-              <div
-                className="
+          {showNotifications && (
+            <div
+              className="
                   absolute
                   right-0
                   top-12
@@ -215,13 +220,13 @@ const Header = ({ toggleMobileMenu }) => {
                   z-50
                   overflow-hidden
                 "
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-                  <h3 className="font-semibold text-sm">Notifications</h3>
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                <h3 className="font-semibold text-sm">Notifications</h3>
 
-                  <span
-                    className="
+                <span
+                  className="
                       bg-blue-100
                       text-blue-600
                       text-[10px]
@@ -229,18 +234,18 @@ const Header = ({ toggleMobileMenu }) => {
                       py-0.5
                       rounded-full
                     "
-                  >
-                    {count || 0}
-                  </span>
-                </div>
+                >
+                  {count || 0}
+                </span>
+              </div>
 
-                {/* Body */}
-                <div className="max-h-[300px] overflow-y-auto">
-                  {notificationList?.length > 0 ? (
-                    notificationList.map((item) => (
-                      <div
-                        key={item.NotificationId}
-                        className="
+              {/* Body */}
+              <div className="max-h-[300px] overflow-y-auto">
+                {notificationList?.length > 0 ? (
+                  notificationList.map((item) => (
+                    <div
+                      key={item.id}
+                      className="
                           px-4
                           py-2.5
                           border-b
@@ -248,50 +253,57 @@ const Header = ({ toggleMobileMenu }) => {
                           cursor-pointer
                           transition
                         "
-                      >
-                        <div className="font-medium text-sm text-gray-800 truncate">
-                          {item.Title}
-                        </div>
-
-                        <div className="text-xs text-gray-500 mt-1 truncate">
-                          {item.Message}
-                        </div>
-
-                        <span className="text-xs text-gray-400">
-                          {dayjs(item?.CreatedAt).fromNow()}
-                        </span>
+                      onClick={() => {
+                        goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                          ticketId: item.entityId,
+                        });
+                        setShowNotifications(false); // Close the dropdown after navigating
+                      }}
+                    >
+                      <div className="font-medium text-sm text-gray-800 truncate">
+                        {item.title}
                       </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      No notifications found
-                    </div>
-                  )}
-                </div>
 
-                {/* Footer */}
-                <div
-                  className="
+                      <div className="text-xs text-gray-500 mt-1 truncate">
+                        {item.message}
+                      </div>
+
+                      <span className="text-xs text-gray-400">
+                        {dayjs(item?.createdAt).fromNow()}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-8 text-center text-gray-500">
+                    No notifications found
+                  </div>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div
+                className="
           border-t
           bg-gray-50
           p-3
         "
-                >
-                  <button
-                    onClick={handleViewAllNotifications}
-                    className="
+              >
+                <button
+                  onClick={handleViewAllNotifications}
+                  className="
             w-full
             text-blue-600
             font-medium
+            text-sm
             hover:text-blue-700
           "
-                  >
-                    View All Notifications →
-                  </button>
-                </div>
+                >
+                  View All Notifications →
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
         {/* )} */}
         {/* {showNotifications && (
           <div
