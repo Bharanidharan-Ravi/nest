@@ -18,6 +18,15 @@ import {
   useNotificationCount,
 } from "../../Hooks/useNotificationCount";
 import { useNotificationStore } from "../../../core/state/useNotificationStore";
+import { useBannerMessage } from "../../../features/BannerMessage/hooks/useBannerdata";
+import { banner } from "../../../features/BannerMessage/elements";
+import { 
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  AlertCircle,
+  XCircle
+} from 'lucide-react';
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
@@ -43,7 +52,7 @@ const Header = ({ toggleMobileMenu }) => {
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
-  
+  const { data: bannerListWrapper } = useBannerMessage()
   const markSeen = async () => {
     try {
       await executeApi({
@@ -134,16 +143,36 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+  const activeBanners = Array.isArray(bannerListWrapper) ? bannerListWrapper.filter(b => b.Status === "Active") : [];
+  // Add this function inside your component
+  const getBannerIcon = (iconClass, colorCode) => {
+    switch(iconClass) {
+      case 'ti-alert':
+        return <AlertTriangle size={18} color={colorCode} />;
+      case 'ti-check':
+        return <CheckCircle size={18} color={colorCode} />;
+      case 'ti-info-alt':
+      case 'ti-info-circle':
+        return <Info size={18} color={colorCode} />;
+      case 'ti-exclamation-circle':
+        return <AlertCircle size={18} color={colorCode} />;
+      case 'ti-times':
+        return <XCircle size={18} color={colorCode} />;
+      default:
+        return <Info size={18} color={colorCode} />;
+    }
+  };
   return (
-    <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
-      {/* Left Side: Menu & Logo */}
-      <div className="flex gap-4 items-center">
-        <button
-          className="menu-toggle block p-0 bg-transparent border-none focus:outline-none"
-          onClick={toggleMobileMenu}
-        >
-          <IoMenu size={24} color="black" />
-        </button>
+    <>
+      <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
+        {/* Left Side: Menu & Logo */}
+        <div className="flex gap-4 items-center">
+          <button
+            className="menu-toggle block p-0 bg-transparent border-none focus:outline-none"
+            onClick={toggleMobileMenu}
+          >
+            <IoMenu size={24} color="black" />
+          </button>
 
         <div className="flex justify-center" onClick={handleLogoClick}>
           <img
@@ -360,23 +389,42 @@ const Header = ({ toggleMobileMenu }) => {
             </div>
           </div>
 
-          {/* Dropdown Menu */}
-          {dropdownVisible && (
-            <div className="dropdown-menu-custom absolute right-0 mt-3 p-4 shadow-md border border-gray-100 bg-white rounded-md min-w-[150px] z-50">
-              <div className="text-center mb-3">
-                <strong className="text-gray-800">{UserName}</strong>
+            {/* Dropdown Menu */}
+            {dropdownVisible && (
+              <div className="dropdown-menu-custom absolute right-0 mt-3 p-4 shadow-md border border-gray-100 bg-white rounded-md min-w-[150px] z-50">
+                <div className="text-center mb-3">
+                  <strong className="text-gray-800">{UserName}</strong>
+                </div>
+                <button
+                  className="logout-btn w-full mt-2 text-center rounded bg-red-500 hover:bg-red-600 text-white py-2 px-4 transition-colors"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
               </div>
-              <button
-                className="logout-btn w-full mt-2 text-center rounded bg-red-500 hover:bg-red-600 text-white py-2 px-4 transition-colors"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
-      </div>
-    </header>
+      </header>
+      {activeBanners.length > 0 && (
+  <div className="running-banner">
+    <div className="running-banner-content">
+      {[...activeBanners, ...activeBanners, ...activeBanners, ...activeBanners].map((banner, i) => (
+        <span key={i} className="running-banner-item">
+          {/* Replace <i> tag with React icon */}
+          <span className="mr-2 inline-block">
+            {getBannerIcon(banner.IconClass, banner.ColorCode)}
+          </span>
+          <span className="text-gray-700 font-semibold mr-1">
+            {banner.Type_Name}:
+          </span>
+          <span className="text-gray-600">{banner.MessageText}</span>
+        </span>
+      ))}
+    </div>
+  </div>
+)}
+    </>
   );
 };
 

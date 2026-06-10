@@ -63,6 +63,10 @@ export const ROUTE_KEYS = {
   EMPLOYEE_LIST:   "employee.list",
   EMPLOYEE_CREATE: "employee.create",
   EMPLOYEE_EDIT:   "employee.edit",
+
+  BANNER_LIST:"banner.list",
+  BANNER_CREATE:"banner.list.create",
+  BANNER_EDIT:"banner.list.edit",
 };
 
 export const PATHS = {
@@ -114,4 +118,8 @@ export const PATHS = {
   EMPLOYEE_LIST:   "/employee",
   EMPLOYEE_CREATE: "/employee/create",
   EMPLOYEE_EDIT:   "/employee/:employeeId/edit",
+
+  BANNER_LIST:"/banner",
+  BANNER_CREATE:"/banner/create",
+  BANNER_EDIT:"/banner/:BannerMessageId/edit",
 };

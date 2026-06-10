@@ -132,6 +132,7 @@ const handleCalendarSelect = (newValue, selectionState) => {
         }}
         onClick={(e) => setAnchorEl(e.currentTarget)}
         onFocus={(e) => {
+          setInputText(formattedValue);
           setIsEditing(true);
           e.target.select();
         }}

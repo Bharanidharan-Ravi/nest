@@ -37,3 +37,37 @@
   color: white;
   padding: 5px;
 }
+.running-banner {
+  overflow: hidden;
+
+  background: linear-gradient(to right, #f9f9f9, #ececec);
+  border-bottom: 1px solid #ddd;
+  padding: 6px 0;
+  position: relative;
+  font-weight: 500;
+}
+
+.running-banner-content {
+  display: inline-block;
+  white-space: nowrap;
+  animation: scroll-left 25s linear infinite;  /* Slower = smoother */
+  -webkit-transform: translateZ(0);  /* GPU acceleration */
+  transform: translateZ(0);
+  will-change: transform;  /* Optimize for animation */
+}
+
+.running-banner-item {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 50px;
+  font-size: 14px;
+}
+
+@keyframes scroll-left {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

@@ -16,7 +16,6 @@ import VersionUpdateDialog from "./shared/GlobalUI/VersionUpdateDialog";
 
 function App() {
   useHeartbeat();
-
   const token = useAppStore((s) => s.token);
 
   useRealtimeSync(token);

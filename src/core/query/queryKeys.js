@@ -65,4 +65,14 @@ export const queryKeys = {
     list: () => [...queryKeys.notification.all, "list"],
     timeline: () => [...queryKeys.notification.all, "timeline"],
   },
+   BannerData: {
+    all: ["BannerData"],
+    list: () => [...queryKeys.BannerData.all, "list"],
+    detail: (id) => [...queryKeys.BannerData.all, "detail", id],
+  },
+  BannerDataType: {
+    all: ["BannerDataType"],
+    list: () => [...queryKeys.BannerDataType.all, "list"],
+    detail: (id) => [...queryKeys.BannerDataType.all, "detail", id],
+  },
 };

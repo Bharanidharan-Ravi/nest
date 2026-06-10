@@ -35,10 +35,10 @@ export const TicketFormConfig = {
         // 3. Check for Assignees or Resources (with corrected spelling)
         const hasAssignee = !!formData?.assignedTo?.value?.id; 
         const hasResources = (formData?.assignees?.length ?? 0) > 0;
-
+        const hasLabels = (formData?.labels?.length ?? 0) > 0;
         // 4. THE MANDATORY LOGIC: 
         // Must have Hours AND Due Date AND at least one person assigned
-        const isReady = hasHours && hasDueDate && (hasAssignee || hasResources);
+        const isReady = hasHours && hasDueDate && hasAssignee && hasResources && hasLabels;
 
         // Debugging logs to verify your new fields
         console.log("hasHours:", hasHours);
