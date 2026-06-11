@@ -16,14 +16,58 @@ const ALL_TABS = [
 const VIEWER_TABS = ALL_TABS.filter(t => ["open", "closed"].includes(t.key));
 
 // Generic sorting function creator
+// const createSortFn = (priorityFields = []) => (a, b) => {
+//   console.log("priorityFields",priorityFields,a, b);
+  
+//   for (let field of priorityFields) {
+//     if (a[field] !== b[field]) return a[field] ? -1 : 1;
+//     console.log("a[field] ? -1 : 1",a[field] ? -1 : 1);
+    
+//   }
+//   return new Date(b.updatedAt) - new Date(a.updatedAt);
+// };
+
+// const createSortFn = (priorityFields = []) => (a, b) => {
+//   for (let field of priorityFields) {
+//     if (a[field] !== b[field]) {
+//       return a[field] ? -1 : 1;
+//     }
+//   }
+//   // fallback to updatedAt descending
+//   return new Date(b.updatedAt) - new Date(a.updatedAt);
+// };
+
+// // Pre-create sort functions
+// const fullCustomSortFn = createSortFn([
+//   "priorityRequest",
+//   "isCloseRequested",
+//   "AdminResponse",
+//   "funcResponse",
+//   "TechnicalResponse",
+//   "WebResponse",
+// ]);
+
+const fieldMap = {
+  priorityRequest: "priorityRequest",
+  isCloseRequested: "isCloseRequested",
+  AdminResponse: "adminResponse",
+  funcResponse: "funcResponse",
+  TechnicalResponse: "technicalResponse",
+  WebResponse: "webResponse",
+};
+
 const createSortFn = (priorityFields = []) => (a, b) => {
   for (let field of priorityFields) {
-    if (a[field] !== b[field]) return a[field] ? -1 : 1;
+    const key = fieldMap[field]; // get actual property from object
+    if (a[key] !== b[key]) {
+      return a[key] ? -1 : 1; // true first
+    }
   }
+  // fallback to updatedAt descending
   return new Date(b.updatedAt) - new Date(a.updatedAt);
 };
 
-// Pre-create sort functions
+// Pre-create sort functions in your exact desired order
 const fullCustomSortFn = createSortFn([
   "priorityRequest",
   "isCloseRequested",

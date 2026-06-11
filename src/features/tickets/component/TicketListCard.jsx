@@ -373,16 +373,19 @@ export default function TicketListCard({
                     <span className="created-key">
                       Created {dayjs(item.createdAt).fromNow()}
                     </span>
-                  </Tooltip>
+                  </Tooltip><span className="meta-divider">•</span>{item.TicketCreater}
                 </div>
               )}
               {!isViewer && (
+                <>
                 <>
                   <div className="ticket-repo-info">
                     {mainAssignee && (
                       <span>Owner: {mainAssignee.Assignee_Name}</span>
                     )}
                   </div>
+                 
+                  </> 
                   {/* Assignees Avatars */}
                   <div className="ticket-assignees">
                     {uniqueAssignees.slice(0, 3).map((a) => (

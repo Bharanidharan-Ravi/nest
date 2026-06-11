@@ -13,18 +13,19 @@ const Bannerlist = ({ item }) => {
     ) : null;
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex items-center">
-        {statusIcon && <span className="mr-2">{statusIcon}</span>}
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        {statusIcon && <span className="flex-shrink-0">{statusIcon}</span>}
 
         <h6 className="text-ghBlue font-semibold text-sm m-0">{item.Type_Name}</h6>
-        <span className="mx-1">.</span>
+        <span className="text-ghMuted">·</span>
         <h3 className="text-ghBlue font-semibold text-sm m-0">{item.MessageText}</h3>
       </div>
-      {/* <p className="text-ghMuted text-sm">{item.owner}</p> */}
-      <p className="flex items-center">
-        
-        <div>{dayjs(item.StartDate).format("DD/MM/YYYY")}</div><span>-</span><div>{dayjs(item.EndDate).format("DD/MM/YYYY")}</div>
+
+      <p className="flex items-center gap-2 text-ghMuted text-xs m-0">
+        <span>{dayjs(item.StartDate).format("DD/MM/YYYY")}</span>
+        <span className="text-ghMuted">-</span>
+        <span>{dayjs(item.EndDate).format("DD/MM/YYYY")}</span>
       </p>
     </div>
   );

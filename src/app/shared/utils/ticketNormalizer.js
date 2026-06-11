@@ -35,8 +35,10 @@ export const normalizeTicket = (ticket) => ({
     adminResponse : ticket.AdminResponse,
     clientTime: ticket.Client,
     webTime: ticket.Web,
+    TicketCreater:ticket.TicketCreater,
     technicalTime: ticket.Technical,
     functionalTime: ticket.Functional,
     raiseToClient: ticket.RaiseToClient,
-    commenttext:ticket.commenttext
+    commenttext:ticket.commenttext,
+    threadCount: ticket.ThreadCount,
 });

@@ -118,21 +118,14 @@ const ParentTicketHeader = ({
       [id]: !prev[id],
     }));
   };
-const getStatusStyle = (StatusId) => {
-  switch (StatusId) {
-    case 15:
-      return { label: "Closed", color: "text-red-600" };
-
-    case 18:
-      return { label: "In Queue", color: "text-yellow-800" };
-
-    case 14:
-      return { label: "On Hold", color: "text-orange-800" };
-
-    default:
-      return { label: "Open", color: "text-green-600" };
+const getStatusStyle=(StatusId)=>{
+  switch(StatusId){
+    case 15:return{label:"Closed",color:"text-red-600"}
+    case 19:return{label:"In Queue", color: " text-yellow-800"}
+    case 14:return{label:"On Hold",color: "text-orange-800"}
+    default:return null;
   }
-};
+}
 
   return (
     <>
@@ -190,7 +183,7 @@ const getStatusStyle = (StatusId) => {
               {mainAssignee && (
                 <>
                   <span className="opacity-40">•</span>
-                  {!isViewer && (
+                  {!isViewer && (<>
                     <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 shadow-sm">
                       <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">
                         Owner:
@@ -199,6 +192,15 @@ const getStatusStyle = (StatusId) => {
                         {mainAssignee.Assignee_Name}
                       </span>
                     </div>
+                    <div className="flex items-center gap-1.5 bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md border border-blue-100 shadow-sm">
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">
+                        Created:
+                      </span>
+                      <span className="text-xs font-bold">
+                        {parentTicket.TicketCreater}
+                      </span>
+                    </div>
+                    </>
                   )}
                 </>
               )}

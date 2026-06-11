@@ -487,6 +487,13 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     apiKey: "Client",
     colSpan: 2,
+    disableWhen: (context) => {
+      // Disable if entityData.webTime exists AND user is NOT admin
+      const hasWebTime = context?.entityData?.clientTime!= null; // safer check
+      const notAdmin = !context?.isAdmin;
+      return hasWebTime && notAdmin;
+    },
+    forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.clientTime : "",
     visibleWhen: (formData, context) => {
@@ -505,7 +512,12 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     apiKey: "Functional",
     colSpan: 2,
-
+    disableWhen: (context) => {
+      // Disable if entityData.webTime exists AND user is NOT admin
+      const hasWebTime = context?.entityData?.functionalTime != null; // safer check
+      const notAdmin = !context?.isAdmin;
+      return hasWebTime && notAdmin;
+    },  forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.functionalTime : "",
     visibleWhen: (formData, context) => {
@@ -530,6 +542,12 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     apiKey: "Web",
     colSpan: 2,
+    disableWhen: (context) => {
+      // Disable if entityData.webTime exists AND user is NOT admin
+      const hasWebTime = context?.entityData?. webTime != null; // safer check
+      const notAdmin = !context?.isAdmin;
+      return hasWebTime && notAdmin;
+    },  forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.webTime : "",
     visibleWhen: (formData, context) => {
@@ -548,7 +566,13 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     apiKey: "Technical",
     colSpan: 2,
-
+    
+    disableWhen: (context) => {
+      // Disable if entityData.webTime exists AND user is NOT admin
+      const hasWebTime = context?.entityData?.technicalTime != null; // safer check
+      const notAdmin = !context?.isAdmin;
+      return hasWebTime && notAdmin;
+    },  forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.technicalTime : "",
     visibleWhen: (formData, context) => {

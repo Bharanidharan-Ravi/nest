@@ -326,14 +326,8 @@ export const MeetinglFieldConfig = () => [
     colSpan: 6,
     dataType: "string",
     apiKey: "host_id",
-    // optionsResolver: buildOptionsResolver(
-    //   "EmployeeList",
-    //   "UserID",
-    //   "UserName",
-    //   (user) => user.Status === "Active",
-    // ),
-    optionsResolver: ({ masterData, context }) => {
-      // 1. EmployeeList options (from buildOptionsResolver logic)
+    optionsResolver: ({ masterData, formData }) => {
+      // 1. Employee options
       const employeeOptions =
         (masterData?.EmployeeList || [])
           .filter((user) => user.Status === "Active")
@@ -344,18 +338,16 @@ export const MeetinglFieldConfig = () => [
               name: user.UserName,
             },
           })) || [];
-    
-      // 2. RepoList derived options
+
+      // 2. Repo (client) options
       const repoOptions =
         (masterData?.RepoList || []).flatMap((repo) => {
           let users = [];
-    
           try {
             users = JSON.parse(repo.RepoUserList || "[]");
           } catch (e) {
             users = [];
           }
-    
           return users
             .filter((user) => user.Status === "Active")
             .map((user) => ({
@@ -366,14 +358,17 @@ export const MeetinglFieldConfig = () => [
               },
             }));
         });
-      // 3. Merge both
-      const combined = [...employeeOptions, ...repoOptions];
-      const uniqueMap = new Map();
-      combined.forEach((opt) => {
-        uniqueMap.set(opt.value.id, opt);
-      });
-      return Array.from(uniqueMap.values());
+
+      // 3. Return based on selected host type
+      const selectedType = formData?.host_Type?.value?.id;
+
+      if (selectedType === "Employee") return employeeOptions;
+      if (selectedType === "Client") return repoOptions;
+
+      // Default empty if no type selected
+      return [];
     },
+    // visibleWhen: (formData) => !!formData?.host_Type,
   },
   {
     name: "recurrence_type",
@@ -388,10 +383,12 @@ export const MeetinglFieldConfig = () => [
       { label: "Daily", value: { id: "DAILY", name: "daily" } },
       { label: "Weekly", value: { id: "WEEKLY", name: "weekly" } },
     ],
-    // initValueResolver: ({ context }) => {
-    //   // If editing, use existing value; otherwise default to "onetime"
-    //   return  "onetime"
-    // },
+    initValueResolver: ({ context }) => {
+      return { 
+        label: "One Time", 
+        value: { id: "ONETIME", name: "onetime" } 
+      };
+    },
   },
   {
     label: "Meeting title",
@@ -400,11 +397,9 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     required: true,
     dataType: "string",
-    // customComponent:FileAttachmentInput,
     apiKey: "title",
-    // fullWidth: true,
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.title ?? "" : "",
+
+   
   },
   {
     label: "Meeting Date",
@@ -418,8 +413,20 @@ export const MeetinglFieldConfig = () => [
     visibleWhen: (formData, context) => {
       return formData?.recurrence_type?.value?.id === "ONETIME";
     },
-    // initValueResolver: ({ context }) =>
-    //   context.isEdit ? context.entityData?.valid_from_date ?? "" : "",
+    initValueResolver: ({ context, formData }) => {
+      const type = formData?.recurrence_type?.value?.id;
+    
+      if (type === "ONETIME") {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+    
+        return today;
+      }
+    
+      return "";
+    }
   },
   {
     label: "Validate From",
@@ -489,7 +496,7 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     apiKey: "days_of_week",
     dataType: "string",
-    fullWidth:true,
+    fullWidth: true,
     required: true,
     options: [
       { label: "Sun", value: { id: 0, name: "Sunday" } },
@@ -596,8 +603,8 @@ export const MeetinglFieldConfig = () => [
     apiKey: "slot_duration",
     // fullWidth: true,
 
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.slot_duration ?? "" : "",
+    // initValueResolver: ({ context }) =>
+    //   context.isEdit ? context.entityData?.slot_duration ?? "" : "",
   },
   {
     label: "Project",
@@ -614,8 +621,20 @@ export const MeetinglFieldConfig = () => [
       "Id", // 2. idKey
       "Project_Name", // 3. labelKey
     ),
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.project_id ?? "" : "",
+    initValueResolver: ({ context, masterData, formData }) => {
+      const ticketId = formData?.ticket?.value?.id;
+
+      const projectId = context?.TicketMaster
+        ?.find(t => t.Issue_Id === ticketId)
+        ?.Project_Id;
+      const project = masterData?.ProjectList
+        ?.find(p => p.Id === projectId);
+
+      return project && {
+        label: project.Project_Name,
+        value: { id: project.Id, name: project.Project_Name },
+      };
+    },
 
     customFilter: (item, selectedValue) => {
       if (!selectedValue) return true;
@@ -630,7 +649,6 @@ export const MeetinglFieldConfig = () => [
       if (selectedValue === "__no_owner__") {
         return !item.assignedTo || item.assignedTo === "" || item.assignedTo === null
       }
-
       return false;
     },
   },

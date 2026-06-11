@@ -164,8 +164,22 @@ export const ThreadFormConfig = {
           ),
           className:
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
-          onClick: ({ submitForm }) =>
-            submitForm({ IsReopenRequest: true }),
+            onClick: ({ submitForm, formData,setErrors }) =>{
+              const errors={};
+              const percentage=formData?.TicketOverallPercentage
+              const summary=stripHtml(formData?.TicketStatusSummary)
+              if(!percentage||Number(percentage)<0){
+                errors.TicketOverallPercentage="Overall progress must be 100% before reopen"
+              }
+              if(!summary){
+                errors.TicketStatusSummary="Status Summary mandatory before reopen"
+              }
+              if (Object.keys(errors).length>0){
+                setErrors(prev=>({...prev,...errors}))
+                return
+              }
+              submitForm({ IsReopenRequest: true })},
+           
         },
       ];
     }

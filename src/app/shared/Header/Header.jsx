@@ -20,7 +20,7 @@ import {
 import { useNotificationStore } from "../../../core/state/useNotificationStore";
 import { useBannerMessage } from "../../../features/BannerMessage/hooks/useBannerdata";
 import { banner } from "../../../features/BannerMessage/elements";
-import { 
+import {
   AlertTriangle,
   CheckCircle,
   Info,
@@ -30,7 +30,7 @@ import {
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
-import dayjs from "dayjs";
+import dayjs, { Dayjs } from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
 import relativeTime from "dayjs/plugin/relativeTime";
 
@@ -146,7 +146,7 @@ const Header = ({ toggleMobileMenu }) => {
   const activeBanners = Array.isArray(bannerListWrapper) ? bannerListWrapper.filter(b => b.Status === "Active") : [];
   // Add this function inside your component
   const getBannerIcon = (iconClass, colorCode) => {
-    switch(iconClass) {
+    switch (iconClass) {
       case 'ti-alert':
         return <AlertTriangle size={18} color={colorCode} />;
       case 'ti-check':
@@ -162,6 +162,7 @@ const Header = ({ toggleMobileMenu }) => {
         return <Info size={18} color={colorCode} />;
     }
   };
+  console.log("banner", activeBanners);
   return (
     <>
       <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
@@ -174,47 +175,47 @@ const Header = ({ toggleMobileMenu }) => {
             <IoMenu size={24} color="black" />
           </button>
 
-        <div className="flex justify-center" onClick={handleLogoClick}>
-          <img
-            src={workglowlogo}
-            alt="Logo"
-            className="inline-block align-top w-[100px]"
-          />
-        </div>
-      </div>
-
-      {!isViewer && (
-        <div>
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button
-              onClick={handleTicket}
-              className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
-            >
-              Tickets
-            </button>
-
-            <button
-              onClick={handleProject}
-              className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
-            >
-              Projects
-            </button>
+          <div className="flex justify-center" onClick={handleLogoClick}>
+            <img
+              src={workglowlogo}
+              alt="Logo"
+              className="inline-block align-top w-[100px]"
+            />
           </div>
         </div>
-      )}
-      {/* Right Side: Breadcrumbs & User Profile */}
-      <div className="flex items-center gap-4">
-        <Breadcrumbs />
-        {/* {!isViewer && ( */}
-        <div className="relative cursor-pointer" ref={notificationRef}>
-          <IoNotificationsOutline
-            size={24}
-            onClick={() => setShowNotifications((prev) => !prev)}
-          />
 
-          {count > 0 && (
-            <span
-              className="
+        {!isViewer && (
+          <div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button
+                onClick={handleTicket}
+                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
+              >
+                Tickets
+              </button>
+
+              <button
+                onClick={handleProject}
+                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
+              >
+                Projects
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Right Side: Breadcrumbs & User Profile */}
+        <div className="flex items-center gap-4">
+          <Breadcrumbs />
+          {/* {!isViewer && ( */}
+          <div className="relative cursor-pointer" ref={notificationRef}>
+            <IoNotificationsOutline
+              size={24}
+              onClick={() => setShowNotifications((prev) => !prev)}
+            />
+
+            {count > 0 && (
+              <span
+                className="
                   absolute
                   -top-2
                   -right-2
@@ -229,14 +230,14 @@ const Header = ({ toggleMobileMenu }) => {
                   justify-center
                   px-1
                 "
-            >
-              {count > 99 ? "99+" : count}
-            </span>
-          )}
+              >
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
 
-          {showNotifications && (
-            <div
-              className="
+            {showNotifications && (
+              <div
+                className="
                   absolute
                   right-0
                   top-12
@@ -249,13 +250,13 @@ const Header = ({ toggleMobileMenu }) => {
                   z-50
                   overflow-hidden
                 "
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-                <h3 className="font-semibold text-sm">Notifications</h3>
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                  <h3 className="font-semibold text-sm">Notifications</h3>
 
-                <span
-                  className="
+                  <span
+                    className="
                       bg-blue-100
                       text-blue-600
                       text-[10px]
@@ -263,18 +264,18 @@ const Header = ({ toggleMobileMenu }) => {
                       py-0.5
                       rounded-full
                     "
-                >
-                  {count || 0}
-                </span>
-              </div>
+                  >
+                    {count || 0}
+                  </span>
+                </div>
 
-              {/* Body */}
-              <div className="max-h-[300px] overflow-y-auto">
-                {notificationList?.length > 0 ? (
-                  notificationList.map((item) => (
-                    <div
-                      key={item.id}
-                      className="
+                {/* Body */}
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notificationList?.length > 0 ? (
+                    notificationList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="
                           px-4
                           py-2.5
                           border-b
@@ -282,59 +283,59 @@ const Header = ({ toggleMobileMenu }) => {
                           cursor-pointer
                           transition
                         "
-                      onClick={() => {
-                        goTo(ROUTE_KEYS.TICKET_DETAIL, {
-                          ticketId: item.entityId,
-                        });
-                        setShowNotifications(false); // Close the dropdown after navigating
-                      }}
-                    >
-                      <div className="font-medium text-sm text-gray-800 truncate">
-                        {item.title}
-                      </div>
+                        onClick={() => {
+                          goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                            ticketId: item.entityId,
+                          });
+                          setShowNotifications(false); // Close the dropdown after navigating
+                        }}
+                      >
+                        <div className="font-medium text-sm text-gray-800 truncate">
+                          {item.title}
+                        </div>
 
-                      <div className="text-xs text-gray-500 mt-1 truncate">
-                        {item.message}
-                      </div>
+                        <div className="text-xs text-gray-500 mt-1 truncate">
+                          {item.message}
+                        </div>
 
-                      <span className="text-xs text-gray-400">
-                        {dayjs(item?.createdAt).fromNow()}
-                      </span>
+                        <span className="text-xs text-gray-400">
+                          {dayjs(item?.createdAt).fromNow()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      No notifications found
                     </div>
-                  ))
-                ) : (
-                  <div className="p-8 text-center text-gray-500">
-                    No notifications found
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Footer */}
-              <div
-                className="
+                {/* Footer */}
+                <div
+                  className="
           border-t
           bg-gray-50
           p-3
         "
-              >
-                <button
-                  onClick={handleViewAllNotifications}
-                  className="
+                >
+                  <button
+                    onClick={handleViewAllNotifications}
+                    className="
             w-full
             text-blue-600
             font-medium
             text-sm
             hover:text-blue-700
           "
-                >
-                  View All Notifications →
-                </button>
+                  >
+                    View All Notifications →
+                  </button>
+                </div>
               </div>
-            </div>
-          )}
-        </div>
-        {/* )} */}
-        {/* {showNotifications && (
+            )}
+          </div>
+          {/* )} */}
+          {/* {showNotifications && (
           <div
             className="
             absolute
@@ -369,25 +370,25 @@ const Header = ({ toggleMobileMenu }) => {
             ))}
           </div>
         )} */}
-        {/* Dropdown Container (Needs 'relative' for absolute positioning of the menu) */}
-        <div className="relative" ref={dropdownRef}>
-          <div
-            className="userheader flex items-center cursor-pointer"
-            onClick={handleIconClick}
-          >
-            {/* Avatar Circle */}
-            <div className="avatar-circle flex justify-center items-center w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-semibold select-none">
-              {Avatar ? (
-                <img
-                  src={Avatar}
-                  alt="User Avatar"
-                  className="w-full h-full object-cover rounded-full"
-                />
-              ) : (
-                firstLetter
-              )}
+          {/* Dropdown Container (Needs 'relative' for absolute positioning of the menu) */}
+          <div className="relative" ref={dropdownRef}>
+            <div
+              className="userheader flex items-center cursor-pointer"
+              onClick={handleIconClick}
+            >
+              {/* Avatar Circle */}
+              <div className="avatar-circle flex justify-center items-center w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-semibold select-none">
+                {Avatar ? (
+                  <img
+                    src={Avatar}
+                    alt="User Avatar"
+                    className="w-full h-full object-cover rounded-full"
+                  />
+                ) : (
+                  firstLetter
+                )}
+              </div>
             </div>
-          </div>
 
             {/* Dropdown Menu */}
             {dropdownVisible && (
@@ -406,104 +407,37 @@ const Header = ({ toggleMobileMenu }) => {
           </div>
         </div>
       </header>
-      {activeBanners.length > 0 && (
-  <div className="running-banner">
-    <div className="running-banner-content">
-      {[...activeBanners, ...activeBanners, ...activeBanners, ...activeBanners].map((banner, i) => (
-        <span key={i} className="running-banner-item">
-          {/* Replace <i> tag with React icon */}
-          <span className="mr-2 inline-block">
-            {getBannerIcon(banner.IconClass, banner.ColorCode)}
-          </span>
-          <span className="text-gray-700 font-semibold mr-1">
-            {banner.Type_Name}:
-          </span>
-          <span className="text-gray-600">{banner.MessageText}</span>
-        </span>
-      ))}
-    </div>
-  </div>
-)}
+      {!isViewer && activeBanners.length > 0 && (
+        <div className="running-banner">
+          <div className="running-banner-content">
+            {
+              // Filter banners: only show if EndDate >= current date
+              activeBanners
+                .filter((banner) => dayjs(banner.EndDate)>= dayjs())
+                .length > 0 &&
+              ([
+                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
+                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
+                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
+                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
+              ]).map((banner, i) => (
+                <span key={i} className="running-banner-item">
+                  {/* Replace <i> tag with React icon */}
+                  <span className="mr-2 inline-block">
+                    {getBannerIcon(banner.IconClass, banner.ColorCode)}
+                  </span>
+                  <span className="text-gray-700 font-semibold mr-1">
+                    {banner.Type_Name}:
+                  </span>
+                  <span className="text-gray-600">{banner.MessageText}</span>
+                </span>
+              ))
+      }
+          </div>
+        </div>
+      )}
     </>
   );
 };
 
 export default Header;
-
-//anbu
-
-// const Header = ({ toggleMobileMenu }) => {
-//   const navigate = useNavigate();
-//   const user = readUserFromSession();
-
-//   const UserName = user?.name || "Test";
-//   const [dropdownVisible, setDropdownVisible] = useState(false);
-
-//   const handleIconClick = () => {
-//     setDropdownVisible((prev) => !prev);
-//   };
-
-//   const handleLogout = () => {
-//     logoutUser();
-//     navigate("/");
-//   };
-
-//   const firstLetter = UserName.charAt(0).toUpperCase();
-
-//   return (
-//     <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
-//       {/* Left Side: Menu & Logo */}
-//       <div className="flex gap-4 items-center">
-//         <button
-//           className="menu-toggle block p-0 bg-transparent border-none focus:outline-none"
-//           onClick={toggleMobileMenu}
-//         >
-//           <IoMenu size={24} color="black" />
-//         </button>
-
-//         <div className="flex justify-center">
-//           <img
-//             src={workglowlogo}
-//             alt="Logo"
-//             className="inline-block align-top w-[100px]"
-//           />
-//         </div>
-//       </div>
-
-//       {/* Right Side: Breadcrumbs & User Profile */}
-//       <div className="flex items-center gap-4">
-//         <Breadcrumbs />
-
-//         {/* Dropdown Container (Needs 'relative' for absolute positioning of the menu) */}
-//         <div className="relative">
-//           <div
-//             className="userheader flex items-center cursor-pointer"
-//             onClick={handleIconClick}
-//           >
-//             {/* Avatar Circle */}
-//             <div className="avatar-circle flex justify-center items-center w-10 h-10 rounded-full bg-gray-200 text-gray-700 font-semibold select-none">
-//               {firstLetter}
-//             </div>
-//           </div>
-
-//           {/* Dropdown Menu */}
-//           {dropdownVisible && (
-//             <div className="dropdown-menu-custom absolute right-0 mt-3 p-4 shadow-md border border-gray-100 bg-white rounded-md min-w-[150px] z-50">
-//               <div className="text-center mb-3">
-//                 <strong className="text-gray-800">{UserName}</strong>
-//               </div>
-//               <button
-//                 className="logout-btn w-full mt-2 text-center rounded bg-red-500 hover:bg-red-600 text-white py-2 px-4 transition-colors"
-//                 onClick={handleLogout}
-//               >
-//                 Logout
-//               </button>
-//             </div>
-//           )}
-//         </div>
-//       </div>
-//     </header>
-//   );
-// };
-
-// export default Header;
