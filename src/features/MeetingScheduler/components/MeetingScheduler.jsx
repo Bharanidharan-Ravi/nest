@@ -613,6 +613,7 @@ function MeetingCard({ event, onClick, onEdit }) {
     </div>
   );
 }
+
 function AvailabilityCard({ event }) {
   const colors = BOOKING_COLORS.Availability;
   return (
