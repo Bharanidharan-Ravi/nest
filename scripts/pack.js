@@ -11,11 +11,11 @@ const backupDir = 'D:/live work/WGNestPack/backup/codemanual';
 // 2. Configuration for paths and ignores
 const config = {
     ui: {
-        source: 'D:/live work/WGNestPack/WG-Nest-pack/src',
+        source: 'D:\\live work\\Tootist\\ui',
         ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**', '**/.git/**']
     },
     api: {
-        source: 'D:/live work/Github/API/WGNestAPIGateway',
+        source: 'D:\\live work\\Tootist\\api',
         ignore: ['**/bin/**', '**/obj/**', '**/.git/**']
     }
 };

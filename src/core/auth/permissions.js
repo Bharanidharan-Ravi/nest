@@ -61,6 +61,10 @@ export const ROUTE_ROLES = {
   // ── Labels & Employees (all roles can VIEW) ──────────────────────────
   LABEL_LIST:       ADMIN_MANAGER,
   EMPLOYEE_LIST:    ADMIN_MANAGER,
+
+  BANNER_LIST: ADMIN_ONLY,
+  BANNER_CREATE: ADMIN_ONLY,
+  BANNER_EDIT: ADMIN_ONLY,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────
