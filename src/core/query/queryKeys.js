@@ -75,4 +75,8 @@ export const queryKeys = {
     list: () => [...queryKeys.BannerDataType.all, "list"],
     detail: (id) => [...queryKeys.BannerDataType.all, "detail", id],
   },
+  MeetingData: {
+    all:   ["MeetingData"],
+    list:  (Employee_Id) => [...queryKeys.MeetingData.all, "list",Employee_Id],
+  }
 };

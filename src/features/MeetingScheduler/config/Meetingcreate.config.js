@@ -421,8 +421,7 @@ export const MeetinglFieldConfig = () => [
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, "0");
         const dd = String(today.getDate()).padStart(2, "0");
-    
-        return today;
+        return `${yyyy}-${mm}-${dd}`;
       }
     
       return "";
@@ -621,14 +620,14 @@ export const MeetinglFieldConfig = () => [
       "Id", // 2. idKey
       "Project_Name", // 3. labelKey
     ),
-    initValueResolver: ({ context, masterData, formData }) => {
+    initValueResolver: ({ context, masterData, formData }) =>{
       const ticketId = formData?.ticket?.value?.id;
 
       const projectId = context?.TicketMaster
         ?.find(t => t.Issue_Id === ticketId)
         ?.Project_Id;
       const project = masterData?.ProjectList
-        ?.find(p => p.Id === projectId);
+        ?.find(p => p.Id === projectId)
 
       return project && {
         label: project.Project_Name,
