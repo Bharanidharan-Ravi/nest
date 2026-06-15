@@ -9,6 +9,7 @@ import { ListFilters } from "./ListFilters";
 import { ListGraphView } from "./ListGraphView";
 import TimesheetTree from "../../../features/dashboard/component/TimesheetTree";
 import { useMemo } from "react";
+import MeetingSchedular from "../../../features/MeetingScheduler/components/MeetingScheduler";
 
 export function ListLayout({ className }) {
   const { view, config} = useList();
@@ -20,6 +21,7 @@ export function ListLayout({ className }) {
   const renderView = () => {
     if (view === "graph") return <ListGraphView />;
     if (view === "table") return <ListTableView />;
+    if (view === "Scheduler") return <MeetingSchedular />;
     return <ListCardView/>;
   };
 

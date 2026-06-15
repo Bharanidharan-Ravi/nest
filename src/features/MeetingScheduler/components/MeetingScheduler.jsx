@@ -1909,7 +1909,7 @@ dayjs.extend(isSameOrAfter);
 
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const HOURS = Array.from({ length: 9 }, (_, i) => i + 10); // 7 AM – 3 PM
+const HOURS = Array.from({ length: 9 }, (_, i) => i + 9); // 7 AM – 3 PM
 
 
 const BOOKING_COLORS = {

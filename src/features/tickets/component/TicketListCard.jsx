@@ -373,7 +373,8 @@ export default function TicketListCard({
                     <span className="created-key">
                       Created {dayjs(item.createdAt).fromNow()}
                     </span>
-                  </Tooltip><span className="meta-divider">•</span>{item.TicketCreater}
+                  </Tooltip>
+                 {!isViewer && <div> <span className="meta-divider">•</span>{item.TicketCreater}</div>}
                 </div>
               )}
               {!isViewer && (

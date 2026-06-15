@@ -25,14 +25,15 @@ import {
   CheckCircle,
   Info,
   AlertCircle,
-  XCircle
-} from 'lucide-react';
+  XCircle,
+} from "lucide-react";
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import dayjs, { Dayjs } from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useMemo } from "react";
 
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
@@ -52,7 +53,13 @@ const Header = ({ toggleMobileMenu }) => {
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
-  const { data: bannerListWrapper } = useBannerMessage()
+  const { data: bannerListWrapper } = useBannerMessage();
+  const bannerContainerRef = useRef(null);
+  const bannerTrackRef = useRef(null);
+
+  const [repeatedBanners, setRepeatedBanners] = useState([]);
+  const [animationDuration, setAnimationDuration] = useState(40);
+
   const markSeen = async () => {
     try {
       await executeApi({
@@ -143,26 +150,92 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const activeBanners = Array.isArray(bannerListWrapper) ? bannerListWrapper.filter(b => b.Status === "Active") : [];
+  const activeBanners = useMemo(() => {
+    return Array.isArray(bannerListWrapper)
+      ? bannerListWrapper.filter((b) => b.Status === "Active")
+      : [];
+  }, [bannerListWrapper]);
   // Add this function inside your component
   const getBannerIcon = (iconClass, colorCode) => {
     switch (iconClass) {
-      case 'ti-alert':
+      case "ti-alert":
         return <AlertTriangle size={18} color={colorCode} />;
-      case 'ti-check':
+      case "ti-check":
         return <CheckCircle size={18} color={colorCode} />;
-      case 'ti-info-alt':
-      case 'ti-info-circle':
+      case "ti-info-alt":
+      case "ti-info-circle":
         return <Info size={18} color={colorCode} />;
-      case 'ti-exclamation-circle':
+      case "ti-exclamation-circle":
         return <AlertCircle size={18} color={colorCode} />;
-      case 'ti-times':
+      case "ti-times":
         return <XCircle size={18} color={colorCode} />;
       default:
         return <Info size={18} color={colorCode} />;
     }
   };
-  console.log("banner", activeBanners);
+  const now = useMemo(() => dayjs(), []);
+
+  const filteredBanners = useMemo(() => {
+    return activeBanners.filter((banner) => dayjs(banner.EndDate).isAfter(now));
+  }, [activeBanners, now]);
+  
+  useEffect(() => {
+    if (!filteredBanners.length) {
+      setRepeatedBanners([]);
+      return;
+    }
+
+    const calculateTicker = () => {
+      if (!bannerContainerRef.current || !bannerTrackRef.current) return;
+
+      const containerWidth = bannerContainerRef.current.offsetWidth;
+
+      const singleSetWidth = bannerTrackRef.current.scrollWidth;
+
+      let copies = 2;
+
+      while (singleSetWidth * copies < containerWidth * 2) {
+        copies++;
+      }
+
+      const banners = [];
+
+      for (let i = 0; i < copies; i++) {
+        banners.push(...filteredBanners);
+      }
+
+      setRepeatedBanners((prev) => {
+        if (prev.length === banners.length) {
+          return prev;
+        }
+
+        return banners;
+      });
+
+      /*
+      Constant speed:
+      80 pixels per second
+    */
+      const totalDistance = singleSetWidth;
+
+      // 40 pixels per second
+      const duration = totalDistance / 40;
+
+      // Never go below 45 seconds
+      setAnimationDuration(Math.max(duration, 45));
+    };
+
+    calculateTicker();
+
+    window.addEventListener("resize", calculateTicker);
+
+    return () => {
+      window.removeEventListener("resize", calculateTicker);
+    };
+  }, [filteredBanners]);
+
+  const measurementItems =
+    repeatedBanners.length > 0 ? repeatedBanners : filteredBanners;
   return (
     <>
       <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
@@ -408,31 +481,43 @@ const Header = ({ toggleMobileMenu }) => {
         </div>
       </header>
       {!isViewer && activeBanners.length > 0 && (
-        <div className="running-banner">
-          <div className="running-banner-content">
-            {
-              // Filter banners: only show if EndDate >= current date
-              activeBanners
-                .filter((banner) => dayjs(banner.EndDate)>= dayjs())
-                .length > 0 &&
-              ([
-                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
-                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
-                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
-                ...activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs()),
-              ]).map((banner, i) => (
-                <span key={i} className="running-banner-item">
-                  {/* Replace <i> tag with React icon */}
-                  <span className="mr-2 inline-block">
-                    {getBannerIcon(banner.IconClass, banner.ColorCode)}
-                  </span>
-                  <span className="text-gray-700 font-semibold mr-1">
-                    {banner.Type_Name}:
-                  </span>
-                  <span className="text-gray-600">{banner.MessageText}</span>
+        <div className="running-banner" ref={bannerContainerRef}>
+          <div
+            className="running-banner-content"
+            style={{
+              animationDuration: `${animationDuration}s`,
+            }}
+          >
+            {repeatedBanners.map((banner, i) => (
+              <span key={i} className="running-banner-item">
+                <span className="mr-2">
+                  {getBannerIcon(banner.IconClass, banner.ColorCode)}
                 </span>
-              ))
-      }
+
+                <span className="text-gray-700 font-semibold mr-1">
+                  {banner.Type_Name}:
+                </span>
+
+                <span className="text-gray-600">{banner.MessageText}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Hidden measurement */}
+          <div ref={bannerTrackRef} className="running-banner-measure">
+            {measurementItems.map((banner, i) => (
+              <span key={i} className="running-banner-item">
+                <span className="mr-2">
+                  {getBannerIcon(banner.IconClass, banner.ColorCode)}
+                </span>
+
+                <span className="text-gray-700 font-semibold mr-1">
+                  {banner.Type_Name}:
+                </span>
+
+                <span className="text-gray-600">{banner.MessageText}</span>
+              </span>
+            ))}
           </div>
         </div>
       )}
