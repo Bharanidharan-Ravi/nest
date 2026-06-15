@@ -1,547 +1,1758 @@
 
-import dayjs from "dayjs";
-import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
-import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
-import { 
-  FaPlus, FaCalendarAlt, FaVideo, FaPhone, FaUsers, 
-  FaChevronLeft, FaChevronRight, FaClock, FaTimes, FaUser, FaEdit, FaSearch, FaEllipsisH, FaArrowDown
+// import React, { useState, useMemo, useCallback } from "react";
+// import {
+//   FaChevronLeft,
+//   FaChevronRight,
+//   FaSearch,
+//   FaBell,
+//   FaPlus,
+//   FaBars,
+//   FaRegCalendarAlt,
+//   FaClock,
+//   FaMapMarkerAlt,
+//   FaUsers,
+// } from "react-icons/fa";
+// import { useMeetingData } from "../hooks/useMeetingData";
+
+// /**
+//  * MeetingScheduler
+//  * ------------------------------------------------------------------
+//  * Standalone "WorkGlow" style scheduler module.
+//  *
+//  * IMPORTANT (data source):
+//  * Unlike <MeetingDashboard /> (the host-scoped table view which fetches
+//  * /sync/v2 with { HostId: currentUserId, FromDate, ToDate }), this module
+//  * shows the ORG-WIDE meeting calendar — it is NOT filtered by the
+//  * logged-in user. It calls the same /sync/v2 endpoint but with a
+//  * dedicated configKey ("AllMeetingsData") and no HostId, so the backend
+//  * returns every meeting the requesting user is permitted to see.
+//  *
+//  * The component only fetches the date-range it currently needs
+//  * (month / week / day) — not the whole dataset — to keep payloads small.
+//  * ------------------------------------------------------------------
+//  */
+
+// const VIEW_MODES = ["Month", "Week", "Day", "List"];
+
+// const PRIORITY_STYLES = {
+//   HIGH: "bg-rose-100 text-rose-700",
+//   MEDIUM: "bg-amber-100 text-amber-700",
+//   LOW: "bg-emerald-100 text-emerald-700",
+// };
+
+// const TYPE_STYLES = {
+//   "Team Sync": "bg-violet-100 text-violet-700",
+//   "Client Call": "bg-amber-100 text-amber-800",
+//   Review: "bg-emerald-100 text-emerald-700",
+//   Workshop: "bg-pink-100 text-pink-700",
+//   "1:1": "bg-gray-100 text-gray-700",
+// };
+
+// const STATUS_BAR_COLOR = {
+//   Upcoming: "bg-sky-50 border-l-4 border-sky-400",
+//   "In-Progress": "bg-amber-50 border-l-4 border-amber-400",
+//   Completed: "bg-emerald-50 border-l-4 border-emerald-400",
+//   Cancelled: "bg-gray-50 border-l-4 border-gray-300",
+// };
+
+// const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+// const HOURS = Array.from({ length: 11 }, (_, i) => 8 + i); // 8:00 - 18:00
+
+// const pad2 = (n) => String(n).padStart(2, "0");
+// const toISODate = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+// const isSameDay = (a, b) =>
+//   a.getFullYear() === b.getFullYear() &&
+//   a.getMonth() === b.getMonth() &&
+//   a.getDate() === b.getDate();
+
+// const startOfWeek = (date) => {
+//   const d = new Date(date);
+//   d.setDate(d.getDate() - d.getDay());
+//   d.setHours(0, 0, 0, 0);
+//   return d;
+// };
+
+// const addDays = (date, days) => {
+//   const d = new Date(date);
+//   d.setDate(d.getDate() + days);
+//   return d;
+// };
+
+// const getMonthMatrix = (date) => {
+//   const year = date.getFullYear();
+//   const month = date.getMonth();
+//   const firstOfMonth = new Date(year, month, 1);
+//   const gridStart = startOfWeek(firstOfMonth);
+
+//   const weeks = [];
+//   let cursor = new Date(gridStart);
+//   for (let w = 0; w < 6; w++) {
+//     const week = [];
+//     for (let d = 0; d < 7; d++) {
+//       week.push(new Date(cursor));
+//       cursor = addDays(cursor, 1);
+//     }
+//     weeks.push(week);
+//     // stop once we've fully covered the month and the next week starts in next month
+//     if (cursor.getMonth() !== month && week[6].getMonth() !== month) break;
+//   }
+//   return weeks;
+// };
+
+// const formatMonthYear = (date) =>
+//   date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+
+// const formatHeaderDate = (date) =>
+//   date.toLocaleDateString("en-US", {
+//     weekday: "long",
+//     day: "2-digit",
+//     month: "long",
+//     year: "numeric",
+//   });
+
+// const formatTime = (timeStr) => {
+//   if (!timeStr) return "";
+//   // expects HH:mm:ss or HH:mm
+//   return timeStr.slice(0, 5);
+// };
+
+// const parseHour = (timeStr) => {
+//   if (!timeStr) return null;
+//   const [h] = timeStr.split(":");
+//   return parseInt(h, 10);
+// };
+
+// /**
+//  * Normalize a raw meeting row from the API into the shape used by the UI.
+//  */
+// const normalizeSchedulerMeeting = (m) => ({
+//   id: m.meeting_id,
+//   title: m.title,
+//   date: m.meeting_date,
+//   startTime: m.start_time,
+//   endTime: m.end_time,
+//   status: m.status ?? "Upcoming",
+//   priority: (m.priority || "MEDIUM").toUpperCase(),
+//   type: m.booking_type || m.type || "Meeting",
+//   host: m.HostName,
+//   location: m.meet_method === "Online" ? m.meet_link : m.location || m.meet_method,
+//   participants: [
+//     ...(m.InternalParticipants || []),
+//     ...(m.ClientParticipants || []),
+//   ]
+//     .map((p) => p?.name || p?.full_name || p)
+//     .filter(Boolean),
+//   refId: m.display_id || m.ticket_id,
+// });
+
+// const PriorityBadge = ({ priority }) => (
+//   <span
+//     className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+//       PRIORITY_STYLES[priority] || PRIORITY_STYLES.MEDIUM
+//     }`}
+//   >
+//     {priority}
+//   </span>
+// );
+
+// const TypeBadge = ({ type }) => (
+//   <span
+//     className={`text-[11px] font-semibold px-2 py-0.5 rounded ${
+//       TYPE_STYLES[type] || "bg-gray-100 text-gray-700"
+//     }`}
+//   >
+//     {type}
+//   </span>
+// );
+
+// /* ------------------------------------------------------------------ */
+// /* Sidebar                                                              */
+// /* ------------------------------------------------------------------ */
+
+// const MiniCalendar = ({ activeDate, today, datesWithMeetings, onSelectDate, onPrevMonth, onNextMonth, onToday }) => {
+//   const weeks = useMemo(() => getMonthMatrix(activeDate), [activeDate]);
+
+//   return (
+//     <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+//       <div className="flex items-center justify-between mb-3">
+//         <span className="font-semibold text-sm text-gray-800">{formatMonthYear(activeDate)}</span>
+//         <div className="flex items-center gap-2 text-gray-400">
+//           <button onClick={onPrevMonth} className="hover:text-gray-700" aria-label="Previous month">
+//             <FaChevronLeft size={11} />
+//           </button>
+//           <button onClick={onToday} className="text-xs font-medium text-gray-500 hover:text-gray-800">
+//             Today
+//           </button>
+//           <button onClick={onNextMonth} className="hover:text-gray-700" aria-label="Next month">
+//             <FaChevronRight size={11} />
+//           </button>
+//         </div>
+//       </div>
+
+//       <div className="grid grid-cols-7 text-center text-[11px] text-gray-400 mb-1">
+//         {WEEKDAY_LABELS.map((d) => (
+//           <div key={d}>{d}</div>
+//         ))}
+//       </div>
+
+//       <div className="grid grid-cols-7 gap-y-1 text-center text-[12px]">
+//         {weeks.flat().map((day) => {
+//           const inMonth = day.getMonth() === activeDate.getMonth();
+//           const isToday = isSameDay(day, today);
+//           const isSelected = isSameDay(day, activeDate);
+//           const hasMeeting = datesWithMeetings.has(toISODate(day));
+
+//           return (
+//             <button
+//               key={day.toISOString()}
+//               onClick={() => onSelectDate(day)}
+//               className={`relative mx-auto flex items-center justify-center w-7 h-7 rounded-full transition
+//                 ${!inMonth ? "text-gray-300" : "text-gray-700"}
+//                 ${isSelected ? "bg-amber-400 text-gray-900 font-semibold" : ""}
+//                 ${!isSelected && isToday ? "ring-1 ring-amber-300" : ""}
+//                 ${!isSelected ? "hover:bg-gray-100" : ""}
+//               `}
+//             >
+//               {day.getDate()}
+//               {hasMeeting && !isSelected && (
+//                 <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-amber-400" />
+//               )}
+//             </button>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// };
+
+// const UpcomingMeetingCard = ({ meeting, onSelect }) => (
+//   <button
+//     onClick={() => onSelect(meeting)}
+//     className="w-full text-left rounded-lg bg-sky-50 hover:bg-sky-100 transition p-3 mb-2 border border-sky-100"
+//   >
+//     <div className="flex items-start justify-between gap-2">
+//       <p className="font-semibold text-sm text-gray-900 leading-snug">{meeting.title}</p>
+//       <span className="mt-1 w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+//     </div>
+//     <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+//       <FaClock size={10} />
+//       <span>
+//         {new Date(meeting.date).toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })}
+//         {meeting.startTime ? ` · ${formatTime(meeting.startTime)}` : ""}
+//       </span>
+//     </div>
+//     <div className="flex items-center gap-2 mt-2">
+//       <TypeBadge type={meeting.type} />
+//       <PriorityBadge priority={meeting.priority} />
+//     </div>
+//   </button>
+// );
+
+// const SchedulerSidebar = ({
+//   activeDate,
+//   today,
+//   datesWithMeetings,
+//   onSelectDate,
+//   onPrevMonth,
+//   onNextMonth,
+//   onToday,
+//   searchTerm,
+//   onSearchChange,
+//   upcomingMeetings,
+//   onSelectMeeting,
+// }) => (
+//   <aside className="w-full lg:w-[320px] border-r border-gray-100 bg-white flex flex-col h-full">
+//     <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+//       <div className="w-9 h-9 rounded-lg bg-amber-400 flex items-center justify-center text-gray-900 font-bold">
+//         W
+//       </div>
+//       <div>
+//         <p className="font-bold text-gray-900 leading-tight text-sm">WorkGlow</p>
+//         <p className="text-xs text-gray-400 leading-tight">Meeting Scheduler</p>
+//       </div>
+//     </div>
+
+//     <MiniCalendar
+//       activeDate={activeDate}
+//       today={today}
+//       datesWithMeetings={datesWithMeetings}
+//       onSelectDate={onSelectDate}
+//       onPrevMonth={onPrevMonth}
+//       onNextMonth={onNextMonth}
+//       onToday={onToday}
+//     />
+
+//     <div className="px-4 pt-3 flex items-center justify-between">
+//       <span className="font-semibold text-sm text-gray-800">Upcoming Meetings</span>
+//       <span className="text-xs text-gray-400">{upcomingMeetings.length}</span>
+//     </div>
+
+//     <div className="px-4 pt-2">
+//       <div className="relative">
+//         <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
+//         <input
+//           value={searchTerm}
+//           onChange={(e) => onSearchChange(e.target.value)}
+//           placeholder="Search meetings..."
+//           className="w-full text-sm pl-8 pr-3 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-300"
+//         />
+//       </div>
+//     </div>
+
+//     <div className="flex-1 overflow-y-auto px-4 py-3">
+//       {upcomingMeetings.length === 0 ? (
+//         <p className="text-sm text-gray-400 text-center py-6">No upcoming meetings</p>
+//       ) : (
+//         upcomingMeetings.map((m) => (
+//           <UpcomingMeetingCard key={m.id} meeting={m} onSelect={onSelectMeeting} />
+//         ))
+//       )}
+//     </div>
+//   </aside>
+// );
+
+// /* ------------------------------------------------------------------ */
+// /* Header                                                               */
+// /* ------------------------------------------------------------------ */
+
+// const SchedulerHeader = ({ activeDate, viewMode, onViewModeChange, onNewMeeting, headerLabel }) => (
+//   <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-gray-100 bg-white flex-wrap">
+//     <div className="flex items-center gap-3">
+//       <FaBars className="text-gray-400 hidden sm:block" />
+//       <div>
+//         <h2 className="text-lg font-bold text-gray-900 leading-tight">Meetings</h2>
+//         <p className="text-xs text-gray-400 leading-tight">{headerLabel}</p>
+//       </div>
+//     </div>
+
+//     <div className="flex items-center gap-3 flex-wrap">
+//       <div className="flex rounded-md border border-gray-200 overflow-hidden text-sm">
+//         {VIEW_MODES.map((mode) => (
+//           <button
+//             key={mode}
+//             onClick={() => onViewModeChange(mode)}
+//             className={`px-3 py-1.5 font-medium transition ${
+//               viewMode === mode
+//                 ? "bg-white text-gray-900 shadow-inner border-r border-gray-200 last:border-r-0"
+//                 : "bg-gray-50 text-gray-400 hover:text-gray-600 border-r border-gray-200 last:border-r-0"
+//             }`}
+//           >
+//             {mode}
+//           </button>
+//         ))}
+//       </div>
+
+//       <button className="relative text-gray-400 hover:text-gray-600">
+//         <FaBell />
+//         <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400" />
+//       </button>
+
+//       <button
+//         onClick={onNewMeeting}
+//         className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-md transition"
+//       >
+//         <FaPlus size={12} />
+//         New Meeting
+//       </button>
+//     </div>
+//   </div>
+// );
+
+// /* ------------------------------------------------------------------ */
+// /* Month View                                                           */
+// /* ------------------------------------------------------------------ */
+
+// const MonthView = ({ activeDate, today, meetingsByDate, onSelectDate, onDayClick }) => {
+//   const weeks = useMemo(() => getMonthMatrix(activeDate), [activeDate]);
+
+//   return (
+//     <div className="flex flex-col h-full">
+//       <div className="grid grid-cols-7 border-b border-gray-100 text-xs font-semibold text-gray-500">
+//         {WEEKDAY_LABELS.map((d) => (
+//           <div key={d} className="px-3 py-2 text-center uppercase tracking-wide">
+//             {d}
+//           </div>
+//         ))}
+//       </div>
+
+//       <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+//         {weeks.flat().map((day) => {
+//           const inMonth = day.getMonth() === activeDate.getMonth();
+//           const isToday = isSameDay(day, today);
+//           const isSelected = isSameDay(day, activeDate);
+//           const dayMeetings = meetingsByDate.get(toISODate(day)) || [];
+
+//           return (
+//             <button
+//               key={day.toISOString()}
+//               onClick={() => {
+//                 onSelectDate(day);
+//                 onDayClick(day);
+//               }}
+//               className={`text-left border-r border-b border-gray-100 p-2 flex flex-col gap-1 min-h-[88px] transition
+//                 ${!inMonth ? "bg-gray-50/60 text-gray-300" : "bg-white text-gray-700"}
+//                 ${isSelected ? "ring-2 ring-amber-300 z-10" : "hover:bg-gray-50"}
+//               `}
+//             >
+//               <div className="flex items-center justify-between">
+//                 <span
+//                   className={`text-sm font-medium ${
+//                     isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-amber-400 text-gray-900" : ""
+//                   }`}
+//                 >
+//                   {day.getDate()}
+//                 </span>
+//                 {dayMeetings.length > 1 && (
+//                   <span className="text-[10px] text-gray-400">{dayMeetings.length}</span>
+//                 )}
+//               </div>
+
+//               <div className="flex flex-col gap-1">
+//                 {dayMeetings.slice(0, 2).map((m) => (
+//                   <div
+//                     key={m.id}
+//                     className={`text-[11px] truncate px-1.5 py-0.5 rounded ${
+//                       STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+//                     }`}
+//                     title={m.title}
+//                   >
+//                     {m.startTime && <span className="font-semibold mr-1">{formatTime(m.startTime)}</span>}
+//                     {m.title}
+//                   </div>
+//                 ))}
+//                 {dayMeetings.length > 2 && (
+//                   <div className="text-[10px] text-gray-400 px-1.5">+{dayMeetings.length - 2} more</div>
+//                 )}
+//               </div>
+//             </button>
+//           );
+//         })}
+//       </div>
+//     </div>
+//   );
+// };
+
+// /* ------------------------------------------------------------------ */
+// /* Week View                                                            */
+// /* ------------------------------------------------------------------ */
+
+// const WeekView = ({ activeDate, today, meetingsByDate, onSelectMeeting }) => {
+//   const weekStart = useMemo(() => startOfWeek(activeDate), [activeDate]);
+//   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+//   return (
+//     <div className="flex flex-col h-full overflow-auto">
+//       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+//         <h3 className="font-semibold text-gray-800">
+//           Week of {weekStart.toLocaleDateString("en-US", { day: "2-digit", month: "short" })}
+//         </h3>
+//       </div>
+
+//       <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-gray-100 sticky top-0 bg-white z-10">
+//         <div />
+//         {days.map((day) => {
+//           const isToday = isSameDay(day, today);
+//           return (
+//             <div key={day.toISOString()} className="text-center py-2 border-l border-gray-100">
+//               <p className="text-xs text-gray-400 uppercase">{WEEKDAY_LABELS[day.getDay()]}</p>
+//               <p className={`text-sm font-semibold ${isToday ? "text-amber-500" : "text-gray-800"}`}>
+//                 {day.getDate()}
+//               </p>
+//             </div>
+//           );
+//         })}
+//       </div>
+
+//       <div className="grid grid-cols-[64px_repeat(7,1fr)]">
+//         {HOURS.map((hour) => (
+//           <React.Fragment key={hour}>
+//             <div className="text-xs text-gray-400 text-right pr-2 py-4 border-b border-gray-50">
+//               {pad2(hour)}:00
+//             </div>
+//             {days.map((day) => {
+//               const dayMeetings = (meetingsByDate.get(toISODate(day)) || []).filter(
+//                 (m) => parseHour(m.startTime) === hour
+//               );
+//               return (
+//                 <div
+//                   key={day.toISOString() + hour}
+//                   className="border-l border-b border-gray-50 min-h-[64px] p-1 relative"
+//                 >
+//                   {dayMeetings.map((m) => (
+//                     <button
+//                       key={m.id}
+//                       onClick={() => onSelectMeeting(m)}
+//                       className="w-full text-left bg-sky-100 hover:bg-sky-200 rounded-md px-2 py-1 mb-1 transition"
+//                     >
+//                       <p className="text-xs font-semibold text-gray-800 truncate">{m.title}</p>
+//                       <p className="text-[11px] text-gray-500">{formatTime(m.startTime)}</p>
+//                     </button>
+//                   ))}
+//                 </div>
+//               );
+//             })}
+//           </React.Fragment>
+//         ))}
+//       </div>
+//     </div>
+//   );
+// };
+
+// /* ------------------------------------------------------------------ */
+// /* Day View                                                             */
+// /* ------------------------------------------------------------------ */
+
+// const DayView = ({ activeDate, dayMeetings, onSelectMeeting }) => (
+//   <div className="p-5 h-full overflow-auto">
+//     <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50 max-w-3xl mx-auto">
+//       <div className="flex items-center gap-2 px-5 py-4 text-amber-500 font-semibold">
+//         <FaRegCalendarAlt />
+//         {formatHeaderDate(activeDate)}
+//       </div>
+
+//       {dayMeetings.length === 0 ? (
+//         <div className="px-5 py-10 text-center text-gray-400 text-sm">No meetings scheduled for this day.</div>
+//       ) : (
+//         dayMeetings
+//           .slice()
+//           .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""))
+//           .map((m) => (
+//             <button
+//               key={m.id}
+//               onClick={() => onSelectMeeting(m)}
+//               className={`w-full text-left flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50 transition ${
+//                 STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+//               }`}
+//             >
+//               <div className="flex-1">
+//                 <div className="flex items-center justify-between gap-2">
+//                   <p className="font-semibold text-gray-900">{m.title}</p>
+//                   <div className="flex items-center gap-2 shrink-0">
+//                     <TypeBadge type={m.type} />
+//                     <PriorityBadge priority={m.priority} />
+//                   </div>
+//                 </div>
+//                 <div className="flex items-center gap-4 text-xs text-gray-500 mt-1.5">
+//                   <span className="flex items-center gap-1">
+//                     <FaClock size={10} />
+//                     {formatTime(m.startTime)} - {formatTime(m.endTime)}
+//                   </span>
+//                   {m.location && (
+//                     <span className="flex items-center gap-1">
+//                       <FaMapMarkerAlt size={10} />
+//                       {m.location}
+//                     </span>
+//                   )}
+//                 </div>
+//                 {m.participants?.length > 0 && (
+//                   <div className="flex items-center gap-1 text-xs text-gray-400 mt-1.5">
+//                     <FaUsers size={10} />
+//                     {m.participants.join(", ")}
+//                   </div>
+//                 )}
+//               </div>
+//             </button>
+//           ))
+//       )}
+//     </div>
+//   </div>
+// );
+
+// /* ------------------------------------------------------------------ */
+// /* List View                                                            */
+// /* ------------------------------------------------------------------ */
+
+// const STATUS_OPTIONS = ["All", "Upcoming", "In-Progress", "Completed", "Cancelled"];
+// const PRIORITY_OPTIONS = ["All", "Low", "Medium", "High"];
+
+// const FilterDropdown = ({ label, value, options, onChange }) => (
+//   <div className="flex items-center gap-2">
+//     <span className="text-sm text-gray-500">{label}:</span>
+//     <select
+//       value={value}
+//       onChange={(e) => onChange(e.target.value)}
+//       className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-300"
+//     >
+//       {options.map((opt) => (
+//         <option key={opt} value={opt}>
+//           {opt}
+//         </option>
+//       ))}
+//     </select>
+//   </div>
+// );
+
+// const ListView = ({ meetings, onSelectMeeting }) => {
+//   const [status, setStatus] = useState("All");
+//   const [priority, setPriority] = useState("All");
+//   const [type, setType] = useState("All");
+
+//   const typeOptions = useMemo(() => {
+//     const set = new Set(meetings.map((m) => m.type).filter(Boolean));
+//     return ["All", ...Array.from(set)];
+//   }, [meetings]);
+
+//   const filtered = useMemo(() => {
+//     return meetings
+//       .filter((m) => status === "All" || m.status === status)
+//       .filter((m) => priority === "All" || m.priority === priority.toUpperCase())
+//       .filter((m) => type === "All" || m.type === type)
+//       .sort((a, b) => {
+//         const dateCmp = (a.date || "").localeCompare(b.date || "");
+//         if (dateCmp !== 0) return dateCmp;
+//         return (a.startTime || "").localeCompare(b.startTime || "");
+//       });
+//   }, [meetings, status, priority, type]);
+
+//   return (
+//     <div className="flex flex-col h-full overflow-auto">
+//       <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
+//         <div className="flex items-center gap-5 flex-wrap">
+//           <FilterDropdown label="Status" value={status} options={STATUS_OPTIONS} onChange={setStatus} />
+//           <FilterDropdown label="Priority" value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} />
+//           <FilterDropdown label="Type" value={type} options={typeOptions} onChange={setType} />
+//         </div>
+//         <span className="text-sm text-gray-400">{filtered.length} meeting(s)</span>
+//       </div>
+
+//       <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
+//         {filtered.length === 0 ? (
+//           <div className="text-center text-gray-400 text-sm py-10">No meetings match the selected filters.</div>
+//         ) : (
+//           filtered.map((m) => (
+//             <button
+//               key={m.id}
+//               onClick={() => onSelectMeeting(m)}
+//               className={`w-full text-left rounded-lg px-4 py-3 transition hover:shadow-sm ${
+//                 STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+//               }`}
+//             >
+//               <div className="flex items-start justify-between gap-3">
+//                 <div className="flex items-start gap-2">
+//                   <span className="mt-1.5 w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+//                   <div>
+//                     <p className="font-semibold text-gray-900">{m.title}</p>
+//                     <p className="text-xs text-gray-500 mt-0.5">
+//                       {m.refId && <span>{m.refId} · </span>}
+//                       {new Date(m.date).toLocaleDateString("en-US", {
+//                         weekday: "short",
+//                         day: "2-digit",
+//                         month: "short",
+//                       })}
+//                       {m.startTime && ` ${formatTime(m.startTime)}`}
+//                       {m.host && <span> · {m.host}</span>}
+//                     </p>
+//                   </div>
+//                 </div>
+//                 <div className="flex items-center gap-2 shrink-0">
+//                   <TypeBadge type={m.type} />
+//                   <PriorityBadge priority={m.priority} />
+//                 </div>
+//               </div>
+//             </button>
+//           ))
+//         )}
+//       </div>
+//     </div>
+//   );
+// };
+
+// /* ------------------------------------------------------------------ */
+// /* Main Component                                                       */
+// /* ------------------------------------------------------------------ */
+
+// /**
+//  * Build a date range covering the visible window for a given view mode,
+//  * so the API is queried only for relevant data (kept efficient).
+//  */
+// const getRangeForView = (date, viewMode) => {
+//   if (viewMode === "Month") {
+//     const matrix = getMonthMatrix(date);
+//     const flat = matrix.flat();
+//     return { FromDate: toISODate(flat[0]), ToDate: toISODate(flat[flat.length - 1]) };
+//   }
+//   if (viewMode === "Week") {
+//     const start = startOfWeek(date);
+//     return { FromDate: toISODate(start), ToDate: toISODate(addDays(start, 6)) };
+//   }
+//   if (viewMode === "Day") {
+//     return { FromDate: toISODate(date), ToDate: toISODate(date) };
+//   }
+//   // List view: show a broader rolling window (current month onward)
+//   const start = new Date(date.getFullYear(), date.getMonth(), 1);
+//   const end = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+//   return { FromDate: toISODate(start), ToDate: toISODate(end) };
+// };
+
+// const MeetingScheduler = () => {
+//   const today = useMemo(() => new Date(), []);
+//   const [activeDate, setActiveDate] = useState(today);
+//   const [viewMode, setViewMode] = useState("Month");
+//   const [searchTerm, setSearchTerm] = useState("");
+//   const [selectedMeeting, setSelectedMeeting] = useState(null);
+
+//   const { FromDate, ToDate } = useMemo(
+//     () => getRangeForView(activeDate, viewMode),
+//     [activeDate, viewMode]
+//   );
+
+//   // Org-wide feed: deliberately NOT scoped by HostId/currentUserId.
+//   // Uses its own configKey so it can be cached/synced independently
+//   // from the user-scoped MeetingDashboard table above.
+//   const { data: rawMeetings, isLoading } = useMeetingData({
+//     FromDate,
+//     ToDate,
+//     configKey: "AllMeetingsData",
+//   });
+
+//   const meetings = useMemo(
+//     () => (Array.isArray(rawMeetings) ? rawMeetings.map(normalizeSchedulerMeeting) : []),
+//     [rawMeetings]
+//   );
+
+//   const meetingsByDate = useMemo(() => {
+//     const map = new Map();
+//     for (const m of meetings) {
+//       if (!m.date) continue;
+//       const key = m.date.slice(0, 10);
+//       if (!map.has(key)) map.set(key, []);
+//       map.get(key).push(m);
+//     }
+//     return map;
+//   }, [meetings]);
+
+//   const datesWithMeetings = useMemo(() => new Set(meetingsByDate.keys()), [meetingsByDate]);
+
+//   const upcomingMeetings = useMemo(() => {
+//     const term = searchTerm.trim().toLowerCase();
+//     return meetings
+//       .filter((m) => m.date >= toISODate(today))
+//       .filter((m) =>
+//         term
+//           ? m.title?.toLowerCase().includes(term) ||
+//             m.type?.toLowerCase().includes(term) ||
+//             m.host?.toLowerCase().includes(term)
+//           : true
+//       )
+//       .sort((a, b) => {
+//         const dateCmp = (a.date || "").localeCompare(b.date || "");
+//         if (dateCmp !== 0) return dateCmp;
+//         return (a.startTime || "").localeCompare(b.startTime || "");
+//       })
+//       .slice(0, 20);
+//   }, [meetings, searchTerm, today]);
+
+//   const dayMeetings = useMemo(
+//     () => meetingsByDate.get(toISODate(activeDate)) || [],
+//     [meetingsByDate, activeDate]
+//   );
+
+//   const handlePrevMonth = useCallback(() => {
+//     setActiveDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1));
+//   }, []);
+
+//   const handleNextMonth = useCallback(() => {
+//     setActiveDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+//   }, []);
+
+//   const handleToday = useCallback(() => setActiveDate(new Date()), []);
+
+//   const handleSelectMeeting = useCallback((meeting) => {
+//     setSelectedMeeting(meeting);
+//     setActiveDate(new Date(meeting.date));
+//     setViewMode("Day");
+//   }, []);
+
+//   const handleNewMeeting = useCallback(() => {
+//     // Hook this up to the "New Meeting" creation flow / modal as needed.
+//   }, []);
+
+//   const headerLabel = useMemo(() => {
+//     if (viewMode === "List") return "All meetings";
+//     return formatHeaderDate(activeDate);
+//   }, [activeDate, viewMode]);
+
+//   return (
+//     <div className="flex flex-col lg:flex-row h-full min-h-[600px] bg-white rounded-lg border border-gray-100 overflow-hidden">
+//       <SchedulerSidebar
+//         activeDate={activeDate}
+//         today={today}
+//         datesWithMeetings={datesWithMeetings}
+//         onSelectDate={setActiveDate}
+//         onPrevMonth={handlePrevMonth}
+//         onNextMonth={handleNextMonth}
+//         onToday={handleToday}
+//         searchTerm={searchTerm}
+//         onSearchChange={setSearchTerm}
+//         upcomingMeetings={upcomingMeetings}
+//         onSelectMeeting={handleSelectMeeting}
+//       />
+
+//       <div className="flex-1 flex flex-col min-h-0">
+//         <SchedulerHeader
+//           activeDate={activeDate}
+//           viewMode={viewMode}
+//           onViewModeChange={setViewMode}
+//           onNewMeeting={handleNewMeeting}
+//           headerLabel={headerLabel}
+//         />
+
+//         <div className="flex-1 min-h-0 relative">
+//           {isLoading && (
+//             <div className="absolute inset-0 flex items-center justify-center bg-white/60 text-sm text-gray-400 z-10">
+//               Loading meetings...
+//             </div>
+//           )}
+
+//           {viewMode === "Month" && (
+//             <MonthView
+//               activeDate={activeDate}
+//               today={today}
+//               meetingsByDate={meetingsByDate}
+//               onSelectDate={setActiveDate}
+//               onDayClick={() => {}}
+//             />
+//           )}
+
+//           {viewMode === "Week" && (
+//             <WeekView
+//               activeDate={activeDate}
+//               today={today}
+//               meetingsByDate={meetingsByDate}
+//               onSelectMeeting={handleSelectMeeting}
+//             />
+//           )}
+
+//           {viewMode === "Day" && (
+//             <DayView activeDate={activeDate} dayMeetings={dayMeetings} onSelectMeeting={setSelectedMeeting} />
+//           )}
+
+//           {viewMode === "List" && <ListView meetings={meetings} onSelectMeeting={handleSelectMeeting} />}
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// export default MeetingScheduler;
+import React, { useState, useMemo, useCallback } from "react";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaSearch,
+  FaBell,
+  FaPlus,
+  FaBars,
+  FaRegCalendarAlt,
+  FaClock,
+  FaMapMarkerAlt,
+  FaUsers,
+  FaTimes,
 } from "react-icons/fa";
 
+
 import { useList } from "../../../packages/ui-List/context/ListContext";
-import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { meetingFormConfig } from "../config/Meetingform.config";
-import { useCallback, useMemo, useState } from "react";
-// import { useMasterData } from "../../../core/master/masterCall/useMasterData";
+import { useTicketMaster } from "../../../core/master/selectors/selectors";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 
-dayjs.extend(isSameOrBefore);
-dayjs.extend(isSameOrAfter);
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const HOURS = Array.from({ length: 14 }, (_, i) => i + 7); // 7 AM - 8 PM
+/* ------------------------------------------------------------------ */
+/* Constants & Helpers                                                  */
+/* ------------------------------------------------------------------ */
 
-const BOOKING_COLORS = {
-  meeting: { 
-    bg: "bg-[#251f47]", borderL: "border-l-[#6e58d1]", text: "text-[#e2ddfc]", 
-    textDim: "text-[#9789cc]", dot: "bg-[#6e58d1]", badge: "bg-[#3e327a] text-[#c1b5fa]" 
-  },
-  availability: { 
-    bg: "bg-[#103621]", borderL: "border-l-[#21b35b]", text: "text-[#55db8d]", 
-    textDim: "text-[#47b373]", dot: "bg-[#21b35b]", badge: "bg-[#3e327a] text-[#c1b5fa]" 
-  },
-  interview: { bg: "bg-[#332240]", borderL: "border-l-[#6e468d]", text: "text-[#d6aef8]", textDim: "text-[#9778b3]", dot: "bg-fuchsia-500", badge: "bg-[#4e2f66] text-[#d6aef8]" },
-  demo: { bg: "bg-[#332917]", borderL: "border-l-[#7a602d]", text: "text-[#f5ce8c]", textDim: "text-[#b39562]", dot: "bg-amber-500", badge: "bg-[#54411d] text-[#f5ce8c]" },
-  discussion: { bg: "bg-[#112d33]", borderL: "border-l-[#246977]", text: "text-[#81e1f5]", textDim: "text-[#5b9ca8]", dot: "bg-cyan-500", badge: "bg-[#1b4b56] text-[#81e1f5]" },
-  supportCall: { bg: "bg-[#361a20]", borderL: "border-l-[#7a3443]", text: "text-[#f7a6b8]", textDim: "text-[#b07382]", dot: "bg-rose-500", badge: "bg-[#542530] text-[#f7a6b8]" },
+const VIEW_MODES = ["Month", "Week", "Day", "List"];
+
+const PRIORITY_STYLES = {
+  HIGH: "bg-rose-100 text-rose-700",
+  MEDIUM: "bg-amber-100 text-amber-700",
+  LOW: "bg-emerald-100 text-emerald-700",
 };
 
-const STATUS_COLORS = {
-  Active: "bg-[#14472a] text-[#34c76b]",
-  Inactive: "bg-[#2a2c3d] text-gray-400",
-  Cancelled: "bg-[#451e25] text-red-400",
-  Completed: "bg-[#1d2f47] text-blue-400",
+const TYPE_STYLES = {
+  "Team Sync": "bg-violet-100 text-violet-700",
+  "Client Call": "bg-amber-100 text-amber-800",
+  Review: "bg-emerald-100 text-emerald-700",
+  Workshop: "bg-pink-100 text-pink-700",
+  "1:1": "bg-gray-100 text-gray-700",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function fmtTime(t) {
-  if (!t) return "--";
-  const [h, m] = t.split(":").map(Number);
-  const ampm = h >= 12 ? "PM" : "AM";
-  const hour = h % 12 || 12;
-  return `${hour}:${String(m).padStart(2, "0")} ${ampm}`;
-}
+const STATUS_BAR_COLOR = {
+  Upcoming: "bg-sky-50 border-l-4 border-sky-400",
+  "In-Progress": "bg-amber-50 border-l-4 border-amber-400",
+  Completed: "bg-emerald-50 border-l-4 border-emerald-400",
+  Cancelled: "bg-gray-50 border-l-4 border-gray-300",
+};
 
-function hourLabel(h) {
-  if (h === 0) return "12 AM";
-  if (h < 12) return `${h} AM`;
-  if (h === 12) return "12 PM";
-  return `${h - 12} PM`;
-}
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const HOURS = Array.from({ length: 11 }, (_, i) => 8 + i); // 08:00 – 18:00
+const STATUS_OPTIONS   = ["All", "Upcoming", "In-Progress", "Completed", "Cancelled"];
+const PRIORITY_OPTIONS = ["All", "Low", "Medium", "High"];
 
-function safeJsonArray(value) {
-  if (Array.isArray(value)) return value;
-  if (!value || typeof value !== "string") return [];
+const pad2        = (n) => String(n).padStart(2, "0");
+const toISODate   = (d) => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const isSameDay   = (a, b) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth()    === b.getMonth()    &&
+  a.getDate()     === b.getDate();
 
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
+const startOfWeek = (date) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() - d.getDay());
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const addDays = (date, days) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+const getMonthMatrix = (date) => {
+  const year  = date.getFullYear();
+  const month = date.getMonth();
+  const gridStart = startOfWeek(new Date(year, month, 1));
+  const weeks = [];
+  let cursor  = new Date(gridStart);
+  for (let w = 0; w < 6; w++) {
+    const week = [];
+    for (let d = 0; d < 7; d++) {
+      week.push(new Date(cursor));
+      cursor = addDays(cursor, 1);
+    }
+    weeks.push(week);
+    if (cursor.getMonth() !== month && week[6].getMonth() !== month) break;
   }
-}
+  return weeks;
+};
 
-// function getEventDate(event) {
-//   return event?.meeting_date || event?.valid_from_date || event?.created_at;
-// }
+const getRangeForView = (date, viewMode) => {
+  if (viewMode === "Month") {
+    const flat = getMonthMatrix(date).flat();
+    return { FromDate: toISODate(flat[0]), ToDate: toISODate(flat[flat.length - 1]) };
+  }
+  if (viewMode === "Week") {
+    const start = startOfWeek(date);
+    return { FromDate: toISODate(start), ToDate: toISODate(addDays(start, 6)) };
+  }
+  if (viewMode === "Day") {
+    return { FromDate: toISODate(date), ToDate: toISODate(date) };
+  }
+  // List — two-month rolling window
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end   = new Date(date.getFullYear(), date.getMonth() + 2, 0);
+  return { FromDate: toISODate(start), ToDate: toISODate(end) };
+};
 
-// function isEventOnDate(event, selected) {
-//   const date = getEventDate(event);
-//   if (!date) return false;
+const formatMonthYear   = (d) => d.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+const formatHeaderDate  = (d) =>
+  d.toLocaleDateString("en-US", { weekday: "long", day: "2-digit", month: "long", year: "numeric" });
+const formatTime        = (t) => (t ? t.slice(0, 5) : "");
+const parseHour         = (t) => (t ? parseInt(t.split(":")[0], 10) : null);
 
-//   const selectedDate = dayjs(selected);
-//   if (event?.recurrence_type && event.recurrence_type !== "onetime") {
-//     const from = dayjs(event.valid_from_date || date);
-//     const to = dayjs(event.valid_to_date || event.valid_from_date || date);
-//     return selectedDate.isSameOrAfter(from, "day") && selectedDate.isSameOrBefore(to, "day");
-//   }
+const normalizeSchedulerMeeting = (m) => ({
+  id:           m.meeting_id,
+  title:        m.title,
+  date:         m.meeting_date,
+  startTime:    m.start_time,
+  endTime:      m.end_time,
+  status:       m.status ?? "Upcoming",
+  priority:     (m.priority || "MEDIUM").toUpperCase(),
+  type:         m.booking_type || m.type || "Meeting",
+  host:         m.HostName,
+  location:     m.meet_method === "Online" ? m.meet_link : m.location || m.meet_method,
+  participants: [...(m.InternalParticipants || []), ...(m.ClientParticipants || [])]
+    .map((p) => p?.name || p?.full_name || p)
+    .filter(Boolean),
+  refId:        m.display_id || m.ticket_id,
+  raw:          m, // keep original for form pre-fill on edit
+});
 
-//   return dayjs(date).isSame(selectedDate, "day");
-// }
+/* ------------------------------------------------------------------ */
+/* Shared Badges                                                        */
+/* ------------------------------------------------------------------ */
 
-// function eventStartValue(event) {
-//   const [hour = 0, minute = 0] = String(event?.start_time || "00:00").split(":").map(Number);
-//   return hour * 60 + minute;
-// }
+const PriorityBadge = ({ priority }) => (
+  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${PRIORITY_STYLES[priority] || PRIORITY_STYLES.MEDIUM}`}>
+    {priority}
+  </span>
+);
 
-// function eventDurationLabel(event) {
-//   const start = dayjs(`2000-01-01 ${event?.start_time || "00:00"}`);
-//   const end = dayjs(`2000-01-01 ${event?.end_time || event?.start_time || "00:00"}`);
-//   const minutes = Math.max(end.diff(start, "minute"), 0);
-//   if (!minutes) return "No duration";
-//   if (minutes < 60) return `${minutes} min`;
-//   const hours = Math.floor(minutes / 60);
-//   const rest = minutes % 60;
-//   return rest ? `${hours}h ${rest}m` : `${hours}h`;
-// }
+const TypeBadge = ({ type }) => (
+  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded ${TYPE_STYLES[type] || "bg-gray-100 text-gray-700"}`}>
+    {type}
+  </span>
+);
 
-function formatHeaderFromData(data = []) {
-  if (!Array.isArray(data) || data.length === 0) return dayjs().format("dddd, MMMM D, YYYY");
-  const dates = data
-    .map((e) => {
-      const raw = e.recurrence_type === "onetime" ? e.meeting_date : e.valid_from_date;
-      const d = dayjs(raw);
-      return d.isValid() ? d : null;
-    })
-    .filter(Boolean)
-    .sort((a, b) => a.valueOf() - b.valueOf());
+/* ------------------------------------------------------------------ */
+/* Meeting Form Modal                                                   */
+/* ------------------------------------------------------------------ */
 
-  if (dates.length === 0) return dayjs().format("dddd, MMMM D, YYYY");
-  return `${dates[0].format("dddd, MMMM D, YYYY")}`;
-}
+/**
+ * MeetingFormModal
+ *
+ * Wraps EntityFormPage in a slide-over / centre modal.
+ *
+ * Props:
+ *   isOpen        – boolean
+ *   mode          – "Create" | "Edit"
+ *   selectedEvent – normalized meeting object (null on Create)
+ *   modalMode     – "meeting" | "availability"  (passed through to context)
+ *   onClose       – () => void  called on backdrop click or × button
+ *   onSuccess     – () => void  called after successful save
+ *
+ * All commented-out props from your EntityFormPage snippet are wired here.
+ */
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+const MeetingFormModal = ({
+  isOpen,
+  mode,
+  selectedEvent,
+  modalMode = "meeting",
+  ticketMaster = [],
+  onClose,
+  onSuccess,
+}) => {
+  // Build dynamic config here (safe — not inside useMemo with a hook)
+  const dynamicConfig = useMemo(() => {
+    const ticketField = {
+      label:    "Ticket",
+      name:     "ticket",
+      type:     "select",
+      ui:       "mui",
+      required: false,
+      dataType: "string",
+      apiKey:   "ticket_id",
+      // optionsResolver receives live formData at render time
+      optionsResolver: ({ formData }) => {
+        const selectedProjectId = formData?.project?.value?.id;
+        return (ticketMaster || [])
+          .filter((t) => (selectedProjectId ? t.Project_Id === selectedProjectId : true))
+          .map((t) => ({ value: { id: t.Issue_Id, name: t.Title }, label: t.Title }));
+      },
+    };
 
-// Notice we now pass an explicit 'isAvailable' flag instead of relying on the database's booking_type
-function TimelineBlock({ event, isAvailable, onClick }) {
-  const type = isAvailable ? "availability" : (event.booking_type?.toLowerCase() || "meeting");
-  const colors = BOOKING_COLORS[type] || BOOKING_COLORS.meeting;
+    return {
+      ...meetingFormConfig,
+      fields: [...(meetingFormConfig.fields || []), ticketField],
+    };
+  }, [ticketMaster]); // only rebuilds when ticketMaster list changes
 
-  const internalParticipants = safeJsonArray(event.InternalParticipants);
-  const clientParticipants = safeJsonArray(event.ClientParticipants);
-  const attendanceCount = internalParticipants.length + clientParticipants.length;
+  if (!isOpen) return null;
 
-  return (
-    <button
-      onClick={() => onClick?.(isAvailable ? "availability" : "meeting", event)}
-      className={`w-full flex items-center justify-between rounded-[4px] border-l-[3px] border-y border-r border-[#ffffff05] px-4 py-3 text-left transition-all hover:opacity-90 ${colors.bg} ${colors.borderL} mb-2`}
-    >
-      <div>
-        <span className={`block text-[13px] font-semibold mb-1 ${colors.text}`}>
-          {event.title || (isAvailable ? "Available" : "Meeting")}
-        </span>
-        <div className={`flex items-center gap-1.5 text-[11px] ${colors.textDim}`}>
-          <span>{fmtTime(event.start_time)} – {fmtTime(event.end_time)}</span>
-          <span className="opacity-50">·</span>
-          {!isAvailable && (
-            <>
-              <span>{attendanceCount} attendees</span>
-              <span className="opacity-50">·</span>
-            </>
-          )}
-          <span>{event.days_of_week || "Mon, Tue, Wed, Thu, Fri"}</span>
-        </div>
-      </div>
-      <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded ${colors.badge} capitalize`}>
-        {isAvailable ? "Available" : type}
-      </span>
-    </button>
-  );
-}
+  const context = {
+    isEdit:     mode === "Edit",
+    entityData: selectedEvent?.raw ?? selectedEvent ?? null,
+    modalMode,
+  };
 
-function MeetingCard({ event, isAvailable, onClick, onEdit }) {
-  // const type = isAvailable ? "availability" : (event.booking_type?.toLowerCase() || "meeting");
-  // const colors = BOOKING_COLORS[type] || BOOKING_COLORS.meeting;
-  const statusColor = STATUS_COLORS[event.status] || STATUS_COLORS.Active;
+  const handleSuccess = () => {
+    onSuccess?.();
+    onClose();
+  };
 
   return (
     <div
-      onClick={() => onClick?.(isAvailable ? "availability" : "meeting", event)}
-      className="relative cursor-pointer rounded-xl border border-[#272938] bg-[#1a1c29] p-4 flex flex-col gap-3 hover:bg-[#1e2030] transition-colors"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <button
-        onClick={(e) => { 
-          e.stopPropagation(); 
-          onEdit?.(isAvailable ? "availability" : "meeting", event); 
-        }}
-        className="absolute top-3 right-3 p-1.5 rounded-md hover:bg-[#272938] text-gray-500 hover:text-gray-300 transition"
-      >
-        <FaEdit size={14} />
-      </button>
+      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden mx-4">
 
-      <div className="flex items-center justify-between pr-6">
-        <h3 className="text-sm font-semibold text-gray-100 truncate">{event.title || (isAvailable ? "Availability Block" : "Untitled")}</h3>
-        <span className={`text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${statusColor}`}>
-          {event.status || 'Active'}
-        </span>
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 shrink-0">
+          <h2 className="text-base font-bold text-gray-900">
+            {mode === "Edit" ? "Edit Meeting" : "New Meeting"}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-700 transition"
+            aria-label="Close"
+          >
+            <FaTimes size={16} />
+          </button>
+        </div>
+
+        {/* Scrollable form body */}
+        <div className="flex-1 overflow-y-auto">
+          <EntityFormPage
+            mode={mode}
+            config={dynamicConfig}
+            module={modalMode === "meeting" ? "Meeting" : "Availability"}
+            onSuccessCallback={handleSuccess}
+            context={context}
+          />
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
+/* ------------------------------------------------------------------ */
+/* Sidebar – Mini Calendar                                             */
+/* ------------------------------------------------------------------ */
+
+const MiniCalendar = ({ activeDate, today, datesWithMeetings, onSelectDate, onPrevMonth, onNextMonth, onToday }) => {
+  const weeks = useMemo(() => getMonthMatrix(activeDate), [activeDate]);
+
+  return (
+    <div className="px-4 pt-4 pb-3 border-b border-gray-100">
+      <div className="flex items-center justify-between mb-3">
+        <span className="font-semibold text-sm text-gray-800">{formatMonthYear(activeDate)}</span>
+        <div className="flex items-center gap-2 text-gray-400">
+          <button onClick={onPrevMonth} className="hover:text-gray-700" aria-label="Previous month">
+            <FaChevronLeft size={11} />
+          </button>
+          <button onClick={onToday} className="text-xs font-medium text-gray-500 hover:text-gray-800">
+            Today
+          </button>
+          <button onClick={onNextMonth} className="hover:text-gray-700" aria-label="Next month">
+            <FaChevronRight size={11} />
+          </button>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-1.5 text-xs text-gray-400">
-        <span className="flex items-center gap-2">
-          <FaClock className="text-[#6e58d1]" />
-          {fmtTime(event.start_time)} - {fmtTime(event.end_time)}
-        </span>
-        {event.HostName && (
-          <span className="flex items-center gap-2">
-            <FaUser className="text-[#6e58d1]" />
-            {event.HostName}
-          </span>
+      <div className="grid grid-cols-7 text-center text-[11px] text-gray-400 mb-1">
+        {WEEKDAY_LABELS.map((d) => <div key={d}>{d}</div>)}
+      </div>
+
+      <div className="grid grid-cols-7 gap-y-1 text-center text-[12px]">
+        {weeks.flat().map((day) => {
+          const inMonth    = day.getMonth() === activeDate.getMonth();
+          const isToday    = isSameDay(day, today);
+          const isSelected = isSameDay(day, activeDate);
+          const hasMeeting = datesWithMeetings.has(toISODate(day));
+
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onSelectDate(day)}
+              className={`relative mx-auto flex items-center justify-center w-7 h-7 rounded-full transition
+                ${!inMonth  ? "text-gray-300" : "text-gray-700"}
+                ${isSelected ? "bg-amber-400 text-gray-900 font-semibold" : ""}
+                ${!isSelected && isToday ? "ring-1 ring-amber-300" : ""}
+                ${!isSelected ? "hover:bg-gray-100" : ""}
+              `}
+            >
+              {day.getDate()}
+              {hasMeeting && !isSelected && (
+                <span className="absolute bottom-0.5 w-1 h-1 rounded-full bg-amber-400" />
+              )}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Sidebar – Upcoming Card                                             */
+/* ------------------------------------------------------------------ */
+
+const UpcomingMeetingCard = ({ meeting, onSelect }) => (
+  <button
+    onClick={() => onSelect(meeting)}
+    className="w-full text-left rounded-lg bg-sky-50 hover:bg-sky-100 transition p-3 mb-2 border border-sky-100"
+  >
+    <div className="flex items-start justify-between gap-2">
+      <p className="font-semibold text-sm text-gray-900 leading-snug">{meeting.title}</p>
+      <span className="mt-1 w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+    </div>
+    <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1">
+      <FaClock size={10} />
+      <span>
+        {new Date(meeting.date).toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })}
+        {meeting.startTime ? ` · ${formatTime(meeting.startTime)}` : ""}
+      </span>
+    </div>
+    <div className="flex items-center gap-2 mt-2">
+      <TypeBadge type={meeting.type} />
+      <PriorityBadge priority={meeting.priority} />
+    </div>
+  </button>
+);
+
+/* ------------------------------------------------------------------ */
+/* Sidebar                                                              */
+/* ------------------------------------------------------------------ */
+
+const SchedulerSidebar = ({
+  activeDate, today, datesWithMeetings,
+  onSelectDate, onPrevMonth, onNextMonth, onToday,
+  searchTerm, onSearchChange,
+  upcomingMeetings, onSelectMeeting,
+}) => (
+  <aside className="w-full lg:w-[320px] border-r border-gray-100 bg-white flex flex-col h-full">
+    {/* Brand */}
+    <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-100">
+      <div className="w-9 h-9 rounded-lg bg-amber-400 flex items-center justify-center text-gray-900 font-bold">
+        W
+      </div>
+      <div>
+        <p className="font-bold text-gray-900 leading-tight text-sm">WorkGlow</p>
+        <p className="text-xs text-gray-400 leading-tight">Meeting Scheduler</p>
+      </div>
+    </div>
+
+    <MiniCalendar
+      activeDate={activeDate} today={today}
+      datesWithMeetings={datesWithMeetings}
+      onSelectDate={onSelectDate}
+      onPrevMonth={onPrevMonth} onNextMonth={onNextMonth} onToday={onToday}
+    />
+
+    {/* Upcoming header + search */}
+    <div className="px-4 pt-3 flex items-center justify-between">
+      <span className="font-semibold text-sm text-gray-800">Upcoming Meetings</span>
+      <span className="text-xs text-gray-400">{upcomingMeetings.length}</span>
+    </div>
+    <div className="px-4 pt-2">
+      <div className="relative">
+        <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-300 text-xs" />
+        <input
+          value={searchTerm}
+          onChange={(e) => onSearchChange(e.target.value)}
+          placeholder="Search meetings..."
+          className="w-full text-sm pl-8 pr-3 py-2 rounded-md border border-gray-200 focus:outline-none focus:ring-1 focus:ring-amber-300"
+        />
+      </div>
+    </div>
+
+    <div className="flex-1 overflow-y-auto px-4 py-3">
+      {upcomingMeetings.length === 0 ? (
+        <p className="text-sm text-gray-400 text-center py-6">No upcoming meetings</p>
+      ) : (
+        upcomingMeetings.map((m) => (
+          <UpcomingMeetingCard key={m.id} meeting={m} onSelect={onSelectMeeting} />
+        ))
+      )}
+    </div>
+  </aside>
+);
+
+/* ------------------------------------------------------------------ */
+/* Header                                                               */
+/* ------------------------------------------------------------------ */
+
+const SchedulerHeader = ({ viewMode, onViewModeChange, onNewMeeting, headerLabel }) => (
+  <div className="flex items-center justify-between gap-4 px-5 py-4 border-b border-gray-100 bg-white flex-wrap">
+    <div className="flex items-center gap-3">
+      <FaBars className="text-gray-400 hidden sm:block" />
+      <div>
+        <h2 className="text-lg font-bold text-gray-900 leading-tight">Meetings</h2>
+        <p className="text-xs text-gray-400 leading-tight">{headerLabel}</p>
+      </div>
+    </div>
+
+    <div className="flex items-center gap-3 flex-wrap">
+      {/* View switcher */}
+      <div className="flex rounded-md border border-gray-200 overflow-hidden text-sm">
+        {VIEW_MODES.map((mode) => (
+          <button
+            key={mode}
+            onClick={() => onViewModeChange(mode)}
+            className={`px-3 py-1.5 font-medium transition border-r border-gray-200 last:border-r-0 ${
+              viewMode === mode
+                ? "bg-white text-gray-900"
+                : "bg-gray-50 text-gray-400 hover:text-gray-600"
+            }`}
+          >
+            {mode}
+          </button>
+        ))}
+      </div>
+
+      <button className="relative text-gray-400 hover:text-gray-600">
+        <FaBell />
+        <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400" />
+      </button>
+
+      {/* NEW MEETING — opens modal */}
+      <button
+        onClick={onNewMeeting}
+        className="flex items-center gap-2 bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold text-sm px-4 py-2 rounded-md transition"
+      >
+        <FaPlus size={12} />
+        New Meeting
+      </button>
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* Month View                                                           */
+/* ------------------------------------------------------------------ */
+
+const MonthView = ({ activeDate, today, meetingsByDate, onSelectDate }) => {
+  const weeks = useMemo(() => getMonthMatrix(activeDate), [activeDate]);
+
+  return (
+    <div className="flex flex-col h-full">
+      <div className="grid grid-cols-7 border-b border-gray-100 text-xs font-semibold text-gray-500">
+        {WEEKDAY_LABELS.map((d) => (
+          <div key={d} className="px-3 py-2 text-center uppercase tracking-wide">{d}</div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-7 flex-1 auto-rows-fr">
+        {weeks.flat().map((day) => {
+          const inMonth    = day.getMonth() === activeDate.getMonth();
+          const isToday    = isSameDay(day, today);
+          const isSelected = isSameDay(day, activeDate);
+          const dayMtgs    = meetingsByDate.get(toISODate(day)) || [];
+
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onSelectDate(day)}
+              className={`text-left border-r border-b border-gray-100 p-2 flex flex-col gap-1 min-h-[88px] transition
+                ${!inMonth   ? "bg-gray-50/60 text-gray-300" : "bg-white text-gray-700"}
+                ${isSelected ? "ring-2 ring-amber-300 z-10"  : "hover:bg-gray-50"}
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-medium ${
+                  isToday ? "w-6 h-6 flex items-center justify-center rounded-full bg-amber-400 text-gray-900" : ""
+                }`}>
+                  {day.getDate()}
+                </span>
+                {dayMtgs.length > 1 && (
+                  <span className="text-[10px] text-gray-400">{dayMtgs.length}</span>
+                )}
+              </div>
+
+              <div className="flex flex-col gap-1">
+                {dayMtgs.slice(0, 2).map((m) => (
+                  <div
+                    key={m.id}
+                    className={`text-[11px] truncate px-1.5 py-0.5 rounded ${
+                      STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+                    }`}
+                    title={m.title}
+                  >
+                    {m.startTime && <span className="font-semibold mr-1">{formatTime(m.startTime)}</span>}
+                    {m.title}
+                  </div>
+                ))}
+                {dayMtgs.length > 2 && (
+                  <div className="text-[10px] text-gray-400 px-1.5">+{dayMtgs.length - 2} more</div>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Week View                                                            */
+/* ------------------------------------------------------------------ */
+
+const WeekView = ({ activeDate, today, meetingsByDate, onSelectMeeting }) => {
+  const weekStart = useMemo(() => startOfWeek(activeDate), [activeDate]);
+  const days      = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+
+  return (
+    <div className="flex flex-col h-full overflow-auto">
+      <div className="flex items-center px-4 py-3 border-b border-gray-100">
+        <h3 className="font-semibold text-gray-800">
+          Week of {weekStart.toLocaleDateString("en-US", { day: "2-digit", month: "short" })}
+        </h3>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-[64px_repeat(7,1fr)] border-b border-gray-100 sticky top-0 bg-white z-10">
+        <div />
+        {days.map((day) => {
+          const isToday = isSameDay(day, today);
+          return (
+            <div key={day.toISOString()} className="text-center py-2 border-l border-gray-100">
+              <p className="text-xs text-gray-400 uppercase">{WEEKDAY_LABELS[day.getDay()]}</p>
+              <p className={`text-sm font-semibold ${isToday ? "text-amber-500" : "text-gray-800"}`}>
+                {day.getDate()}
+              </p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Hour rows */}
+      <div className="grid grid-cols-[64px_repeat(7,1fr)]">
+        {HOURS.map((hour) => (
+          <React.Fragment key={hour}>
+            <div className="text-xs text-gray-400 text-right pr-2 py-4 border-b border-gray-50">
+              {pad2(hour)}:00
+            </div>
+            {days.map((day) => {
+              const slotMtgs = (meetingsByDate.get(toISODate(day)) || []).filter(
+                (m) => parseHour(m.startTime) === hour
+              );
+              return (
+                <div key={day.toISOString() + hour} className="border-l border-b border-gray-50 min-h-[64px] p-1">
+                  {slotMtgs.map((m) => (
+                    <button
+                      key={m.id}
+                      onClick={() => onSelectMeeting(m)}
+                      className="w-full text-left bg-sky-100 hover:bg-sky-200 rounded-md px-2 py-1 mb-1 transition"
+                    >
+                      <p className="text-xs font-semibold text-gray-800 truncate">{m.title}</p>
+                      <p className="text-[11px] text-gray-500">{formatTime(m.startTime)}</p>
+                    </button>
+                  ))}
+                </div>
+              );
+            })}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* ------------------------------------------------------------------ */
+/* Day View                                                             */
+/* ------------------------------------------------------------------ */
+
+const DayView = ({ activeDate, dayMeetings, onSelectMeeting }) => (
+  <div className="p-5 h-full overflow-auto">
+    <div className="bg-white rounded-xl border border-gray-100 shadow-sm divide-y divide-gray-50 max-w-3xl mx-auto">
+      <div className="flex items-center gap-2 px-5 py-4 text-amber-500 font-semibold">
+        <FaRegCalendarAlt />
+        {formatHeaderDate(activeDate)}
+      </div>
+
+      {dayMeetings.length === 0 ? (
+        <div className="px-5 py-10 text-center text-gray-400 text-sm">
+          No meetings scheduled for this day.
+        </div>
+      ) : (
+        dayMeetings
+          .slice()
+          .sort((a, b) => (a.startTime || "").localeCompare(b.startTime || ""))
+          .map((m) => (
+            <button
+              key={m.id}
+              onClick={() => onSelectMeeting(m)}
+              className={`w-full text-left flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50 transition ${
+                STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+              }`}
+            >
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-gray-900">{m.title}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <TypeBadge type={m.type} />
+                    <PriorityBadge priority={m.priority} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-500 mt-1.5">
+                  <span className="flex items-center gap-1">
+                    <FaClock size={10} />
+                    {formatTime(m.startTime)} – {formatTime(m.endTime)}
+                  </span>
+                  {m.location && (
+                    <span className="flex items-center gap-1">
+                      <FaMapMarkerAlt size={10} />
+                      {m.location}
+                    </span>
+                  )}
+                </div>
+                {m.participants?.length > 0 && (
+                  <div className="flex items-center gap-1 text-xs text-gray-400 mt-1.5">
+                    <FaUsers size={10} />
+                    {m.participants.join(", ")}
+                  </div>
+                )}
+              </div>
+            </button>
+          ))
+      )}
+    </div>
+  </div>
+);
+
+/* ------------------------------------------------------------------ */
+/* List View                                                            */
+/* ------------------------------------------------------------------ */
+
+const FilterDropdown = ({ label, value, options, onChange }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-sm text-gray-500">{label}:</span>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="text-sm border border-gray-200 rounded-md px-2 py-1.5 bg-white focus:outline-none focus:ring-1 focus:ring-amber-300"
+    >
+      {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+    </select>
+  </div>
+);
+
+const ListView = ({ meetings, onSelectMeeting }) => {
+  const [status,   setStatus]   = useState("All");
+  const [priority, setPriority] = useState("All");
+  const [type,     setType]     = useState("All");
+
+  const typeOptions = useMemo(() => {
+    const set = new Set(meetings.map((m) => m.type).filter(Boolean));
+    return ["All", ...Array.from(set)];
+  }, [meetings]);
+
+  const filtered = useMemo(() =>
+    meetings
+      .filter((m) => status   === "All" || m.status   === status)
+      .filter((m) => priority === "All" || m.priority === priority.toUpperCase())
+      .filter((m) => type     === "All" || m.type     === type)
+      .sort((a, b) => {
+        const dc = (a.date || "").localeCompare(b.date || "");
+        return dc !== 0 ? dc : (a.startTime || "").localeCompare(b.startTime || "");
+      }),
+    [meetings, status, priority, type]
+  );
+
+  return (
+    <div className="flex flex-col h-full overflow-auto">
+      <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
+        <div className="flex items-center gap-5 flex-wrap">
+          <FilterDropdown label="Status"   value={status}   options={STATUS_OPTIONS}   onChange={setStatus} />
+          <FilterDropdown label="Priority" value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} />
+          <FilterDropdown label="Type"     value={type}     options={typeOptions}      onChange={setType} />
+        </div>
+        <span className="text-sm text-gray-400">{filtered.length} meeting(s)</span>
+      </div>
+
+      <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
+        {filtered.length === 0 ? (
+          <div className="text-center text-gray-400 text-sm py-10">
+            No meetings match the selected filters.
+          </div>
+        ) : (
+          filtered.map((m) => (
+            <button
+              key={m.id}
+              onClick={() => onSelectMeeting(m)}
+              className={`w-full text-left rounded-lg px-4 py-3 transition hover:shadow-sm ${
+                STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2">
+                  <span className="mt-1.5 w-2 h-2 rounded-full bg-sky-400 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-gray-900">{m.title}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {m.refId && <span>{m.refId} · </span>}
+                      {new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })}
+                      {m.startTime && ` ${formatTime(m.startTime)}`}
+                      {m.host && <span> · {m.host}</span>}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <TypeBadge type={m.type} />
+                  <PriorityBadge priority={m.priority} />
+                </div>
+              </div>
+            </button>
+          ))
         )}
       </div>
     </div>
   );
-}
+};
 
-// ─── Calendar Sidebar ─────────────────────────────────────────────────────────
-function CalendarSidebar({ meetings, availability, selected, setSelected }) {
-  const [viewMonth, setViewMonth] = useState(dayjs(selected));
+/* ------------------------------------------------------------------ */
+/* Root Component                                                       */
+/* ------------------------------------------------------------------ */
 
-  // Combine both tables just for placing dots on the calendar
-  const daysWithEvents = useMemo(() => {
-    const set = new Set();
-    [...meetings, ...availability].forEach((e) => {
-      const d = e.recurrence_type === "onetime" ? e.meeting_date : e.valid_from_date;
-      if (d) set.add(dayjs(d).format("YYYY-MM-DD"));
-    });
-    return set;
-  }, [meetings, availability]);
-
-  const startOfMonth = viewMonth.startOf("month");
-  const daysInMonth = viewMonth.daysInMonth();
-  const startDow = startOfMonth.day(); 
-  const totalCells = Math.ceil((startDow + daysInMonth) / 7) * 7;
-
-  const upcomingMeetings = useMemo(() => meetings.slice(0, 5), [meetings]);
-
-  return (
-    <aside className="w-[280px] shrink-0 bg-[#14151f] border-r border-[#212330] flex flex-col h-full overflow-y-auto text-gray-300">
-      {/* Title */}
-      <div className="px-5 py-5 flex items-center gap-2 text-white border-b border-[#212330]">
-        <FaCalendarAlt className="text-[#6e58d1] text-lg" />
-        <h2 className="text-[15px] font-bold tracking-wide">Schedule</h2>
-      </div>
-
-      {/* Month nav */}
-      <div className="px-5 pt-5 pb-4 border-b border-[#212330]">
-        <div className="flex items-center justify-between mb-4">
-          <button onClick={() => setViewMonth(v => v.subtract(1, "month"))} className="p-2 rounded-md bg-[#1a1c29] border border-[#272938] hover:bg-[#212330] text-gray-400 transition-colors">
-            <FaChevronLeft className="w-3 h-3" />
-          </button>
-          <span className="text-[13px] font-semibold text-gray-200">
-            {viewMonth.format("MMMM YYYY")}
-          </span>
-          <button onClick={() => setViewMonth(v => v.add(1, "month"))} className="p-2 rounded-md bg-[#1a1c29] border border-[#272938] hover:bg-[#212330] text-gray-400 transition-colors">
-            <FaChevronRight className="w-3 h-3" />
-          </button>
-        </div>
-
-        {/* Day headers & Grid */}
-        <div className="grid grid-cols-7 mb-2">
-          {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-medium text-gray-500 py-1">{d}</div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-y-1">
-          {Array.from({ length: totalCells }).map((_, idx) => {
-            const dayNum = idx - startDow + 1;
-            if (dayNum < 1 || dayNum > daysInMonth) return <div key={idx} className="h-8" />;
-            const date = viewMonth.date(dayNum);
-            const dateStr = date.format("YYYY-MM-DD");
-            const isSelected = dayjs(selected).format("YYYY-MM-DD") === dateStr;
-            const hasEvent = daysWithEvents.has(dateStr);
-
-            return (
-              <button
-                key={idx}
-                onClick={() => setSelected(date.toDate())}
-                className={`relative flex flex-col items-center justify-center h-8 w-full rounded-md text-[12px] font-medium transition-all
-                  ${isSelected ? "bg-[#3e327a] text-[#d0c5fb]" : "text-gray-400 hover:bg-[#1a1c29]"}`}
-              >
-                {dayNum}
-                {hasEvent && !isSelected && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-[#6e58d1]" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Legend & Search & Upcoming (Kept exactly as before) */}
-      <div className="px-5 py-4 border-b border-[#212330]">
-        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-3">Legend</p>
-        <div className="grid grid-cols-2 gap-y-2 text-[11px] text-gray-400">
-          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#6e58d1]" /> Upcoming</div>
-          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-gray-500" /> Past</div>
-          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-[#21b35b]" /> Available</div>
-          <div className="flex items-center gap-2"><span className="w-2 h-2 rounded-full bg-red-500" /> Leave/Vacation</div>
-        </div>
-      </div>
-      <div className="px-5 py-5 flex-1">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Upcoming</p>
-          <span className="bg-[#1a1c29] text-gray-400 border border-[#272938] text-[10px] px-1.5 py-0.5 rounded font-bold">
-            {upcomingMeetings.length}
-          </span>
-        </div>
-        <div className="space-y-3">
-          {upcomingMeetings.map((e) => (
-            <div key={e.meeting_id} className="bg-[#1a1c29] border border-[#272938] rounded-lg p-3">
-              <div className="flex justify-between items-start mb-1.5">
-                <p className="text-[13px] font-semibold text-[#e2ddfc] truncate pr-2">{e.title}</p>
-              </div>
-              <div className="text-[11px] text-gray-500 flex flex-col gap-1">
-                <span className="flex items-center gap-1.5"><FaClock className="w-2.5 h-2.5"/> {fmtTime(e.start_time)} – {fmtTime(e.end_time)}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </aside>
-  );
-}
-
-// ─── Main Scheduler ───────────────────────────────────────────────────────────
-export default function MeetingScheduler() {
-  const user = readUserFromSession();
+const MeetingScheduler = () => {
+ const user = readUserFromSession();
   const currentUserId = user?.userId;
   const today = useMemo(() => new Date(), []);
 
-  const { config, data = [] } = useList();
-  const { data: TicketMaster } = useTicketMaster({ employeeId: currentUserId });
+  const {data = [] } = useList();
+  const { data: ticketMaster = [] } = useTicketMaster({ employeeId: currentUserId });
 
-  // 1. DATA SEPARATION:
-  // Meetings come from `data`. 
-  // Availability will come from a different API eventually, so we mock it as a separate array here.
-  const meetings = data || []; 
-  const availability = []; // <-- Fetch your separate availability table data here later!
+  // Calendar state
+  const [activeDate,  setActiveDate]  = useState(today);
+  const [viewMode,    setViewMode]    = useState("Month");
+  const [searchTerm,  setSearchTerm]  = useState("");
 
-  const meetingCount = meetings.length;
-  const availabilityCount = availability.length;
+  // Modal state
+  // modalState: null | { mode: "Create"|"Edit", selectedEvent: null|meeting }
+  const [modalState, setModalState] = useState(null);
 
-  const dynamicConfig = useMemo(() => ({
-    ...meetingFormConfig,
-    fields: [
-      ...meetingFormConfig.fields,
-      {
-        label: "Ticket",
-        name: "ticket",
-        type: "select",
-        ui: "mui",
-        required: false,
-        dataType: "string",
-        apiKey: "ticket_id",
-        optionsResolver: ({ formData }) => {
-          const selectedProjectId = formData?.project?.value?.id;
-          return (TicketMaster || [])
-            .filter((ticket) => selectedProjectId ? ticket.Project_Id === selectedProjectId : true)
-            .map((ticket) => ({ value: { id: ticket.Issue_Id, name: ticket.Title }, label: ticket.Title }));
-        },
-      },
-    ],
-  }), [TicketMaster, meetingFormConfig]);
-
-  // ── State for Modal and Editing
-  const [selected, setSelected] = useState(today);
-  const [activeTab, setActiveTab] = useState("timeline");
-  const [modalMode, setModalMode] = useState(null); 
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [openModal, setOpenModal] = useState(false);
-
-  const openModalFn = useCallback((mode, eventData = null) => {
-    setModalMode(mode);
-    setSelectedEvent(eventData);
-    setOpenModal(true);
+  const openCreateModal = useCallback(() => {
+    setModalState({ mode: "Create", selectedEvent: null });
   }, []);
 
-  const closeModal = useCallback(() => {
-    setOpenModal(false);
-    setModalMode(null);
-    setSelectedEvent(null);
+  const openEditModal = useCallback((meeting) => {
+    setModalState({ mode: "Edit", selectedEvent: meeting });
   }, []);
 
-  // 2. COMBINE FOR TIMELINE
-  // We combine both tables into a single array purely to render the Timeline UI blocks correctly by time.
-  // We tag them with `_isAvailability` so the UI knows how to color them.
-  const allTimelineEvents = useMemo(() => [
-    ...meetings.map(m => ({ ...m, _isAvailability: false })),
-    ...availability.map(a => ({ ...a, _isAvailability: true }))
-  ], [meetings, availability]);
+  const closeModal = useCallback(() => setModalState(null), []);
 
-  const slotsByHour = useMemo(() => {
-    const grouped = {};
-    allTimelineEvents.forEach((event) => {
-      const hour = parseInt(event.start_time?.split(":")[0] ?? "0", 10);
-      if (!grouped[hour]) grouped[hour] = [];
-      grouped[hour].push(event);
-    });
-    return grouped;
-  }, [allTimelineEvents]);
+  // Jump to Day view when a meeting card is clicked in sidebar / week / list
+  const handleSelectMeeting = useCallback((meeting) => {
+    setActiveDate(new Date(meeting.date));
+    setViewMode("Day");
+  }, []);
 
-  const hasTimelineData = HOURS.some((h) => (slotsByHour[h] || []).length > 0);
+  // Date range for the current view (efficient — only fetches what's visible)
+  const { FromDate, ToDate } = useMemo(
+    () => getRangeForView(activeDate, viewMode),
+    [activeDate, viewMode]
+  );
+
+  // Org-wide feed — no HostId, separate configKey
+  // const { data: rawMeetings, isLoading, refetch } = useMeetingData({ FromDate, ToDate });
+
+  const meetings = useMemo(
+    () => (Array.isArray(data) ? data.map(normalizeSchedulerMeeting) : []),
+    [data]
+  );
+
+  const meetingsByDate = useMemo(() => {
+    const map = new Map();
+    for (const m of meetings) {
+      if (!m.date) continue;
+      const key = m.date.slice(0, 10);
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(m);
+    }
+    return map;
+  }, [meetings]);
+
+  const datesWithMeetings = useMemo(() => new Set(meetingsByDate.keys()), [meetingsByDate]);
+
+  const upcomingMeetings = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    return meetings
+      .filter((m) => m.date >= toISODate(today))
+      .filter((m) =>
+        term
+          ? m.title?.toLowerCase().includes(term) ||
+            m.type?.toLowerCase().includes(term)  ||
+            m.host?.toLowerCase().includes(term)
+          : true
+      )
+      .sort((a, b) => {
+        const dc = (a.date || "").localeCompare(b.date || "");
+        return dc !== 0 ? dc : (a.startTime || "").localeCompare(b.startTime || "");
+      })
+      .slice(0, 20);
+  }, [meetings, searchTerm, today]);
+
+  const dayMeetings = useMemo(
+    () => meetingsByDate.get(toISODate(activeDate)) || [],
+    [meetingsByDate, activeDate]
+  );
+
+  const handlePrevMonth = useCallback(
+    () => setActiveDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1)), []
+  );
+  const handleNextMonth = useCallback(
+    () => setActiveDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1)), []
+  );
+  const handleToday = useCallback(() => setActiveDate(new Date()), []);
+
+  const headerLabel = useMemo(
+    () => viewMode === "List" ? "All meetings" : formatHeaderDate(activeDate),
+    [activeDate, viewMode]
+  );
+
+  // After a successful save, close modal and refresh data
+  const handleFormSuccess = useCallback(() => {
+    closeModal();
+    // refetch?.();
+  }, [closeModal]);
 
   return (
-    <div className="flex h-[calc(100vh-120px)] bg-[#0f111a] font-sans overflow-hidden text-gray-200 selection:bg-[#6e58d1]/30">
-      
-      {/* Sidebar - Pass both arrays so calendar dots show for both */}
-      <CalendarSidebar meetings={meetings} availability={availability} selected={selected} setSelected={setSelected} />
+    <>
+      {/* ── Scheduler shell ── */}
+      <div className="flex flex-col lg:flex-row h-full min-h-[600px] bg-white rounded-lg border border-gray-100 overflow-hidden">
 
-      <main className="flex-1 flex flex-col min-w-0 overflow-hidden relative">
-        {/* Top Header */}
-        <header className="px-8 pt-8 pb-4 flex flex-col md:flex-row items-start md:items-center justify-between shrink-0 border-b border-transparent">
-          <div>
-            <h1 className="text-[22px] font-semibold text-white tracking-wide">
-              {formatHeaderFromData(meetings)}
-            </h1>
-            <p className="text-[13px] text-gray-500 mt-1">
-              {meetingCount} meeting{meetingCount !== 1 ? "s" : ""} · {availabilityCount} availability block{availabilityCount !== 1 ? "s" : ""}
-            </p>
-          </div>
+        <SchedulerSidebar
+          activeDate={activeDate}
+          today={today}
+          datesWithMeetings={datesWithMeetings}
+          onSelectDate={setActiveDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+          onToday={handleToday}
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          upcomingMeetings={upcomingMeetings}
+          onSelectMeeting={handleSelectMeeting}
+        />
 
-          <div className="flex items-center gap-3 mt-4 md:mt-0">
-            {(config?.actionButtons || []).map((btn) => (
-              <button
-                key={btn.name}
-                onClick={() => openModalFn(btn.name, null)} 
-                className={`flex items-center gap-2 px-5 py-2.5 text-[13px] rounded-lg border border-[#272938] hover:bg-[#1a1c29] text-white transition-all font-semibold shadow-sm ${btn.className || ''}`}
-              >
-                <span className="text-gray-300">{btn.icon}</span>
-                {btn.label}
-              </button>
-            ))}
-            <button className="p-2.5 rounded-lg border border-[#272938] hover:bg-[#1a1c29] text-gray-400 transition-all shadow-sm">
-              <FaEllipsisH />
-            </button>
-          </div>
-        </header>
+        <div className="flex-1 flex flex-col min-h-0">
+          <SchedulerHeader
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            onNewMeeting={openCreateModal}    
+            headerLabel={headerLabel}
+          />
 
-        {/* Segmented Tabs */}
-        <div className="px-8 pb-6 shrink-0 border-b border-[#1b1d29]">
-          <div className="inline-flex rounded-xl border border-[#272938] bg-transparent p-[3px]">
-            {(config?.tabConfig || []).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setActiveTab(key)}
-                className={`flex items-center justify-center min-w-[100px] px-5 py-1.5 text-[13px] font-semibold rounded-lg transition-all
-                  ${activeTab === key
-                    ? "bg-[#1a1c29] text-white border border-[#272938] shadow-sm"
-                    : "text-gray-400 hover:text-gray-200 border border-transparent"
-                  }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto relative pb-20">
-          
-          {/* ── Timeline View ── */}
-          {activeTab === "timeline" && (
-            <div className="relative">
-              {!hasTimelineData ? (
-                <div className="flex flex-col items-center justify-center py-20 text-gray-600">
-                  <FaClock className="text-4xl mb-3 opacity-20" />
-                  <p className="text-sm">No events on the timeline for this period.</p>
-                </div>
-              ) : (
-                <div className="flex flex-col w-full">
-                  {HOURS.map((h) => {
-                    const blocks = slotsByHour[h] || [];
-                    return (
-                      <div key={h} className="relative flex w-full min-h-[70px] border-b border-[#1b1d29]">
-                        <div className="w-24 shrink-0 text-right pr-6 pt-3">
-                          <span className="text-[12px] font-medium text-gray-500">{hourLabel(h)}</span>
-                        </div>
-                        <div className="flex-1 pb-3 pt-3 pr-8 flex flex-col gap-2">
-                          {blocks.map((e) => (
-                            <TimelineBlock 
-                              key={e.meeting_id} 
-                              event={e} 
-                              isAvailable={e._isAvailability} 
-                              onClick={openModalFn} 
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              <div className="fixed bottom-6 right-1/2 translate-x-1/2">
-                 <button className="w-10 h-10 rounded-full bg-[#1a1c29] border border-[#272938] flex items-center justify-center text-gray-400 hover:text-white hover:bg-[#212330] shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-colors">
-                   <FaArrowDown size={14} />
-                 </button>
+          <div className="flex-1 min-h-0 relative overflow-auto">
+            {/* {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-white/60 text-sm text-gray-400 z-10">
+                Loading meetings…
               </div>
-            </div>
-          )}
+            )} */}
 
-          {/* ── Meetings View ── */}
-          {activeTab === "meetings" && (
-            <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {meetings.length === 0 ? (
-                <p className="text-sm text-gray-600 col-span-full py-10 text-center">No meetings scheduled.</p>
-              ) : (
-                meetings.map((e) => <MeetingCard key={e.meeting_id} event={e} isAvailable={false} onEdit={openModalFn} onClick={openModalFn} />)
-              )}
-            </div>
-          )}
-
-          {/* ── Availability View ── */}
-          {activeTab === "availability" && (
-            <div className="px-8 py-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {availability.length === 0 ? (
-                 <p className="text-sm text-gray-600 col-span-full py-10 text-center">No availability blocks set.</p>
-              ) : (
-                availability.map((e) => <MeetingCard key={e.meeting_id} event={e} isAvailable={true} onEdit={openModalFn} onClick={openModalFn} />)
-              )}
-            </div>
-          )}
-        </div>
-      </main>
-
-      {/* Reusable Modal Layer for Create and Edit */}
-      {openModal && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={closeModal}>
-          <div className="bg-[#14151f] border border-[#272938] rounded-2xl shadow-2xl w-full max-w-[960px] max-h-[90vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[#272938] shrink-0 bg-[#1a1c29]">
-              <h2 className="text-base font-semibold text-white">
-                {selectedEvent 
-                  ? (modalMode === "meeting" ? "Edit/Reschedule Meeting" : "Edit Availability")
-                  : (modalMode === "meeting" ? "Schedule a Meeting" : "Set Availability")
-                }
-              </h2>
-              <button onClick={closeModal} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#272938] text-gray-400 transition-colors">
-                <FaTimes size={14} />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 text-gray-300">
-              <EntityFormPage
-                mode={selectedEvent ? "Edit" : "Create"} 
-                config={dynamicConfig}
-                module={modalMode === "meeting" ? "Meeting" : "Availability"}
-                onSuccessCallback={closeModal}
-                context={{ 
-                  ...data, 
-                  TicketMaster: [...(TicketMaster || [])],
-                  isEdit: !!selectedEvent,
-                  entityData: selectedEvent,
-                  modalMode: modalMode
-                }}
+            {viewMode === "Month" && (
+              <MonthView
+                activeDate={activeDate}
+                today={today}
+                meetingsByDate={meetingsByDate}
+                onSelectDate={setActiveDate}
               />
-            </div>
+            )}
+
+            {viewMode === "Week" && (
+              <WeekView
+                activeDate={activeDate}
+                today={today}
+                meetingsByDate={meetingsByDate}
+                onSelectMeeting={handleSelectMeeting}
+              />
+            )}
+
+            {viewMode === "Day" && (
+              <DayView
+                activeDate={activeDate}
+                dayMeetings={dayMeetings}
+                onSelectMeeting={openEditModal}  
+              />
+            )}
+
+            {viewMode === "List" && (
+              <ListView
+                meetings={meetings}
+                onSelectMeeting={openEditModal}   
+              />
+            )}
           </div>
         </div>
-      )}
-    </div>
+      </div>
+
+      {/* ── Meeting Form Modal (Create / Edit) ── */}
+      <MeetingFormModal
+        isOpen={!!modalState}
+        mode={modalState?.mode ?? "Create"}
+        selectedEvent={modalState?.selectedEvent ?? null}
+        modalMode="meeting"
+        ticketMaster={ticketMaster}
+        onClose={closeModal}
+        onSuccess={handleFormSuccess}
+      />
+    </>
   );
-}
+};
+
+export default MeetingScheduler;
