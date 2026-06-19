@@ -2,13 +2,13 @@ import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
-const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
-  if (!context?.isEdit) {
-    // Not in edit mode ? skip validation
-    return true;
-  }
 
-  // In edit mode ? check if all fields are empty
+const isInQueue = (formData) => formData?.Status?.value?.id === 18;
+const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
+  if (!context?.isEdit) return true;
+
+  if (isInQueue(formData)) return true;
+
   const allEmpty =
     !formData?.Client &&
     !formData?.Web &&
@@ -16,10 +16,10 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
     !formData?.Technical;
 
   if (allEmpty) {
-    return `${fieldLabel} is required`; // Validate
+    return `${fieldLabel} is required`;
   }
 
-  return true; // At least one has value ? no validation error
+  return true;
 };
 const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
@@ -384,6 +384,7 @@ export const TicketFieldConfig = () => [
       if (context?.isEdit) {
         return true;
       }
+      
       if (!value) return true;
       const dueDate = new Date(value);
       const today = new Date();

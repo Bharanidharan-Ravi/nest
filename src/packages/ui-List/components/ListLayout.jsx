@@ -10,20 +10,16 @@ import { ListGraphView } from "./ListGraphView";
 import TimesheetTree from "../../../features/dashboard/component/TimesheetTree";
 import { useMemo } from "react";
 
+
 export function ListLayout({ className }) {
   const { view, config} = useList();
   const layoutClasses = className || config.theme?.layout || "flex flex-col w-full";
   const stickyTopValue = config.theme?.stickyTop;
-
- 
-
   const renderView = () => {
     if (view === "graph") return <ListGraphView />;
     if (view === "table") return <ListTableView />;
-    return <ListCardView/>;
+  return <ListCardView/>;
   };
-
-
   return (
     <div className={`rounded-lg bg-white shadow-sm ${layoutClasses}`}>
         <div className={`sticky z-20 bg-white border border-gray-200 border-b-0 rounded-t-lg 
@@ -37,7 +33,6 @@ export function ListLayout({ className }) {
             
             {/* Moved ListViewSwitcher here so it anchors to the left! */}
             <ListViewSwitcher />
-            
             {config.tabsExtra && <div className="flex items-center">{config.tabsExtra()}</div>}
           </div>
 

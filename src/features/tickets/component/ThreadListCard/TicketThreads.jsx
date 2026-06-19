@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { FaHistory, FaArrowRight, FaTags, FaClock } from "react-icons/fa";
+import { FaHistory, FaArrowRight, FaTags, FaClock, FaTimes } from "react-icons/fa";
 import { ListProvider } from "../../../../packages/ui-List/components/ListProvider";
 import { ListCardView } from "../../../../packages/ui-List/components/ListCardView";
 import EntityFormPage from "../../../../packages/crud/pages/EntityFormPage";
@@ -60,6 +60,7 @@ const TicketThreads = ({
 
   // ✅ FIXED
   const [overrides, setOverRide, getItem] = useThreadOverRides();
+  const [replyingToThread, setReplyingToThread] = useState(null)
 
   const { dialogProps, openDialog } = useConfirmDialog();
   const rawThreads = React.useMemo(() => {
@@ -177,6 +178,7 @@ const TicketThreads = ({
         IsSupport: thread.IsSupport,
         toClient: thread.toClient,
         team: thread.team,
+        Ref_Id: thread.Ref_Id,
       };
     });
   }, [threadsData, assigneesJsonString]);
@@ -391,10 +393,10 @@ const TicketThreads = ({
   // TOGGLES
   // =========================================================
   const commitToggle = useCallback(
-    async (item,checked,field) => {
-console.log("item, checked:",  checked);
+    async (item, checked, field) => {
+      console.log("item, checked:", checked);
       try {
-        await apiClient.post(`thread/${item.id}`, {[field]: checked })
+        await apiClient.post(`thread/${item.id}`, { [field]: checked })
         queryClient.invalidateQueries(queryKeys.ticket.thread(ticketId))
       } catch (err) {
         setOverRide(item.id, field, !checked)
@@ -412,23 +414,23 @@ console.log("item, checked:",  checked);
       onCommit: (item, checked, name) => {
         openDialog({
           variant: checked ? "info" : "warning",
-      
+
           title: checked
             ? "Commit this thread to the client?"
             : "Remove client commitment for this thread?",
-      
+
           description: "This will update the thread for all participants",
-      
+
           confirmText: checked ? "Yes, Commit" : "Yes, Remove",
-      
+
           cancelText: "Cancel",
-      
-          onConfirm: () => commitToggle(item,checked,name),
-      
-          onCancel: () => setOverRide(item.id,!checked,name),
+
+          onConfirm: () => commitToggle(item, checked, name),
+
+          onCancel: () => setOverRide(item.id, !checked, name),
         });
-      
-       
+
+
       }
     },
   ];
@@ -486,7 +488,8 @@ console.log("item, checked:",  checked);
           </div>
         );
       }
-
+      const referencedThread = item.Ref_Id
+        ? rawThreads.find((t) => String(t.id) === String(item.Ref_Id)) ?? null : null
       // =====================================
       // HISTORY EVENTS
       // =====================================
@@ -602,6 +605,15 @@ console.log("item, checked:",  checked);
           onEdit={() => setEditingItem(item)}
           formContext={formContext}
           toggles={togglesConfig}
+          onReply={(thread) => {
+            setReplyingToThread(thread)
+            setTimeout(() => {
+              document
+                .getElementById("thread-compose-area")
+                ?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+            }, 50)
+          }}
+          referencedThread={referencedThread}
         />
       );
     },
@@ -637,33 +649,105 @@ console.log("item, checked:",  checked);
       {/* ===================================== */}
       {/* REPLY / REOPEN FORM */}
       {/* ===================================== */}
+      {console.log("replyingToThread", replyingToThread)
+      }
 
       {!editingItem && (
-        <div className="rounded-3xl p-2">
-          <EntityFormPage
-            mode={
-              isTerminalState
-                ? "Reopen"
-                : "Create"
-            }
-            config={{
-              ...ThreadFormConfig,
-              fields:
-                ThreadFieldConfig(ticketId),
-            }}
-            context={{
-              ...formContext,
-              isClosed: isTerminalState,
-              parentTicket,
-              isQuickFormOpen: null,
-              isQuickStatusOpen: null,
-              openDialog, 
-            }}
-            module="Ticket"
-          />
+        <div id="thread-compose-area" className="rounded-3xl p-2">
+          <div className={`overflow-hidden bg-white ${replyingToThread
+            ? "border border-gray-200 rounded-xl"
+            : "border border-gray-200 rounded-xl"
+            }`}>
+
+            {replyingToThread && (
+              (() => {
+                const cleanReplyText =
+                  replyingToThread.description
+                    ?.replace(/<[^>]+>/g, "")
+                    ?.replace(/&nbsp;/g, "")
+                    ?.trim() || "No content";
+
+                return (
+                  <div className="flex items-center gap-2 px-3.5 py-2 bg-gray-50 border-b border-gray-200">
+                    <svg
+                      width="13"
+                      height="34"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#6B7280"
+                      strokeWidth="2.2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="flex-shrink-0"
+                    >
+                      <polyline points="9 14 4 9 9 4" />
+                      <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                    </svg>
+                    <span className="text-[12px] font-semibold text-gray-500">
+                      Replying to
+                    </span>
+                    <div className="flex items-center gap-2 px-2 py-1 bg-blue-100 rounded-full">
+                      <div className="w-[22px] h-[22px] rounded-full bg-blue-300 flex items-center justify-center text-[9px] font-bold text-gray-800 flex-shrink-0">
+                        {replyingToThread.CreatedBy
+                          ?.split("")
+                          .map((p) => p[0]?.toUpperCase())
+                          .join("")
+                          .slice(0, 2)}
+                      </div>
+
+                      <span className="text-[12px] font-semibold text-gray-800 whitespace-nowrap">
+                        {replyingToThread.CreatedBy}
+                      </span>
+                    </div>
+                    <span
+                      className="text-[12px] text-gray-500 truncate max-w-[600px]"
+                      title={cleanReplyText}
+                    >
+                      {cleanReplyText.slice(0, 300)}
+                      {cleanReplyText.length > 300 ? "..." : ""}
+                    </span>
+
+                    <button onClick={() => setReplyingToThread(null)}
+                      className="ml-auto flex-shrink-0 w-[22px] h-[22px] rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                      <FaTimes size={10} />
+                    </button >
+                  </div>
+                );
+              })()
+            )}
+
+            < EntityFormPage
+              key={`reply-form-${replyingToThread?.id ?? "new"}`}
+              mode={
+                isTerminalState
+                  ? "Reopen"
+                  : "Create"
+              }
+              config={{
+                ...ThreadFormConfig,
+                fields:
+                  ThreadFieldConfig(ticketId),
+              }}
+              context={{
+                ...formContext,
+                isClosed: isTerminalState,
+                parentTicket,
+                isQuickFormOpen: null,
+                isQuickStatusOpen: null,
+                openDialog,
+                replyingToId: replyingToThread ? String(replyingToThread.id) : null
+              }}
+              module="Ticket"
+              onSuccessCallback={() => {
+                setReplyingToThread(null)
+              }}
+            />
+
+          </div>
         </div>
-      )}
-    </div>
+      )
+      }
+    </div >
   );
 };
 

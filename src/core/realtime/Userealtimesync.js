@@ -70,7 +70,7 @@ export const useRealtimeSync = (getToken) => {
   const handleReconnected = useCallback(async () => {
     console.info("[RealtimeSync] Reconnected");
     queryClient.invalidateQueries();
-    await versionChecker();
+    // await versionChecker();
   }, [queryClient]);
 
   useEffect(() => {

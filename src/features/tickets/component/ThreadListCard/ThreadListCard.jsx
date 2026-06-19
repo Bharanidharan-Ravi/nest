@@ -1,7 +1,7 @@
 import { HtmlRenderer } from "../../../../app/shared/utilities/utilities";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { FaEdit, FaRegHandshake } from "react-icons/fa";
+import { FaEdit, FaRegHandshake, FaReply } from "react-icons/fa";
 import { readUserFromSession } from "../../../../core/auth/useCurrentUser";
 import MuiSwitch from "../../../../packages/react-input-engine/adapters/mui/MuiSwitch";
 
@@ -22,8 +22,21 @@ function formatDateRange(fromTime, toTime) {
   return `${from.format(formatStr)} - ${to.format(formatStr)}`;
 }
 
+const stripHtml = (html) => {
+  if (!html) return "";
+  return html
+    .replace(/<\/?(p|br|div|li)[^>]*>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/\s+/g, "")
+    .trim()
+}
+
 // 👉 Accept the new onEdit and currentUser props!
-const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }) => {
+const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [], onReply, referencedThread }) => {
   dayjs.extend(relativeTime);
   // Check if this comment was made by the logged-in user
   // const isMe = item.CreatedBy === currentUser;
@@ -38,7 +51,7 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }
   // 🔥 3. Can Edit ONLY if they are the creator AND it's within 24 hours
   const canEdit = isMe && isWithin24Hours;
   const renderCoContributors = (coContributors) => {
-    if(formContext?.isViewer) return null; // Don't show co-contributors in viewer mode
+    if (formContext?.isViewer) return null; // Don't show co-contributors in viewer mode
     if (!coContributors || coContributors.length === 0) return null;
 
     const isSelfSupport = coContributors.some(
@@ -109,18 +122,6 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }
               : getInitials(item.CreatedBy)}
         </div>
       </div>
-      {/* <div className="flex-shrink-0 relative z-10 mt-1">
-        <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm transition-all duration-300 ${
-            isMe
-              ? "bg-gradient-to-br from-[#FFD700] via-brand-yellow to-[#EAB308] text-white shadow-[0_4px_12px_rgba(234,179,8,0.3)] border border-white/20"
-              : "bg-white text-gray-700 border-2 border-transparent bg-clip-padding relative before:absolute before:inset-[-2px] before:rounded-full before:bg-gradient-to-br before:from-brand-yellow before:to-yellow-200 before:-z-10"
-          }`}
-        >
-          <span className="relative z-10">{getInitials(item.CreatedBy)}</span>
-        </div>
-      </div> */}
-      {/* 2. THE GLASS CHAT BUBBLE */}
 
       <div
         className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${!formContext.isViewer && item.toClient
@@ -169,15 +170,70 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [] }
               onClick={onEdit}
               disabled={!canEdit}
               className={`flex items-center justify-center p-1 rounded-full transition-colors ${canEdit
-                  ? "text-gray-400 hover:text-blue-600 hover:bg-black/5"
-                  : "invisible"
+                ? "text-gray-400 hover:text-blue-600 hover:bg-black/5"
+                : "invisible"
                 }`}
               title="Edit Comment"
             >
               <FaEdit size={14} />
             </button>
+            {/* {onReply&&( */}
+            {!formContext?.isViewer && (
+            <button
+              onClick={() => onReply(item)}
+              //  disabled={!canEdit}
+              className="flex items-center justify-center p-1 rounded-full transition-colors text-gray-400 hover:text-blue-600 hover:bg-black/5"
+              title="Reply to this comment" >
+              <FaReply size={14} />
+            </button>
+            )}
+            {/* )} */}
+
           </div>
         </div>
+
+        {referencedThread && (() => {
+          const stripHtml = (html) => {
+            const doc = new DOMParser().parseFromString(html || "", "text/html");
+            return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+          };
+
+          const cleanText = stripHtml(referencedThread.description);
+          return (
+            <div className="mx-4 mt-3 mb-1 rounded-xl border border-gray-200 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+              <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-100">
+                <svg
+                  width="13"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#6B7280"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="flex-shrink-0"
+                >
+                  <polyline points="9 14 4 9 9 4" />
+                  <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                </svg>
+                <div className="w-5 h-5 rounded-md bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-700 flex-shrink-0">
+                  {getInitials(referencedThread.CreatedBy)}
+                </div>
+                <span className="text-[12px] font-semibold text-gray-800">
+                  {referencedThread.CreatedBy}
+                </span>
+                <span className="ml-auto text-[10px] text-gray-400 italic">
+                  in reply to
+                </span>
+              </div>
+              <div className="px-3 py-4 bg-white group">
+                <p className="text-[12px] text-gray-600 leading-relaxed m-0 line-clamp-2 group-hover:line-clamp-none transition-all duration-200">
+                  {cleanText}
+                </p>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Body */}
         < div className="p-5 text-sm text-gray-800 break-words leading-relaxed" >

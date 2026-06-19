@@ -67,6 +67,10 @@ export const ROUTE_KEYS = {
   BANNER_LIST:"banner.list",
   BANNER_CREATE:"banner.list.create",
   BANNER_EDIT:"banner.list.edit",
+
+  MEETING_LIST:"meeting.list",
+  MEETING_CREATE_WITH_TICKET: "meeting.create.withTicket",
+
 };
 
 export const PATHS = {
@@ -122,4 +126,9 @@ export const PATHS = {
   BANNER_LIST:"/banner",
   BANNER_CREATE:"/banner/create",
   BANNER_EDIT:"/banner/:BannerMessageId/edit",
+
+
+  MEETING_LIST:"/meeting",
+  MEETING_CREATE_WITH_TICKET:"/meeting/create/:ticketId",
+
 };

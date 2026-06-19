@@ -14,15 +14,15 @@
  */
 
 export const ROLES = {
-  ADMIN:   1,
+  ADMIN: 1,
   MANAGER: 2,
-  VIEWER:  3,
+  VIEWER: 3,
 };
 
 // Shorthand — used in the arrays below
-const ALL           = [1, 2, 3];
+const ALL = [1, 2, 3];
 const ADMIN_MANAGER = [1, 2];
-const ADMIN_ONLY    = [1];
+const ADMIN_ONLY = [1];
 
 // ─── Route-level access ───────────────────────────────────────────────────────
 // These are used as `allowedRoles` in every feature's route definition.
@@ -31,36 +31,46 @@ const ADMIN_ONLY    = [1];
 
 export const ROUTE_ROLES = {
   // ── Dashboard (all roles) ────────────────────────────────────────────
-  DASHBOARD:        ADMIN_MANAGER,
-  NOTIFICATIONS:    ADMIN_MANAGER,
+  DASHBOARD: ADMIN_MANAGER,
+  NOTIFICATIONS: ADMIN_MANAGER,
 
   // ── Repository (Role 3 cannot access repo list or create) ────────────
-  REPO_LIST:        ADMIN_MANAGER,   // ← Role 3 redirected to /login
-  REPO_CREATE:      ADMIN_MANAGER,
-  REPO_DETAIL:      ALL,             // ← Role 3 CAN open a specific repo
-  REPO_OVERVIEW:    ALL,
-  REPO_CUSTOMER_CREATE:    ALL,
-  REPO_CUSTOMER_EDIT:    ALL,
+  REPO_LIST: ADMIN_MANAGER,   // ← Role 3 redirected to /login
+  REPO_CREATE: ADMIN_MANAGER,
+  REPO_DETAIL: ALL,             // ← Role 3 CAN open a specific repo
+  REPO_OVERVIEW: ALL,
+  REPO_CUSTOMER_CREATE: ALL,
+  REPO_CUSTOMER_EDIT: ALL,
 
   // ── Tickets (all roles) ──────────────────────────────────────────────
-  TICKET_LIST:      ALL,
-  TICKET_CREATE:    ALL,
-  TICKET_DETAIL:    ALL,
+  TICKET_LIST: ALL,
+  TICKET_CREATE: ALL,
+  TICKET_DETAIL: ALL,
 
   // ── Projects inside a repo (all roles) ──────────────────────────────
-  REPO_PROJ_LIST:   ADMIN_MANAGER,
+  REPO_PROJ_LIST: ADMIN_MANAGER,
   REPO_PROJ_CREATE: ALL,
 
   // ── Standalone projects (all roles) ─────────────────────────────────
-  PROJ_LIST:        ALL,
-  PROJ_CREATE:      ALL,
-  PROJ_DETAIL:      ALL,
-  PROJ_OVERVIEW:    ALL,
+  PROJ_LIST: ALL,
+  PROJ_CREATE: ALL,
+  PROJ_DETAIL: ALL,
+  PROJ_OVERVIEW: ALL,
   PROJ_TICKET_LIST: ALL,
 
   // ── Labels & Employees (all roles can VIEW) ──────────────────────────
-  LABEL_LIST:       ADMIN_MANAGER,
-  EMPLOYEE_LIST:    ADMIN_MANAGER,
+  LABEL_LIST: ADMIN_MANAGER,
+  EMPLOYEE_LIST: ADMIN_MANAGER,
+
+
+  BANNER_LIST: ADMIN_ONLY,
+  BANNER_CREATE: ADMIN_ONLY,
+  BANNER_EDIT: ADMIN_ONLY,
+
+  MEETING_LIST: ADMIN_MANAGER,
+  MEETING_CREATE_WITH_TICKET: ADMIN_MANAGER,
+
+  NOTIFICATIONS: ADMIN_MANAGER,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────
@@ -68,33 +78,40 @@ export const ROUTE_ROLES = {
 // Controls visibility of buttons and forms — not entire pages.
 export const PERMISSIONS = {
   // Repository
-  REPO_CREATE:       ADMIN_MANAGER,
-  REPO_EDIT:         ADMIN_MANAGER,
-  REPO_DELETE:       ADMIN_ONLY,
+  REPO_CREATE: ADMIN_MANAGER,
+  REPO_EDIT: ADMIN_MANAGER,
+  REPO_DELETE: ADMIN_ONLY,
 
   // Tickets
-  TICKET_CREATE:     ALL,
-  TICKET_EDIT:       ALL,
-  TICKET_DELETE:     ADMIN_MANAGER,
+  TICKET_CREATE: ALL,
+  TICKET_EDIT: ALL,
+  TICKET_DELETE: ADMIN_MANAGER,
 
   // Projects
-  PROJECT_CREATE:    ALL,
-  PROJECT_EDIT:      ALL,
-  PROJECT_DELETE:    ADMIN_MANAGER,
+  PROJECT_CREATE: ALL,
+  PROJECT_EDIT: ALL,
+  PROJECT_DELETE: ADMIN_MANAGER,
 
   // Labels — Role 2 and 3 can only VIEW
-  LABEL_VIEW:        ALL,
-  LABEL_CREATE:      ADMIN_ONLY,
-  LABEL_EDIT:        ADMIN_ONLY,
-  LABEL_DELETE:      ADMIN_ONLY,
+  LABEL_VIEW: ALL,
+  LABEL_CREATE: ADMIN_ONLY,
+  LABEL_EDIT: ADMIN_ONLY,
+  LABEL_DELETE: ADMIN_ONLY,
 
   // Employees — Role 2 and 3 can only VIEW
-  EMPLOYEE_VIEW:     ALL,
-  EMPLOYEE_CREATE:   ADMIN_ONLY,
-  EMPLOYEE_EDIT:     ADMIN_ONLY,
-  EMPLOYEE_DELETE:   ADMIN_ONLY,
+  EMPLOYEE_VIEW: ALL,
+  EMPLOYEE_CREATE: ADMIN_ONLY,
+  EMPLOYEE_EDIT: ADMIN_ONLY,
+  EMPLOYEE_DELETE: ADMIN_ONLY,
 
   // Settings
-  SETTINGS_VIEW:     ADMIN_MANAGER,
-  SETTINGS_EDIT:     ADMIN_ONLY,
+  SETTINGS_VIEW: ADMIN_MANAGER,
+  SETTINGS_EDIT: ADMIN_ONLY,
+
+  BANNER_LIST: ADMIN_ONLY,
+  BANNER_CREATE: ADMIN_ONLY,
+  BANNER_EDIT: ADMIN_ONLY,
+
+  MEETING_LIST: ADMIN_MANAGER,
+  MEETING_CREATE_WITH_TICKET: ADMIN_MANAGER,
 };

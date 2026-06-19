@@ -13,7 +13,7 @@ const ALL_TABS = [
 ];
 
 // Pre-filtered viewer tabs
-const VIEWER_TABS = ALL_TABS.filter(t => ["open", "closed"].includes(t.key));
+const VIEWER_TABS = ALL_TABS.filter(t => ["open", "closed","queue"].includes(t.key));
 
 // Generic sorting function creator
 // const createSortFn = (priorityFields = []) => (a, b) => {

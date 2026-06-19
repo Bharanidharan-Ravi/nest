@@ -19,7 +19,8 @@ export const TicketFormConfig = {
    
       label: context?.isEdit ? "Update" : "Create",
       type: "button",
-      onClick: ({ submitForm }) => {
+      onClick: ({ submitForm,context }) => {
+        const isViewer=context?.isViewer
         console.log("formData :", formData);
         const openDialog=context?.openDialog
         
@@ -45,7 +46,7 @@ export const TicketFormConfig = {
         // Must have Hours AND Due Date AND at least one person assigned
         const isReady = hasHours && hasDueDate && hasAssignee && hasResources && hasLabel
 
-        if(isReady){
+        if(isReady||isViewer){
           submitForm({
             Status:formData?.Status?.value?.id||1,
           })
@@ -60,7 +61,7 @@ export const TicketFormConfig = {
           !hasLabel&&"Label"
         ].filter(Boolean);
 
-        openDialog({
+       if(openDialog({
           variant: "warning",
           title: "Some Data is Missing",
           description: `The following fields are incomplete:\n●${missingFields.join("\n●")}\n\nyou 
@@ -71,7 +72,7 @@ export const TicketFormConfig = {
             submitForm({Status:18
             }),
           onCancel: () => { },
-        });
+        }));
 
 
       },

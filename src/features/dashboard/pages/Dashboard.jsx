@@ -329,8 +329,8 @@ export default function Dashboard() {
       // 3. DYNAMIC GROUPING LOGIC
       graphGroupIdKey: isAllEmployees
         ? (item) => `${item.employeeId}_${item.employeeName}` // All Employees -> Group by Person
-        : isAllProjects
-          ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
+        // : isAllProjects
+        //   ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
           : (item) => item.id || item.issueId,
       // 2. COMBINED LABEL: Formats the Tooltip beautifully (e.g., "[WGN] Backend - Login Fix")
       graphLabelKey: isAllEmployees

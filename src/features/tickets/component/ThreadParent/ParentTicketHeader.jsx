@@ -57,6 +57,8 @@ const ParentTicketHeader = ({
   };
 
   if (!parentTicket) return null;
+    console.log("parentTicket",parentTicket);
+    
 
   const latestLog = progressLogs?.length > 0 ? progressLogs[0] : null;
   const statusSummary =
@@ -121,7 +123,7 @@ const ParentTicketHeader = ({
 const getStatusStyle=(StatusId)=>{
   switch(StatusId){
     case 15:return{label:"Closed",color:"text-red-600"}
-    case 19:return{label:"In Queue", color: " text-yellow-800"}
+    case 18:return{label:"In Queue", color: " text-yellow-800"}
     case 14:return{label:"On Hold",color: "text-orange-800"}
     default:return null;
   }

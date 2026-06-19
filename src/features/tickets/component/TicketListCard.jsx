@@ -5,7 +5,7 @@ import { GoIssueOpened, GoIssueClosed, GoIssueReopened } from "react-icons/go";
 import { Tooltip } from "@mui/material";
 import "../css/TicketListCard.css";
 import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCompletionIndicator/BatteryCompletionIndicator";
-import { FiClock, FiMessageSquare, FiX } from "react-icons/fi";
+import { FiCalendar, FiClock, FiMessageSquare, FiX } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { useState } from "react";
@@ -28,6 +28,8 @@ import { ThreadFieldConfig } from "../config/Thread.config";
 import { FaHistory } from "react-icons/fa";
 import { HiPause } from "react-icons/hi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { useNavigate } from "react-router-dom";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 
 dayjs.extend(relativeTime);
 
@@ -38,6 +40,7 @@ export default function TicketListCard({
   config,
   quickCommentButton,
 }) {
+  const { goTo } = useSmartNavigation();
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
   const ProjectDetails = useProjectById(item?.project);
   const [quickFormTicket, setQuickFormTicket] = useState(null);
@@ -50,7 +53,9 @@ export default function TicketListCard({
   const { text } = parseQuery(query);
   const mainAssignee = item.multiAssignees?.find(
     (a) => a.Assignee_Type === "Main Assignee",
+
   );
+ 
 
   const uniqueAssignees = Array.from(
     new Map(
@@ -124,89 +129,6 @@ export default function TicketListCard({
     statusIcon = <GoIssueOpened className="status-icon status-open" />;
   }
 
-  // Add pulsing only if not viewer
-  if (!isViewer) {
-    if (isCloseRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Close Requested by Assignee"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-red-500"></span>
-        </div>
-      );
-    } else if (isPriorityRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Priority"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-orange-500"></span>
-        </div>
-      );
-    } else if (funcResponseRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Awaiting Response"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-purple-500"></span>
-        </div>
-      );
-    } else if (technicalResponseRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Awaiting Response"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-green-500"></span>
-        </div>
-      );
-    } else if (webResponseRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Awaiting Response"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-blue-500"></span>
-        </div>
-      );
-    } else if (adminResponseRequested) {
-      statusIcon = (
-        <div
-          className="relative flex h-[10px] w-[10px] mx-1 mt-1"
-          title="Awaiting Response"
-        >
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-[10px] w-[10px] bg-yellow-500"></span>
-        </div>
-      );
-    }
-  } else if (item.reopenedBy) {
-    // If it has a ReopenedBy Guid, show the Reopen icon
-    statusIcon = (
-      <GoIssueReopened
-        className="status-icon text-orange-500"
-        title="Reopened Ticket"
-      />
-    );
-  } else if (activeStatus.includes(item.statusId)) {
-    // If it's closed/cancelled
-    statusIcon = <GoIssueClosed className="status-icon status-closed" />;
-  } else if (item.statusId === 14) {
-    // 🟡 HOLD status
-    statusIcon = (
-      <HiPause className="status-icon text-yellow-500" title="On Hold" />
-    );
-  } else {
-    // If it's just a normal open ticket
-    statusIcon = <GoIssueOpened className="status-icon status-open" />;
-  }
   const dueStatus = getDueStatus(item.dueDate);
 
   // Placeholders for your new data properties
@@ -230,14 +152,6 @@ export default function TicketListCard({
   };
   return (
     <>
-      {/* <div className={`ticket-row ${focused ? "focused-row" : ""}`}> */}
-      {/* <div
-        key={item.id}
-        className={`ticket-row ${focused ? "focused-row" : ""}
-      ${item.isCloseRequested || item.IsCloseRequested ? "close-requested-row" : ""}
-      ${isPriorityRequested ? "priority-requested-row" : ""}
-      ${funcResponseRequested ? "response-requested-row" : ""}`}
-      > */}
       <Tooltip
         title={!isViewer ? rowTooltip : ""}
         arrow
@@ -259,30 +173,7 @@ export default function TicketListCard({
       >
         <div
           key={item.id}
-          className={`ticket-row 
-          ${focused ? "focused-row" : ""} 
-          ${
-            !isViewer && (item.isCloseRequested || item.IsCloseRequested)
-              ? "close-requested-row"
-              : ""
-          } 
-          ${!isViewer && isPriorityRequested ? "priority-requested-row" : ""} 
-          ${!isViewer && funcResponseRequested ? "response-requested-row" : ""}
-          ${
-            !isViewer && technicalResponseRequested
-              ? "technical-response-requested-row"
-              : ""
-          }
-          ${
-            !isViewer && webResponseRequested
-              ? "web-response-requested-row"
-              : ""
-          }
-          ${
-            !isViewer && adminResponseRequested
-              ? "admin-response-requested-row"
-              : ""
-          }`}
+          className={`ticket-row ${focused ? "focused-row" : ""}`}
         >
           {/* LEFT BLOCK: Main Information */}
           <div className="ticket-main">
@@ -361,7 +252,7 @@ export default function TicketListCard({
                     <span className="project-key">
                       {ProjectDetails.name.split(" ").length > 2
                         ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
-                          "..."
+                        "..."
                         : ProjectDetails.name}
                     </span>
                   </Tooltip>
@@ -378,14 +269,14 @@ export default function TicketListCard({
               )}
               {!isViewer && (
                 <>
-                <>
-                  <div className="ticket-repo-info">
-                    {mainAssignee && (
-                      <span>Owner: {mainAssignee.Assignee_Name}</span>
-                    )}
-                  </div>
-                 
-                  </> 
+                  <>
+                    <div className="ticket-repo-info">
+                      {mainAssignee && (
+                        <span>Owner: {mainAssignee.Assignee_Name}</span>
+                      )}
+                    </div>
+
+                  </>
                   {/* Assignees Avatars */}
                   <div className="ticket-assignees">
                     {uniqueAssignees.slice(0, 3).map((a) => (
@@ -415,6 +306,20 @@ export default function TicketListCard({
                   {priority}
                 </span>
               )}
+
+              {!isViewer && (
+                <div className="inline-flag-group">
+                  {isCloseRequested && <div className="inline-flag flag-close"><span className="beacon-dot"></span>Close</div>}
+                  {adminResponseRequested && <div className="inline-flag flag-admin"><span className="beacon-dot"></span>Admin</div>}
+                  {technicalResponseRequested && <div className="inline-flag flag-tech"><span className="beacon-dot"></span>Technical</div>}
+                  {isPriorityRequested && <div className="inline-flag flag-priority"><span className="beacon-dot"></span>Priority</div>}
+                  {webResponseRequested && <div className="inline-flag flag-web"><span className="beacon-dot"></span>Web</div>}
+                  {funcResponseRequested && <div className="inline-flag flag-func"><span className="beacon-dot"></span>Functional</div>}
+
+
+
+                </div>
+              )}
             </div>
 
             {/* Timesheet */}
@@ -423,52 +328,66 @@ export default function TicketListCard({
               item.EndTime ||
               item.ConsumeTime ||
               item.Comment) && (
-              <div className="ticket-timesheet-info">
-                {/* working time */}
-                {item.StartTime && item.EndTime && (
-                  <span className="timesheet-item">
-                    <FiClock className="due-icon" />
-                    Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                    {dayjs(item.EndTime).format("HH:mm")}
-                  </span>
-                )}
-
-                {/* time taken */}
-                {item.ConsumeTime && (
-                  <>
-                    <span className="meta-divider">•</span>
+                <div className="ticket-timesheet-info">
+                  {/* working time */}
+                  {item.StartTime && item.EndTime && (
                     <span className="timesheet-item">
-                      Time taken: {item.ConsumeTime} hr
+                      <FiClock className="due-icon" />
+                      Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                      {dayjs(item.EndTime).format("HH:mm")}
                     </span>
-                  </>
-                )}
+                  )}
 
-                {/* view cmnt */}
-                {item.Comment && (
-                  <>
-                    <span className="meta-divider">•</span>
-                    <span
-                      className="comment-toggle"
-                      onClick={(e) => {
-                        // 👈 FIX: Add 'e' here
-                        e.stopPropagation();
-                        e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
-                        setIsCommentExpanded(!isCommentExpanded);
-                      }}
-                    >
-                      {isCommentExpanded ? "Hide Comment" : "View Comment"}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+                  {/* time taken */}
+                  {item.ConsumeTime && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span className="timesheet-item">
+                        Time taken: {item.ConsumeTime} hr
+                      </span>
+                    </>
+                  )}
+
+                  {/* view cmnt */}
+                  {item.Comment && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span
+                        className="comment-toggle"
+                        onClick={(e) => {
+                          // 👈 FIX: Add 'e' here
+                          e.stopPropagation();
+                          e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                          setIsCommentExpanded(!isCommentExpanded);
+                        }}
+                      >
+                        {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             {item.Comment && isCommentExpanded && (
               <div className="comment-content">{item.Comment} </div>
             )}
           </div>
           {/* MIDDLE BLOCK: Due Date */}
 
-          <div className="flex  items-end gap-2">
+          {/* <div className="flex  items-end gap-2">
+               {item.threadCount}
+            <div className="flex flex-col">
+              <button
+                className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center "
+                title="Meeting Scheduler"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openInNewTab(meetingUrl); // or navigate()
+                }}
+              >
+                <FiCalendar className="text-base" />
+              </button>
+            
+            </div>
             <div className="flex-col">
               {config?.enablequickStatus && (
                 <button
@@ -483,7 +402,8 @@ export default function TicketListCard({
                 </button>
               )}
 
-              {/* Quick Comment button */}
+
+           
               {config?.enablequickComment && (
                 <button
                   className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
@@ -514,6 +434,79 @@ export default function TicketListCard({
                 )}
               </div>
             )}
+          </div> */}
+
+
+          <div className="flex items-end gap-4">
+
+            {/* LEFT COLUMN */}
+           
+            <div className="flex flex-col items-center gap-2">
+               {!isViewer && (
+              <button
+                className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
+                title="Meeting Scheduler"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  goTo(ROUTE_KEYS.MEETING_CREATE_WITH_TICKET, { ticketId: item.navId});
+                }}
+              >
+                <FiCalendar className="text-base" />
+              </button>
+               )}
+
+              <div className="text-sm text-gray-700">
+                {item.threadCount}
+              </div>
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className="flex flex-col items-center gap-2">
+
+              {config?.enablequickStatus && (
+                <button
+                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
+                  title="Quick Status"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setQuickTicketStatus(item);
+                  }}
+                >
+                  <FaHistory className="text-base" />
+                </button>
+              )}
+
+              {config?.enablequickComment && (
+                <button
+                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
+                  title="Quick Comment"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleQuickComment(item);
+                  }}
+                >
+                  <FiMessageSquare className="text-base" />
+                </button>
+              )}
+
+            </div>
+
+            {/* DUE DATE BLOCK (unchanged) */}
+            {!isViewer && (
+              <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
+                <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+                  {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
+                </div>
+
+                {dueStatus && (
+                  <div className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}>
+                    {dueStatus.icon}
+                    <span>{dueStatus.text}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
           </div>
 
           {/* RIGHT BLOCK: Progress & Actions */}
@@ -651,62 +644,3 @@ export default function TicketListCard({
     </>
   );
 }
-
-///////////////////////-----------------------------------//////////////////
-//  {isQuickFormOpen && (
-//       <>
-//         {/* Backdrop */}
-//         <div
-//           className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
-//           onClick={closeQuickForm}
-//         />
-
-//         {/* Form Container */}
-//         <div
-//           onClick={(e) => e.stopPropagation()}
-//           className="fixed inset-0 z-[10000] flex items-center justify-center p-6 overflow-auto"
-//         >
-//           <div className="w-full max-w-4xl max-h-[90vh] bg-white rounded-1xl shadow-2xl border border-gray-200">
-//             <div className="p-5">
-//               {/* Header */}
-//               <div className="flex justify-between items-center border-b mb-2 pb-2">
-//                 <div>
-//                   <h3 className="text-3xl font-bold text-gray-900 mb-1">
-//                     Quick Comment
-//                   </h3>
-//                   <p className="text-lg text-gray-600">
-//                     Ticket #{quickFormTicket?.ticketKey} -{" "}
-//                     {quickFormTicket?.title}
-//                   </p>
-//                 </div>
-//                 <button
-//                   onClick={closeQuickForm}
-//                   className="closebtn w-10 h-10 flex items-center justify-center rounded-full
-//                     bg-gray-100 hover:bg-gray-200
-//                     text-gray-500 hover:text-gray-700 transition-all"
-//                 >
-//                   <FiX size={18} />
-//                 </button>
-//               </div>
-
-//               {/* EntityForm */}
-//               <EntityFormPage
-//                 mode="Create"
-//                 config={{
-//                   ...ThreadFormConfig,
-//                   fields: ThreadFieldConfig(quickFormTicket?.navId).filter(
-//                     (field) => field.name !== "assignees",
-//                   ),
-//                 }}
-//                 module="Thread"
-//                 onCancel={closeQuickForm}
-//                 onSuccessCallback={() => {
-//                   closeQuickForm();
-//                   // Optional: refresh list data
-//                 }}
-//               />
-//             </div>
-//           </div>
-//         </div>
-//       </>
-//     )}

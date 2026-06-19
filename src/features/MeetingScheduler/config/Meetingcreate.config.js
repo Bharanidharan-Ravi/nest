@@ -1,306 +1,8 @@
-// import { buildOptionsResolver } from "../../../app/shared/utilities/utilities";
-
-// export const MeetinglFieldConfig = () => [
-//   {
-//     name: "host_Type",
-//     label: "Host Type",
-//     type: "select",
-//     ui: "mui",
-//     apiKey: "host_type",
-//     dataType: "string",
-//     // options: statusOptions,
-//     required: true,
-//     options: [
-//       { label: "Employee", value: { id: "Employee", name: "Employee" } },
-//       { label: "Client", value: { id: "Client", name: "Client" } },
-//     ],
-//   },
-//   {
-//     label: "Host Name",
-//     name: "host_Name",
-//     type: "select",
-//     ui: "mui",
-//     required: true,
-//     colSpan: 6,
-//     dataType: "string",
-//     apiKey: "host_id",
-//     optionsResolver: buildOptionsResolver(
-//       "EmployeeList",
-//       "UserID",
-//       "UserName",
-//       (user) => user.Status === "Active",
-//     ),
-//   },
-//   {
-//     label: "Meeting title",
-//     name: "title",
-//     type: "text",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "title",
-//     // fullWidth: true,
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.title ?? "" : "",
-//   },
-//   {
-//     label: "Start Time",
-//     name: "start_time",
-//     type: "flexHours",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "start_time",
-//     // fullWidth: true,
-
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.start_time ?? "" : "",
-//   },
-//   {
-//     label: "End Time",
-//     name: "end_time",
-//     type: "flexHours",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "end_time",
-//     // fullWidth: true,
-
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.end_time ?? "" : "",
-//   },
-//   {
-//     label: "Validate From",
-//     name: "validate_From",
-//     type: "date",
-//     ui: "mui",
-//     required: false,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "valid_from_date",
-//     // fullWidth: true,
-
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.valid_from_date ?? "" : "",
-//   },
-//   {
-//     label: "Validate To",
-//     name: "validate_To",
-//     type: "date",
-//     ui: "mui",
-//     required: false,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "valid_to_date",
-//     // fullWidth: true,
-
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.valid_to_date ?? "" : "",
-//   },
-//   {
-//     label: "Internal Participants",
-//     name: "internalParticipants",
-//     type: "select",
-//     multiple: true,
-//     ui: "mui",
-//     optionsResolver: buildOptionsResolver(
-//       "EmployeeList",
-//       "UserID",
-//       "UserName",
-//       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-//     ),
-//   },
-//   {
-//     label: "Client Participants",
-//     name: "clientParticipants",
-//     type: "select",
-//     multiple: true,
-//     ui: "mui",
-// visibleWhen: (formData, context) => {
-//   return formData?.host_Type?.label === "Client";
-// },
-//     optionsResolver: ({ masterData, context }) => {
-//       const repoList =
-//         masterData?.RepoList || context?.data?.RepoList || [];
-//       const options = repoList.flatMap((repo) => {
-//         const users = JSON.parse(repo.RepoUserList || "[]");
-//         return users
-//           .filter((user) => user.Status === "Active")
-//           .map((user) => ({
-//             label: user.UserName,
-//             value: {
-//               id: user.UserId,
-//               name: user.UserName,
-//             },
-//           }));
-//       });
-
-//       return options;
-//     },
-
-//   },
-
-//   // {
-//   //   name: "meet_Method",
-//   //   label: "Meet Method",
-//   //   type: "select",
-//   //   ui: "mui",
-//   //   apiKey: "meet_method",
-//   //   dataType: "string",
-//   //   // options: statusOptions,
-//   //   required: true,
-//   //   options: [
-//   //     { label: "Online", value: { id: "Online", name: "Online" } },
-//   //     { label: "Offline", value: { id: "Offline", name: "Offline" } },
-//   //   ],
-
-//   //   initValueResolver: ({ context }) => {
-//   //     return context.isEdit ? (context.entityData?.meet_method ?? "") : "";
-//   //   },
-//   // },
-//   {
-//     name: "recurrence_type",
-//     label: "Recurrence type",
-//     type: "select",
-//     ui: "mui",
-//     apiKey: "recurrence_type",
-//     dataType: "string",
-//     required: true,
-//     options: [
-//       { label: "One Time", value: { id: "onetime", name: "online" } },
-//       { label: "Daily", value: { id: "daily", name: "daily" } },
-//       { label: "Weekly", value: { id: "weekly", name: "weekly" } },
-//     ],
-
-//     initValueResolver: ({ context }) => {
-//       return context.isEdit ? (context.entityData?.recurrence_type ?? "") : "";
-//     },
-
-//   },
-//   {
-//     name: "booking_Type",
-//     label: "Booking Type",
-//     type: "select",
-//     ui: "mui",
-//     apiKey: "booking_type",
-//     dataType: "string",
-//     required: true,
-//     options: [
-//       { label: "Meeting", value: { id: "meeting", name: "meeting" } },
-//       { label: "Interview", value: { id: "interview", name: "interview" } },
-//       { label: "Demo", value: { id: "demo", name: "demo" } },
-//       { label: "Discussion", value: { id: "discussion", name: "discussion" } },
-//       { label: "SupportCall", value: { id: "supportCall", name: "supportCall" } },
-//     ],
-
-//     initValueResolver: ({ context }) => {
-//       return context.isEdit ? (context.entityData?.booking_type ?? "") : "";
-//     },
-
-//   },
-//   // {
-//   //   label: "Meet Link",
-//   //   name: "meet_Link",
-//   //   type: "text",
-//   //   ui: "mui",
-//   //   required: false,
-//   //   dataType: "string",
-//   //   apiKey: "meet_link",
-
-
-//   //   initValueResolver: ({ context }) =>
-//   //     context.isEdit ? context.entityData?.meet_link ?? "" : "",
-//   // },
-//   // {
-//   //   label: "Meeting Password",
-//   //   name: "meeting_Password",
-//   //   type: "text",
-//   //   ui: "mui",
-//   //   required: false,
-//   //   dataType: "string",
-//   //   // customComponent:FileAttachmentInput,
-//   //   apiKey: "meet_password",
-//   //   // fullWidth: true,
-
-//   //   initValueResolver: ({ context }) =>
-//   //     context.isEdit ? context.entityData?.meet_password ?? "" : "",
-//   // },
-//   {
-//     label: "Meeting Summary",
-//     name: "meeting_Summary",
-//     type: "text",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "meeting_summary",
-//     // fullWidth: true,
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.meeting_summary ?? "" : "",
-//   },
-//   {
-//     label: "Slot Duration",
-//     name: "slot_Duration",
-//     type: "flexHours",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "slot_duration",
-//     // fullWidth: true,
-
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.slot_duration ?? "" : "",
-//   },
-//   {
-//     label: "Project",
-//     name: "project",
-//     type: "select",
-//     ui: "mui",
-//     required: true,
-//     dataType: "string",
-//     // customComponent:FileAttachmentInput,
-//     apiKey: "project_id",
-//     // fullWidth: true, 
-//     optionsResolver: buildOptionsResolver(
-//       "ProjectList", // 1. listKey
-//       "Id", // 2. idKey
-//       "Project_Name", // 3. labelKey
-//     ),
-//     initValueResolver: ({ context }) =>
-//       context.isEdit ? context.entityData?.project_id ?? "" : "",
-
-//     customFilter: (item, selectedValue) => {
-//       if (!selectedValue) return true;
-
-//       const safeSelected = String(selectedValue).toLowerCase();
-//       if (
-//         item.assignedTo &&
-//         String(item.assignedTo).toLowerCase() === safeSelected
-//       ) {
-//         return true;
-//       }
-//       if (selectedValue === "__no_owner__") {
-//         return !item.assignedTo || item.assignedTo === "" || item.assignedTo === null
-//       }
-
-//       return false;
-//     },
-//   },
 
 
 
 
-// ]
-
-
-
-
-
-import { buildOptionsResolver } from "../../../app/shared/utilities/utilities";
+import { buildOptionsResolver, calcHHMM } from "../../../app/shared/utilities/utilities";
 
 export const MeetinglFieldConfig = () => [
   {
@@ -310,7 +12,12 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     apiKey: "host_type",
     dataType: "string",
-    // options: statusOptions,
+    initValueResolver: ({ context }) => {
+      return {
+        label: "Employee",
+        value: { id: "Employee", name: "Employee" }
+      };
+    },
     required: true,
     options: [
       { label: "Employee", value: { id: "Employee", name: "Employee" } },
@@ -368,6 +75,33 @@ export const MeetinglFieldConfig = () => [
       // Default empty if no type selected
       return [];
     },
+    // initValueResolver: ({ context, masterData, formData }) => {
+    //   const currentUserId = context?.currentUserId;
+    // console.log("masterData",masterData);
+
+    //   if (!currentUserId) return null;
+
+    //   const selectedType =
+    //     formData?.host_Type?.value?.id || formData?.host_Type?.id;
+    //     // const optionsMaster =[...masterData.EmployeeList,...masterData.RepoList]
+    //   // ONLY for Employee
+    //   if (selectedType != "Employee") return null;
+
+    //   const currentUser = (masterData?.EmployeeList || []).find(
+    //     (user) => user.UserID === currentUserId
+    //   );
+
+    //   if (!currentUser) return null;
+
+    //   return {
+    //     label: currentUser.UserName,
+    //     value: {
+    //       id: currentUser.UserID,
+    //       name: currentUser.UserName,
+    //     },
+    //   };
+    // },
+
     // visibleWhen: (formData) => !!formData?.host_Type,
   },
   {
@@ -384,9 +118,9 @@ export const MeetinglFieldConfig = () => [
       { label: "Weekly", value: { id: "WEEKLY", name: "weekly" } },
     ],
     initValueResolver: ({ context }) => {
-      return { 
-        label: "One Time", 
-        value: { id: "ONETIME", name: "onetime" } 
+      return {
+        label: "One Time",
+        value: { id: "ONETIME", name: "onetime" }
       };
     },
   },
@@ -399,7 +133,7 @@ export const MeetinglFieldConfig = () => [
     dataType: "string",
     apiKey: "title",
 
-   
+
   },
   {
     label: "Meeting Date",
@@ -409,22 +143,22 @@ export const MeetinglFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "meeting_Date",
-    // fullWidth: true,
     visibleWhen: (formData, context) => {
       return formData?.recurrence_type?.value?.id === "ONETIME";
     },
     initValueResolver: ({ context, formData }) => {
-      const type = formData?.recurrence_type?.value?.id;
-    
-      if (type === "ONETIME") {
+      const recurrenceId =
+      formData?.recurrence_type?.value?.id ||
+      formData?.recurrence_type?.id ||
+      formData?.recurrence_type;
+    const isOneTime = recurrenceId === "ONETIME";
+      if (isOneTime) {
         const today = new Date();
         const yyyy = today.getFullYear();
         const mm = String(today.getMonth() + 1).padStart(2, "0");
         const dd = String(today.getDate()).padStart(2, "0");
-    
-        return today;
+        return `${yyyy}-${mm}-${dd}`;
       }
-    
       return "";
     }
   },
@@ -467,10 +201,20 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     required: true,
     dataType: "string",
-    // customComponent:FileAttachmentInput,
     apiKey: "start_time",
-    // fullWidth: true,
-
+    customValidator: (value, data, context) => {
+      const start = new Date(value);
+      const now = new Date();
+      // Rule 1: cannot be in the past
+      if (start < now) {
+        return "Start time cannot be in the past";
+      }
+      const hour = start.getHours();
+      if (hour < 10) {
+        return "Start time cannot be before 10:00 AM";
+      }
+      return true; // valid
+    },
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.start_time ?? "" : "",
   },
@@ -564,7 +308,7 @@ export const MeetinglFieldConfig = () => [
 
   {
     name: "booking_Type",
-    label: "Booking Type",
+    label: "Meeting Type",
     type: "select",
     ui: "mui",
     apiKey: "booking_type",
@@ -584,7 +328,7 @@ export const MeetinglFieldConfig = () => [
     name: "meeting_Summary",
     type: "text",
     ui: "mui",
-    required: true,
+    required: false,
     dataType: "string",
     // customComponent:FileAttachmentInput,
     apiKey: "meeting_summary",
@@ -599,19 +343,33 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     required: true,
     dataType: "string",
-    // customComponent:FileAttachmentInput,
     apiKey: "slot_duration",
-    // fullWidth: true,
 
-    // initValueResolver: ({ context }) =>
-    //   context.isEdit ? context.entityData?.slot_duration ?? "" : "",
+    effectDependencies: ["start_time", "end_time"],
+
+    effectResolver: (formData) => {
+      const start = formData.start_time;
+      const end = formData.end_time;
+
+      // If both times are present → calculate duration
+      if (start && end) {
+        return calcHHMM(start, end);
+      }
+      // If only one is present → invalid/incomplete state
+      if ((start && !end) || (!start && end)) {
+        return null;
+      }
+
+      // fallback (optional manual value support)
+      return formData.slot_duration || null;
+    },
   },
   {
     label: "Project",
     name: "project",
     type: "select",
     ui: "mui",
-    required: true,
+    required: false,
     dataType: "string",
     // customComponent:FileAttachmentInput,
     apiKey: "project_id",
@@ -623,19 +381,19 @@ export const MeetinglFieldConfig = () => [
     ),
     initValueResolver: ({ context, masterData, formData }) => {
       const ticketId = formData?.ticket?.value?.id;
-
-      const projectId = context?.TicketMaster
-        ?.find(t => t.Issue_Id === ticketId)
+      console.log("ticketId", ticketId, formData, context,);
+      const projectId = context?.ticketMaster
+        ?.find(t => t.Issue_Id === ticketId || context.fromTicketId
+        )
         ?.Project_Id;
       const project = masterData?.ProjectList
-        ?.find(p => p.Id === projectId);
+        ?.find(p => p.Id === projectId)
 
       return project && {
         label: project.Project_Name,
         value: { id: project.Id, name: project.Project_Name },
       };
     },
-
     customFilter: (item, selectedValue) => {
       if (!selectedValue) return true;
 

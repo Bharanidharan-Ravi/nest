@@ -55,15 +55,7 @@ export const ThreadFieldConfig = (ticketId) => [
       context?.editingItem?.Issue_Id || ticketId,
 
   },
-  {
-    name: "issueId",
-    apiKey: "IssueId",
-    hidden: true,
-    defaultValue: ticketId,
-    dataType: "string",
-    initValueResolver: ({ context }) =>
-      context?.editingItem?.Issue_Id || ticketId,
-  },
+
   {
     name: "workStreamId",
     apiKey: "WorkStreamId",
@@ -101,6 +93,20 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
       return context?.editingItem?.CreatedId || null;
+    },
+  },
+  {
+    name: "Ref_Id",
+    apiKey: "Ref_Id", // 👈 The exact name your API expects
+    hidden: true, // 👈 Keeps it invisible in the UI
+    dataType: "string",
+    // defaultValue: "DABB7622-0BF8-4CC9-80C3-08DE5A6D4989",
+    initValueResolver: ({ context }) => {
+      // Pulls the StreamId directly from the sidebar card they clicked!
+      const val=context?.replyingToId??null
+      console.log("val",val);
+      return val
+      
     },
   },
   {

@@ -169,7 +169,7 @@ export const ThreadFormConfig = {
               const percentage=formData?.TicketOverallPercentage
               const summary=stripHtml(formData?.TicketStatusSummary)
               if(!percentage||Number(percentage)<0){
-                errors.TicketOverallPercentage="Overall progress must be 100% before reopen"
+                errors.TicketOverallPercentage="Overall progress mandatory before reopen"
               }
               if(!summary){
                 errors.TicketStatusSummary="Status Summary mandatory before reopen"

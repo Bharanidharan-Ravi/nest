@@ -7,7 +7,7 @@ import { MeetinglFieldConfig } from "./Meetingcreate.config"
 export const meetingFormConfig = {
   key: "MeetingData",
   title: "MeetingData",
-  api: "/MeetingControler/CreateMeeting",                          // POST /api/label
+  api: "/MeetingSchedulerControler/CreateMeeting",                          // POST /api/label
 // transformPayload:(fields)=>({dto:{...fields}}),
   // Invalidate full label list after create or update
   invalidateKeys: [queryKeys.MeetingData.list()],
