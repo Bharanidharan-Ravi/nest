@@ -33,6 +33,7 @@ import { ROUTE_KEYS } from "../../../core/routing/paths";
 import dayjs, { Dayjs } from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
 import relativeTime from "dayjs/plugin/relativeTime";
+import { useMemo } from "react";
 
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
@@ -53,6 +54,12 @@ const Header = ({ toggleMobileMenu }) => {
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
   const { data: bannerListWrapper } = useBannerMessage();
+  const bannerContainerRef = useRef(null);
+  const bannerTrackRef = useRef(null);
+
+  const [repeatedBanners, setRepeatedBanners] = useState([]);
+  const [animationDuration, setAnimationDuration] = useState(40);
+
   const markSeen = async () => {
     try {
       await executeApi({
@@ -143,9 +150,11 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  const activeBanners = Array.isArray(bannerListWrapper)
-    ? bannerListWrapper.filter((b) => b.Status === "Active")
-    : [];
+  const activeBanners = useMemo(() => {
+    return Array.isArray(bannerListWrapper)
+      ? bannerListWrapper.filter((b) => b.Status === "Active")
+      : [];
+  }, [bannerListWrapper]);
   // Add this function inside your component
   const getBannerIcon = (iconClass, colorCode) => {
     switch (iconClass) {
@@ -164,7 +173,69 @@ const Header = ({ toggleMobileMenu }) => {
         return <Info size={18} color={colorCode} />;
     }
   };
-  console.log("banner", activeBanners);
+  const now = useMemo(() => dayjs(), []);
+
+  const filteredBanners = useMemo(() => {
+    return activeBanners.filter((banner) => dayjs(banner.EndDate).isAfter(now));
+  }, [activeBanners, now]);
+  
+  useEffect(() => {
+    if (!filteredBanners.length) {
+      setRepeatedBanners([]);
+      return;
+    }
+
+    const calculateTicker = () => {
+      if (!bannerContainerRef.current || !bannerTrackRef.current) return;
+
+      const containerWidth = bannerContainerRef.current.offsetWidth;
+
+      const singleSetWidth = bannerTrackRef.current.scrollWidth;
+
+      let copies = 2;
+
+      while (singleSetWidth * copies < containerWidth * 2) {
+        copies++;
+      }
+
+      const banners = [];
+
+      for (let i = 0; i < copies; i++) {
+        banners.push(...filteredBanners);
+      }
+
+      setRepeatedBanners((prev) => {
+        if (prev.length === banners.length) {
+          return prev;
+        }
+
+        return banners;
+      });
+
+      /*
+      Constant speed:
+      80 pixels per second
+    */
+      const totalDistance = singleSetWidth;
+
+      // 40 pixels per second
+      const duration = totalDistance / 50;
+
+      // Never go below 45 seconds
+      setAnimationDuration(Math.max(duration, 40));
+    };
+
+    calculateTicker();
+
+    window.addEventListener("resize", calculateTicker);
+
+    return () => {
+      window.removeEventListener("resize", calculateTicker);
+    };
+  }, [filteredBanners]);
+
+  const measurementItems =
+    repeatedBanners.length > 0 ? repeatedBanners : filteredBanners;
   return (
     <>
       <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
@@ -233,14 +304,14 @@ const Header = ({ toggleMobileMenu }) => {
                   justify-center
                   px-1
                 "
-                >
-                  {count > 99 ? "99+" : count}
-                </span>
-              )}
+              >
+                {count > 99 ? "99+" : count}
+              </span>
+            )}
 
-              {showNotifications && (
-                <div
-                  className="
+            {showNotifications && (
+              <div
+                className="
                   absolute
                   right-0
                   top-12
@@ -253,13 +324,13 @@ const Header = ({ toggleMobileMenu }) => {
                   z-50
                   overflow-hidden
                 "
-                >
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-                    <h3 className="font-semibold text-sm">Notifications</h3>
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                  <h3 className="font-semibold text-sm">Notifications</h3>
 
-                    <span
-                      className="
+                  <span
+                    className="
                       bg-blue-100
                       text-blue-600
                       text-[10px]
@@ -267,18 +338,18 @@ const Header = ({ toggleMobileMenu }) => {
                       py-0.5
                       rounded-full
                     "
-                    >
-                      {count || 0}
-                    </span>
-                  </div>
+                  >
+                    {count || 0}
+                  </span>
+                </div>
 
-                  {/* Body */}
-                  <div className="max-h-[300px] overflow-y-auto">
-                    {notificationList?.length > 0 ? (
-                      notificationList.map((item) => (
-                        <div
-                          key={item.id}
-                          className="
+                {/* Body */}
+                <div className="max-h-[300px] overflow-y-auto">
+                  {notificationList?.length > 0 ? (
+                    notificationList.map((item) => (
+                      <div
+                        key={item.id}
+                        className="
                           px-4
                           py-2.5
                           border-b
@@ -286,44 +357,44 @@ const Header = ({ toggleMobileMenu }) => {
                           cursor-pointer
                           transition
                         "
-                          onClick={() => {
-                            goTo(ROUTE_KEYS.TICKET_DETAIL, {
-                              ticketId: item.entityId,
-                            });
-                            setShowNotifications(false); // Close the dropdown after navigating
-                          }}
-                        >
-                          <div className="font-medium text-sm text-gray-800 truncate">
-                            {item.title}
-                          </div>
-
-                          <div className="text-xs text-gray-500 mt-1 truncate">
-                            {item.message}
-                          </div>
-
-                          <span className="text-xs text-gray-400">
-                            {dayjs(item?.createdAt).fromNow()}
-                          </span>
+                        onClick={() => {
+                          goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                            ticketId: item.entityId,
+                          });
+                          setShowNotifications(false); // Close the dropdown after navigating
+                        }}
+                      >
+                        <div className="font-medium text-sm text-gray-800 truncate">
+                          {item.title}
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-8 text-center text-gray-500">
-                        No notifications found
-                      </div>
-                    )}
-                  </div>
 
-                  {/* Footer */}
-                  <div
-                    className="
+                        <div className="text-xs text-gray-500 mt-1 truncate">
+                          {item.message}
+                        </div>
+
+                        <span className="text-xs text-gray-400">
+                          {dayjs(item?.createdAt).fromNow()}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-8 text-center text-gray-500">
+                      No notifications found
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div
+                  className="
           border-t
           bg-gray-50
           p-3
         "
-                  >
-                    <button
-                      onClick={handleViewAllNotifications}
-                      className="
+                >
+                  <button
+                    onClick={handleViewAllNotifications}
+                    className="
             w-full
             text-blue-600
             font-medium
@@ -412,38 +483,43 @@ const Header = ({ toggleMobileMenu }) => {
         </div>
       </header>
       {!isViewer && activeBanners.length > 0 && (
-        <div className="running-banner">
-          <div className="running-banner-content">
-            {
-              // Filter banners: only show if EndDate >= current date
-              activeBanners.filter((banner) => dayjs(banner.EndDate) >= dayjs())
-                .length > 0 &&
-                [
-                  ...activeBanners.filter(
-                    (banner) => dayjs(banner.EndDate) >= dayjs(),
-                  ),
-                  ...activeBanners.filter(
-                    (banner) => dayjs(banner.EndDate) >= dayjs(),
-                  ),
-                  ...activeBanners.filter(
-                    (banner) => dayjs(banner.EndDate) >= dayjs(),
-                  ),
-                  ...activeBanners.filter(
-                    (banner) => dayjs(banner.EndDate) >= dayjs(),
-                  ),
-                ].map((banner, i) => (
-                  <span key={i} className="running-banner-item">
-                    {/* Replace <i> tag with React icon */}
-                    <span className="mr-2 inline-block">
-                      {getBannerIcon(banner.IconClass, banner.ColorCode)}
-                    </span>
-                    <span className="text-gray-700 font-semibold mr-1">
-                      {banner.Type_Name}:
-                    </span>
-                    <span className="text-gray-600">{banner.MessageText}</span>
-                  </span>
-                ))
-            }
+        <div className="running-banner" ref={bannerContainerRef}>
+          <div
+            className="running-banner-content"
+            style={{
+              animationDuration: `${animationDuration}s`,
+            }}
+          >
+            {repeatedBanners.map((banner, i) => (
+              <span key={i} className="running-banner-item">
+                <span className="mr-2">
+                  {getBannerIcon(banner.IconClass, banner.ColorCode)}
+                </span>
+
+                <span className="text-gray-700 font-semibold mr-1">
+                  {banner.Type_Name}:
+                </span>
+
+                <span className="text-gray-600">{banner.MessageText}</span>
+              </span>
+            ))}
+          </div>
+
+          {/* Hidden measurement */}
+          <div ref={bannerTrackRef} className="running-banner-measure">
+            {measurementItems.map((banner, i) => (
+              <span key={i} className="running-banner-item">
+                <span className="mr-2">
+                  {getBannerIcon(banner.IconClass, banner.ColorCode)}
+                </span>
+
+                <span className="text-gray-700 font-semibold mr-1">
+                  {banner.Type_Name}:
+                </span>
+
+                <span className="text-gray-600">{banner.MessageText}</span>
+              </span>
+            ))}
           </div>
         </div>
       )}

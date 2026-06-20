@@ -13,7 +13,7 @@ export const useNotificationCount = () => {
     method: "GET",
     silent: true,
     options: {
-      refetchInterval: 30000,
+      refetchInterval: 300000,
       staleTime: 10000,
     },
   });

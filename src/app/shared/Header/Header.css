@@ -39,35 +39,65 @@
 }
 .running-banner {
   overflow: hidden;
+  width: 100%;
+  position: relative;
 
   background: linear-gradient(to right, #f9f9f9, #ececec);
   border-bottom: 1px solid #ddd;
   padding: 6px 0;
-  position: relative;
-  font-weight: 500;
 }
 
 .running-banner-content {
-  display: inline-block;
+  display: flex;
+  width: max-content;
   white-space: nowrap;
-  animation: scroll-left 25s linear infinite;  /* Slower = smoother */
-  -webkit-transform: translateZ(0);  /* GPU acceleration */
-  transform: translateZ(0);
-  will-change: transform;  /* Optimize for animation */
+
+  animation-name: ticker;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+
+  will-change: transform;
+}
+
+.running-banner:hover .running-banner-content {
+  animation-play-state: paused;
 }
 
 .running-banner-item {
-  display: inline-flex;
+  flex-shrink: 0;
+
+  display: flex;
   align-items: center;
+
   margin-right: 50px;
+
   font-size: 14px;
 }
 
-@keyframes scroll-left {
-  0% {
+.running-banner-measure {
+  position: absolute;
+
+  visibility: hidden;
+
+  pointer-events: none;
+
+  white-space: nowrap;
+
+  width: max-content;
+
+  height: 0;
+
+  overflow: hidden;
+
+  display: flex;
+}
+
+@keyframes ticker {
+  from {
     transform: translateX(0);
   }
-  100% {
+
+  to {
     transform: translateX(-50%);
   }
 }

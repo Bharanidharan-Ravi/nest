@@ -15,10 +15,19 @@ export function ListLayout({ className }) {
   const { view, config} = useList();
   const layoutClasses = className || config.theme?.layout || "flex flex-col w-full";
   const stickyTopValue = config.theme?.stickyTop;
-  const renderView = () => {
+ const renderView = () => {
     if (view === "graph") return <ListGraphView />;
     if (view === "table") return <ListTableView />;
-  return <ListCardView/>;
+    if (view === "card") return <ListCardView />;
+
+    // 🚀 FIX: If we have a Custommodule AND the view is something custom (like "Scheduler"),
+    // do NOT render the default ListCardView. Just return null here.
+    if (config.Custommodule && view !== "card") return null;
+
+    // Ultimate safety fallback: Only render CardView if a cardRenderer is actually provided!
+    if (config.cardRenderer) return <ListCardView />;
+
+    return null;
   };
   return (
     <div className={`rounded-lg bg-white shadow-sm ${layoutClasses}`}>

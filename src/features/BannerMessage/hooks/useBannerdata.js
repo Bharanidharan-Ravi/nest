@@ -3,30 +3,33 @@ import { queryKeys } from "../../../core/query/queryKeys";
 import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
-export const useBannerMessage=(BannerMessageId=null,FromDate=null,ToDate)=>{
-    return useApiQuery({   
-         queryKeys:["BannerData","list",BannerMessageId??"none",
-        FromDate??"none",
-        ToDate??"none"
-    ],
-    url: "/sync/v2",
-    method: "POST",
-    source:"BannerData",
-    payload:{
-        configKeys:["BannerData"],
-        params:{
-            BannerMessageId,
-            FromDate,
-            ToDate,
-        }
-    },
-    options:{
-        staleTime:10*60*1000,
-        enable:!!BannerMessageId,
-    }
-})
+  export const useBannerMessage=(BannerMessageId=null,FromDate=null,ToDate)=>{
+      return useApiQuery({   
+          queryKey: [
+            "BannerData", 
+            "list", 
+            BannerMessageId ?? "none",
+            FromDate ?? "none",
+            ToDate ?? "none"
+        ],
+      url: "/sync/v2",
+      method: "POST",
+      source:"BannerData",
+      payload:{
+          configKeys:["BannerData"],
+          params:{
+              BannerMessageId,
+              FromDate,
+              ToDate,
+          }
+      },
+      options:{
+          staleTime:10*60*1000,
+          enable:!!BannerMessageId,
+      }
+  })
 
-}
+  }
 
 export const getMessageType = () => {
     const query = queryKeys.BannerDataType.all;

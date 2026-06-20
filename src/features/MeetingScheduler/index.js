@@ -13,7 +13,7 @@ export const MeetingsFeature = {
           allowedRoles: ROUTE_ROLES.MEETING_LIST,
           nav: {
             key:       ROUTE_KEYS.MEETING_LIST,
-            title:     "MeetingScheduler",
+            title:     "Meeting Scheduler",
             parent:    ROUTE_KEYS.DASHBOARD,
             create:    ROUTE_KEYS.MEETING_LIST,
             inSidebar: true,
