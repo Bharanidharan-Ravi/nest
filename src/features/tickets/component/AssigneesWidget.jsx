@@ -314,7 +314,7 @@ export default function AssigneesWidget({
       <div
         className={`bg-gray-50 border-t border-gray-200 flex flex-col transition-all duration-300 ${showUpdateForm ? "flex-1 min-h-0" : "shrink-0"}`}
       >
-        {!showUpdateForm ? (
+        {/* {!showUpdateForm ? (
           <div className="p-3">
             <button
               onClick={() => setShowUpdateForm(true)}
@@ -351,7 +351,7 @@ export default function AssigneesWidget({
               />
             </div>
           </div>
-        )}
+        )} */}
       </div>
     </div>
   );

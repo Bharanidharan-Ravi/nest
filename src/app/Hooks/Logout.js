@@ -1,18 +1,23 @@
 import { executeApi } from "../../core/api/executor";
 import { logoutUser } from "../../core/auth/authUtils";
 import { readUserFromSession } from "../../core/auth/useCurrentUser";
+import { useNavigate } from "react-router-dom";
 
- const user = readUserFromSession();
 export const handleLogout = async () => {
-    // const user = readUserFromSession();
+  try {
+    const user = readUserFromSession();
+    if (user?.sessionId) {
+      await executeApi({
+        url: "/Login/logout",
+        method: "POST",
+        payload: {
+          sessionId: user.sessionId,
+        },
+      })
+    }
+  } catch (err) {
 
-    await executeApi({
-      url: "/Login/logout",
-      method: "POST",
-      payload: {
-        sessionId: user.sessionId,
-      },
-    });
+  } finally {
     logoutUser();
-    // navigate("/");
-  };
+  }
+}

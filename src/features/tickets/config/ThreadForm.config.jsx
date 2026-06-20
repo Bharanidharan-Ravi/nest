@@ -172,7 +172,7 @@ export const ThreadFormConfig = {
                 errors.TicketOverallPercentage="Overall progress mandatory before reopen"
               }
               if(!summary){
-                errors.TicketStatusSummary="Status Summary mandatory before reopen"
+                errors.TicketStatusSummary="Please select Battery % less than 100"
               }
               if (Object.keys(errors).length>0){
                 setErrors(prev=>({...prev,...errors}))

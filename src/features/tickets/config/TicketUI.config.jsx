@@ -10,6 +10,7 @@ const ALL_TABS = [
   { key: "closed", label: "Closed", field: "statusId", filterValue: [15, 16, 17] },
   { key: "hold", label: "Hold", field: "statusId", filterValue: [14] },
   { key: "queue", label: "In Queue", field: "statusId", filterValue: [18] },
+  { key: "clientconfirm", label: "Need Confirmation", field: "statusId", filterValue: [20] },
 ];
 
 // Pre-filtered viewer tabs

@@ -25,7 +25,8 @@ const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
   { label: "InActive", value: { id: 17, name: "InActive" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
-  { label: "InQueue", value: { id: 18, name: "InQueue" } },
+  { label: "InQueue", value: { id: 19, name: "InQueue" } },
+  { label: "Need Confirmation", value: { id: 20, name: "Need Confirmation" } },
 ];
 
 export const TicketFieldConfig = () => [
@@ -629,7 +630,7 @@ export const TicketFieldConfig = () => [
     optionsResolver: ({ context }) => {
       return context?.isEdit
         ? statusOptions // Edit => show all including InActive
-        : statusOptions.filter((opt) => opt.value.id !== 17); // Create => hide InActive
+        : statusOptions.filter((opt) => opt.value.id !== 17  && opt.value.id !== 20); // Create => hide InActive
     },
     initValueResolver: ({ context }) => {
       if (!context.isEdit || !context.entityData) {
