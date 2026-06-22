@@ -169,10 +169,10 @@ export const ThreadFormConfig = {
               const percentage=formData?.TicketOverallPercentage
               const summary=stripHtml(formData?.TicketStatusSummary)
               if(!percentage||Number(percentage)<0){
-                errors.TicketOverallPercentage="Overall progress mandatory before reopen"
+                errors.TicketOverallPercentage="Please select Battery % less than 100"
               }
               if(!summary){
-                errors.TicketStatusSummary="Please select Battery % less than 100"
+                errors.TicketStatusSummary="Status Summary mandatory before reopen"
               }
               if (Object.keys(errors).length>0){
                 setErrors(prev=>({...prev,...errors}))

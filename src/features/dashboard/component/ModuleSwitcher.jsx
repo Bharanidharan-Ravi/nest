@@ -83,7 +83,7 @@ export default function ModuleSwitcher({ modules, hideCreateAction = false }) {
             style={{ marginLeft: "auto" }}
             className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
           >
-            CreateTicket
+            Create New Ticket
           </button>
         )}
       </div>

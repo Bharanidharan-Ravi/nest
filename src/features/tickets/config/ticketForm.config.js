@@ -17,7 +17,7 @@ export const TicketFormConfig = {
     
     {
    
-      label: context?.isEdit ? "Update" : "Create",
+      label: context?.isEdit ? "Update Ticket" : "Create Ticket",
       type: "button",
       onClick: ({ submitForm,context }) => {
         const isViewer=context?.isViewer

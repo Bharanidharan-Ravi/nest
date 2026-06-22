@@ -58,11 +58,12 @@ export const MASTER_REGISTRY = {
     queryKey: (params) => ["TicketProgress", params?.issueId],
 
     // 2. Build the complex payload here! Hides it from the UI.
-    payload: (params) => buildSyncPayload({
-          configKey: "TicketProgress",
-          idKey: "IssueId",
-          idValue: params?.issueId ,
-        }),
+    payload: (params) =>
+      buildSyncPayload({
+        configKey: "TicketProgress",
+        idKey: "IssueId",
+        idValue: params?.issueId,
+      }),
     //   ({
     //   configKey: "TicketProgressLogs", // Change this to your C# ConfigKey
     //   syncParams: { IssueId: params?.issueId },
@@ -81,6 +82,22 @@ export const MASTER_REGISTRY = {
     method: "GET",
     staleTime: Infinity,
     adapter: (raw) => ({ id: raw.StatusId, name: raw.StatusName }),
+  },
+  ticketMaster: {
+    source: "api",
+    queryKey: (params) => queryKeys.ticket.detail(params?.Id),
+    url: "/sync/v2",
+    method: "POST",
+    staleTime: Infinity,
+    source: "TicketsList",
+    payload: (params) =>
+      buildSyncPayload({
+        configKey: "TicketsList",
+        idKey: "IssueId",
+        idValue: params?.Id,
+      }),
+    adapter: (raw) => raw,
+    // adapter: (raw) => ({ id: raw.StatusId, name: raw.StatusName }),
   },
   department: {
     source: "api",

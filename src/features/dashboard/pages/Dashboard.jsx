@@ -6,9 +6,9 @@ import { TicketListConfig } from "../../tickets/config/TicketUI.config";
 import ModuleSwitcher from "../component/ModuleSwitcher";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
-import { createTimesheetNormalizer } from "../../../app/shared/utils/timesheetNormalizer";
-import { normalizeCheckedTickets } from "../../../app/shared/utils/normalizeCheckedTickets";
+import { normalizeTicket } from "../../../app/shared/utils/normalizer";
+import { createTimesheetNormalizer } from "../../../app/shared/utils/normalizer";
+import { normalizeCheckedTickets } from "../../../app/shared/utils/normalizer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useEmployeeOptions,
@@ -214,19 +214,19 @@ export default function Dashboard() {
         },
       },
 
-      {
-        key: "assignedTo",
-        view: "Assignee",
-        options: employeeFilterOptions,
-        defaultValue: currentUserId,
-        persistOnClear: true,
-        filterType: "api",
-        api: "/sync/v2",
-        apiKey: "EmployeeId",
-        configKey: "TicketsList",
-        // showCounts: true,
-        normalizer: normalizeTicket,
-      },
+        {
+          key: "assignedTo",
+          view: "Assignee",
+          options: employeeFilterOptions,
+          defaultValue: currentUserId,
+          persistOnClear: true,
+          filterType: "api",
+          api: "/sync/v2",
+          apiKey: "EmployeeId",
+          configKey: "TicketsList",
+          // showCounts: true,
+          normalizer: normalizeTicket,
+        },
       {
         key: "multiAssignees",
         view: "Assignee",

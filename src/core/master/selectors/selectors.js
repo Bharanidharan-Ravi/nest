@@ -14,7 +14,7 @@ export const useRepoById       = (id)   => useMasterFind("repo",     "id",   id)
 export const useRepoByKey      = (key)  => useMasterFind("repo",     "key",  key);
 export const useProjectById    = (id)   => useMasterFind("project",  "id",   id);
 export const useProjectMaster  = ()      => useMasterList("project");
-export const useTicketMaster  = ()      => useMasterList("ticket");
+export const useTicketMaster  = (Id) => useMasterList("ticketMaster",{ Id });
 export const useTeamMaster  = ()      => useMasterList("team");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees  = ()    => useMasterFilter("employee", (e) => e.isActive);

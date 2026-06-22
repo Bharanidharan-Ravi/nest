@@ -37,6 +37,8 @@ export const useRegistryQuery = (registry, key, params = {}, overrides = {}) => 
   const queryKey = typeof config.queryKey === "function"
     ? config.queryKey(params)
     : config.queryKey;
+// console.log("config.payload :", config.payload);
+// console.log("params :", params);
 
   const payload = typeof config.payload === "function"
     ? config.payload(params)

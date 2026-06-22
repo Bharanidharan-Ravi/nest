@@ -1,9 +1,28 @@
+import React, { useState, useRef, useEffect } from "react";
 import { HtmlRenderer } from "../../../../app/shared/utilities/utilities";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { FaEdit, FaRegHandshake, FaReply } from "react-icons/fa";
+import { FaEdit, FaRegHandshake, FaReply, FaRegSmile } from "react-icons/fa";
 import { readUserFromSession } from "../../../../core/auth/useCurrentUser";
 import MuiSwitch from "../../../../packages/react-input-engine/adapters/mui/MuiSwitch";
+
+import apiClient from "../../../../core/api/apiClient";
+import { queryClient } from "../../../../core/api/queryClient";
+import { queryKeys } from "../../../../core/query/queryKeys";
+
+// --- PROFESSIONAL EMOJI LIST ---
+const PROFESSIONAL_EMOJIS = [
+  "👍",
+  "👎",
+  "😄",
+  "🎉",
+  "😕",
+  "❤️",
+  "🚀",
+  "👀",
+  "✅",
+  "🙌",
+];
 
 const getInitials = (name) => {
   if (!name) return "";
@@ -22,78 +41,147 @@ function formatDateRange(fromTime, toTime) {
   return `${from.format(formatStr)} - ${to.format(formatStr)}`;
 }
 
-const stripHtml = (html) => {
-  if (!html) return "";
-  return html
-    .replace(/<\/?(p|br|div|li)[^>]*>/gi, "")
-    .replace(/<[^>]+>/g, "")
-    .replace(/&nbsp;/g, "")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/\s+/g, "")
-    .trim()
-}
-
-// 👉 Accept the new onEdit and currentUser props!
-const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [], onReply, referencedThread }) => {
+const ThreadListCard = ({
+  item,
+  onEdit,
+  currentUser,
+  formContext,
+  toggles = [],
+  onReply,
+  referencedThread,
+  ticketId,
+}) => {
   dayjs.extend(relativeTime);
-  // Check if this comment was made by the logged-in user
-  // const isMe = item.CreatedBy === currentUser;
-
   const isMe = item.CreatedBy === currentUser;
   const user = readUserFromSession();
 
-  // const toggleMeta ={isMe,isViewer:!!formContext?.isViewer}
-  // 🔥 2. Check if the thread is less than or equal to 24 hours old
-  const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
+  // --- EMOJI REACTION STATE & LOGIC ---
+  const [pickerState, setPickerState] = useState({
+    isOpen: false,
+    position: "top",
+  });
+  const pickerRef = useRef(null);
 
-  // 🔥 3. Can Edit ONLY if they are the creator AND it's within 24 hours
+  // Close picker if clicked outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (pickerRef.current && !pickerRef.current.contains(event.target)) {
+        setPickerState((prev) => ({ ...prev, isOpen: false }));
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  // Group reactions by Emoji string to show counts (e.g., 👍 3)
+  const reactions = item.Reactions || [];
+  const currentUserId = user?.userId;
+
+  const groupedReactions = reactions.reduce((acc, reaction) => {
+    if (!acc[reaction.Emoji]) {
+      acc[reaction.Emoji] = { count: 0, userReactionId: null, users: [] };
+    }
+    acc[reaction.Emoji].count += 1;
+    acc[reaction.Emoji].users.push(reaction.CreatedBy);
+
+    // Check if the current user made this specific reaction
+    if (
+      reaction.CreatedBy === currentUserId ||
+      reaction.CreatedBy === currentUser
+    ) {
+      acc[reaction.Emoji].userReactionId = reaction.Id;
+    }
+    return acc;
+  }, {});
+
+  // Handle adding or removing a reaction
+  const handleReactionToggle = async (emojiStr) => {
+    try {
+      const existingReaction = groupedReactions[emojiStr];
+
+      if (existingReaction && existingReaction.userReactionId) {
+        // User already reacted with this emoji -> Remove it
+        await apiClient.delete(
+          `EmojiReaction/${existingReaction.userReactionId}`,
+        );
+      } else {
+        // User hasn't reacted with this emoji -> Add it
+        await apiClient.post(`EmojiReaction/Emoji`, {
+          ThreadId: item.id,
+          Emoji: emojiStr,
+        });
+      }
+
+      // Refresh the threads data to show the new reaction
+      if (ticketId) {
+        queryClient.invalidateQueries(queryKeys.ticket.thread(ticketId));
+      }
+    } catch (error) {
+      console.error("Failed to toggle reaction", error);
+    }
+  };
+
+  const onEmojiClick = (emojiStr) => {
+    setPickerState((prev) => ({ ...prev, isOpen: false }));
+    handleReactionToggle(emojiStr);
+  };
+
+  // Dynamic Positioning Logic for the Picker
+  const handlePickerToggle = (e) => {
+    if (pickerState.isOpen) {
+      setPickerState((prev) => ({ ...prev, isOpen: false }));
+      return;
+    }
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    // If less than 60px space below, open UPWARDS ('top'). Else open DOWNWARDS ('bottom')
+    const position = spaceBelow < 60 ? "top" : "bottom";
+    setPickerState({ isOpen: true, position });
+  };
+  // ------------------------------------
+
+  const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
   const canEdit = isMe && isWithin24Hours;
+
   const renderCoContributors = (coContributors) => {
-    if (formContext?.isViewer) return null; // Don't show co-contributors in viewer mode
+    if (formContext?.isViewer) return null;
     if (!coContributors || coContributors.length === 0) return null;
 
     const isSelfSupport = coContributors.some(
-      (c) => c.id === currentUser || c.name === item.CreatedBy
+      (c) => c.id === currentUser || c.name === item.CreatedBy,
     );
 
     const othersOnly = coContributors.filter(
-      (c) => c.id !== currentUser && c.name !== item.CreatedBy
+      (c) => c.id !== currentUser && c.name !== item.CreatedBy,
     );
 
-    const MAX_VISIBLE = 2; // Change this to 3 if you want to show more names
+    const MAX_VISIBLE = 2;
     const total = coContributors.length;
-
-    // Grab the first 2 names
     const visibleNames = coContributors
       .slice(0, MAX_VISIBLE)
       .map((c) => c.name)
       .join(", ");
     const remainingCount = othersOnly.length - MAX_VISIBLE;
-
-    // Create a newline-separated list for the hover tooltip
     const allNamesList = othersOnly.map((c) => c.name).join("\n");
 
     return (
       <span
         className="text-gray-600 text-[13px] font-medium flex items-center cursor-help"
-        title={`Co-Contributors:\n${allNamesList}`} // Native HTML tooltip
+        title={`Co-Contributors:\n${allNamesList}`}
       >
         {isSelfSupport && (
           <span className="inline-flex items-center gap-1 bg-blue-50 text-blue-600 border border-blue-200 px-2 py-0.5 rounded-full text-[12px] font-bold tracking-wider uppercase">
             Support <FaRegHandshake size={20} />
           </span>
         )}
-
         {othersOnly.length > 0 && (
           <>
             <span className="mx-1.5 text-gray-400 italic">with</span>
             <span className="truncate max-w-[200px]">{visibleNames}</span>
           </>
         )}
-
-        {/* If there are more than 2, show the +X badge! */}
         {remainingCount > 0 && (
           <span className="ml-1.5 bg-gray-100 text-gray-500 border border-gray-200 px-1.5 py-0.5 rounded-md text-[10px] font-bold tracking-wider uppercase shadow-sm transition-colors hover:bg-gray-200">
             +{remainingCount} more
@@ -102,51 +190,54 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [], 
       </span>
     );
   };
+
   return (
     <div
       className={`relative flex gap-4 w-full mb-6 group ${isMe ? "flex-row-reverse" : "flex-row"}`}
     >
-      {/* 1. THE AVATAR (Smooth gradients with soft shadows) */}
+      {/* 1. THE AVATAR */}
       <div className="flex-shrink-0 relative z-10 mt-1">
         <div
-          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ${isMe
-            ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 rounded-2xl rounded-tr-sm"
-            : "bg-white/70 border-2 border-gray-100 rounded-2xl rounded-tl-sm"
-            }`}
+          className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shadow-sm ${
+            isMe
+              ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 rounded-2xl rounded-tr-sm"
+              : "bg-white/70 border-2 border-gray-100 rounded-2xl rounded-tl-sm"
+          }`}
         >
-
           {isMe
             ? getInitials(currentUser || "You")
-            : (user?.role === 3 && item.team !== null)
+            : user?.role === 3 && item.team !== null
               ? "WG"
               : getInitials(item.CreatedBy)}
         </div>
       </div>
 
       <div
-        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${!formContext.isViewer && item.toClient
-          ? "bg-green-100/80 border-green-500/60 rounded-2xl rounded-tl-sm" // Always green for ToClient
-          : isMe
-            ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm" // Subtle Yellow Glass for "Me"
-            : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
-          }`}
+        className={`flex-1 max-w-[100%] shadow-[0_8px_30px_rgb(0,0,0,0.04)] backdrop-blur-xl border ${
+          !formContext.isViewer && item.toClient
+            ? "bg-green-100/80 border-green-500/60 rounded-2xl rounded-tl-sm"
+            : isMe
+              ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm"
+              : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
+        }`}
       >
-        {/* Header - Blends seamlessly into the card instead of a hard block */}
+        {/* Header */}
         <div
-          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${isMe ? "border-blue-200/40" : "border-gray-200/40"
-            }`}
+          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${isMe ? "border-blue-200/40" : "border-gray-200/40"}`}
         >
           <div className="text-gray-500 tracking-wide">
             <strong className="text-gray-900 font-medium mr-1">
-              {isMe ?
-                "You"
-                : (user?.role === 3 && item.team !== null)
-                  ? "WorkGlow Support" : item.CreatedBy
-              }
+              {isMe
+                ? "You"
+                : user?.role === 3 && item.team !== null
+                  ? "WorkGlow Support"
+                  : item.CreatedBy}
             </strong>
             {renderCoContributors(item.CoContributors)}
-            <span className="text-xs opacity-75"
-              title={dayjs(item.createdAt).format("MMMM D, YYYY h:mm A")} >
+            <span
+              className="text-xs opacity-75"
+              title={dayjs(item.createdAt).format("MMMM D, YYYY h:mm A")}
+            >
               commented {dayjs(item.createdAt).fromNow()}
             </span>
           </div>
@@ -169,98 +260,154 @@ const ThreadListCard = ({ item, onEdit, currentUser, formContext, toggles = [], 
             <button
               onClick={onEdit}
               disabled={!canEdit}
-              className={`flex items-center justify-center p-1 rounded-full transition-colors ${canEdit
-                ? "text-gray-400 hover:text-blue-600 hover:bg-black/5"
-                : "invisible"
-                }`}
+              className={`flex items-center justify-center p-1 rounded-full transition-colors ${canEdit ? "text-gray-400 hover:text-blue-600 hover:bg-black/5" : "invisible"}`}
               title="Edit Comment"
             >
               <FaEdit size={14} />
             </button>
-            {/* {onReply&&( */}
-            {!formContext?.isViewer && (
-            <button
-              onClick={() => onReply(item)}
-              //  disabled={!canEdit}
-              className="flex items-center justify-center p-1 rounded-full transition-colors text-gray-400 hover:text-blue-600 hover:bg-black/5"
-              title="Reply to this comment" >
-              <FaReply size={14} />
-            </button>
-            )}
-            {/* )} */}
 
+            {!formContext?.isViewer && (
+              <button
+                onClick={() => onReply(item)}
+                className="flex items-center justify-center p-1 rounded-full transition-colors text-gray-400 hover:text-blue-600 hover:bg-black/5"
+                title="Reply to this comment"
+              >
+                <FaReply size={14} />
+              </button>
+            )}
           </div>
         </div>
 
-        {referencedThread && (() => {
-          const stripHtml = (html) => {
-            const doc = new DOMParser().parseFromString(html || "", "text/html");
-            return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
-          };
-
-          const cleanText = stripHtml(referencedThread.description);
-          return (
-            <div className="mx-4 mt-3 mb-1 rounded-xl border border-gray-200 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
-              <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-100">
-                <svg
-                  width="13"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="#6B7280"
-                  strokeWidth="2.2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="flex-shrink-0"
-                >
-                  <polyline points="9 14 4 9 9 4" />
-                  <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
-                </svg>
-                <div className="w-5 h-5 rounded-md bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-700 flex-shrink-0">
-                  {getInitials(referencedThread.CreatedBy)}
+        {/* Referenced Thread Block */}
+        {referencedThread &&
+          (() => {
+            const stripHtml = (html) => {
+              const doc = new DOMParser().parseFromString(
+                html || "",
+                "text/html",
+              );
+              return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
+            };
+            const cleanText = stripHtml(referencedThread.description);
+            return (
+              <div className="mx-4 mt-3 mb-1 rounded-xl border border-gray-200 overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.03)]">
+                <div className="flex items-center gap-2 px-3 py-2 border-b border-gray-200 bg-gray-100">
+                  <svg
+                    width="13"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="#6B7280"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="flex-shrink-0"
+                  >
+                    <polyline points="9 14 4 9 9 4" />
+                    <path d="M20 20v-7a4 4 0 0 0-4-4H4" />
+                  </svg>
+                  <div className="w-5 h-5 rounded-md bg-gray-200 flex items-center justify-center text-[9px] font-bold text-gray-700 flex-shrink-0">
+                    {getInitials(referencedThread.CreatedBy)}
+                  </div>
+                  <span className="text-[12px] font-semibold text-gray-800">
+                    {referencedThread.CreatedBy}
+                  </span>
+                  <span className="ml-auto text-[10px] text-gray-400 italic">
+                    in reply to
+                  </span>
                 </div>
-                <span className="text-[12px] font-semibold text-gray-800">
-                  {referencedThread.CreatedBy}
-                </span>
-                <span className="ml-auto text-[10px] text-gray-400 italic">
-                  in reply to
-                </span>
+                <div className="px-3 py-4 bg-white group">
+                  <p className="text-[12px] text-gray-600 leading-relaxed m-0 line-clamp-2 group-hover:line-clamp-none transition-all duration-200">
+                    {cleanText}
+                  </p>
+                </div>
               </div>
-              <div className="px-3 py-4 bg-white group">
-                <p className="text-[12px] text-gray-600 leading-relaxed m-0 line-clamp-2 group-hover:line-clamp-none transition-all duration-200">
-                  {cleanText}
-                </p>
-              </div>
-            </div>
-          );
-        })()}
+            );
+          })()}
 
         {/* Body */}
-        < div className="p-5 text-sm text-gray-800 break-words leading-relaxed" >
+        <div className="p-5 text-sm text-gray-800 break-words leading-relaxed">
           <HtmlRenderer html={item.description} />
         </div>
 
-        {/* Footer (Slightly darker translucent bar at the bottom) */}
-        {!formContext.isViewer &&
-          <div className="px-5 py-2.5 rounded-b-2xl flex justify-between text-xs text-gray-500 bg-black/[0.03]">
-            {item.fromTime && item.toTime ? (
-              <>
-                <span>{formatDateRange(item.fromTime, item.toTime)}</span>
-                <span className="font-medium text-gray-600">
-                  Total Hours: {item.Hours || "-"}
-                </span>
-              </>
-            ) : (
-              <>
-                <span>&nbsp;</span> {/* Empty space for fromTime/toTime */}
-                <span className="font-medium text-gray-600">
-                  {item.Hours ? `Total Hours: ${item.Hours}` : ""}
-                </span>
-              </>
-            )}
+        {/* Footer & Reactions */}
+        {!formContext.isViewer && (
+          <div className="px-5 py-2.5 rounded-b-2xl flex justify-between items-center text-xs text-gray-500 bg-black/[0.03] relative z-20">
+            {/* Left side: Emoji Reactions + Date Range */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Reactions Block */}
+              <div className="flex flex-wrap items-center gap-1.5">
+                {Object.entries(groupedReactions).map(([emoji, data]) => (
+                  <button
+                    key={emoji}
+                    onClick={() => handleReactionToggle(emoji)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[12px] transition-colors border shadow-sm ${
+                      data.userReactionId
+                        ? "bg-blue-50 border-blue-200 text-blue-700" // Highlight if user reacted
+                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span>{emoji}</span>
+                    <span className="font-semibold">{data.count}</span>
+                  </button>
+                ))}
+
+                {/* Emoji Picker Button */}
+                <div className="relative" ref={pickerRef}>
+                  <button
+                    onClick={handlePickerToggle}
+                    className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors border ${
+                      pickerState.isOpen
+                        ? "bg-blue-50 border-blue-200 text-blue-600"
+                        : "bg-white border-gray-300 shadow-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                    }`}
+                    title="Add Reaction"
+                  >
+                    <FaRegSmile size={14} />
+                  </button>
+
+                  {/* Dynamic Professional Emoji Popover */}
+                </div>
+              </div>
+
+              {/* Date Range (if exists) separated by a border line */}
+              {item.fromTime && item.toTime && (
+                <div className="flex items-center text-gray-400 border-l border-gray-300 pl-3">
+                  {formatDateRange(item.fromTime, item.toTime)}
+                </div>
+              )}
+            </div>
+
+            {/* Right side: Total Hours */}
+            <div className="font-medium text-gray-600 flex-shrink-0 text-right ml-3">
+              {item.Hours ? `Total Hours: ${item.Hours}` : ""}
+            </div>
           </div>
-        }
+        )}
+       
       </div>
+       {pickerState.isOpen && (
+          <div
+            className={`absolute z-[99999] ${
+              pickerState.position === "top"
+                ? "bottom-full mb-2" // Open upwards
+                : "top-full mt-2" // Open downwards
+            } left-0`}
+          >
+            <div className="flex items-center gap-1 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded-full px-2 py-1.5 border border-gray-100 animate-in fade-in zoom-in-95 duration-100">
+              {PROFESSIONAL_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => onEmojiClick(emoji)}
+                  className="w-8 h-8 flex items-center justify-center text-lg rounded-full hover:bg-gray-100 transition-transform hover:scale-110"
+                  title="React"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
     </div>
   );
 };

@@ -53,9 +53,7 @@ export default function TicketListCard({
   const { text } = parseQuery(query);
   const mainAssignee = item.multiAssignees?.find(
     (a) => a.Assignee_Type === "Main Assignee",
-
   );
- 
 
   const uniqueAssignees = Array.from(
     new Map(
@@ -250,10 +248,14 @@ export default function TicketListCard({
                   <span className="meta-divider">•</span>
                   <Tooltip title={ProjectDetails.name} arrow>
                     <span className="project-key">
-                      {ProjectDetails.name.split(" ").length > 2
+                      {/* {ProjectDetails.name.split(" ").length > 2
                         ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
                         "..."
-                        : ProjectDetails.name}
+                        : ProjectDetails.name} */}
+                      {ProjectDetails.name
+                        ?.split(" ")
+                        .map((word) => word[0]?.toUpperCase())
+                        .join("")}
                     </span>
                   </Tooltip>
                   <span className="meta-divider">•</span>
@@ -264,7 +266,18 @@ export default function TicketListCard({
                     <span className="created-key">
                       Created {dayjs(item.createdAt).fromNow()}
                     </span>
-                  </Tooltip><span className="meta-divider">•</span>{item.TicketCreater}
+                  </Tooltip>
+
+                  {!item.isViewer && item.TicketCreater && (
+                    <span className="flex items-center gap-1.5 ml-1">
+                      <span className="meta-divider text-gray-400">•</span>
+                      <Tooltip title={item.TicketCreater} arrow>
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 shadow-sm cursor-help">
+                          {getInitials(item.TicketCreater)}
+                        </div>
+                      </Tooltip>
+                    </span>
+                  )}
                 </div>
               )}
               {!isViewer && (
@@ -275,7 +288,6 @@ export default function TicketListCard({
                         <span>Owner: {mainAssignee.Assignee_Name}</span>
                       )}
                     </div>
-
                   </>
                   {/* Assignees Avatars */}
                   <div className="ticket-assignees">
@@ -309,15 +321,36 @@ export default function TicketListCard({
 
               {!isViewer && (
                 <div className="inline-flag-group">
-                  {isCloseRequested && <div className="inline-flag flag-close"><span className="beacon-dot"></span>Close</div>}
-                  {adminResponseRequested && <div className="inline-flag flag-admin"><span className="beacon-dot"></span>Admin</div>}
-                  {technicalResponseRequested && <div className="inline-flag flag-tech"><span className="beacon-dot"></span>Technical</div>}
-                  {isPriorityRequested && <div className="inline-flag flag-priority"><span className="beacon-dot"></span>Priority</div>}
-                  {webResponseRequested && <div className="inline-flag flag-web"><span className="beacon-dot"></span>Web</div>}
-                  {funcResponseRequested && <div className="inline-flag flag-func"><span className="beacon-dot"></span>Functional</div>}
-
-
-
+                  {isCloseRequested && (
+                    <div className="inline-flag flag-close">
+                      <span className="beacon-dot"></span>Close
+                    </div>
+                  )}
+                  {adminResponseRequested && (
+                    <div className="inline-flag flag-admin">
+                      <span className="beacon-dot"></span>Admin
+                    </div>
+                  )}
+                  {technicalResponseRequested && (
+                    <div className="inline-flag flag-tech">
+                      <span className="beacon-dot"></span>Technical
+                    </div>
+                  )}
+                  {isPriorityRequested && (
+                    <div className="inline-flag flag-priority">
+                      <span className="beacon-dot"></span>Priority
+                    </div>
+                  )}
+                  {webResponseRequested && (
+                    <div className="inline-flag flag-web">
+                      <span className="beacon-dot"></span>Web
+                    </div>
+                  )}
+                  {funcResponseRequested && (
+                    <div className="inline-flag flag-func">
+                      <span className="beacon-dot"></span>Functional
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -328,45 +361,45 @@ export default function TicketListCard({
               item.EndTime ||
               item.ConsumeTime ||
               item.Comment) && (
-                <div className="ticket-timesheet-info">
-                  {/* working time */}
-                  {item.StartTime && item.EndTime && (
+              <div className="ticket-timesheet-info">
+                {/* working time */}
+                {item.StartTime && item.EndTime && (
+                  <span className="timesheet-item">
+                    <FiClock className="due-icon" />
+                    Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                    {dayjs(item.EndTime).format("HH:mm")}
+                  </span>
+                )}
+
+                {/* time taken */}
+                {item.ConsumeTime && (
+                  <>
+                    <span className="meta-divider">•</span>
                     <span className="timesheet-item">
-                      <FiClock className="due-icon" />
-                      Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                      {dayjs(item.EndTime).format("HH:mm")}
+                      Time taken: {item.ConsumeTime} hr
                     </span>
-                  )}
+                  </>
+                )}
 
-                  {/* time taken */}
-                  {item.ConsumeTime && (
-                    <>
-                      <span className="meta-divider">•</span>
-                      <span className="timesheet-item">
-                        Time taken: {item.ConsumeTime} hr
-                      </span>
-                    </>
-                  )}
-
-                  {/* view cmnt */}
-                  {item.Comment && (
-                    <>
-                      <span className="meta-divider">•</span>
-                      <span
-                        className="comment-toggle"
-                        onClick={(e) => {
-                          // 👈 FIX: Add 'e' here
-                          e.stopPropagation();
-                          e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
-                          setIsCommentExpanded(!isCommentExpanded);
-                        }}
-                      >
-                        {isCommentExpanded ? "Hide Comment" : "View Comment"}
-                      </span>
-                    </>
-                  )}
-                </div>
-              )}
+                {/* view cmnt */}
+                {item.Comment && (
+                  <>
+                    <span className="meta-divider">•</span>
+                    <span
+                      className="comment-toggle"
+                      onClick={(e) => {
+                        // 👈 FIX: Add 'e' here
+                        e.stopPropagation();
+                        e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                        setIsCommentExpanded(!isCommentExpanded);
+                      }}
+                    >
+                      {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                    </span>
+                  </>
+                )}
+              </div>
+            )}
             {item.Comment && isCommentExpanded && (
               <div className="comment-content">{item.Comment} </div>
             )}
@@ -436,33 +469,30 @@ export default function TicketListCard({
             )}
           </div> */}
 
-
           <div className="flex items-end gap-4">
-
             {/* LEFT COLUMN */}
-           
-            <div className="flex flex-col items-center gap-2">
-               {!isViewer && (
-              <button
-                className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
-                title="Meeting Scheduler"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goTo(ROUTE_KEYS.MEETING_CREATE_WITH_TICKET, { ticketId: item.navId});
-                }}
-              >
-                <FiCalendar className="text-base" />
-              </button>
-               )}
 
-              <div className="text-sm text-gray-700">
-                {item.threadCount}
-              </div>
+            <div className="flex flex-col items-center gap-2">
+              {!isViewer && (
+                <button
+                  className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
+                  title="Meeting Scheduler"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goTo(ROUTE_KEYS.MEETING_CREATE_WITH_TICKET, {
+                      ticketId: item.navId,
+                    });
+                  }}
+                >
+                  <FiCalendar className="text-base" />
+                </button>
+              )}
+
+              <div className="text-sm text-gray-700">{item.threadCount}</div>
             </div>
 
             {/* RIGHT COLUMN */}
             <div className="flex flex-col items-center gap-2">
-
               {config?.enablequickStatus && (
                 <button
                   className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
@@ -488,25 +518,27 @@ export default function TicketListCard({
                   <FiMessageSquare className="text-base" />
                 </button>
               )}
-
             </div>
 
             {/* DUE DATE BLOCK (unchanged) */}
             {!isViewer && (
               <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
                 <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
-                  {item.dueDate ? dayjs(item.dueDate).format("DD MMM YYYY") : ""}
+                  {item.dueDate
+                    ? dayjs(item.dueDate).format("DD MMM YYYY")
+                    : ""}
                 </div>
 
                 {dueStatus && (
-                  <div className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}>
+                  <div
+                    className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
+                  >
                     {dueStatus.icon}
                     <span>{dueStatus.text}</span>
                   </div>
                 )}
               </div>
             )}
-
           </div>
 
           {/* RIGHT BLOCK: Progress & Actions */}

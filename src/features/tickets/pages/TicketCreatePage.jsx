@@ -4,7 +4,7 @@ import { TicketFormConfig } from "../config/ticketForm.config";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMemo } from "react";
-import { normalizeTicket } from "../../../app/shared/utils/ticketNormalizer";
+import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 import ConfirmDialog from "../../../app/shared/confirmation/confirmationModel";
 import { useConfirmDialog } from "../../../app/shared/confirmation/confirmationModel";

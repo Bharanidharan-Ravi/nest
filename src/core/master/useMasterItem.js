@@ -8,8 +8,8 @@ import { MASTER_REGISTRY }  from "./registry/masterRegistry";
 
 // ─── Full normalized list for any master key ──────────────────────────────────
 //   useMasterList("employee")  → all employees after adapter transform
-export const useMasterList = (masterKey) => {
-  const { data } = useRegistryQuery(MASTER_REGISTRY, masterKey);
+export const useMasterList = (masterKey, params = {}, overrides = {}) => {
+  const { data } = useRegistryQuery(MASTER_REGISTRY, masterKey, params, overrides);
   return data ?? [];
 };
 

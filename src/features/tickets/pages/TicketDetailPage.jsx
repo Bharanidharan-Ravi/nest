@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
-import { useTicketMaster } from "../hooks/useTicketMaster";
+// import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
@@ -15,6 +15,7 @@ import { ROUTE_KEYS } from "../../../core/routing/paths";
 import {
   useProjectMaster,
   useTeamMaster,
+  useTicketMaster,
   useTicketProgress,
 } from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
@@ -39,8 +40,11 @@ const TicketDetailPage = () => {
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
 
-  const { data: ticketMasterData } = useTicketMaster();
+  // const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
+  const ticketMasterData = useTicketMaster(ticketId);
+  console.log("useTicketMasterSel :",ticketMasterData);
+  
   const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
     enabled: !!ticketId, // Only fire if ticketId exists in the URL
