@@ -56,7 +56,6 @@ import Badge from "./Badge"; // Your badge component
 // ];
 // dayjs.extend(isSameOrAfter)
 // export default function CalendarSidebar({data}) {
-//   // console.log("rawMeetingData",rawMeetingData);
 
 //   // Handle API returning { data: [...] } or array directly
 //   const meetings = Array.isArray(data) ? data : data?.data ?? [];
@@ -531,7 +530,6 @@ function MeetingDay({ day, meetingDateMap = {}, ...props }) {
 // -------------------- MAIN COMPONENT --------------------
 export default function CalendarSidebar() {
   const { data: upcominger } = useUpcomingMeeting();
-  console.log("upcominger", upcominger);
 
   const meetings = upcominger ?? [];
   const meetingDateMap = getMeetingDateMap(meetings);
@@ -547,8 +545,6 @@ export default function CalendarSidebar() {
       const bDate = dayjs(b.Date.split("-")[0].trim(), "DD MMM YYYY");
       return aDate - bDate;
     });
-  console.log("upcoming", upcoming);
-  console.log("meetingDateMap", meetingDateMap);
 
   return (
     <aside className="w-[300px] bg-white border-r border-gray-100 flex flex-col overflow-y-auto shrink-0">

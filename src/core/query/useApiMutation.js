@@ -11,7 +11,6 @@ export const useApiMutation = ({
   ...rest
 }) => {
   const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (payload) => {
       const result = await executeApi({

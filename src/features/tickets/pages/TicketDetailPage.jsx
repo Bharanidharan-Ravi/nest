@@ -43,7 +43,6 @@ const TicketDetailPage = () => {
   // const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
   const ticketMasterData = useTicketMaster(ticketId);
-  console.log("useTicketMasterSel :",ticketMasterData);
   
   const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
@@ -72,44 +71,44 @@ const TicketDetailPage = () => {
   }, []);
 
   // 1. Process Parent Ticket
-  const parentTicket = React.useMemo(() => {
-    if (!ticketMasterData) return null;
-    const targetId = String(ticketId).toLowerCase();
-    const ticket = ticketMasterData.find(
-      (issue) => issue.Issue_Id?.toLowerCase() === targetId|| 
-      issue.navId?.toLowerCase() === targetId,
-    );
-    if (!ticket) return null;
+  // const parentTicket = React.useMemo(() => {
+  //   if (!ticketMasterData) return null;
+  //   const targetId = String(ticketId).toLowerCase();
+  //   const ticket = ticketMasterData.find(
+  //     (issue) => issue.Issue_Id?.toLowerCase() === targetId|| 
+  //     issue.navId?.toLowerCase() === targetId,
+  //   );
+  //   if (!ticket) return null;
 
-    const projectDetails = projectMasterData?.find(
-      (p) => p.id === ticket.Project_Id,
-    );
+  //   const projectDetails = projectMasterData?.find(
+  //     (p) => p.id === ticket.Project_Id,
+  //   );
 
-    return {
-      ...ticket,
-      id: ticket.Issue_Id, // Ensure we have a consistent 'id' field for the ticket
-      Project_Name: projectDetails?.name || "Unknown Project",
-      projKey: projectDetails?.projectKey || "Unknown Repo",
-      Repo_Name: projectDetails?.repoName || "Unknown Repo",
-    };
-  }, [ticketMasterData, ticketId]);
+  //   return {
+  //     ...ticket,
+  //     id: ticket.Issue_Id, // Ensure we have a consistent 'id' field for the ticket
+  //     Project_Name: projectDetails?.name || "Unknown Project",
+  //     projKey: projectDetails?.projectKey || "Unknown Repo",
+  //     Repo_Name: projectDetails?.repoName || "Unknown Repo",
+  //   };
+  // }, [ticketMasterData, ticketId]);
 
-  const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(parentTicket?.StatusId);
+  const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(ticketMasterData?.StatusId);
 
   const isTicketIncomplete =
-    !parentTicket?.Assignee_Id ||
-    !parentTicket?.Due_Date ||
+    !ticketMasterData?.Assignee_Id ||
+    !ticketMasterData?.Due_Date ||
     (
-      !parentTicket?.Client &&
-      !parentTicket?.Functional &&
-      !parentTicket?.Technical &&
-      !parentTicket?.Web
+      !ticketMasterData?.Client &&
+      !ticketMasterData?.Functional &&
+      !ticketMasterData?.Technical &&
+      !ticketMasterData?.Web
     );
 
 // const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
 const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketIncomplete;
   // 2. Process Assignees and Roles
-  const assigneesJsonString = JSON.parse(parentTicket?.All_Assignees || "[]");
+  const assigneesJsonString = JSON.parse(ticketMasterData?.All_Assignees || "[]");
   const myAssignments = assigneesJsonString.filter(
     (a) => a.Assignee_Id?.toLowerCase() === user?.userId?.toLowerCase(),
   );
@@ -128,10 +127,10 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
     (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
   const evaluatedStream = selectedWorkStream || myCurrentStream;
 
-  // const isOwner = parentTicket?.Assignee_Id === user?.userId;
+  // const isOwner = ticketMasterData?.Assignee_Id === user?.userId;
   const isOwner = isViewer
-    ? parentTicket?.CreatedBy === user?.userId
-    : parentTicket?.Assignee_Id === user?.userId;
+    ? ticketMasterData?.CreatedBy === user?.userId
+    : ticketMasterData?.Assignee_Id === user?.userId;
   let userRole = "Standard";
   const isWorkCompleted = evaluatedStream
     ? Number(evaluatedStream.CompletionPct) === 100 ||
@@ -268,12 +267,12 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
     };
   }, [ThreadsList, user]);
   
-  if (!parentTicket) return null;
+  if (!ticketMasterData) return null;
   return (
     <div className="flex flex-col relative w-full pb-10 wg-scrollbar bg-white">
       {/* Top Header extracted to its own Component */}
       <ParentTicketHeader
-        parentTicket={parentTicket}
+        parentTicket={ticketMasterData}
         timeStats={timeStats}
         teamTimeStats={teamTimeStats}
         mainAssignee={mainAssignee}
@@ -309,7 +308,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                 assigneesJsonString={assigneesJsonString}
                 selectedWorkStream={selectedWorkStream}
                 selectedHandoffId={selectedHandoffId}
-                parentTicket={parentTicket}
+                parentTicket={ticketMasterData}
                 formContext={formContext}
                 editingItem={editingItem}
                 setEditingItem={setEditingItem}
@@ -326,7 +325,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
               <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
                 <AssigneesWidget
                   workStreams={assigneesJsonString}
-                  data={parentTicket}
+                  data={ticketMasterData}
                   ticketId={ticketId}
                   formContext={formContext}
                   selectedWorkStream={selectedWorkStream}

@@ -6,9 +6,8 @@ import { BannerListConfig } from "../config/bannerUI.config";
 import { useBannerMessage } from "../hooks/useBannerdata"
 
 const BannerPage=()=>{
-    const {data:banner}=useBannerMessage()
-    console.log("data",banner);
-    const { goTo } = useSmartNavigation()
+    const {data:banner}=useBannerMessage();
+    const { goTo } = useSmartNavigation();
 
     const normalizeBanner=(banner)=>({
         BannerMessageId:banner.BannerMessageId,

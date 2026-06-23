@@ -96,7 +96,19 @@ export const MASTER_REGISTRY = {
         idKey: "IssueId",
         idValue: params?.Id,
       }),
-    adapter: (raw) => raw,
+    adapter: normalizeTicket,
+
+    enrich: {
+      project: {
+        master: "project",
+        localKey: "project",
+
+        fields: {
+          projectName: "name",
+          projectKey: "key",
+        },
+      },
+    },
     // adapter: (raw) => ({ id: raw.StatusId, name: raw.StatusName }),
   },
   department: {

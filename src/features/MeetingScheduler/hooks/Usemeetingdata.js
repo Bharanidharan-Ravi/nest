@@ -47,8 +47,7 @@ export const useMeetingData = ({
 //   ToDate,
 //   configKey: configKeyProp,   // optional explicit override
 // } = {}) => {
-//   const isUserScoped = !!employeeId;
-//  console.log("useMeetingData called with:", { employeeId, FromDate, ToDate, configKeyProp, isUserScoped });
+//   const isUserScoped = !!employeeId
 //   // Explicit configKey wins; otherwise auto-derive from presence of HostId
 //   const configKey = configKeyProp
 //     ? configKeyProp

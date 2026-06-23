@@ -600,7 +600,6 @@ const DayView = ({ activeDate, dayMeetings, onSelectMeeting }) => (
         <FaRegCalendarAlt />
         {formatHeaderDate(activeDate)}
       </div>
-      {console.log("dayMeetings", dayMeetings)}
       {dayMeetings.length === 0 ? (
         <div className="px-5 py-10 text-center text-gray-400 text-sm">
           No meetings scheduled for this day.
@@ -668,7 +667,6 @@ const FilterDropdown = ({ label, value, options, onChange }) => (
 );
 
 // const ListView = ({ meetings, onSelectMeeting }) => {
-//   console.log("meetings",meetings)
 //   const [status,   setStatus]   = useState("All");
 //   const [priority, setPriority] = useState("All");
 //   const [type,     setType]     = useState("All");
@@ -918,8 +916,7 @@ const ListView = ({ meetings, onSelectMeeting }) => {
 /* ------------------------------------------------------------------ */
 
 const MeetingScheduler = () => {
-  const params = useParams()
-  console.log("ticketId", params);
+  const params = useParams();
 
   const queryClient = useQueryClient();
 

@@ -56,9 +56,7 @@ const ParentTicketHeader = ({
     }
   };
 
-  if (!parentTicket) return null;
-    console.log("parentTicket",parentTicket);
-    
+  if (!parentTicket) return null;   
 
   const latestLog = progressLogs?.length > 0 ? progressLogs[0] : null;
   const statusSummary =

@@ -21,7 +21,6 @@ export const TicketFormConfig = {
       type: "button",
       onClick: ({ submitForm,context }) => {
         const isViewer=context?.isViewer
-        console.log("formData :", formData);
         const openDialog=context?.openDialog
         
         // 1. Check for Hours

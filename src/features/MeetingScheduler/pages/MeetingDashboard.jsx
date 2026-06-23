@@ -152,7 +152,6 @@ const normalizeMeeting = (meet) => ({
 
 const MeetingDashboard = () => {
   const params = useParams();
-  console.log("params",params);
   const user = readUserFromSession();
   const currentUserId = user?.userId;
   const currentDate = new Date().toISOString().split("T")[0];

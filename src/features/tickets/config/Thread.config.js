@@ -104,7 +104,6 @@ export const ThreadFieldConfig = (ticketId) => [
     initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
       const val=context?.replyingToId??null
-      console.log("val",val);
       return val
       
     },
@@ -487,8 +486,6 @@ export const ThreadFieldConfig = (ticketId) => [
     effectDependencies: ["copyDescription", "description"],
      effectResolver: (formData) => {
       if (formData.copyDescription) {
-        console.log("formData.copyDescription", JSON.stringify(formData.copyDescription));
-        
         const parser = new DOMParser();
         const doc = parser.parseFromString(formData.description || "", "text/html");
         

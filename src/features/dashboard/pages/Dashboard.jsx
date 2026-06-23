@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import dayjs from "dayjs";
 import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import "./Dashboard.css";
@@ -29,6 +29,8 @@ import { ThreadFormConfig } from "../../tickets/config/ThreadForm.config";
 import { ThreadFieldConfig } from "../../tickets/config/Thread.config";
 import TimesheetTree from "../component/TimesheetTree";
 import TicketListCard from "../../tickets/component/TicketListCard";
+import { useGetStaleTicketData } from "../../../app/shared/Header/hook/GetStaleTickets.Api";
+import { Tooltip } from "@mui/material";
 
 
 
@@ -45,6 +47,25 @@ export default function Dashboard() {
   const [selectedUncheckTickets, setSelectedUncheckTickets] = useState([]);
   const { isViewer } = useCurrentUser();
   const today = dayjs().startOf("day").format("YYYY-MM-DD");
+
+  const[showStaleTicketsModal,setshowStaleTicketsModal]=useState(false)
+  const {data:staleTicketsData}=useGetStaleTicketData(currentUserId)
+  const staleTickets=staleTicketsData||[]
+const staleCount=staleTickets.length
+useEffect(()=>{
+  if(staleCount===0){    
+    return}
+  const todayKey=today;
+  const lastShownKey=`staleTicketsShown_${currentUserId}`
+  const lastShown=localStorage.getItem(lastShownKey)
+  
+  if(lastShown===todayKey){
+    return}
+    
+  setshowStaleTicketsModal(true)
+  localStorage.setItem(lastShownKey,todayKey)
+
+},[staleCount,currentUserId,today])
 
   // ── Query — feeds committedIds only ───────────────────────────────────────
   const { data: checkedTicketsData = [] } = useCheckedTickets({
@@ -214,19 +235,19 @@ export default function Dashboard() {
         },
       },
 
-        {
-          key: "assignedTo",
-          view: "Assignee",
-          options: employeeFilterOptions,
-          defaultValue: currentUserId,
-          persistOnClear: true,
-          filterType: "api",
-          api: "/sync/v2",
-          apiKey: "EmployeeId",
-          configKey: "TicketsList",
-          // showCounts: true,
-          normalizer: normalizeTicket,
-        },
+      {
+        key: "assignedTo",
+        view: "Assignee",
+        options: employeeFilterOptions,
+        defaultValue: currentUserId,
+        persistOnClear: true,
+        filterType: "api",
+        api: "/sync/v2",
+        apiKey: "EmployeeId",
+        configKey: "TicketsList",
+        // showCounts: true,
+        normalizer: normalizeTicket,
+      },
       {
         key: "multiAssignees",
         view: "Assignee",
@@ -635,6 +656,96 @@ export default function Dashboard() {
     <div className="dashview">
       <h2>Dashboard</h2>
       <ModuleSwitcher modules={dashboardModules} />
+      {showStaleTicketsModal && (
+        <>
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"
+            onClick={() => setshowStaleTicketsModal(false)}
+          />
+
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+            <div
+              className="w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden pointer-events-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="p-5 border-b border-gray-100 flex-shrink-0 bg-white z-10">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
+                      Stale Tickets
+                    </h3>
+                    <p className="text-base sm:text-lg text-gray-600 truncate">
+                     {staleCount} Ticket{staleCount===1?"":"s"} haven't been updated recently
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setshowStaleTicketsModal(null)}
+                    className="closebtn w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-all"
+                  >
+                    <FiX size={18} />
+                  </button>
+                </div>
+              </div>
+
+             <div className="flex-1 overflow-y-auto p-4">
+              {staleTickets.map((item)=>(
+                <div 
+                key={item.issueId}
+                className="px-3 py-2.5 border-b hover:bg-gray-50 cursor-pointer transition"
+                onClick={()=>{
+                  goTo(ROUTE_KEYS.TICKET_DETAIL,{ticketId:item.Issue_Id})
+                  setshowStaleTicketsModal(false);
+                }}>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-sm text-gray-800">
+                      #{item.Issue_Code}
+                    </span>
+                    <span className="text-sm text-gray-800 truncate">
+                      {item.Title}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-1 min-w-0">
+                              {/* Repo */}
+                              <Tooltip title={item.Repo_Name} arrow>
+                                <span className="text-xs font-medium text-gray-700 uppercase">
+                                  {item?.Repo_Name
+                                    ?.split(" ")
+                                    .map((w) => w[0]?.toUpperCase())
+                                    .join("")}
+                                </span>
+                              </Tooltip>
+
+                              <span className="text-gray-400">•</span>
+
+                              {/* Project */}
+                              <Tooltip title={item.Proj_Name} arrow>
+                                <span className="text-xs text-gray-600 truncate max-w-[140px]">
+                                  {item?.Proj_Name?.split(" ").length > 2
+                                    ? item.Proj_Name.split(" ").slice(0, 2).join(" ") + "..."
+                                    : item.Proj_Name}
+                                </span>
+                              </Tooltip>
+                            </div>
+
+                  <div className="text-xs text-gray-400 mt-0.5">
+                  {item.DaysSinceLastUpdate} day{item.DaysSinceLastUpdate===1?"":"s"} ago
+                  </div>
+                </div>
+              ))}
+             </div>
+             <div className="p-4 border-t border-gray-100 flex-shrink-0">
+              <button
+              onClick={()=>setshowStaleTicketsModal(false)}
+              className="closebtn w-full py-2 rounded-md bg-gray-100 hover:bg-gray-200 text-sm font-medium">Dismiss</button>
+             </div>
+            </div>
+          </div>
+        </>
+      )}
+
+
+
       {quickTicketStatus && (
         <>
           <div

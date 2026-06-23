@@ -78,5 +78,10 @@ export const queryKeys = {
   MeetingData: {
     all:   ["MeetingData"],
     list:  (Employee_Id) => [...queryKeys.MeetingData.all, "list",Employee_Id],
-  }
+  },
+   StaleTickets: {
+    all: ["GetStaleTicketsForAssignee"],
+    list: () => [...queryKeys.GetStaleTicketsForAssignee.all, "list"],
+    detail: (id) => [...queryKeys.GetStaleTicketsForAssignee.all, "detail", id],
+  },
 };

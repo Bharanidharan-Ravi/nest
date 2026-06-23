@@ -17,11 +17,7 @@ export const CheckVersion = async () => {
 
 export const versionChecker = async () => {
   try {
-
-    const latestVersion =
-      await CheckVersion();
-console.log("latestVersion :", latestVersion);
-
+    const latestVersion = await CheckVersion();
     if (
       latestVersion !== APP_VERSION
     ) {

@@ -77,7 +77,6 @@ export const MeetinglFieldConfig = () => [
     },
     // initValueResolver: ({ context, masterData, formData }) => {
     //   const currentUserId = context?.currentUserId;
-    // console.log("masterData",masterData);
 
     //   if (!currentUserId) return null;
 
@@ -252,8 +251,6 @@ export const MeetinglFieldConfig = () => [
       { label: "Sat", value: { id: 6, name: "Saturday" } },
     ],
     visibleWhen: (formData, context) => {
-      console.log("formData", formData);
-
       return formData?.recurrence_type?.value?.id === "WEEKLY";
     },
     initValueResolver: ({ context }) => {
@@ -381,7 +378,6 @@ export const MeetinglFieldConfig = () => [
     ),
     initValueResolver: ({ context, masterData, formData }) => {
       const ticketId = formData?.ticket?.value?.id;
-      console.log("ticketId", ticketId, formData, context,);
       const projectId = context?.ticketMaster
         ?.find(t => t.Issue_Id === ticketId || context.fromTicketId
         )

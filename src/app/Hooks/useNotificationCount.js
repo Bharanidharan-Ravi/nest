@@ -34,9 +34,7 @@ export const getNotification = (showNotifications) => {
   });
 };
 
-export const getTimeline = (showTimeline) => {
-  console.log("showTimeline :", showTimeline);
-  
+export const getTimeline = (showTimeline) => {  
   return useApiQuery({
     queryKey: queryKeys.notification.timeline(),
     url: "/sync/v2",

@@ -6,8 +6,7 @@ import EntityFormPage from "../../../packages/crud/pages/EntityFormPage"
 const CreateBanner=()=>{
 const params=useParams()
 const isEdit=!!params.BannerMessageId
-const {data:MessageType}=getMessageType()
-console.log("MessageType",MessageType);
+const {data:MessageType}=getMessageType();
 
 const {data:bannerListWrapper}=useBannerMessage(
     isEdit?params.BannerMessageId:null
@@ -92,10 +91,7 @@ const basefields=BannerFormConfig.fields.filter(
       ? [...basefields, statusField,MessageTypefield]  // status only on edit
       : [...basefields,MessageTypefield],
   }
-
-console.log("basefields",basefields);
-console.log("dynamicConfig",dynamicConfig.fields);
-
+  
   return (
     <div>
       <h2>{isEdit ? "Edit Message" : "Create Message"}</h2>

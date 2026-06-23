@@ -13,7 +13,6 @@ import dayjs from "dayjs";
 
 export default function VersionUpdateDialog() {
   const versionModal = useAppStore((s) => s.versionModal);
-console.log("versionModal :", versionModal);
 
   const handleReload = async () => {
     try {

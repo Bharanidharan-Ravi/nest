@@ -25,7 +25,7 @@ const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
   { label: "InActive", value: { id: 17, name: "InActive" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
-  { label: "InQueue", value: { id: 19, name: "InQueue" } },
+  { label: "InQueue", value: { id: 18, name: "InQueue" } },
   { label: "Need Confirmation", value: { id: 20, name: "Need Confirmation" } },
 ];
 
@@ -227,7 +227,6 @@ export const TicketFieldConfig = () => [
       return !context?.isViewer ? false : true;
     },
     disableWhen: (context) => {
-      console.log("context", context);
       // return context.isEdit
     },
     visibleWhen: (formData, context) => {

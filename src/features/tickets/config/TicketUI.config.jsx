@@ -16,37 +16,6 @@ const ALL_TABS = [
 // Pre-filtered viewer tabs
 const VIEWER_TABS = ALL_TABS.filter(t => ["open", "closed","queue"].includes(t.key));
 
-// Generic sorting function creator
-// const createSortFn = (priorityFields = []) => (a, b) => {
-//   console.log("priorityFields",priorityFields,a, b);
-  
-//   for (let field of priorityFields) {
-//     if (a[field] !== b[field]) return a[field] ? -1 : 1;
-//     console.log("a[field] ? -1 : 1",a[field] ? -1 : 1);
-    
-//   }
-//   return new Date(b.updatedAt) - new Date(a.updatedAt);
-// };
-
-// const createSortFn = (priorityFields = []) => (a, b) => {
-//   for (let field of priorityFields) {
-//     if (a[field] !== b[field]) {
-//       return a[field] ? -1 : 1;
-//     }
-//   }
-//   // fallback to updatedAt descending
-//   return new Date(b.updatedAt) - new Date(a.updatedAt);
-// };
-
-// // Pre-create sort functions
-// const fullCustomSortFn = createSortFn([
-//   "priorityRequest",
-//   "isCloseRequested",
-//   "AdminResponse",
-//   "funcResponse",
-//   "TechnicalResponse",
-//   "WebResponse",
-// ]);
 
 const fieldMap = {
   priorityRequest: "priorityRequest",

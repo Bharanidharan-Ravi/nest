@@ -26,7 +26,8 @@ import {
   Info,
   AlertCircle,
   XCircle,
-} from "lucide-react";
+  Clock
+} from 'lucide-react';
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
@@ -34,6 +35,9 @@ import dayjs, { Dayjs } from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { useMemo } from "react";
+import { useGetStaleTicketData } from "./hook/GetStaleTickets.Api";
+import { FiClock, FiFolder } from "react-icons/fi";
+import { Tooltip } from "@mui/material";
 
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
@@ -45,11 +49,24 @@ const Header = ({ toggleMobileMenu }) => {
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
+  const [showStaleTickets, setShowStaleTickets] = useState(false)
+  const staleTicketsRef = useRef(null)
   const UserName = user?.name || "Test";
   const Avatar = user?.PreviewUrl || "";
+
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
   const { data: notificationList } = getNotification(showNotifications);
+
+  // const {data:statleTicketsData}=useGetStaleTicketData(user?.userId)
+  // const staleTickets=statleTicketsData?.GetStaleTicketsForAssignee?.Data||[]
+  // const staleCount=staleTickets.length;
+  const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
+
+  const staleTickets = statleTicketsData || [];
+
+  const staleCount = staleTickets.length;
+
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
@@ -86,6 +103,11 @@ const Header = ({ toggleMobileMenu }) => {
         !notificationRef.current.contains(event.target)
       ) {
         setShowNotifications(false);
+      }
+      if (staleTicketsRef.current &&
+        !staleTicketsRef.current.contains(event.target)
+      ) {
+        setShowStaleTickets(false)
       }
     };
 
@@ -136,6 +158,11 @@ const Header = ({ toggleMobileMenu }) => {
     setShowNotifications(false);
   };
 
+  const handleViewAllStaleTickets = () => {
+    setShowStaleTickets(false);
+  };
+
+
   const firstLetter = UserName.charAt(0).toUpperCase();
   const Avatarimage = Avatar;
   useEffect(() => {
@@ -178,7 +205,7 @@ const Header = ({ toggleMobileMenu }) => {
   const filteredBanners = useMemo(() => {
     return activeBanners.filter((banner) => dayjs(banner.EndDate).isAfter(now));
   }, [activeBanners, now]);
-  
+
   useEffect(() => {
     if (!filteredBanners.length) {
       setRepeatedBanners([]);
@@ -281,15 +308,16 @@ const Header = ({ toggleMobileMenu }) => {
           <Breadcrumbs />
           {/* {!isViewer && ( */}
           {!isViewer && (
-            <div className="relative cursor-pointer" ref={notificationRef}>
-              <IoNotificationsOutline
-                size={24}
-                onClick={() => setShowNotifications((prev) => !prev)}
-              />
+            <>
+              <div className="relative cursor-pointer" ref={staleTicketsRef}>
+                <Clock
+                  size={24}
+                  onClick={() => setShowStaleTickets((prev) => !prev)}
+                />
 
-              {count > 0 && (
-                <span
-                  className="
+                {staleCount > 0 && (
+                  <span
+                    className="
                   absolute
                   -top-2
                   -right-2
@@ -304,14 +332,14 @@ const Header = ({ toggleMobileMenu }) => {
                   justify-center
                   px-1
                 "
-              >
-                {count > 99 ? "99+" : count}
-              </span>
-            )}
+                  >
+                    {staleCount > 99 ? "99+" : staleCount}
+                  </span>
+                )}
 
-            {showNotifications && (
-              <div
-                className="
+                {showStaleTickets && (
+                  <div
+                    className="
                   absolute
                   right-0
                   top-12
@@ -324,13 +352,13 @@ const Header = ({ toggleMobileMenu }) => {
                   z-50
                   overflow-hidden
                 "
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
-                  <h3 className="font-semibold text-sm">Notifications</h3>
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                      <h3 className="font-semibold text-sm">Stale Tickets</h3>
 
-                  <span
-                    className="
+                      <span
+                        className="
                       bg-blue-100
                       text-blue-600
                       text-[10px]
@@ -338,18 +366,18 @@ const Header = ({ toggleMobileMenu }) => {
                       py-0.5
                       rounded-full
                     "
-                  >
-                    {count || 0}
-                  </span>
-                </div>
+                      >
+                        {staleCount || 0}
+                      </span>
+                    </div>
 
-                {/* Body */}
-                <div className="max-h-[300px] overflow-y-auto">
-                  {notificationList?.length > 0 ? (
-                    notificationList.map((item) => (
-                      <div
-                        key={item.id}
-                        className="
+                    {/* Body */}
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {staleTickets?.length > 0 ? (
+                        staleTickets.map((item) => (
+                          <div
+                            key={item.Issue_Id}
+                            className="
                           px-4
                           py-2.5
                           border-b
@@ -357,94 +385,196 @@ const Header = ({ toggleMobileMenu }) => {
                           cursor-pointer
                           transition
                         "
-                        onClick={() => {
-                          goTo(ROUTE_KEYS.TICKET_DETAIL, {
-                            ticketId: item.entityId,
-                          });
-                          setShowNotifications(false); // Close the dropdown after navigating
-                        }}
-                      >
-                        <div className="font-medium text-sm text-gray-800 truncate">
-                          {item.title}
-                        </div>
+                            onClick={() => {
+                              goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                                ticketId: item.Issue_Id,
+                              });
+                              setShowStaleTickets(false); // Close the dropdown after navigating
+                            }}
+                          >
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 rounded-md">
+                                  #{item.Issue_Code}
+                                </span>
 
-                        <div className="text-xs text-gray-500 mt-1 truncate">
-                          {item.message}
-                        </div>
+                                <h4 className="text-sm font-medium text-gray-900 truncate">
+                                  {item.Title}
+                                </h4>
+                              </div>
 
-                        <span className="text-xs text-gray-400">
-                          {dayjs(item?.createdAt).fromNow()}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-8 text-center text-gray-500">
-                      No notifications found
+                              <div className="flex items-center gap-4 text-xs text-gray-500">
+                                <div className="flex items-center gap-1 min-w-0">
+                                  {/* Repo */}
+                                  <Tooltip title={item.Repo_Name} arrow>
+                                    <span className="text-xs font-medium text-gray-700 uppercase">
+                                      {item?.Repo_Name
+                                        ?.split(" ")
+                                        .map((w) => w[0]?.toUpperCase())
+                                        .join("")}
+                                    </span>
+                                  </Tooltip>
+
+                                  <span className="text-gray-400">•</span>
+
+                                  {/* Project */}
+                                  <Tooltip title={item.Proj_Name} arrow>
+                                    <span className="text-xs text-gray-600 truncate max-w-[140px]">
+                                      {item?.Proj_Name?.split(" ").length > 2
+                                        ? item.Proj_Name.split(" ").slice(0, 2).join(" ") + "..."
+                                        : item.Proj_Name}
+                                    </span>
+                                  </Tooltip>
+                                </div>
+
+                                <div className="flex items-center gap-1 text-amber-600 shrink-0">
+                                  <FiClock className="w-3.5 h-3.5" />
+                                  <span>{item.DaysSinceLastUpdate}days ago</span>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          No stale tickets
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
 
-                {/* Footer */}
-                <div
-                  className="
+                  </div>
+                )}
+              </div>
+              <div className="relative cursor-pointer" ref={notificationRef}>
+                <IoNotificationsOutline
+                  size={24}
+                  onClick={() => setShowNotifications((prev) => !prev)}
+                />
+
+                {count > 0 && (
+                  <span
+                    className="
+                  absolute
+                  -top-2
+                  -right-2
+                  bg-red-500
+                  text-white
+                  text-xs
+                  rounded-full
+                  min-w-[18px]
+                  h-[18px]
+                  flex
+                  items-center
+                  justify-center
+                  px-1
+                "
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+
+                {showNotifications && (
+                  <div
+                    className="
+                  absolute
+                  right-0
+                  top-12
+                  w-[420px]
+                  bg-white
+                  rounded-xl
+                  shadow-2xl
+                  border
+                  border-gray-200
+                  z-50
+                  overflow-hidden
+                "
+                  >
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                      <h3 className="font-semibold text-sm">Notifications</h3>
+
+                      <span
+                        className="
+                      bg-blue-100
+                      text-blue-600
+                      text-[10px]
+                      px-2
+                      py-0.5
+                      rounded-full
+                    "
+                      >
+                        {count || 0}
+                      </span>
+                    </div>
+
+                    {/* Body */}
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notificationList?.length > 0 ? (
+                        notificationList.map((item) => (
+                          <div
+                            key={item.id}
+                            className="
+                          px-4
+                          py-2.5
+                          border-b
+                          hover:bg-gray-50
+                          cursor-pointer
+                          transition
+                        "
+                            onClick={() => {
+                              goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                                ticketId: item.entityId,
+                              });
+                              setShowNotifications(false); // Close the dropdown after navigating
+                            }}
+                          >
+                            <div className="font-medium text-sm text-gray-800 truncate">
+                              {item.title}
+                            </div>
+
+                            <div className="text-xs text-gray-500 mt-1 truncate">
+                              {item.message}
+                            </div>
+
+                            <span className="text-xs text-gray-400">
+                              {dayjs(item?.createdAt).fromNow()}
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          No notifications found
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer */}
+                    <div
+                      className="
           border-t
           bg-gray-50
           p-3
         "
-                >
-                  <button
-                    onClick={handleViewAllNotifications}
-                    className="
+                    >
+                      <button
+                        onClick={handleViewAllNotifications}
+                        className="
             w-full
             text-blue-600
             font-medium
             text-sm
             hover:text-blue-700
           "
-                    >
-                      View All Notifications →
-                    </button>
+                      >
+                        View All Notifications →
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-          {/* )} */}
-          {/* {showNotifications && (
-          <div
-            className="
-            absolute
-            right-0
-            top-12
-            w-96
-            bg-white
-            shadow-lg
-            rounded-lg
-            z-50
-            max-h-[500px]
-            overflow-auto"
-          >
-            {notificationList?.map((item) => (
-              <div
-                key={item.NotificationId}
-                className="
-                      p-3
-                      border-b
-                      cursor-pointer"
-              >
-                <div className="font-semibold">{item.Title}</div>
-
-                <div
-                  className="
-                  text-sm
-                  text-gray-600"
-                >
-                  {item.Message}
-                </div>
+                )}
               </div>
-            ))}
-          </div>
-        )} */}
+            </>
+          )}
+
           {/* Dropdown Container (Needs 'relative' for absolute positioning of the menu) */}
           <div className="relative" ref={dropdownRef}>
             <div

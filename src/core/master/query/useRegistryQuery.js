@@ -7,7 +7,7 @@
 // source: "api"        → fires through useApiQuery → executeApi → interceptor
 
 import { useMasterData } from "../masterCall/useMasterData";
-import { useApiQuery }   from "../../query/useApiQuery";
+import { useApiQuery } from "../../query/useApiQuery";
 
 /**
  * @param {object} registry  - any registry object  (MASTER_REGISTRY | DASHBOARD_REGISTRY | …)
@@ -18,7 +18,12 @@ import { useApiQuery }   from "../../query/useApiQuery";
  * @returns {{ data, isLoading, isError, error, ...rest }}
  *   data is always the adapter-mapped result
  */
-export const useRegistryQuery = (registry, key, params = {}, overrides = {}) => {
+export const useRegistryQuery = (
+  registry,
+  key,
+  params = {},
+  overrides = {},
+) => {
   const config = registry[key];
 
   if (!config) {
@@ -29,20 +34,19 @@ export const useRegistryQuery = (registry, key, params = {}, overrides = {}) => 
   if (config.source === "masterData") {
     const { data: masterData, isLoading, isError, error } = useMasterData();
     const rawList = masterData?.[config.masterKey] ?? [];
-    const data    = rawList.map(config.adapter).filter(Boolean);
+    const data = rawList.map(config.adapter).filter(Boolean);
     return { data, isLoading, isError, error };
   }
 
   // ── Path B: any independent API  →  useApiQuery → executeApi → interceptor ─
-  const queryKey = typeof config.queryKey === "function"
-    ? config.queryKey(params)
-    : config.queryKey;
-// console.log("config.payload :", config.payload);
-// console.log("params :", params);
-
-  const payload = typeof config.payload === "function"
-    ? config.payload(params)
-    : config.payload;                 // undefined for GET calls
+  const queryKey =
+    typeof config.queryKey === "function"
+      ? config.queryKey(params)
+      : config.queryKey;
+  const payload =
+    typeof config.payload === "function"
+      ? config.payload(params)
+      : config.payload; // undefined for GET calls
 
   // component override wins; fallback to registry; fallback to true
   const enabled =
@@ -56,22 +60,29 @@ export const useRegistryQuery = (registry, key, params = {}, overrides = {}) => 
 
   const result = useApiQuery({
     queryKey,
-    url:    config.url,
+    url: config.url,
     method: config.method,
     payload,
-    source: config.source,            // key to unwrap from sync/v2 envelope
+    source: config.source, // key to unwrap from sync/v2 envelope
     options: {
       staleTime,
       enabled,
-      ...overrides,                   // gcTime, refetchInterval, select, etc.
+      ...overrides, // gcTime, refetchInterval, select, etc.
     },
   });
 
   // apply per-row adapter when response is a list
-  const data =
-    config.adapter && Array.isArray(result.data)
-      ? result.data.map(config.adapter).filter(Boolean)
-      : result.data;
+  let data = result.data;
+
+  if (config.adapter) {
+    data = Array.isArray(data)
+      ? data.map(config.adapter).filter(Boolean)
+      : config.adapter(data);
+  }
+
+  if (config.enrich) {
+    data = enrichData(data, config.enrich, masterDataMap);
+  }
 
   return { ...result, data };
 };

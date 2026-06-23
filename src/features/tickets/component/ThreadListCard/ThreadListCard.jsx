@@ -9,6 +9,7 @@ import MuiSwitch from "../../../../packages/react-input-engine/adapters/mui/MuiS
 import apiClient from "../../../../core/api/apiClient";
 import { queryClient } from "../../../../core/api/queryClient";
 import { queryKeys } from "../../../../core/query/queryKeys";
+import { useApiMutation } from "../../../../core/query/useApiMutation";
 
 // --- PROFESSIONAL EMOJI LIST ---
 const PROFESSIONAL_EMOJIS = [
@@ -51,10 +52,11 @@ const ThreadListCard = ({
   referencedThread,
   ticketId,
 }) => {
+  console.log("item :", item);
+  
   dayjs.extend(relativeTime);
   const isMe = item.CreatedBy === currentUser;
   const user = readUserFromSession();
-
   // --- EMOJI REACTION STATE & LOGIC ---
   const [pickerState, setPickerState] = useState({
     isOpen: false,
@@ -66,11 +68,16 @@ const ThreadListCard = ({
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (pickerRef.current && !pickerRef.current.contains(event.target)) {
-        setPickerState((prev) => ({ ...prev, isOpen: false }));
+        setPickerState((prev) => ({
+          ...prev,
+          isOpen: false,
+        }));
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+
+    document.addEventListener("click", handleClickOutside);
+
+    return () => document.removeEventListener("click", handleClickOutside);
   }, []);
 
   // Group reactions by Emoji string to show counts (e.g., 👍 3)
@@ -93,40 +100,40 @@ const ThreadListCard = ({
     }
     return acc;
   }, {});
+  const { mutateAsync, isPending } = useApiMutation({
+    url: "EmojiReaction/Emoji",
+    method: "POST",
+    invalidateKeys: [queryKeys.ticket.thread(ticketId)],
+  });
 
-  // Handle adding or removing a reaction
   const handleReactionToggle = async (emojiStr) => {
     try {
       const existingReaction = groupedReactions[emojiStr];
-
-      if (existingReaction && existingReaction.userReactionId) {
-        // User already reacted with this emoji -> Remove it
+      console.log("existingReaction ,", existingReaction);
+      if (existingReaction?.userReactionId) {
         await apiClient.delete(
           `EmojiReaction/${existingReaction.userReactionId}`,
         );
+
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.ticket.thread(ticketId),
+        });
       } else {
-        // User hasn't reacted with this emoji -> Add it
-        await apiClient.post(`EmojiReaction/Emoji`, {
+        await mutateAsync({
           ThreadId: item.id,
           Emoji: emojiStr,
         });
-      }
-
-      // Refresh the threads data to show the new reaction
-      if (ticketId) {
-        queryClient.invalidateQueries(queryKeys.ticket.thread(ticketId));
       }
     } catch (error) {
       console.error("Failed to toggle reaction", error);
     }
   };
-
   const onEmojiClick = (emojiStr) => {
     setPickerState((prev) => ({ ...prev, isOpen: false }));
     handleReactionToggle(emojiStr);
   };
 
-  // Dynamic Positioning Logic for the Picker
+  // Dynamic Positioning Logic for the Pickercon
   const handlePickerToggle = (e) => {
     if (pickerState.isOpen) {
       setPickerState((prev) => ({ ...prev, isOpen: false }));
@@ -354,19 +361,19 @@ const ThreadListCard = ({
 
                 {/* Emoji Picker Button */}
                 <div className="relative" ref={pickerRef}>
-                  <button
-                    onClick={handlePickerToggle}
-                    className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors border ${
-                      pickerState.isOpen
-                        ? "bg-blue-50 border-blue-200 text-blue-600"
-                        : "bg-white border-gray-300 shadow-sm text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-                    }`}
-                    title="Add Reaction"
-                  >
-                    <FaRegSmile size={14} />
+                  <button onClick={handlePickerToggle}>
+                    <FaRegSmile />
                   </button>
 
-                  {/* Dynamic Professional Emoji Popover */}
+                  {pickerState.isOpen && (
+                    <div className="absolute z-[99999]">
+                      {PROFESSIONAL_EMOJIS.map((emoji) => (
+                        <button key={emoji} onClick={() => onEmojiClick(emoji)}>
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -384,30 +391,29 @@ const ThreadListCard = ({
             </div>
           </div>
         )}
-       
       </div>
-       {pickerState.isOpen && (
-          <div
-            className={`absolute z-[99999] ${
-              pickerState.position === "top"
-                ? "bottom-full mb-2" // Open upwards
-                : "top-full mt-2" // Open downwards
-            } left-0`}
-          >
-            <div className="flex items-center gap-1 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded-full px-2 py-1.5 border border-gray-100 animate-in fade-in zoom-in-95 duration-100">
-              {PROFESSIONAL_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => onEmojiClick(emoji)}
-                  className="w-8 h-8 flex items-center justify-center text-lg rounded-full hover:bg-gray-100 transition-transform hover:scale-110"
-                  title="React"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
+      {pickerState.isOpen && (
+        <div
+          className={`absolute z-[99999] ${
+            pickerState.position === "top"
+              ? "bottom-full mb-2" // Open upwards
+              : "top-full mt-2" // Open downwards
+          } left-0`}
+        >
+          <div className="flex items-center gap-1 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.15)] rounded-full px-2 py-1.5 border border-gray-100 animate-in fade-in zoom-in-95 duration-100">
+            {PROFESSIONAL_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => onEmojiClick(emoji)}
+                className="w-8 h-8 flex items-center justify-center text-lg rounded-full hover:bg-gray-100 transition-transform hover:scale-110"
+                title="React"
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 };

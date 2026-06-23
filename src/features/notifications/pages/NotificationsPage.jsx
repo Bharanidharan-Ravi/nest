@@ -36,7 +36,6 @@ export default function NotificationsPage() {
   //   // },
   //   enabled: !!user?.userId,
   // });
-  console.log("timelineData :", timelineData, currentModule);
   
   const listConfigWithNav = {
     ...NotificationListConfig(isViewer),
