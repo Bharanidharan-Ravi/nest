@@ -77,6 +77,7 @@ export const useApiQuery = ({
             params,
             config: { _silent: isSilent }, // Pass down to Axios interceptor
           });
+          
       if (source) {
         const extracted = extractSourceData(res, source);
         if (extracted !== undefined) {

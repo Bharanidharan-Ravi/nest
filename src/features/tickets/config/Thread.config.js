@@ -322,8 +322,7 @@ export const ThreadFieldConfig = (ticketId) => [
     switchColor: "bg-orange-100 text-orange-800 toggle-orange-500",
     initValueResolver: ({ context }) => {
       const isActive =
-        context?.parentTicket?.PriorityRequest ||
-        context?.parentTicket?.priorityRequest
+        context?.parentTicket?.priorityRequest;
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
@@ -342,7 +341,6 @@ export const ThreadFieldConfig = (ticketId) => [
     switchColor: "bg-red-100 text-red-800 toggle-red-500",
     initValueResolver: ({ context }) => {
       const isRequested =
-        context?.parentTicket?.IsCloseRequested ||
         context?.parentTicket?.isCloseRequested;
       return isRequested ? true : null;
     },
@@ -368,7 +366,6 @@ export const ThreadFieldConfig = (ticketId) => [
     // customValidator: createToggleValidator("Notify Functional"),
     initValueResolver: ({ context }) => {
       const isActive =
-        context?.parentTicket?.FuncResponse ||
         context?.parentTicket?.funcResponse
       return isActive ? true : null;
     },
@@ -388,9 +385,7 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 2,
     // customValidator: createToggleValidator("Notify Technical"),
     initValueResolver: ({ context }) => {
-      const isActive =
-        context?.parentTicket?.TechnicalResponse ||
-        context?.parentTicket?.technicalResponse
+      const isActive = context?.parentTicket?.technicalResponse
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
@@ -409,9 +404,7 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 2,
     // customValidator: createToggleValidator("Notify Web"),
     initValueResolver: ({ context }) => {
-      const isActive =
-        context?.parentTicket?.WebResponse ||
-        context?.parentTicket?.webResponse
+      const isActive = context?.parentTicket?.webResponse
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
@@ -430,9 +423,7 @@ export const ThreadFieldConfig = (ticketId) => [
     colSpan: 2,
     // customValidator: createToggleValidator("Notify Admin"),
     initValueResolver: ({ context }) => {
-      const isActive =
-        context?.parentTicket?.AdminResponse ||
-        context?.parentTicket?.adminResponse
+      const isActive = context?.parentTicket?.adminResponse
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {

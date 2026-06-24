@@ -44,9 +44,9 @@ const ParentTicketHeader = ({
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [expandedAssignees, setExpandedAssignees] = useState({});
   const estimateBreakDown = {
-    web: parentTicket.Web || "0:00",
-    technical: parentTicket.Technical || "0:00",
-    functional: parentTicket.Functional || "0:00",
+    web: parentTicket.webTime || "0:00",
+    technical: parentTicket.technicalTime || "0:00",
+    functional: parentTicket.functionalTime || "0:00",
   };
   // 🔥 2. Function to scroll to the bottom form
   const handleScrollToUpdate = () => {
@@ -62,12 +62,12 @@ const ParentTicketHeader = ({
   const statusSummary =
     latestLog?.StatusSummary ||
     latestLog?.statusSummary ||
-    parentTicket?.CurrentStatusSummary;
+    parentTicket?.currentStatusSummary;
   const overallPct =
     latestLog?.Percentage ??
     latestLog?.percentage ??
-    parentTicket?.OverallPercentage ??
-    parentTicket?.CompletionPct ??
+    parentTicket?.overallPercentage ??
+    parentTicket?.completionPct ??
     0;
   const getFlagStyles = (flag) => {
     switch (flag) {
@@ -149,21 +149,21 @@ const getStatusStyle=(StatusId)=>{
               {/* 🔥 FIX: Max 3 lines title + Tooltip */}
               <h3
                 className="text-2xl text-gray-900 font-bold tracking-tight line-clamp-3 break-words flex-1"
-                title={`${parentTicket.Title} #${parentTicket.Issue_Code}`}
+                title={`${parentTicket.title} #${parentTicket.ticketKey}`}
               >
-                {parentTicket.Title}
+                {parentTicket.title}
                 <span className="text-gray-400 font-light ml-2 whitespace-nowrap">
-                  #{parentTicket.Issue_Code}
+                  #{parentTicket.ticketKey}
                 </span>
                 {(()=>{
-                  const Status=getStatusStyle(parentTicket.StatusId)
+                  const Status=getStatusStyle(parentTicket.statusId)
                   return Status?(<span className={`text-xs font-bold px-2 py-0.5 ml-2 ${Status.color}`}>{Status.label}</span>):null;
                 })()}
               </h3>
 
-              {parentTicket?.labels?.length > 0 && (
+              {parentTicket?.label?.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mt-1 flex-shrink-0">
-                  {parentTicket.labels.map((label) => (
+                  {parentTicket.label.map((label) => (
                     <span
                       key={label.LABEL_ID}
                       className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full shadow-sm text-white"
@@ -177,9 +177,9 @@ const getStatusStyle=(StatusId)=>{
             </div>
 
             <div className="text-sm text-gray-500 flex flex-wrap items-center gap-2">
-              <span className="font-medium">{parentTicket.Repo_Name}</span>
+              <span className="font-medium">{parentTicket.repoName}</span>
               <span className="opacity-40">•</span>
-              <span>{parentTicket.Project_Name}</span>
+              <span>{parentTicket.projectName}</span>
               {mainAssignee && (
                 <>
                   <span className="opacity-40">•</span>
@@ -197,7 +197,7 @@ const getStatusStyle=(StatusId)=>{
                         Created:
                       </span>
                       <span className="text-xs font-bold">
-                        {parentTicket.TicketCreater}
+                        {parentTicket.ticketCreater}
                       </span>
                     </div>
                     </>
@@ -222,7 +222,7 @@ const getStatusStyle=(StatusId)=>{
               <button
                 onClick={() =>
                   goTo(ROUTE_KEYS.TICKET_EDIT, {
-                    ticketId: parentTicket.Issue_Id,
+                    ticketId: parentTicket.navId,
                   })
                 }
                 className="text-gray-500 hover:text-blue-600 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5"
@@ -273,14 +273,14 @@ const getStatusStyle=(StatusId)=>{
                 <div className="flex items-center gap-1.5 bg-white border border-gray-200 shadow-sm px-3 py-1.5 rounded-lg text-xs text-gray-600">
                   <FaCalendarAlt className="text-blue-500" size={13} />
                   <span className="font-medium whitespace-nowrap">
-                    Due: {formatDate(parentTicket.Due_Date)}
+                    Due: {formatDate(parentTicket.dueDate)}
                   </span>
                 </div>
               }
               <button
                 onClick={() =>
                   goTo(ROUTE_KEYS.TICKET_EDIT, {
-                    ticketId: parentTicket.Issue_Id,
+                    ticketId: parentTicket.navId,
                   })
                 }
                 className="hidden lg:block text-gray-500 hover:text-blue-600 bg-white border border-gray-200 shadow-sm px-2 py-1.5 rounded-lg transition-all"
@@ -310,7 +310,7 @@ const getStatusStyle=(StatusId)=>{
                     }}
                     onMouseLeave={() => setShowTooltip(false)}
                   >
-                    {parentTicket.Hours || "00:00"}
+                    {parentTicket.estimateHours || "00:00"}
                   </span>
                 </div>
                 {showTooltip && (
@@ -385,7 +385,7 @@ const getStatusStyle=(StatusId)=>{
           </div>
         </div>
         {showTooltip &&
-          parentTicket.Development &&
+          parentTicket.technicalTime &&
           createPortal(
             <div
               className="fixed z-[99999] bg-gradient-to-r from-gray-900 to-gray-800 text-white text-xs 
@@ -398,9 +398,10 @@ const getStatusStyle=(StatusId)=>{
             }}
           >
             <div className="font-bold mb-2 border-b border-white/20 pb-1">Hours Breakdown</div>
-            {parentTicket.Development && <div>Dev: <span className="text-blue-300 font-bold">{parentTicket.Development}</span></div>}
-            {parentTicket.Client && <div>Client: <span className="text-green-300 font-bold">{parentTicket.Client}</span></div>}
-            {parentTicket.Testing && <div>Test: <span className="text-purple-300 font-bold">{parentTicket.Testing}</span></div>}
+            {parentTicket.technicalTime && <div>Dev: <span className="text-blue-300 font-bold">{parentTicket.technicalTime}</span></div>}
+            {parentTicket.clientTime && <div>Client: <span className="text-green-300 font-bold">{parentTicket.clientTime}</span></div>}
+            {parentTicket.functionalTime && <div>Test: <span className="text-purple-300 font-bold">{parentTicket.functionalTime}</span></div>}
+            {parentTicket.webTime && <div>Test: <span className="text-purple-300 font-bold">{parentTicket.webTime}</span></div>}
             <div className="mt-2 pt-1 border-t border-white/10 text-xs opacity-75 text-right">
               Total: {parentTicket.Hours}
             </div>
@@ -408,7 +409,7 @@ const getStatusStyle=(StatusId)=>{
           document.body
         )}
 
-        {(parentTicket?.IsCloseRequested || parentTicket?.isCloseRequested) && !isViewer && (
+        {(parentTicket?.isCloseRequested || parentTicket?.isCloseRequested) && !isViewer && (
           <div
             className={`bg-red-50 border border-red-100 border-l-4 border-l-red-500 shadow-sm flex items-center justify-between w-full transition-all duration-300 ${isStuck
               ? "mt-2 px-3 py-1.5"
@@ -661,7 +662,7 @@ const getStatusStyle=(StatusId)=>{
 
       <div className="flex flex-col gap-8 mt-2 px-4 sm:px-6 relative">
         <div className="bg-gray-50 border border-gray-100 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-3xl p-6 text-sm text-gray-800 leading-relaxed">
-          <HtmlRenderer html={parentTicket.HtmlDesc || parentTicket.Description} />
+          <HtmlRenderer html={parentTicket.HtmlDesc || parentTicket.description} />
         </div>
       </div>
 

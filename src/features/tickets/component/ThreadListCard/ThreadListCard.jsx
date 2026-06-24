@@ -52,8 +52,6 @@ const ThreadListCard = ({
   referencedThread,
   ticketId,
 }) => {
-  console.log("item :", item);
-  
   dayjs.extend(relativeTime);
   const isMe = item.CreatedBy === currentUser;
   const user = readUserFromSession();
@@ -62,6 +60,7 @@ const ThreadListCard = ({
     isOpen: false,
     position: "top",
   });
+  const [showAllReactions, setShowAllReactions] = useState(false);
   const pickerRef = useRef(null);
 
   // Close picker if clicked outside
@@ -81,25 +80,48 @@ const ThreadListCard = ({
   }, []);
 
   // Group reactions by Emoji string to show counts (e.g., 👍 3)
-  const reactions = item.Reactions || [];
+  const reactions = item.reactionsJSON || [];
   const currentUserId = user?.userId;
-
+  console.log("item :", item);
   const groupedReactions = reactions.reduce((acc, reaction) => {
-    if (!acc[reaction.Emoji]) {
-      acc[reaction.Emoji] = { count: 0, userReactionId: null, users: [] };
-    }
-    acc[reaction.Emoji].count += 1;
-    acc[reaction.Emoji].users.push(reaction.CreatedBy);
+    const emoji = reaction.Emoji;
 
-    // Check if the current user made this specific reaction
+    if (!acc[emoji]) {
+      acc[emoji] = {
+        count: 0,
+        userReactionId: null,
+        users: new Set(),
+        userIds: new Set(),
+      };
+    }
+
+    acc[emoji].count++;
+
+    acc[emoji].users.add(reaction.name);
+
+    acc[emoji].userIds.add(reaction.CreatedBy);
+
     if (
-      reaction.CreatedBy === currentUserId ||
+      reaction?.CreatedBy?.toLowerCase() === currentUserId?.toLowerCase() ||
       reaction.CreatedBy === currentUser
     ) {
-      acc[reaction.Emoji].userReactionId = reaction.Id;
+      acc[emoji].userReactionId = reaction.Id;
     }
+
     return acc;
   }, {});
+
+  Object.values(groupedReactions).forEach((item) => {
+    item.users = [...item.users];
+    item.userIds = [...item.userIds];
+  });
+
+  const reactionEntries = Object.entries(groupedReactions);
+
+  const MAX_VISIBLE_REACTIONS = 4;
+
+  const hiddenCount = reactionEntries.length - MAX_VISIBLE_REACTIONS;
+
   const { mutateAsync, isPending } = useApiMutation({
     url: "EmojiReaction/Emoji",
     method: "POST",
@@ -112,7 +134,7 @@ const ThreadListCard = ({
       console.log("existingReaction ,", existingReaction);
       if (existingReaction?.userReactionId) {
         await apiClient.delete(
-          `EmojiReaction/${existingReaction.userReactionId}`,
+          `EmojiReaction/${existingReaction.userReactionId}`
         );
 
         queryClient.invalidateQueries({
@@ -122,6 +144,7 @@ const ThreadListCard = ({
         await mutateAsync({
           ThreadId: item.id,
           Emoji: emojiStr,
+          IssueId: item.Issue_Id,
         });
       }
     } catch (error) {
@@ -157,11 +180,11 @@ const ThreadListCard = ({
     if (!coContributors || coContributors.length === 0) return null;
 
     const isSelfSupport = coContributors.some(
-      (c) => c.id === currentUser || c.name === item.CreatedBy,
+      (c) => c.id === currentUser || c.name === item.CreatedBy
     );
 
     const othersOnly = coContributors.filter(
-      (c) => c.id !== currentUser && c.name !== item.CreatedBy,
+      (c) => c.id !== currentUser && c.name !== item.CreatedBy
     );
 
     const MAX_VISIBLE = 2;
@@ -200,7 +223,9 @@ const ThreadListCard = ({
 
   return (
     <div
-      className={`relative flex gap-4 w-full mb-6 group ${isMe ? "flex-row-reverse" : "flex-row"}`}
+      className={`relative flex gap-4 w-full mb-6 group ${
+        isMe ? "flex-row-reverse" : "flex-row"
+      }`}
     >
       {/* 1. THE AVATAR */}
       <div className="flex-shrink-0 relative z-10 mt-1">
@@ -214,8 +239,8 @@ const ThreadListCard = ({
           {isMe
             ? getInitials(currentUser || "You")
             : user?.role === 3 && item.team !== null
-              ? "WG"
-              : getInitials(item.CreatedBy)}
+            ? "WG"
+            : getInitials(item.CreatedBy)}
         </div>
       </div>
 
@@ -224,21 +249,23 @@ const ThreadListCard = ({
           !formContext.isViewer && item.toClient
             ? "bg-green-100/80 border-green-500/60 rounded-2xl rounded-tl-sm"
             : isMe
-              ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm"
-              : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
+            ? "bg-yellow-50/80 border-yellow-200/60 rounded-2xl rounded-tr-sm"
+            : "bg-white/70 border-gray rounded-2xl rounded-tl-sm"
         }`}
       >
         {/* Header */}
         <div
-          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${isMe ? "border-blue-200/40" : "border-gray-200/40"}`}
+          className={`px-5 py-3 border-b flex justify-between items-center text-sm ${
+            isMe ? "border-blue-200/40" : "border-gray-200/40"
+          }`}
         >
           <div className="text-gray-500 tracking-wide">
             <strong className="text-gray-900 font-medium mr-1">
               {isMe
                 ? "You"
                 : user?.role === 3 && item.team !== null
-                  ? "WorkGlow Support"
-                  : item.CreatedBy}
+                ? "WorkGlow Support"
+                : item.CreatedBy}
             </strong>
             {renderCoContributors(item.CoContributors)}
             <span
@@ -267,7 +294,11 @@ const ThreadListCard = ({
             <button
               onClick={onEdit}
               disabled={!canEdit}
-              className={`flex items-center justify-center p-1 rounded-full transition-colors ${canEdit ? "text-gray-400 hover:text-blue-600 hover:bg-black/5" : "invisible"}`}
+              className={`flex items-center justify-center p-1 rounded-full transition-colors ${
+                canEdit
+                  ? "text-gray-400 hover:text-blue-600 hover:bg-black/5"
+                  : "invisible"
+              }`}
               title="Edit Comment"
             >
               <FaEdit size={14} />
@@ -291,7 +322,7 @@ const ThreadListCard = ({
             const stripHtml = (html) => {
               const doc = new DOMParser().parseFromString(
                 html || "",
-                "text/html",
+                "text/html"
               );
               return (doc.body.textContent || "").replace(/\s+/g, " ").trim();
             };
@@ -343,37 +374,111 @@ const ThreadListCard = ({
             {/* Left side: Emoji Reactions + Date Range */}
             <div className="flex flex-wrap items-center gap-3">
               {/* Reactions Block */}
-              <div className="flex flex-wrap items-center gap-1.5">
-                {Object.entries(groupedReactions).map(([emoji, data]) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReactionToggle(emoji)}
-                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[12px] transition-colors border shadow-sm ${
-                      data.userReactionId
-                        ? "bg-blue-50 border-blue-200 text-blue-700" // Highlight if user reacted
-                        : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span>{emoji}</span>
-                    <span className="font-semibold">{data.count}</span>
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center min-h-[32px]">
+                {reactionEntries.map(([emoji, data], index) => {
+                  const isExtra = index >= MAX_VISIBLE_REACTIONS;
+                  const isVisible = !isExtra || showAllReactions;
 
-                {/* Emoji Picker Button */}
-                <div className="relative" ref={pickerRef}>
-                  <button onClick={handlePickerToggle}>
-                    <FaRegSmile />
-                  </button>
+                  return (
+                    <div
+                      key={emoji}
+                      className={`transition-all duration-300 ease-in-out flex items-center origin-left min-w-0 ${
+                        isVisible
+                          ? "max-w-[100px] opacity-100 mr-2"
+                          : "max-w-0 opacity-0 mr-0 pointer-events-none"
+                      }`}
+                    >
+                      <div
+                        className={`relative group/reaction flex-shrink-0 transition-transform duration-300 ${
+                          isVisible ? "scale-100" : "scale-50"
+                        }`}
+                      >
+                        <button
+                          onClick={() => handleReactionToggle(emoji)}
+                          className={`flex items-center gap-0.5 transition-all ${
+                            data.userReactionId
+                              ? "text-blue-600"
+                              : "text-gray-600 hover:scale-110"
+                          }`}
+                        >
+                          <span
+                            className={
+                              reactionEntries.length > 4
+                                ? "text-xl leading-none"
+                                : "text-2xl leading-none"
+                            }
+                          >
+                            {emoji}
+                          </span>
 
-                  {pickerState.isOpen && (
-                    <div className="absolute z-[99999]">
-                      {PROFESSIONAL_EMOJIS.map((emoji) => (
-                        <button key={emoji} onClick={() => onEmojiClick(emoji)}>
-                          {emoji}
+                          {data.count > 1 && (
+                            <span className="text-[11px] font-semibold">
+                              {data.count}
+                            </span>
+                          )}
                         </button>
-                      ))}
+
+                        <div
+                          className="
+                            absolute bottom-full left-1/2 -translate-x-1/2 mb-2
+                            flex flex-col gap-1
+                            bg-gray-900 text-white
+                            text-xs
+                            px-4 py-3
+                            rounded-lg
+                            shadow-xl
+                            z-[99999]
+                            min-w-max
+
+                            opacity-0
+                            invisible
+
+                            group-hover/reaction:opacity-100
+                            group-hover/reaction:visible
+
+                            transition-all duration-150
+                            pointer-events-none
+                          "
+                        >
+                          {data.users.map((name) => (
+                            <div key={name} className="whitespace-nowrap text-center">
+                              {name}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     </div>
+                  );
+                })}
+
+                <div className="flex items-center gap-2">
+                  {!showAllReactions && hiddenCount > 0 && (
+                    <button
+                      onClick={() => setShowAllReactions(true)}
+                      className="text-xs font-semibold text-blue-600 hover:text-blue-800 px-1 py-1"
+                    >
+                      +{hiddenCount}
+                    </button>
                   )}
+                  {showAllReactions &&
+                    reactionEntries.length > MAX_VISIBLE_REACTIONS && (
+                      <button
+                        onClick={() => setShowAllReactions(false)}
+                        className="text-xs font-semibold text-blue-600 hover:text-blue-800 px-1 py-1"
+                      >
+                        Show Less
+                      </button>
+                    )}
+
+                  {/* Emoji Picker Button */}
+                  <div className="relative" ref={pickerRef}>
+                    <button
+                      onClick={handlePickerToggle}
+                      className="text-2xl leading-none hover:scale-110 transition-transform text-gray-600"
+                    >
+                      <FaRegSmile />
+                    </button>
+                  </div>
                 </div>
               </div>
 

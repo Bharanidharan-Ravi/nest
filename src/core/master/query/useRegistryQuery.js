@@ -8,6 +8,7 @@
 
 import { useMasterData } from "../masterCall/useMasterData";
 import { useApiQuery } from "../../query/useApiQuery";
+import { enrichData } from "../enrich/enrichData";
 
 /**
  * @param {object} registry  - any registry object  (MASTER_REGISTRY | DASHBOARD_REGISTRY | …)
@@ -74,14 +75,14 @@ export const useRegistryQuery = (
   // apply per-row adapter when response is a list
   let data = result.data;
 
-  if (config.adapter) {
+  if (data && config.adapter) {
     data = Array.isArray(data)
       ? data.map(config.adapter).filter(Boolean)
       : config.adapter(data);
   }
 
   if (config.enrich) {
-    data = enrichData(data, config.enrich, masterDataMap);
+    data = enrichData(data, config.enrich);
   }
 
   return { ...result, data };

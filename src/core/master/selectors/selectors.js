@@ -3,6 +3,7 @@
 // All master selectors live here.
 // Components import from this file only — never from useMasterItem directly.
 
+import { useEnrichedMaster } from "../enrich/useEnrichedMaster";
 import { useRegistryQuery } from "../query/useRegistryQuery";
 import { MASTER_REGISTRY } from "../registry/masterRegistry";
 import { useMasterFilter, useMasterFind, useMasterList } from "../useMasterItem";
@@ -14,7 +15,17 @@ export const useRepoById       = (id)   => useMasterFind("repo",     "id",   id)
 export const useRepoByKey      = (key)  => useMasterFind("repo",     "key",  key);
 export const useProjectById    = (id)   => useMasterFind("project",  "id",   id);
 export const useProjectMaster  = ()      => useMasterList("project");
-export const useTicketMaster  = (Id) => useMasterList("ticketMaster",{ Id });
+export const useTicketMaster = (Id) => {
+  const ticket = useMasterList(
+    "ticketMaster",
+    { Id }
+  );
+
+  return useEnrichedMaster(
+    ticket,
+    MASTER_REGISTRY.ticketMaster.enrich
+  );
+};
 export const useTeamMaster  = ()      => useMasterList("team");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees  = ()    => useMasterFilter("employee", (e) => e.isActive);

@@ -130,10 +130,14 @@ const TicketThreads = ({
       );
 
       let parsedCoContributors = [];
-
+let parsedReactionsJSON = []
       try {
         if (thread.CoContributors_JSON) {
           parsedCoContributors = JSON.parse(thread.CoContributors_JSON);
+        } 
+        console.log("thread :", thread)
+        if (thread.Reactions_JSON) {
+          parsedReactionsJSON = JSON.parse(thread.Reactions_JSON);
         }
       } catch (error) {
         console.error("failed to parse CoContributors", thread.ThreadId);
@@ -156,6 +160,7 @@ const TicketThreads = ({
         assignees: finalAssignees,
         HandsOffId: thread.HandsOffId,
         CoContributors: parsedCoContributors,
+        reactionsJSON: parsedReactionsJSON,
         IsSupport: thread.IsSupport,
         toClient: thread.toClient,
         team: thread.team,
@@ -549,7 +554,7 @@ const TicketThreads = ({
   // TERMINAL STATE
   // =========================================================
 
-  const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.StatusId);
+  const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.statusId);
 
   // =========================================================
   // RENDER

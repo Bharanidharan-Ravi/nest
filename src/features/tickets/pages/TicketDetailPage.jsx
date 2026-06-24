@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
-// import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
-import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
+import {
+  readUserFromSession,
+  useCurrentUser,
+} from "../../../core/auth/useCurrentUser";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import FloatingArrowScroll from "../../../app/shared/Component/FloatingArrowScroll";
 import AssigneesWidget from "../component/AssigneesWidget";
@@ -20,11 +22,11 @@ import {
 } from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-  
+
   // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
-  const editRouteKey = ROUTE_KEYS.TICKET_EDIT
+  const editRouteKey = ROUTE_KEYS.TICKET_EDIT;
   const { isViewer } = useCurrentUser();
   const [editingItem, setEditingItem] = useState(null);
   const [isStuck, setIsStuck] = useState(false);
@@ -43,7 +45,7 @@ const TicketDetailPage = () => {
   // const { data: ticketMasterData } = useTicketMaster();
   const projectMasterData = useProjectMaster();
   const ticketMasterData = useTicketMaster(ticketId);
-  
+
   const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
     enabled: !!ticketId, // Only fire if ticketId exists in the URL
@@ -69,13 +71,15 @@ const TicketDetailPage = () => {
     if (sentinelRef.current) observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, []);
+  const parentTicket = ticketMasterData &&  ticketMasterData[0];
+ 
 
   // 1. Process Parent Ticket
   // const parentTicket = React.useMemo(() => {
   //   if (!ticketMasterData) return null;
   //   const targetId = String(ticketId).toLowerCase();
   //   const ticket = ticketMasterData.find(
-  //     (issue) => issue.Issue_Id?.toLowerCase() === targetId|| 
+  //     (issue) => issue.Issue_Id?.toLowerCase() === targetId||
   //     issue.navId?.toLowerCase() === targetId,
   //   );
   //   if (!ticket) return null;
@@ -91,50 +95,51 @@ const TicketDetailPage = () => {
   //     projKey: projectDetails?.projectKey || "Unknown Repo",
   //     Repo_Name: projectDetails?.repoName || "Unknown Repo",
   //   };
-  // }, [ticketMasterData, ticketId]);
+  // }, [parentTicket, ticketId]);
 
-  const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(ticketMasterData?.StatusId);
+  const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(
+    parentTicket?.statusId,
+  );
 
   const isTicketIncomplete =
-    !ticketMasterData?.Assignee_Id ||
-    !ticketMasterData?.Due_Date ||
-    (
-      !ticketMasterData?.Client &&
-      !ticketMasterData?.Functional &&
-      !ticketMasterData?.Technical &&
-      !ticketMasterData?.Web
-    );
+    !parentTicket?.assignedTo ||
+    !parentTicket?.dueDate ||
+    (!parentTicket?.clientTime &&
+      !parentTicket?.functionalTime &&
+      !parentTicket?.technicalTime &&
+      !parentTicket?.webTime);
 
-// const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
-const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketIncomplete;
+  // const shouldBlockThreads = !bypassThreadRestriction && isTicketIncomplete;
+  const shouldBlockThreads =
+    !isViewer && !bypassThreadRestriction && isTicketIncomplete;
   // 2. Process Assignees and Roles
-  const assigneesJsonString = JSON.parse(ticketMasterData?.All_Assignees || "[]");
-  const myAssignments = assigneesJsonString.filter(
+  const assigneesJsonString = parentTicket?.multiAssignees;
+  const myAssignments = assigneesJsonString?.filter(
     (a) => a.Assignee_Id?.toLowerCase() === user?.userId?.toLowerCase(),
   );
 
-  const activeStream = myAssignments.find(
+  const activeStream = myAssignments?.find(
     (a) =>
       ![14, 15, 16].includes(a.StreamStatus) && Number(a.CompletionPct) < 100,
   );
-  const myValidStreams = myAssignments.filter((a) => a.StreamId !== null);
+  const myValidStreams = myAssignments?.filter((a) => a.StreamId !== null);
   const lastValidStream =
-    myValidStreams.length > 0
-      ? myValidStreams[myValidStreams.length - 1]
+    myValidStreams?.length > 0
+      ? myValidStreams[myValidStreams?.length - 1]
       : null;
   const myCurrentStream =
     activeStream ||
-    (myAssignments.length > 0 ? myAssignments[myAssignments.length - 1] : null);
+    (myAssignments?.length > 0 ? myAssignments[myAssignments.length - 1] : null);
   const evaluatedStream = selectedWorkStream || myCurrentStream;
 
-  // const isOwner = ticketMasterData?.Assignee_Id === user?.userId;
+  // const isOwner = parentTicket?.Assignee_Id === user?.userId;
   const isOwner = isViewer
-    ? ticketMasterData?.CreatedBy === user?.userId
-    : ticketMasterData?.Assignee_Id === user?.userId;
+    ? parentTicket?.createdBy === user?.userId
+    : parentTicket?.assignedTo === user?.userId;
   let userRole = "Standard";
   const isWorkCompleted = evaluatedStream
     ? Number(evaluatedStream.CompletionPct) === 100 ||
-    [14, 15, 16].includes(evaluatedStream.StreamStatus)
+      [14, 15, 16].includes(evaluatedStream.StreamStatus)
     : false;
 
   if (isOwner && !selectedWorkStream) userRole = "Owner";
@@ -145,7 +150,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
       userRole = "Tester";
   }
 
-  const isAssignee = myAssignments.length > 0;
+  const isAssignee = myAssignments?.length > 0;
 
   const formContext = {
     userRole,
@@ -166,7 +171,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
     },
   };
 
-  const mainAssignee = assigneesJsonString.find(
+  const mainAssignee = assigneesJsonString?.find(
     (a) =>
       a.Assignee_Type === "Main Assignee" ||
       a.Assignment_Type === "Main Assignee",
@@ -192,7 +197,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
       if (!thread.Hours) return;
       const mins = toMinutes(thread.Hours);
 
-      // 🔥 Use a Set to collect unique teams. 
+      // 🔥 Use a Set to collect unique teams.
       // If 3 Web Devs are tagged, it only adds the 'Web' team ID once!
       const teamsInvolved = new Set();
 
@@ -266,13 +271,13 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
       mine: formatTime(myMinutes),
     };
   }, [ThreadsList, user]);
-  
-  if (!ticketMasterData) return null;
+
+  if (!parentTicket) return null;
   return (
     <div className="flex flex-col relative w-full pb-10 wg-scrollbar bg-white">
       {/* Top Header extracted to its own Component */}
       <ParentTicketHeader
-        parentTicket={ticketMasterData}
+        parentTicket={parentTicket}
         timeStats={timeStats}
         teamTimeStats={teamTimeStats}
         mainAssignee={mainAssignee}
@@ -290,15 +295,20 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
-          {!isViewer && shouldBlockThreads? (
-              <div className="flex flex-col items-center justify-center gap-4 py-12 px-6
-              border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
-                <button onClick={() => goTo(editRouteKey, { ticketId })}
+            {!isViewer && shouldBlockThreads ? (
+              <div
+                className="flex flex-col items-center justify-center gap-4 py-12 px-6
+              border-2 border-dashed border-gray-200 rounded-xl bg-gray-50"
+              >
+                <button
+                  onClick={() => goTo(editRouteKey, { ticketId })}
                   className="bg-brand-yellow text-white px-4 py-2 rounded-md
-              font-medium hover:opacity-90 transition-colors">
+              font-medium hover:opacity-90 transition-colors"
+                >
                   Complete Ticket Details
                 </button>
-              </div>) : (
+              </div>
+            ) : (
               <TicketThreads
                 ticketId={ticketId}
                 threadsData={ThreadsList?.ThreadsList || []}
@@ -308,7 +318,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                 assigneesJsonString={assigneesJsonString}
                 selectedWorkStream={selectedWorkStream}
                 selectedHandoffId={selectedHandoffId}
-                parentTicket={ticketMasterData}
+                parentTicket={parentTicket}
                 formContext={formContext}
                 editingItem={editingItem}
                 setEditingItem={setEditingItem}
@@ -320,12 +330,12 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
           {/* ========================================= */}
           {/* RIGHT COLUMN: Sticky Sidebar              */}
           {/* ========================================= */}
-          {!isViewer &&
+          {!isViewer && (
             <div className="w-full lg:w-1/4">
               <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
                 <AssigneesWidget
                   workStreams={assigneesJsonString}
-                  data={ticketMasterData}
+                  data={parentTicket}
                   ticketId={ticketId}
                   formContext={formContext}
                   selectedWorkStream={selectedWorkStream}
@@ -335,7 +345,7 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                 />
               </div>
             </div>
-          }
+          )}
         </div>
       </div>
 
@@ -349,7 +359,8 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
               </h3>
               <p className="text-sm text-gray-500 leading-relaxed">
                 You are not assigned to this ticket. You can commit as a {""}
-                <strong className="text-blue-600">Support</strong> contributor, or proceed normally.
+                <strong className="text-blue-600">Support</strong> contributor,
+                or proceed normally.
               </p>
             </div>
             <div className="flex flex-col gap-2 mt-1">
@@ -359,7 +370,8 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                   setSupportMOdalOpen(false);
                   setPendingSubmit(null);
                 }}
-                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold transition-colors">
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-semibold transition-colors"
+              >
                 Commit as Support
               </button>
               <button
@@ -368,7 +380,8 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                   setSupportMOdalOpen(false);
                   setPendingSubmit(null);
                 }}
-                className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-md text-sm font-semibold transition-colors">
+                className="w-full py-2.5 px-4 bg-gray-100 hover:bg-gray-200 text-gray-500 rounded-md text-sm font-semibold transition-colors"
+              >
                 Commit as Assignee
               </button>
               <button
@@ -376,7 +389,8 @@ const shouldBlockThreads = !isViewer && !bypassThreadRestriction && isTicketInco
                   setSupportMOdalOpen(false);
                   setPendingSubmit(null);
                 }}
-                className="w-full py-2 text-sm text-red-400 hover:text-gray-600 transition-colors">
+                className="w-full py-2 text-sm text-red-400 hover:text-gray-600 transition-colors"
+              >
                 Cancel
               </button>
             </div>

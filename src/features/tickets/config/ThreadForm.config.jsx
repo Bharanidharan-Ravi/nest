@@ -56,27 +56,21 @@ export const validateThreadForm = (formData, context) => {
   
   const original = {
     requestClose: !!(
-      context?.parentTicket?.IsCloseRequested ||
       context?.parentTicket?.isCloseRequested
     ),
     priority: !!(
-      context?.parentTicket?.PriorityRequest ||
       context?.parentTicket?.priorityRequest
     ),
     functional: !!(
-      context?.parentTicket?.FuncResponse ||
       context?.parentTicket?.funcResponse
     ),
     web: !!(
-      context?.parentTicket?.WebResponse ||
       context?.parentTicket?.webResponse
     ),
     technical: !!(
-      context?.parentTicket?.TechnicalResponse ||
       context?.parentTicket?.technicalResponse
     ),
     admin: !!(
-      context?.parentTicket?.AdminResponse ||
       context?.parentTicket?.adminResponse
     ),
   };

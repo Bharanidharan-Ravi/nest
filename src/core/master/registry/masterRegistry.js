@@ -19,6 +19,7 @@ import {
 } from "../../adapters/masterAdapter";
 import { queryKeys } from "../../query/queryKeys";
 import { buildSyncPayload } from "../../sync/buildSyncPayload";
+import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 
 export const MASTER_REGISTRY = {
   // ── Masters from the bulk /sync/v2 preload ────────────────────────────────
@@ -100,16 +101,18 @@ export const MASTER_REGISTRY = {
 
     enrich: {
       project: {
-        master: "project",
+        source: "project",
+
         localKey: "project",
 
         fields: {
           projectName: "name",
-          projectKey: "key",
+          projectKey: "projectKey",
+          repoKey: "repoKey",
+          repoName: "repoName",
         },
       },
     },
-    // adapter: (raw) => ({ id: raw.StatusId, name: raw.StatusName }),
   },
   department: {
     source: "api",

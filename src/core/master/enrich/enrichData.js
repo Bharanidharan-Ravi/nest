@@ -1,7 +1,7 @@
 export const enrichData = (
   data,
   enrichConfig = {},
-  masterDataMap = {}
+  sources = {}
 ) => {
   if (!data) return data;
 
@@ -10,23 +10,27 @@ export const enrichData = (
 
     Object.values(enrichConfig).forEach((config) => {
       const {
-        master,
+        source,
         localKey,
         matchKey = "id",
         fields = {},
       } = config;
 
-      const sourceList = masterDataMap[master] || [];
+      const sourceList = sources[source] || [];
 
       const match = sourceList.find(
-        (x) => x?.[matchKey] === item?.[localKey]
+        (row) =>
+          row?.[matchKey] === item?.[localKey]
       );
 
       if (!match) return;
 
-      Object.entries(fields).forEach(([targetField, sourceField]) => {
-        enriched[targetField] = match[sourceField];
-      });
+      Object.entries(fields).forEach(
+        ([targetField, sourceField]) => {
+          enriched[targetField] =
+            match[sourceField];
+        }
+      );
     });
 
     return enriched;

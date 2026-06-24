@@ -107,13 +107,13 @@ export default function AssigneesWidget({
         </h4>
         <div className="flex items-center gap-3 mb-2">
           <div className="text-2xl font-black text-gray-800">
-            {data?.CompletionPct}%
+            {data?.completionPct}%
           </div>
           <div className="flex-1">
             <div className="h-1.5 w-full bg-gray-200 rounded-full overflow-hidden">
               <div
                 className="h-full bg-blue-500 transition-all duration-500"
-                style={{ width: `${data?.CompletionPct}%` }}
+                style={{ width: `${data?.completionPct}%` }}
               />
             </div>
           </div>
