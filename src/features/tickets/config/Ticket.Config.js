@@ -2,13 +2,15 @@ import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
-
-const isInQueue = (formData) => formData?.Status?.value?.id === 18;
 const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
-  if (!context?.isEdit) return true;
-
-  if (isInQueue(formData)) return true;
-
+  if (!context?.isEdit) {
+    // Not in edit mode ? skip validation
+    return true;
+  }
+ if(formData?.Status?.value?.name==="InQueue"){
+  return true
+ }
+  // In edit mode ? check if all fields are empty
   const allEmpty =
     !formData?.Client &&
     !formData?.Web &&
@@ -26,7 +28,7 @@ const statusOptions = [
   { label: "InActive", value: { id: 17, name: "InActive" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
   { label: "InQueue", value: { id: 18, name: "InQueue" } },
-  { label: "Need Confirmation", value: { id: 20, name: "Need Confirmation" } },
+  { label: "Need Confirmation", value: { id: 10, name: "Need Confirmation" } },
 ];
 
 export const TicketFieldConfig = () => [
@@ -617,6 +619,15 @@ export const TicketFieldConfig = () => [
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
+    customValidator:(value)=>{
+      console.log("value",value);
+      
+      const stripped=value?.replace(/<[^>]*>/g,"").trim();
+      if(!stripped){
+        return "Description is required";
+      }
+      return true
+    }
   },
   {
     name: "Status",
@@ -629,17 +640,28 @@ export const TicketFieldConfig = () => [
     optionsResolver: ({ context }) => {
       return context?.isEdit
         ? statusOptions // Edit => show all including InActive
-        : statusOptions.filter((opt) => opt.value.id !== 17  && opt.value.id !== 20); // Create => hide InActive
+        : statusOptions.filter((opt) => opt.value.id !== 17  && opt.value.id !== 10); // Create => hide InActive
     },
     initValueResolver: ({ context }) => {
+      console.log("initValueResolver called");
+      console.log("context:", context);
+    
       if (!context.isEdit || !context.entityData) {
+        console.log("No edit mode or no entityData → returning default Active");
+        console.log("return value:", statusOptions[0]);
         return statusOptions[0]; // default Active
       }
+    
       const apiStatus = context.entityData.statusId;
-      return (
+      console.log("apiStatus from entityData:", apiStatus);
+      console.log("all statusotions:", statusOptions.map(o=>({label:o.label,id:o.value?.id})));
+      const matchedOption =
         statusOptions.find((opt) => opt.value.id === Number(apiStatus)) ||
-        statusOptions[0]
-      );
+        statusOptions[0];
+    
+      console.log("matchedOption:", matchedOption);
+    
+      return matchedOption;
     },
     visibleWhen: (formData, context) => {
       return !context?.isViewer;

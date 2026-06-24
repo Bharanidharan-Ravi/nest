@@ -56,21 +56,27 @@ export const validateThreadForm = (formData, context) => {
   
   const original = {
     requestClose: !!(
+      context?.parentTicket?.IsCloseRequested ||
       context?.parentTicket?.isCloseRequested
     ),
     priority: !!(
+      context?.parentTicket?.PriorityRequest ||
       context?.parentTicket?.priorityRequest
     ),
     functional: !!(
+      context?.parentTicket?.FuncResponse ||
       context?.parentTicket?.funcResponse
     ),
     web: !!(
+      context?.parentTicket?.WebResponse ||
       context?.parentTicket?.webResponse
     ),
     technical: !!(
+      context?.parentTicket?.TechnicalResponse ||
       context?.parentTicket?.technicalResponse
     ),
     admin: !!(
+      context?.parentTicket?.AdminResponse ||
       context?.parentTicket?.adminResponse
     ),
   };
@@ -162,8 +168,10 @@ export const ThreadFormConfig = {
               const errors={};
               const percentage=formData?.TicketOverallPercentage
               const summary=stripHtml(formData?.TicketStatusSummary)
-              if(!percentage||Number(percentage)<0){
+              if(percentage===undefined||percentage===null||percentage===""||Number(percentage)<0){
                 errors.TicketOverallPercentage="Please select Battery % less than 100"
+              }else if(Number(percentage)>=100){
+                errors.TicketOverallPercentage="Overall Battery % must be less than 100% to reopen"
               }
               if(!summary){
                 errors.TicketStatusSummary="Status Summary mandatory before reopen"
