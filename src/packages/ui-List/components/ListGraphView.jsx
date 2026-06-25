@@ -73,18 +73,35 @@ const getHashColor = (str) => {
 
   return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
 };
-// 🚀 CLEANED UP: All hardcoded values removed. Only handles basic case mismatch.
+// 🚀 ENHANCED: Strips underscores and ignores case so 'issueId' easily finds 'Issue_Id'
 const getSafeValue = (obj, key) => {
   if (!obj || key === undefined || key === null) return undefined;
   if (obj[key] !== undefined) return obj[key];
+
   const keyStr = String(key);
-  const camel = keyStr?.charAt(0).toLowerCase() + keyStr?.slice(1);
+  const camel = keyStr.charAt(0).toLowerCase() + keyStr.slice(1);
   if (obj[camel] !== undefined) return obj[camel];
 
-  const pascal = keyStr?.charAt(0).toUpperCase() + keyStr?.slice(1);
+  const pascal = keyStr.charAt(0).toUpperCase() + keyStr.slice(1);
   if (obj[pascal] !== undefined) return obj[pascal];
 
+  // Fallback: Strip underscores and check case-insensitively
+  const cleanKey = keyStr.replace(/_/g, "").toLowerCase();
+  for (const k in obj) {
+    if (k.replace(/_/g, "").toLowerCase() === cleanKey) {
+      return obj[k];
+    }
+  }
   return undefined;
+};
+const parseValueToMinutes = (val) => {
+  if (!val) return 0;
+  if (typeof val === "string" && val.includes(":")) {
+    const parts = val.split(":");
+    // Force Base-10 to prevent "08" and "09" minutes from becoming 0
+    return parseInt(parts[0] || "0", 10) * 60 + parseInt(parts[1] || "0", 10);
+  }
+  return Math.round(parseFloat(val) * 60) || 0;
 };
 // --- MODERN 3D CYLINDER GRAPH ---
 const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
@@ -148,9 +165,16 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
 
       if (!grouped[xKey]) return;
 
-      const val = parseValue(getSafeValue(item, graphConfig.graphValueKey));
-      if (val > 0) {
-        // 👇 1. UPGRADE GROUP ID TO SUPPORT FUNCTIONS
+      const rawVal = getSafeValue(item, graphConfig.graphValueKey);
+      const isMarker = rawVal === 0.1 || rawVal === "0.1";
+
+      let mins = 0;
+      if (!isMarker) {
+        mins = parseValueToMinutes(rawVal);
+      }
+
+      // Accept actual values > 0 OR the fake 0.1 marker
+      if (mins > 0 || isMarker) {
         const rawGroupId =
           typeof graphConfig.graphGroupIdKey === "function"
             ? graphConfig.graphGroupIdKey(item)
@@ -158,12 +182,14 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
 
         const uniqueId = rawGroupId || item.rawId || "unknown";
 
-        const finalColor =
-          getSafeValue(item, graphConfig.graphColorKey) ||
-          getHashColor(uniqueId);
+        const configuredColor =
+          typeof graphConfig.graphColorKey === "function"
+            ? graphConfig.graphColorKey(item)
+            : getSafeValue(item, graphConfig.graphColorKey);
+
+        const finalColor = configuredColor || getHashColor(uniqueId);
 
         if (!grouped[xKey][uniqueId]) {
-          // 👇 2. UPGRADE LABEL TO SUPPORT FUNCTIONS
           const rawLabel =
             typeof graphConfig.graphLabelKey === "function"
               ? graphConfig.graphLabelKey(item)
@@ -171,24 +197,23 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
 
           grouped[xKey][uniqueId] = {
             rawItem: item,
+            totalMins: 0, // NEW: Track exact minutes
             value: 0,
-            label: rawLabel || "Unknown", // 👈 Use the upgraded label
+            label: rawLabel || "Unknown",
             color: finalColor,
             recordCount: 0,
-            terminalCount: 0,
           };
         }
 
-        grouped[xKey][uniqueId].value += val;
+        // 🚀 FIX: Sum pure minutes to stop float degradation, then convert to hours safely
+        grouped[xKey][uniqueId].totalMins += mins;
+        grouped[xKey][uniqueId].value = isMarker
+          ? 0
+          : grouped[xKey][uniqueId].totalMins / 60;
         grouped[xKey][uniqueId].recordCount += 1;
 
-        // 🚀 THE FIX: Dynamic status checking passed from Dashboard!
+        // ... Marker assignments ...
         const rawStatus = getSafeValue(item, graphConfig.terminalStatusKey);
-        const terminalIds = graphConfig.terminalStatusIds || [];
-
-        // if (terminalIds.includes(Number(rawStatus))) {
-        //   grouped[xKey][uniqueId].terminalCount += 1;
-        // }
         if (Number(rawStatus) === 15 || Number(rawStatus) === 16) {
           grouped[xKey][uniqueId].markerType = "C";
         }
@@ -372,13 +397,18 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
 
                 let currentY = padTop + innerH - ry;
 
-                const dayTotalValue = (chartData[col.key] || []).reduce(
-                  (sum, item) => sum + item.value,
-                  0,
+                // Safely sum exact minutes to prevent floating-point decimal drift
+                const dayTotalMins = (chartData[col.key] || []).reduce(
+                  (sum, item) => sum + (item.totalMins || 0),
+                  0
                 );
+                
+                // Convert back to float purely for Y-axis scaling
+                const dayTotalValue = dayTotalMins / 60;
+
                 const dayTotalDisplay = graphConfig.valueFormatter
                   ? graphConfig.valueFormatter(dayTotalValue)
-                  : `${dayTotalValue}h`;
+                  : `${dayTotalValue.toFixed(2)}h`;
 
                 return (
                   <g key={col.key}>

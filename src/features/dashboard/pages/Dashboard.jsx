@@ -31,6 +31,7 @@ import TimesheetTree from "../component/TimesheetTree";
 import TicketListCard from "../../tickets/component/TicketListCard";
 import { useGetStaleTicketData } from "../../../app/shared/Header/hook/GetStaleTickets.Api";
 import { Tooltip } from "@mui/material";
+import { TimesheetSummary } from "../component/summery/TreeTableSummary";
 
 
 
@@ -343,16 +344,14 @@ useEffect(()=>{
     const isAllProjects = !parsedFilters?.filters?.project || String(parsedFilters.filters.project).trim() === "";
 
     return {
-      graphType: "stackedBar",
+     graphType: "stackedBar",
       graphXAxisKey: "updatedAt",
       graphValueKey: "ConsumeTime",
 
-      // 3. DYNAMIC GROUPING LOGIC
+      // 1. FIX: Make the grouping strictly look for exact ID keys so colors never change
       graphGroupIdKey: isAllEmployees
-        ? (item) => `${item.employeeId}_${item.employeeName}` // All Employees -> Group by Person
-        // : isAllProjects
-        //   ? (item) => `${item.project || item.ProjKey}_${item.projectName}` // One Employee, All Projects -> Group by Project
-          : (item) => item.id || item.issueId,
+        ? (item) => `${item.EmployeeID || item.employeeId || "emp"}_${item.EmployeeName || item.employeeName || "Unknown"}`
+        : (item) => item.Issue_Id || item.issueId || item.TicketId || item.id,
       // 2. COMBINED LABEL: Formats the Tooltip beautifully (e.g., "[WGN] Backend - Login Fix")
       graphLabelKey: isAllEmployees
         ? "employeeName"
@@ -426,9 +425,11 @@ useEffect(()=>{
       minYValue: 0,
       yAxisStep: 2,
       valueFormatter: (val) => {
-        if(!val||val===0.1)return""
-        const h = Math.floor(val);
-        const m = Math.round((val % 1) * 60);
+        if (!val || val === 0.1) return "";
+        // Safely convert back from float hours to exact minutes
+        const totalMins = Math.round(val * 60);
+        const h = Math.floor(totalMins / 60);
+        const m = totalMins % 60;
         return `${h.toString().padStart(2, "0")} : ${m.toString().padStart(2, "0")}hr`;
       },
     };
@@ -449,7 +450,7 @@ useEffect(()=>{
     enablePagination: timesheetsView !== "graph",
     allowViewSwitch: ["card", "graph"],
     graphConfig: dashboardTimesheetGraph,
-    Custommodule:()=><TimesheetTree/>,
+    Custommodule:()=><TimesheetSummary/>,
     // TimesheetTree:true,
     onEditClick: (item) => {
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });

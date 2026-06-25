@@ -268,12 +268,12 @@ export default function TicketListCard({
                     </span>
                   </Tooltip>
 
-                  {!item.isViewer && item.TicketCreater && (
+                  {!item.isViewer && item.ticketCreater && (
                     <span className="flex items-center gap-1.5 ml-1">
                       <span className="meta-divider text-gray-400">•</span>
-                      <Tooltip title={item.TicketCreater} arrow>
+                      <Tooltip title={item.ticketCreater} arrow>
                         <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 shadow-sm cursor-help">
-                          {getInitials(item.TicketCreater)}
+                          {getInitials(item.ticketCreater)}
                         </div>
                       </Tooltip>
                     </span>

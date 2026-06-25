@@ -14,71 +14,67 @@ export const TicketFormConfig = {
 
   fields: TicketFieldConfig(),
   actions: ({ formData, context }) => [
-    
     {
-   
       label: context?.isEdit ? "Update Ticket" : "Create Ticket",
       type: "button",
-      onClick: ({ submitForm,context }) => {
-        const isViewer=context?.isViewer
-        const openDialog=context?.openDialog
-        
-        // 1. Check for Hours
+      onClick: ({ submitForm, context }) => {
+        const isViewer = context?.isViewer;
+        const openDialog = context?.openDialog;
+
+        // 1. Get the requested status (Default to 1: Active)
+        const requestedStatusId = formData?.Status?.value?.id || 1;
+
+        // 2. Identify if the requested status REQUIRES all fields
+        // 1 = Active, 10 = Need Confirmation
+        const requiresStrictValidation = [1, 10].includes(requestedStatusId);
+
+        // 3. Check fields
         const hasHours = !!(
           formData?.Client ||
           formData?.Web ||
           formData?.Technical ||
           formData?.Functional
         );
-
-        // 2. NEW: Check for Due Date 
-        // (Make sure 'dueDate' matches the exact key in your formData)
-        const hasDueDate = !!formData?.dueDate; 
-        // const label = !!formData?.label; 
-        
-        // 3. Check for Assignees or Resources (with corrected spelling)
-        const hasAssignee = !!formData?.assignedTo?.value?.id; 
+        const hasDueDate = !!formData?.dueDate;
+        const hasAssignee = !!formData?.assignedTo?.value?.id;
         const hasResources = (formData?.assignees?.length ?? 0) > 0;
-        const hasLabel= (formData?.label?.length ?? 0) > 0;
+        const hasLabel = (formData?.label?.length ?? 0) > 0;
 
-        // 4. THE MANDATORY LOGIC: 
-        // Must have Hours AND Due Date AND at least one person assigned
-        const isReady = hasHours && hasDueDate && hasAssignee && hasResources && hasLabel
-
-        if(isReady||isViewer){
-          submitForm({
-            Status:formData?.Status?.value?.id||1,
-          })
-          return
-        }
-
-        const missingFields=[
-          !hasHours&&"Hours (Client/Web/Technical/Functional)",
-          !hasDueDate&&"Due Date",
-          !hasAssignee&&"Assigned To",
-          !hasResources&&"Assignees/Resources",
-          !hasLabel&&"Label"
+        // Build array of what is missing
+        const missingFields = [
+          !hasHours && "Hours (Client/Web/Technical/Functional)",
+          !hasDueDate && "Due Date",
+          !hasAssignee && "Assigned To",
+          !hasResources && "Assignees/Resources",
+          !hasLabel && "Label",
         ].filter(Boolean);
 
-       if(openDialog({
-          variant: "warning",
-          title: "Some Data is Missing",
-          description: `The following fields are incomplete:\n●${missingFields.join("\n●")}\n\nyou 
-          can queue this ticket now and fill in the details later, or cancel to complete them now.`,
-          confirmText: "Queue It",
-          cancelText: "Fill Missing Data",
-          onConfirm: () =>
-            submitForm({Status:18
-            }),
-          onCancel: () => { },
-        }));
+        // 4. Bypass logic for viewers or if everything is perfectly filled
+        if (isViewer || missingFields.length === 0) {
+          submitForm({ Status: requestedStatusId });
+          return;
+        }
 
+        // 5. If they want Active/Confirmation but are missing data -> Intercept
+        if (requiresStrictValidation && missingFields.length > 0) {
+          openDialog({
+            variant: "warning",
+            title: "Incomplete Ticket",
+            description: `To set this ticket to 'Active' or 'Client Confirmation', you need:\n● ${missingFields.join("\n● ")}\n\nDo you want to put this in the Queue for now and fill details later?`,
+            confirmText: "Put in Queue",
+            cancelText: "I'll fill it now",
+            onConfirm: () => submitForm({ Status: 18 }), // 18 = In Queue
+            onCancel: () => {}, // Let them go back to the form
+          });
+          return;
+        }
 
+        // 6. If they are intentionally saving as Hold (14) or InQueue (18) and missing fields, let it pass
+        submitForm({ Status: requestedStatusId });
       },
     },
   ],
   theme: {
-
     editorContainer:
       "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
     editorToolbar:

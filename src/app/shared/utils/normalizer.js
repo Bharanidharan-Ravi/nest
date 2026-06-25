@@ -111,7 +111,9 @@ export const createTimesheetNormalizer = (Timedata) => {
     threadStatusName: Timedata.ThreadStatusName,
     threadStatusId: Timedata.ThreadStatusId,
     overallPercentage: Timedata.OverallPercentage,
+    createdByName: Timedata.CreatedByName,
     total: Timedata.total,
+    CurrentStatusSummary: Timedata.CurrentStatusSummary,
     label: Timedata.Labels_JSON ? JSON.parse(Timedata.Labels_JSON) : [],
   };
 };

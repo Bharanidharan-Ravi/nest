@@ -18,9 +18,9 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
       payload:{
           configKeys:["BannerData"],
           params:{
-              BannerMessageId,
+              BannerData:{BannerMessageId,
               FromDate,
-              ToDate,
+              ToDate,}
           }
       },
       options:{
