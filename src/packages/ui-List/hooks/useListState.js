@@ -88,32 +88,19 @@ export function useListState(config, rawData = [], userRole = null) {
     return buildDefaultString(defaultTab);
   });
   const [selectedOptions, setSelectedOptions] = useState({});
-  const [sortField, setSortField] = useState(
+  const currentSortKey =
     (isUrlSyncEnabled ? searchParams.get(`${prefix}sort`) : null) ||
-      config.defaultSort?.field ||
-      "updatedAt",
-  );
-  const [sortOrder, setSortOrder] = useState(
+    config.defaultSort?.field ||
+    "updatedAt";
+
+  const currentOrderKey =
     (isUrlSyncEnabled ? searchParams.get(`${prefix}order`) : null) ||
-      config.defaultSort?.order ||
-      "desc",
-  );
+    config.defaultSort?.order ||
+    "desc";
+
+  const [sortField, setSortField] = useState(currentSortKey);
+  const [sortOrder, setSortOrder] = useState(currentOrderKey);
   const [filters, setFilters] = useState({});
-
-  //  const [filters, setFilters] = useState(() => {
-  //     // 1. Start with any root-level defaultFilters (if you still use them)
-  //     const initial = { ...(config.defaultFilters || {}) };
-  //     // 2. Loop through config.filters and grab any 'defaultValue' you defined
-  //     if (config.filters) {
-  //         config.filters.forEach((f) => {
-  //             if (f.defaultValue !== undefined && initial[f.key] === undefined) {
-  //                 initial[f.key] = f.defaultValue;
-  //             }
-  //         });
-  //     }
-
-  //     return initial; // This will now contain { assignedTo: currentUserName }
-  // });
   const [view, setView] = useState(
     (isUrlSyncEnabled ? searchParams.get(`${prefix}view`) : null) ||
       config.defaultView ||
@@ -191,25 +178,6 @@ export function useListState(config, rawData = [], userRole = null) {
 
     return result;
   }, [apiFilterEntries, config.filters]);
-  // const apiPayload = useMemo(() => {
-  //   if (apiFilterEntries.length === 0) return undefined;
-
-  //   const result = {};
-
-  //   apiFilterEntries.forEach(([key, value]) => {
-  //     const filterConf = config.filters.find((f) => f.key === key);
-
-  //     if (filterConf?.type === "weekRange") {
-  //       // ✅ Expands "2026-04-19~2026-04-25" → { FromDate: "...", ToDate: "..." }
-  //       const dateParams = getDateRangeApiParams(filterConf, value);
-  //       Object.assign(result, dateParams);
-  //     } else {
-  //       result[filterConf?.apiKey || key] = value;
-  //     }
-  //   });
-
-  //   return result;
-  // }, [apiFilterEntries, config.filters]);
 
   const { data: apiFilteredData, dataUpdatedAt } = useApiQuery({
     queryKey: [apiFilterConfig?.configKey, apiPayload],
@@ -226,7 +194,6 @@ export function useListState(config, rawData = [], userRole = null) {
       enabled: apiFilterEntries.length > 0 && !!apiFilterConfig?.api,
     },
   });
-
 
   /* --- PROCESS DATA (Local Filtering & Sorting) --- */
   const processed = useMemo(() => {
@@ -334,32 +301,20 @@ export function useListState(config, rawData = [], userRole = null) {
       }
     });
 
-    // Text search
-    // if (text) {
-    //   data = data.filter((item) =>
-    //     item.title?.toLowerCase().includes(text.toLowerCase()),
-    //   );
-    // }
-
     if (text) {
-      const searchText = text
-        .toLowerCase()
-        .replace(/^#/, "")
-        .trim();
-    
+      const searchText = text.toLowerCase().replace(/^#/, "").trim();
+
       data = data.filter((item) =>
         config.searchFields?.some((field) => {
           const value = item[field];
-    
+
           if (value === null || value === undefined) return false;
-    
-          return String(value)
-            .toLowerCase()
-            .includes(searchText);
-        })
+
+          return String(value).toLowerCase().includes(searchText);
+        }),
       );
     }
-
+    const sortConfig = config?.sortFields?.find((x) => x.key === sortField) || {};
     // 🔥 4. Sort: Prioritize Match Score, then fallback to user's selection
     data.sort((a, b) => {
       const scoreA = matchScores.get(a) || 0;
@@ -371,13 +326,13 @@ export function useListState(config, rawData = [], userRole = null) {
       }
 
       // If scores are tied (or 0), fallback to standard "Newest/Oldest" sorting
-      const aVal = a?.[sortField.key || sortField];
-      const bVal = b?.[sortField.key || sortField];
+      const aVal = a?.[sortField];
+      const bVal = b?.[sortField];
       if (!aVal || !bVal) return 0;
       // -------------------------------------------------------------
       // CUSTOM DUE DATE BUCKET SORTING
       // -------------------------------------------------------------
-      if (sortField.type === "custom") {
+      if (sortConfig.type === "custom") {
         // Step 1: Helper to classify a date into a Bucket ID
         const getBucket = (dateStr) => {
           if (!dateStr) return 4; // Nulls/Empty always go to the bottom
@@ -396,8 +351,8 @@ export function useListState(config, rawData = [], userRole = null) {
           if (diffDays > 0) return 3; // Upcoming
         };
 
-        const bucketA = getBucket(a[sortField.key]); // Match your actual data key here
-        const bucketB = getBucket(b[sortField.key]);
+        const bucketA = getBucket(a[sortField]);
+        const bucketB = getBucket(b[sortField]);
 
         // Step 2: Convert Bucket ID to Priority Score based on what the user clicked
         const getPriority = (bucket) => {
@@ -450,7 +405,11 @@ export function useListState(config, rawData = [], userRole = null) {
         : String(bVal).localeCompare(String(aVal));
     });
 
-    if(config?.customSortFn){
+    if (
+      config?.customSortFn &&
+      sortField === config.defaultSort.field &&
+      sortOrder === config.defaultSort.order
+    ) {
       data.sort(config.customSortFn);
     }
 
@@ -469,7 +428,6 @@ export function useListState(config, rawData = [], userRole = null) {
     // dataUpdatedAt // (Make sure this is here if we added it earlier!)
   ]);
 
-  
   /* --- REUSABLE FILTER MATCH CHECKER --- */
   const checkItemMatchesFilters = useCallback(
     (item, appliedFilters) => {
@@ -628,17 +586,16 @@ export function useListState(config, rawData = [], userRole = null) {
       filter.options.forEach((opt) => {
         const val = opt.value;
         if (val === "" || val === null) {
-         if (filter.key === "customBoolean") {
-            const flagValues = filter.options
-              .map((o) => o.value)
+          if (filter.key === "customBoolean") {
+            const flagValues = filter.options.map((o) => o.value);
             counts[filter.key][val] = flagValues.reduce((total, field) => {
               const fieldCount = dataForThisFilter.filter(
-                (item) => item[field] === true
+                (item) => item[field] === true,
               ).length;
-        
+
               return total + fieldCount;
             }, 0);
-          }else {
+          } else {
             counts[filter.key][val] = dataForThisFilter.length;
           }
         } else {
@@ -662,127 +619,10 @@ export function useListState(config, rawData = [], userRole = null) {
     checkItemMatchesFilters,
   ]);
 
-  // const processed = useMemo(() => {
-  //   let data = [];
-
-  //   // Use API data if available, otherwise fallback to rawData
-  //   if (apiFilterEntries.length > 0 && apiFilteredData) {
-  //     const raw = Array.isArray(apiFilteredData) ? apiFilteredData : [];
-  //     const activeNormalizer = apiFilterConfig?.normalizer || config.normalizer;
-
-  //     data = activeNormalizer ? raw.map(activeNormalizer) : raw;
-  //   } else {
-  //     data = [...rawData];
-  //   }
-  //   const combinedFilters = { ...filters, ...queryFilters };
-
-  //   Object.entries(combinedFilters).forEach(([key, value]) => {
-  //     if (!value) return;
-
-  //     // Handle "is" token (Tabs)
-  //     if (key === "is" && config.tabConfig) {
-  //       const mapping = config.tabConfig.find((t) => t.key === value);
-  //       if (mapping) {
-  //         data = data.filter((item) => {
-  //           const itemValue = item[mapping.field];
-
-  //           // 1. Exclude values
-  //           if (mapping.excludeValues) {
-  //             return !mapping.excludeValues.includes(itemValue);
-  //           }
-  //           // 2. Include multiple values
-  //           if (Array.isArray(mapping.filterValue)) {
-  //             return mapping.filterValue.includes(itemValue);
-  //           }
-  //           // 3. Exact match
-  //           return itemValue === mapping.filterValue;
-  //         });
-  //       }
-  //       return;
-  //     }
-
-  //     const filterConfig = config.filters?.find((f) => f.key === key);
-
-  //     if (filterConfig?.filterType === "api") return; // Skip, handled by server
-  //     // 🔥 NEW: Execute the custom filter function if it exists
-  //     if (
-  //       filterConfig?.filterType === "custom" &&
-  //       typeof filterConfig.customFilter === "function"
-  //     ) {
-  //       data = data.filter((item) => filterConfig.customFilter(item, value));
-  //     } else if (filterConfig?.filterType === "array") {
-  //       // value could be "id1" (single) or "id1,id2" (multi) or ["id1","id2"] (array)
-  //       const selectedValues = Array.isArray(value)
-  //         ? value
-  //         : String(value)
-  //             .split(",")
-  //             .map((v) => v.trim())
-  //             .filter(Boolean);
-
-  //       data = data.filter(
-  //         (item) =>
-  //           Array.isArray(item[key]) &&
-  //           // ✅ every = AND logic (item must have ALL selected labels)
-  //           // ❌ some  = OR logic  (item just needs ONE matching label)
-  //           selectedValues.every((selectedVal) =>
-  //             item[key].some(
-  //               (entry) =>
-  //                 String(entry[filterConfig.filterKey]) === String(selectedVal),
-  //             ),
-  //           ),
-  //       );
-  //     } else {
-  //       data = data.filter((item) => item[key] == value);
-  //     }
-  //   });
-
-  //   // Text search
-  //   if (text) {
-  //     const lower = text.toLowerCase();
-  //     const fields = config.searchFields || ["title"]; // fallback to title only
-  //     data = data.filter((item) =>
-  //       fields.some((field) => item[field]?.toLowerCase().includes(lower)),
-  //     );
-  //   }
-
-  //   // Sort
-  //   data.sort((a, b) => {
-  //     const aVal = a?.[sortField];
-  //     const bVal = b?.[sortField];
-  //     if (!aVal || !bVal) return 0;
-
-  //     const aDate = new Date(aVal);
-  //     const bDate = new Date(bVal);
-
-  //     // Date sorting
-  //     if (!isNaN(aDate) && !isNaN(bDate)) {
-  //       return sortOrder === "asc"
-  //         ? aDate.getTime() - bDate.getTime()
-  //         : bDate.getTime() - aDate.getTime();
-  //     }
-
-  //     // String sorting
-  //     return sortOrder === "asc"
-  //       ? String(aVal).localeCompare(String(bVal))
-  //       : String(bVal).localeCompare(String(aVal));
-  //   });
-
-  //   return data;
-  // }, [
-  //   rawData,
-  //   queryFilters,
-  //   filters,
-  //   sortField,
-  //   sortOrder,
-  //   text,
-  //   config,
-  //   apiFilterEntries,
-  //   apiFilteredData,
-  // ]);
-
-  // const visibleData = processed.slice(0, visibleCount);
-  // 🚀 THE FIX: If the view is "graph", give it ALL the data. Otherwise, paginate it normally!
-  const visibleData = config.enablePagination === false ? processed : processed.slice(0, visibleCount);
+  const visibleData =
+    config.enablePagination === false
+      ? processed
+      : processed.slice(0, visibleCount);
   console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
@@ -814,203 +654,3 @@ export function useListState(config, rawData = [], userRole = null) {
     setSelectedOptions,
   };
 }
-
-// import { useState, useMemo, useCallback } from "react";
-// import { useSearchParams } from "react-router-dom";
-// import { parseQuery } from "./useQueryParser";
-// import { useMasterData } from "../../../core/master/useMasterData";
-
-// export function useListState(config, rawData = []) {
-//   const [searchParams] = useSearchParams();
-//   const isUrlSyncEnabled = config.syncUrl !== false;
-//   /* --------------------------
-//      INITIAL STATE (Run once)
-//   -------------------------- */
-//   const initialQuery = useMemo(() => {
-//     // 🔥 NEW: If child list, ignore URL and load default config
-//     if (!isUrlSyncEnabled) {
-//       const defaultTab = config.tabConfig?.[0]?.key;
-//       return defaultTab ? `is:${defaultTab} ` : "";
-//     }
-
-//     const urlQ = searchParams.get("q");
-//     if (urlQ) return urlQ;
-
-//     const urlTab = searchParams.get("tab") || config.tabConfig?.[0]?.key;
-//     return urlTab ? `is:${urlTab} ` : "";
-//     // eslint-disable-next-line react-hooks/exhaustive-deps
-//   }, [isUrlSyncEnabled]);
-
-//   /* --------------------------
-//      STATES
-//   -------------------------- */
-//   const [query, setQuery] = useState(initialQuery);
-//   const [sortField, setSortField] = useState(
-//     (isUrlSyncEnabled ? searchParams.get("sort") : null) ||
-//       config.defaultSort?.field ||
-//       "updatedAt",
-//   );
-
-//   const [sortOrder, setSortOrder] = useState(
-//     (isUrlSyncEnabled ? searchParams.get("order") : null) ||
-//       config.defaultSort?.order ||
-//       "desc",
-//   );
-
-//   const [filters, setFilters] = useState({});
-//   const [view, setView] = useState(config.defaultView || "table");
-//   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
-
-//   /* --------------------------
-//      QUERY PARSE & DERIVED STATE
-//   -------------------------- */
-//   const parsed = parseQuery(query);
-//   const queryFilters = parsed.filters;
-//   const text = parsed.text;
-
-//   // 🔥 FIX 1: Derive statusTab directly from the query. No more `useState` or `useEffect` loops!
-//   const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
-
-//   const setStatusTab = useCallback(
-//     (tabKey) => {
-//       const currentParsed = parseQuery(query);
-//       const otherFilters = Object.entries(currentParsed.filters)
-//         .filter(([k]) => k !== "is")
-//         .map(([k, v]) => `${k}:${v}`);
-
-//       const newQuery = [`is:${tabKey}`, ...otherFilters, currentParsed.text]
-//         .filter(Boolean)
-//         .join(" ");
-
-//       setQuery(newQuery.trim() + " ");
-//     },
-//     [query],
-//   );
-
-//   /* --------------------------
-//      PROCESS DATA
-//   -------------------------- */
-//   const processed = useMemo(() => {
-//     let data = [...rawData];
-//     const combinedFilters = { ...filters, ...queryFilters };
-
-//     Object.entries(combinedFilters).forEach(([key, value]) => {
-//       if (!value) return;
-
-//       // Handle "is" token (Tabs)
-//       // if (key === "is" && config.tabConfig) {
-//       //   const mapping = config.tabConfig.find((t) => t.key === value);
-//       //   if (mapping) {
-//       //     data = data.filter((item) => item[mapping.field] === mapping.filterValue);
-//       //   }
-//       //   return;
-//       // }
-
-//       if (key === "is" && config.tabConfig) {
-//         const mapping = config.tabConfig.find((t) => t.key === value);
-//         if (mapping) {
-//           data = data.filter((item) => {
-//             const itemValue = item[mapping.field];
-
-//             // 1. If we provided an array of values to EXCLUDE
-//             if (mapping.excludeValues) {
-//               return !mapping.excludeValues.includes(itemValue);
-//             }
-
-//             // 2. If we provided an array of multiple values to INCLUDE
-//             if (Array.isArray(mapping.filterValue)) {
-//               return mapping.filterValue.includes(itemValue);
-//             }
-
-//             // 3. Fallback to the original exact match
-//             return itemValue === mapping.filterValue;
-//           });
-//         }
-//         return;
-//       }
-//       const filterConfig = config.filters?.find((f) => f.key === key);
-//       if (filterConfig?.filterType === "array") {
-//         data = data.filter(
-//           (item) =>
-//             Array.isArray(item[key]) &&
-//             item[key].some((entry) => {
-//               return entry[filterConfig.filterKey] == value;
-//             }),
-//         );
-//       }
-//       //  else if(filterConfig?.filterType === "api") {
-//       //    const  data =  useApiQuery({
-//       //        queryKey,
-//       //        url:filterConfig.api,
-//       //        method: filterConfig.method || 'GET',
-//       //        payload,
-//       //        source: "TicketsList")}
-//       //  }
-//       else {
-//         data = data.filter((item) => item[key] === value);
-//       }
-//     });
-
-//     // Text search
-//     if (text) {
-//       data = data.filter((item) =>
-//         item.title?.toLowerCase().includes(text.toLowerCase()),
-//       );
-//     }
-
-//     // Sort
-//     data.sort((a, b) => {
-//       const aVal = a?.[sortField];
-//       const bVal = b?.[sortField];
-//       if (!aVal || !bVal) return 0;
-
-//       const aDate = new Date(aVal);
-//       const bDate = new Date(bVal);
-//       if (!isNaN(aDate) && !isNaN(bDate)) {
-//         return sortOrder === "asc"
-//           ? aDate.getTime() - bDate.getTime()
-//           : bDate.getTime() - aDate.getTime();
-//       }
-
-//       return sortOrder === "asc"
-//         ? String(aVal).localeCompare(String(bVal))
-//         : String(bVal).localeCompare(String(aVal));
-//     });
-
-//     return data;
-//   }, [
-//     rawData,
-//     queryFilters,
-//     filters,
-//     sortField,
-//     sortOrder,
-//     text,
-//     config.tabConfig,
-//   ]);
-
-//   const visibleData = processed.slice(0, visibleCount);
-
-//   const loadMore = useCallback(() => {
-//     setVisibleCount((v) => v + (config.pageSize || 20));
-//   }, [config.pageSize]);
-
-//   return {
-//     config,
-//     query,
-//     setQuery,
-//     sortField,
-//     setSortField,
-//     sortOrder,
-//     setSortOrder,
-//     statusTab,
-//     setStatusTab,
-//     filters,
-//     setFilters,
-//     view,
-//     setView,
-//     data: visibleData,
-//     total: processed.length,
-//     hasMore: visibleCount < processed.length,
-//     loadMore,
-//   };
-// }
