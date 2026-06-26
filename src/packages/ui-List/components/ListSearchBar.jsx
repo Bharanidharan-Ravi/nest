@@ -12,7 +12,6 @@ export function ListSearchBar() {
   const { filters, text } = parseQuery(query);
   const [inputValue, setInputValue] = useState(text || "");
 
-
   // ── Tab chip (is:open / is:closed) ──────────────────────────────────────
   const tabChip = filters.is
     ? { key: "is", value: filters.is, display: filters.is }
@@ -28,9 +27,9 @@ export function ListSearchBar() {
       const values = Array.isArray(value)
         ? value
         : String(value)
-          .split(",")
-          .map((v) => v.trim())
-          .filter(Boolean);
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean);
 
       return values
         .filter((v) => v !== "")
@@ -39,7 +38,12 @@ export function ListSearchBar() {
             (o) => String(o.value) === String(v),
           );
           const displayLabel = option ? option.label : v;
-          return { key, value: v, display: `${displayKey}: ${displayLabel}`, persistOnClear: filterDef?.persistOnClear || false };
+          return {
+            key,
+            value: v,
+            display: `${displayKey}: ${displayLabel}`,
+            persistOnClear: filterDef?.persistOnClear || false,
+          };
         });
     });
 
@@ -59,16 +63,16 @@ export function ListSearchBar() {
         const vals = Array.isArray(v)
           ? v
           : String(v)
-            .split(",")
-            .map((x) => x.trim())
-            .filter(Boolean);
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean);
         const remaining = vals.filter((x) => x !== chipValue);
         return remaining.length > 0 ? `${k}:${remaining.join(",")}` : null;
       })
       .filter(Boolean);
 
     setQuery([...rebuilt, curText].filter(Boolean).join(" ").trim());
-    setInputValue(curText); 
+    setInputValue(curText);
   };
   // ── Free text enter ───────────────────────────────────────────────────────
   const handleInputChange = (e) => {
@@ -94,7 +98,7 @@ export function ListSearchBar() {
     const { filters: cur } = parseQuery(query);
     const newQueryParts = [];
     Object.entries(cur).forEach(([key, value]) => {
-      const filterDef = config.filters?.find(f => f.key === key);
+      const filterDef = config.filters?.find((f) => f.key === key);
       if (filterDef?.persistOnClear) {
         newQueryParts.push(`${key}:${value}`);
       }
@@ -114,9 +118,18 @@ export function ListSearchBar() {
       {tabChip && (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-200 capitalize">
           {tabChip.display}
+
+          <button
+            className="ml-1 text-gray-500 hover:text-red-500"
+            onClick={(e) => {
+              e.stopPropagation();
+              removeChip("is", tabChip.value);
+            }}
+          >
+            ✕
+          </button>
         </span>
       )}
-
       {/* Filter chips — removable */}
       {filterChips.map((chip, i) => (
         <span

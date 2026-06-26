@@ -2,14 +2,32 @@ import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
+const isBypassStatus = (data) => {
+  const statusId = data?.Status?.value?.id;
+  const statusName = data?.Status?.value?.name;
+  return (
+    statusId === 14 || // Hold
+    statusId === 17 || // InActive
+    statusId === 18 ||
+    statusId === 10 ||
+    statusId === 1 ||
+    statusName === "Hold" ||
+    statusName === "InActive" ||
+    statusName === "InQueue"
+  );
+};
+
 const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
   if (!context?.isEdit) {
     // Not in edit mode ? skip validation
     return true;
   }
- if(formData?.Status?.value?.name==="InQueue"){
-  return true
- }
+  
+  // 🔥 Skip hours validation if the ticket is set to Hold, InActive, or InQueue
+  if (isBypassStatus(formData)) {
+    return true;
+  }
+
   // In edit mode ? check if all fields are empty
   const allEmpty =
     !formData?.Client &&
@@ -23,12 +41,14 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
 
   return true;
 };
+
 const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
   { label: "InActive", value: { id: 17, name: "InActive" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
   { label: "InQueue", value: { id: 18, name: "InQueue" } },
   { label: "Need Confirmation", value: { id: 10, name: "Need Confirmation" } },
+  // { label: "Private", value: { id: 19, name: "Private" } },
 ];
 
 export const TicketFieldConfig = () => [
@@ -440,46 +460,14 @@ export const TicketFieldConfig = () => [
       const func = formData.Functional;
       const hasAnyValue = client || web || tech || func;
       if (!hasAnyValue) {
-        return ""; // or null depending on your system
+        return "";
       }
       return sumHHMM(client, web, tech, func);
     },
-    // effectResolver: (formData) => {
-    //   return sumHHMM(formData.Client, formData.Development, formData.Testing);
-    // },
     visibleWhen: (formData, context) => {
-      if (!context.isViewer) {
-        return true;
-      }
-      if (context.isViewer) {
-        return false;
-      }
-      return true;
+      return !context.isViewer;
     },
-    // customValidator: (value, formData) => {
-    //   const hasSubFields = formData?.Client || formData?.Development || formData?.Testing
-    //   if (!hasSubFields) {
-    //     if (!value) return "Estimated hours is required"
-    //     return true
-    //   }
-
-    //   const expected = sumHHMM(
-    //     formData.Client,
-    //     formData.Development,
-    //     formData.Testing
-    //   )
-    //   if (value !== expected) {
-    //     return `Estimated hours is auto-calculated(${expected})from Client,Dev &Testing-manual edit not allowed.`
-    //   }
-    //   return true
-    // }
   },
-  //   {
-  //   name: "showClient",
-  //   label: "Client",
-  //   type: "toggleButton",
-  //   colSpan: 1,
-  // },
 
   {
     label: "Client Hours",
@@ -491,8 +479,7 @@ export const TicketFieldConfig = () => [
     apiKey: "Client",
     colSpan: 2,
     disableWhen: (context) => {
-      // Disable if entityData.webTime exists AND user is NOT admin
-      const hasWebTime = context?.entityData?.clientTime!= null; // safer check
+      const hasWebTime = context?.entityData?.clientTime != null;
       const notAdmin = !context?.isAdmin;
       return hasWebTime && notAdmin;
     },
@@ -501,7 +488,6 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.clientTime : "",
     visibleWhen: (formData, context) => {
       if (context.isViewer) return false;
-      if (context.isEdit) return true;
       return true;
     },
     customValidator: makeAtLeastOneValidator("Client"),
@@ -516,26 +502,19 @@ export const TicketFieldConfig = () => [
     apiKey: "Functional",
     colSpan: 2,
     disableWhen: (context) => {
-      // Disable if entityData.webTime exists AND user is NOT admin
-      const hasWebTime = context?.entityData?.functionalTime != null; // safer check
+      const hasWebTime = context?.entityData?.functionalTime != null;
       const notAdmin = !context?.isAdmin;
       return hasWebTime && notAdmin;
-    },  forceSubmit: true,
+    },
+    forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.functionalTime : "",
     visibleWhen: (formData, context) => {
       if (context.isViewer) return false;
-      if (context.isEdit) return true;
       return true;
     },
     customValidator: makeAtLeastOneValidator("Functional"),
   },
-  // {
-  //   name: "showDevelopment",
-  //   label: "Dev",
-  //   type: "toggleButton",
-  //   colSpan: 1,
-  // },
   {
     label: "Web Hours",
     name: "Web",
@@ -546,16 +525,15 @@ export const TicketFieldConfig = () => [
     apiKey: "Web",
     colSpan: 2,
     disableWhen: (context) => {
-      // Disable if entityData.webTime exists AND user is NOT admin
-      const hasWebTime = context?.entityData?. webTime != null; // safer check
+      const hasWebTime = context?.entityData?.webTime != null;
       const notAdmin = !context?.isAdmin;
       return hasWebTime && notAdmin;
-    },  forceSubmit: true,
+    },
+    forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.webTime : "",
     visibleWhen: (formData, context) => {
       if (context.isViewer) return false;
-      if (context.isEdit) return true;
       return true;
     },
     customValidator: makeAtLeastOneValidator("Web"),
@@ -569,22 +547,21 @@ export const TicketFieldConfig = () => [
     dataType: "string",
     apiKey: "Technical",
     colSpan: 2,
-    
     disableWhen: (context) => {
-      // Disable if entityData.webTime exists AND user is NOT admin
-      const hasWebTime = context?.entityData?.technicalTime != null; // safer check
+      const hasWebTime = context?.entityData?.technicalTime != null;
       const notAdmin = !context?.isAdmin;
       return hasWebTime && notAdmin;
-    },  forceSubmit: true,
+    },
+    forceSubmit: true,
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.technicalTime : "",
     visibleWhen: (formData, context) => {
       if (context.isViewer) return false;
-      if (context.isEdit) return true;
       return true;
     },
     customValidator: makeAtLeastOneValidator("Technical"),
   },
+
 
   {
     name: "TicketOverallPercentage",

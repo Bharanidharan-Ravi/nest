@@ -12,19 +12,19 @@ export const BannerFieldConfig=()=>[
         initValueResolver: ({context}) =>
           context.isEdit ? context.entityData?.MessageText ?? "" : "",
       },
-      {
-        label: "MessageType",
-        name: "MessageType",
-        type: "select",
-        ui: "mui",
+      // {
+      //   label: "MessageType",
+      //   name: "MessageType",
+      //   type: "select",
+      //   ui: "mui",
     
-        required: false,
-        dataType: "string",
-        apiKey: "MessageTypeId",
+      //   required: false,
+      //   dataType: "string",
+      //   apiKey: "MessageTypeId",
        
-        initValueResolver: ({context}) =>
-          context.isEdit ? context.entityData?.MessageTypeId ?? "" : "",
-      },
+      //   initValueResolver: ({context}) =>
+      //     context.isEdit ? context.entityData?.MessageTypeId ?? "" : "",
+      // },
 
       {
         label: "StartDate",

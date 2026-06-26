@@ -161,7 +161,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return true;
     },
   },
-  {
+ {
     name: "hours",
     apiKey: "Hours",
     type: "time",
@@ -193,13 +193,48 @@ export const ThreadFieldConfig = (ticketId) => [
       return Boolean(formData?.fromTime && formData?.toTime);
     },
     forceSubmit: (context) => context.isEdit !== true,
+    
+    // 🔥 UPDATED: Rejects 0.00 / 00:00 and enforces a minimum threshold of 5 minutes (00:05)
     customValidator: (value, formData, context) => {
       if (context.isViewer || isTimeLocked(context)) return true;
+
       const description = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
       const hasDescription = !!description;
-      const hasTime = !!value || (!!formData.fromTime && !!formData.toTime);
-      if (hasDescription && !hasTime) {
-        return "Hours are mandatory when description is entered.";
+
+      // Safe internal utility to parse HH:MM or decimal formatting into absolute minutes
+      const getMinutes = (timeVal) => {
+        if (!timeVal) return 0;
+        const str = String(timeVal).trim();
+        
+        if (str.includes(":")) {
+          const [h, m] = str.split(":").map(Number);
+          return (Number.isNaN(h) ? 0 : h * 60) + (Number.isNaN(m) ? 0 : m);
+        }
+        
+        const parsedFloat = parseFloat(str);
+        return Number.isNaN(parsedFloat) ? 0 : Math.round(parsedFloat * 60);
+      };
+
+      const manualMinutes = getMinutes(value);
+
+      // Auto-calculate range duration if From/To times are present
+      let autoMinutes = 0;
+      if (formData.fromTime && formData.toTime) {
+        autoMinutes = getMinutes(formData.toTime) - getMinutes(formData.fromTime);
+      }
+
+      // Determine actual logged time
+      const totalMinutes = Math.max(manualMinutes, autoMinutes);
+      const hasValidTime = totalMinutes >= 5;
+
+      // 1. Mandatory description enforcement with sub-5 minute check (blocks 0.00, 00:00, 00:03, etc.)
+      if (hasDescription && !hasValidTime) {
+        return "Minimum 00:05 (5 minutes) total hours is mandatory.";
+      }
+
+      // 2. Prevent entering a non-zero value below 5 minutes even without a description (e.g. 00:02)
+      if (!hasDescription && value && manualMinutes > 0 && manualMinutes < 5) {
+        return "Logged time must be at least 00:05 (5 minutes).";
       }
 
       return true;

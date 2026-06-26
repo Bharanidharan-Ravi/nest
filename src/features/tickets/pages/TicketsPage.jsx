@@ -228,7 +228,7 @@
 // //anbu
 
 import { useParams } from "react-router-dom";
-import React from "react";
+import React, { useMemo } from "react";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import "../css/ViewTickets.css";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
@@ -236,7 +236,6 @@ import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import TicketListCard from "../component/TicketListCard";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import {
   useEmployeeOptions,
@@ -249,20 +248,23 @@ import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurre
 
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
-  // const { data: Master } = useMasterData();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
   const { isViewer } = useCurrentUser();
+
   const { data } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
   });
+
   const projectFilterOptions = useProjectOptions(true);
-  const LabelFilterOptions = useLabelOptions(true);
+  const labelFilterOptions = useLabelOptions(true);
   const employeeFilterOptions = useEmployeeOptions(true);
   const repoFilterOptions = useRepoOptions(true);
   const teamFilterOptions = useTeamOptions(true);
+
   const currentUser = readUserFromSession();
+  const currentUserId = currentUser?.id ?? currentUser?.userId ?? currentUser?.UserId ?? null;
 
   const editRouteKey = projId
     ? ROUTE_KEYS.PROJ_TICKET_EDIT
@@ -274,13 +276,30 @@ export default function TicketsPage() {
       ? ROUTE_KEYS.PROJ_TICKET_CREATE
       : ROUTE_KEYS.TICKET_CREATE;
 
-  const TicketList = data?.map(normalizeTicket) || [];
+  const isAllowedToView = (item, userId) => {
+    if (Number(item?.statusId) !== 19) return true;
+    if (!userId) return false;
 
-  // const focusedIndex = useTicketKeyboardNavigation(
-  //   TicketList,
-  //   (item) => navigate(`${location.pathname}/${item.id}`),
-  //   (item) => goTo(editRouteKey, { ticketId: item.id, repoId, projId }),
-  // );
+    const normalizedUserId = String(userId).toLowerCase().trim();
+
+    const assignedTo = String(item?.assignedTo ?? "").toLowerCase().trim();
+    if (assignedTo && assignedTo === normalizedUserId) return true;
+
+    if (Array.isArray(item?.multiAssignees)) {
+      return item.multiAssignees.some((assignee) => {
+        const assigneeId = String(assignee?.Assignee_Id ?? "").toLowerCase().trim();
+        const assigneeName = String(assignee?.Assignee_Name ?? "").toLowerCase().trim();
+        return assigneeId === normalizedUserId || assigneeName === normalizedUserId;
+      });
+    }
+
+    return false;
+  };
+
+  const ticketList = useMemo(() => {
+    const rawList = (data ?? []).map(normalizeTicket);
+    return rawList.filter((item) => isAllowedToView(item, currentUserId));
+  }, [data, currentUserId]);
 
   const listConfigWithNav = {
     ...TicketListConfig(isViewer),
@@ -289,22 +308,22 @@ export default function TicketsPage() {
     filters: [
       ...(!repoId
         ? [
-          {
-            key: "repoId",
-            view: "Repo",
-            allowMultiple: true,
-            showCounts: true,
-            allowedRoles: [1, 2],
-            options: repoFilterOptions,
-          },
-        ]
+            {
+              key: "repoId",
+              view: "Repo",
+              allowMultiple: true,
+              showCounts: true,
+              allowedRoles: [1, 2],
+              options: repoFilterOptions,
+            },
+          ]
         : []),
 
       {
         key: "assginedTo",
         view: "owner",
         allowedRoles: [1, 2],
-        options: [...useEmployeeOptions(true, "Owner"),{label:"No Owner",value:"__no_owner__"},],
+        options: [...useEmployeeOptions(true, "Owner"), { label: "No Owner", value: "__no_owner__" }],
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
@@ -315,61 +334,54 @@ export default function TicketsPage() {
           ) {
             return true;
           }
-        
+
           const selectedValues = Array.isArray(selectedValue)
             ? selectedValue
-            : String(selectedValue).split(",").map(v => v.trim());
-        
+            : String(selectedValue).split(",").map((v) => v.trim());
+
           return selectedValues.some((val) => {
-            const assignedTo = item.assignedTo
-              ? String(item.assignedTo).toLowerCase()
-              : "";
-        
+            const assignedTo = item.assignedTo ? String(item.assignedTo).toLowerCase() : "";
             const safeVal = String(val).toLowerCase();
-        
-            // ✅ special case: "no owner"
+
             if (safeVal === "__no_owner__") {
               return !item.assignedTo || item.assignedTo === "";
             }
-        
-            // normal match
+
             return assignedTo === safeVal;
           });
-        }
+        },
       },
+
       {
         key: "multiAssignees",
         view: "Assignee",
         allowedRoles: [1, 2],
-        options: useEmployeeOptions(true, "Assignee"),
+        options: employeeFilterOptions,
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValues) => {
           if (!selectedValues || selectedValues.length === 0) return true;
-          // normalize into array
+
           const values = Array.isArray(selectedValues)
             ? selectedValues.map((v) => String(v).toLowerCase())
             : [String(selectedValues).toLowerCase()];
+
           if (Array.isArray(item.multiAssignees)) {
             return item.multiAssignees.some((assignee) => {
               if (assignee.Assignee_Type === "Main Assignee") return false;
-        
-              const assigneeName = String(
-                assignee.Assignee_Name || "",
-              ).toLowerCase();
-        
-              const assigneeId = String(
-                assignee.Assignee_Id || "",
-              ).toLowerCase();
-        
+
+              const assigneeName = String(assignee.Assignee_Name || "").toLowerCase();
+              const assigneeId = String(assignee.Assignee_Id || "").toLowerCase();
+
               return values.includes(assigneeName) || values.includes(assigneeId);
             });
           }
-        
+
           return false;
         },
       },
+
       {
         key: "customBoolean",
         view: "Special Flags",
@@ -393,36 +405,46 @@ export default function TicketsPage() {
                 .split(",")
                 .map((v) => v.trim())
                 .filter(Boolean);
-      
-          const flagFields = ["isCloseRequested", "priorityRequest", "funcResponse", "webResponse", "technicalResponse", "adminResponse"];
-      
+
+          const flagFields = [
+            "isCloseRequested",
+            "priorityRequest",
+            "funcResponse",
+            "webResponse",
+            "technicalResponse",
+            "adminResponse",
+          ];
+
           if (values.includes("allFlags")) {
             return flagFields.some((field) => item[field] === true);
           }
-      
+
           if (values.length === 0) return true;
-      
+
           return values.some((field) => item[field] === true);
         },
       },
+
       {
-        key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        key: "project",
         view: "Project",
         allowedRoles: [1, 2, 3],
         allowMultiple: true,
         showCounts: true,
         options: projectFilterOptions,
       },
+
       {
-        key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        key: "label",
         view: "Label",
         allowedRoles: [1, 2, 3],
         showCounts: true,
-        options: LabelFilterOptions,
+        options: labelFilterOptions,
         filterType: "array",
         allowMultiple: true,
-        filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
+        filterKey: "LABEL_ID",
       },
+
       {
         key: "teamId",
         view: "Team",
@@ -433,7 +455,7 @@ export default function TicketsPage() {
         allowMultiple: true,
         customFilter: (item, value) => {
           if (!value || value === "") return true;
-          // Check if ANY assignee on this ticket belongs to the selected team
+
           return item.multiAssignees?.some(
             (a) =>
               String(a.Assignee_TeamId) === String(value) &&
@@ -442,16 +464,8 @@ export default function TicketsPage() {
         },
       },
     ],
-    // cardRenderer: (item, controls) => (
-    //   <TicketListCard
-    //     item={item}
-    //     controls={controls}
-    //     // focused={index === focusedIndex}
-    //   />
-    // ),
     onItemClick: (item) => {
-      const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
-      goTo(createRouteKey, { ticketId: item.id });
+      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.id });
     },
     onEditClick: (item) => {
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });
@@ -460,10 +474,6 @@ export default function TicketsPage() {
 
   return (
     <>
-      {/* <h3>{isRepoScoped ? `Tickets for Repo ${repoId}` : "All Tickets"}</h3> */}
-
-      {/* 🔥 Create Button */}
-      {/* <button onClick={handleCreate}>Create Ticket</button> */}
       {!repoId && !projId && (
         <div className="flex justify-between items-center mb-4 flex-none px-2">
           <h2 className="text-2xl font-bold text-gray-800">Tickets</h2>
@@ -477,13 +487,15 @@ export default function TicketsPage() {
         </div>
       )}
 
-      {/* <div className="tickets-container container"> */}
       <div className="w-full pb-10">
-        <ListProvider config={listConfigWithNav} data={TicketList} userRole={currentUser?.role}>
+        <ListProvider
+          config={listConfigWithNav}
+          data={ticketList}
+          userRole={currentUser?.role}
+        >
           <ListLayout />
         </ListProvider>
       </div>
-      {/* </div> */}
     </>
   );
 }

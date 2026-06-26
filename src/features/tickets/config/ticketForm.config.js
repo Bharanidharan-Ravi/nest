@@ -14,63 +14,65 @@ export const TicketFormConfig = {
 
   fields: TicketFieldConfig(),
   actions: ({ formData, context }) => [
+    
     {
+   
       label: context?.isEdit ? "Update Ticket" : "Create Ticket",
       type: "button",
       onClick: ({ submitForm, context }) => {
         const isViewer = context?.isViewer;
         const openDialog = context?.openDialog;
-
+        
         // 1. Get the requested status (Default to 1: Active)
         const requestedStatusId = formData?.Status?.value?.id || 1;
-
-        // 2. Identify if the requested status REQUIRES all fields
+        console.log("requestedStatusId :", requestedStatusId);
+        
+        // 2. Identify if the requested status REQUIRES strict validation
         // 1 = Active, 10 = Need Confirmation
+        // (14 = Hold, 17 = InActive, 18 = InQueue bypass this)
         const requiresStrictValidation = [1, 10].includes(requestedStatusId);
-
-        // 3. Check fields
+        
+        // 3. Check for fields
         const hasHours = !!(
           formData?.Client ||
           formData?.Web ||
           formData?.Technical ||
           formData?.Functional
         );
-        const hasDueDate = !!formData?.dueDate;
-        const hasAssignee = !!formData?.assignedTo?.value?.id;
+        const hasDueDate = !!formData?.dueDate; 
+        const hasAssignee = !!formData?.assignedTo?.value?.id; 
         const hasResources = (formData?.assignees?.length ?? 0) > 0;
         const hasLabel = (formData?.label?.length ?? 0) > 0;
 
-        // Build array of what is missing
+        // 4. Build array of what is missing
         const missingFields = [
           !hasHours && "Hours (Client/Web/Technical/Functional)",
           !hasDueDate && "Due Date",
           !hasAssignee && "Assigned To",
           !hasResources && "Assignees/Resources",
-          !hasLabel && "Label",
+          !hasLabel && "Label"
         ].filter(Boolean);
 
-        // 4. Bypass logic for viewers or if everything is perfectly filled
-        if (isViewer || missingFields.length === 0) {
-          submitForm({ Status: requestedStatusId });
-          return;
-        }
-
-        // 5. If they want Active/Confirmation but are missing data -> Intercept
-        if (requiresStrictValidation && missingFields.length > 0) {
-          openDialog({
-            variant: "warning",
-            title: "Incomplete Ticket",
-            description: `To set this ticket to 'Active' or 'Client Confirmation', you need:\n● ${missingFields.join("\n● ")}\n\nDo you want to put this in the Queue for now and fill details later?`,
-            confirmText: "Put in Queue",
-            cancelText: "I'll fill it now",
-            onConfirm: () => submitForm({ Status: 18 }), // 18 = In Queue
-            onCancel: () => {}, // Let them go back to the form
+        // 5. If Viewer OR Status does not require all fields OR everything is filled -> Submit safely!
+        if (isViewer || !requiresStrictValidation || missingFields.length === 0) {
+          submitForm({
+            Status: requestedStatusId,
           });
           return;
         }
 
-        // 6. If they are intentionally saving as Hold (14) or InQueue (18) and missing fields, let it pass
-        submitForm({ Status: requestedStatusId });
+        // 6. If they selected Active/Client Confirmation but missed fields -> Show Dialog
+        openDialog({
+          variant: "warning",
+          title: "Some Data is Missing",
+          description: `To set this ticket to 'Active' or 'Need Confirmation', the following fields are required:\n● ${missingFields.join("\n● ")}\n\nYou can put this ticket in 'In Queue' for now and fill in the details later, or cancel to complete them now.`,
+          confirmText: "Queue It (Save)",
+          cancelText: "Fill Missing Data",
+          onConfirm: () =>
+            submitForm({ Status: 18 }), // Force to InQueue
+          onCancel: () => { },
+        });
+
       },
     },
   ],

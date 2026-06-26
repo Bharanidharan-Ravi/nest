@@ -38,6 +38,12 @@ import { useMemo } from "react";
 import { useGetStaleTicketData } from "./hook/GetStaleTickets.Api";
 import { FiClock, FiFolder } from "react-icons/fi";
 import { Tooltip } from "@mui/material";
+import { RefreshCw } from "lucide-react";
+import { UserPlus } from "lucide-react";
+import { Bell } from "lucide-react";
+import { Trophy } from "lucide-react";
+import { PartyPopper } from "lucide-react";
+import { Megaphone } from "lucide-react";
 
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
@@ -184,22 +190,50 @@ const Header = ({ toggleMobileMenu }) => {
   }, [bannerListWrapper]);
   // Add this function inside your component
   const getBannerIcon = (iconClass, colorCode) => {
-    switch (iconClass) {
-      case "ti-alert":
-        return <AlertTriangle size={18} color={colorCode} />;
-      case "ti-check":
-        return <CheckCircle size={18} color={colorCode} />;
-      case "ti-info-alt":
-      case "ti-info-circle":
-        return <Info size={18} color={colorCode} />;
-      case "ti-exclamation-circle":
-        return <AlertCircle size={18} color={colorCode} />;
-      case "ti-times":
-        return <XCircle size={18} color={colorCode} />;
-      default:
-        return <Info size={18} color={colorCode} />;
-    }
+  const props = {
+    size: 18,
+    color: colorCode,
+    strokeWidth: 2,
   };
+
+  switch (iconClass) {
+    case "ti-reload":
+      return <RefreshCw {...props} />;
+
+    case "ti-alert":
+      return <AlertTriangle {...props} />;
+
+    case "ti-user":
+      return <UserPlus {...props} />;
+
+    case "ti-check":
+      return <CheckCircle {...props} />;
+
+    case "ti-info-alt":
+      return <Bell {...props} />;
+
+    case "ti-info-circle":
+      return <Info {...props} />;
+
+    case "ti-trophy":
+      return <Trophy {...props} />;
+
+    case "ti-exclamation-circle":
+      return <AlertCircle {...props} />;
+
+    case "ti-megaphone":
+      return <Megaphone {...props} />;
+
+    case "ti-star":
+      return <PartyPopper {...props} />;
+
+    case "ti-times":
+      return <XCircle {...props} />;
+
+    default:
+      return <Info {...props} />;
+  }
+};
   const now = useMemo(() => dayjs(), []);
 
   const filteredBanners = useMemo(() => {

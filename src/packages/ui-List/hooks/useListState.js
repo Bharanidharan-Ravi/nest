@@ -71,7 +71,7 @@ export function useListState(config, rawData = [], userRole = null) {
     const defaultTab =
       config.enableTabs !== false ? config.tabConfig?.[0]?.key : null;
 
-    if (!isUrlSyncEnabled) return buildDefaultString(defaultTab);
+    if (!isUrlSyncEnabled) return buildDefaultString(null);
 
     // 1. Check URL exact match
     if (searchParams.has(`${prefix}q`)) return searchParams.get(`${prefix}q`);
@@ -134,7 +134,8 @@ export function useListState(config, rawData = [], userRole = null) {
   }, [parsed.sanitizedQuery, query]);
 
   // Derive statusTab directly from the query. No more 'useState' or 'useEffect' loops!
-  const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
+  // const statusTab = queryFilters.is || config.tabConfig?.[0]?.key;
+  const statusTab = queryFilters.is ?? null;
 
   const setStatusTab = useCallback(
     (tabKey) => {
