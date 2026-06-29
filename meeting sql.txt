@@ -1,0 +1,670 @@
+
+CREATE TABLE [dbo].[meeting_attendance](
+	[attendance_id] [int] IDENTITY(1,1) NOT NULL,
+	[meeting_id] [uniqueidentifier] NOT NULL,
+	[participant_type] [varchar](50) NULL,
+	[participant_id] [uniqueidentifier] NOT NULL,
+	[participant_role] [varchar](50) NULL,
+	[invite_status] [varchar](30) NULL,
+	[attendance_status] [varchar](30) NULL,
+	[response_date] [datetime2](7) NULL,
+	[remark] [varchar](500) NULL,
+	[created_by] [uniqueidentifier] NULL,
+	[created_at] [datetime2](7) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[attendance_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[meeting_attendance] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
+
+ALTER TABLE [dbo].[meeting_attendance]  WITH CHECK ADD  CONSTRAINT [FK_meeting_attendance_MeetingMaster] FOREIGN KEY([meeting_id])
+REFERENCES [dbo].[MeetingMaster] ([meeting_id])
+ON DELETE CASCADE
+GO
+
+ALTER TABLE [dbo].[meeting_attendance] CHECK CONSTRAINT [FK_meeting_attendance_MeetingMaster]
+GO
+
+
+-----------------------------------------------------------------------------------------------------
+
+
+CREATE TABLE [dbo].[MeetingCompletion](
+	[completion_id] [uniqueidentifier] NOT NULL,
+	[meeting_id] [uniqueidentifier] NOT NULL,
+	[actual_start_time] [datetime2](7) NULL,
+	[actual_end_time] [datetime2](7) NULL,
+	[duration_minutes] [int] NULL,
+	[meeting_summary] [nvarchar](max) NULL,
+	[completedby] [uniqueidentifier] NULL,
+	[completedat] [datetime2](7) NOT NULL,
+	[createdAt] [datetime2](7) NOT NULL,
+	[updatedAt] [datetime2](7) NOT NULL,
+	[occurrence_date] [date] NOT NULL,
+ CONSTRAINT [PK_MeetingCompletion] PRIMARY KEY CLUSTERED 
+(
+	[completion_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] ADD  DEFAULT (newid()) FOR [completion_id]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] ADD  CONSTRAINT [DF_MeetingCompletion_CompletedAt]  DEFAULT ([dbo].[GET_IST_DATE]()) FOR [completedat]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] ADD  CONSTRAINT [DF_MeetingCompletion_CreatedAt]  DEFAULT ([dbo].[GET_IST_DATE]()) FOR [createdAt]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] ADD  CONSTRAINT [DF_MeetingCompletion_UpdatedAt]  DEFAULT ([dbo].[GET_IST_DATE]()) FOR [updatedAt]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] ADD  DEFAULT (CONVERT([date],[dbo].[GET_IST_DATE]())) FOR [occurrence_date]
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion]  WITH CHECK ADD  CONSTRAINT [FK_MeetingCompletion_Meeting] FOREIGN KEY([meeting_id])
+REFERENCES [dbo].[MeetingMaster] ([meeting_id])
+ON DELETE CASCADE
+GO
+
+ALTER TABLE [dbo].[MeetingCompletion] CHECK CONSTRAINT [FK_MeetingCompletion_Meeting]
+GO
+
+-----------------------------------------------------------------------------------------------------------------------
+
+
+CREATE TABLE [dbo].[MeetingMaster](
+	[meeting_id] [uniqueidentifier] NOT NULL,
+	[host_type] [varchar](50) NOT NULL,
+	[host_id] [uniqueidentifier] NOT NULL,
+	[title] [varchar](255) NOT NULL,
+	[meet_method] [varchar](50) NULL,
+	[meet_link] [varchar](500) NULL,
+	[meet_password] [varchar](100) NULL,
+	[ticket_id] [uniqueidentifier] NULL,
+	[project_id] [uniqueidentifier] NULL,
+	[valid_from_date] [date] NULL,
+	[valid_to_date] [date] NULL,
+	[start_time] [varchar](20) NULL,
+	[end_time] [varchar](20) NULL,
+	[time_zone_id] [varchar](100) NULL,
+	[days_of_week] [char](7) NULL,
+	[recurrence_type] [varchar](50) NULL,
+	[slot_duration] [nvarchar](20) NULL,
+	[booking_type] [varchar](50) NULL,
+	[status] [varchar](30) NULL,
+	[meeting_summary] [varchar](max) NULL,
+	[created_by] [uniqueidentifier] NULL,
+	[updated_by] [uniqueidentifier] NULL,
+	[created_at] [datetime2](7) NULL,
+	[updated_at] [datetime2](7) NULL,
+	[meeting_date] [date] NULL,
+	[ThreadId] [bigint] NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[meeting_id] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[MeetingMaster] ADD  DEFAULT (getdate()) FOR [created_at]
+GO
+
+ALTER TABLE [dbo].[MeetingMaster] ADD  DEFAULT (getdate()) FOR [updated_at]
+GO
+
+---------------------------------------------------------------------------------------------------
+
+
+CREATE TABLE [dbo].[ISSUETHREADS](
+	[ThreadId] [bigint] NOT NULL,
+	[Issue_Id] [uniqueidentifier] NOT NULL,
+	[IssueTitle] [nvarchar](500) NULL,
+	[CommentText] [nvarchar](max) NULL,
+	[CreatedBy] [uniqueidentifier] NOT NULL,
+	[CreatedAt] [datetime2](7) NULL,
+	[UpdatedBy] [uniqueidentifier] NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+	[Ref_Id] [nvarchar](100) NULL,
+	[From_Time] [datetime2](7) NULL,
+	[To_Time] [datetime2](7) NULL,
+	[Hours] [varchar](5) NULL,
+	[DepartmentId] [int] NULL,
+	[HtmlDesc] [nvarchar](max) NULL,
+	[RepoKey] [nvarchar](100) NULL,
+	[HandsOffId] [int] NULL,
+	[FailedHandoffId] [int] NULL,
+	[WorkStreamId] [uniqueidentifier] NULL,
+	[CompletionPct] [decimal](5, 2) NULL,
+	[toClient] [bit] NOT NULL,
+	[MeetingId] [uniqueidentifier] NULL,
+	[ThreadType] [varchar](30) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[ISSUETHREADS] ADD  DEFAULT (getdate()) FOR [CreatedAt]
+GO
+
+ALTER TABLE [dbo].[ISSUETHREADS] ADD  DEFAULT (getdate()) FOR [UpdatedAt]
+GO
+
+ALTER TABLE [dbo].[ISSUETHREADS] ADD  DEFAULT ((0)) FOR [toClient]
+GO
+
+ALTER TABLE [dbo].[ISSUETHREADS] ADD  CONSTRAINT [DF_IssueThreads_ThreadType]  DEFAULT ('Comment') FOR [ThreadType]
+GO
+
+---------------------------------------------------------------------------------------------------
+
+ALTER PROCEDURE [dbo].[GetIssuesByID]
+(
+    @DbName NVARCHAR(255),
+    @IssueId UNIQUEIDENTIFIER = NULL,
+    @ProjectId UNIQUEIDENTIFIER = NULL,
+    @RepoId UNIQUEIDENTIFIER = NULL,
+    @EmployeeId UNIQUEIDENTIFIER = NULL,
+	@Role INT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @sql NVARCHAR(MAX);
+
+    SET @sql = '
+    SELECT
+	ISNULL(TC.ThreadCount, 0) AS ThreadCount,
+          T0.ProjKey,
+          T0.Issue_Id,
+          T0.Issue_Code,
+          T0.Title,
+          T0.Description,
+          T0.Status AS StatusId,
+          SM.Status_Name AS Status,
+          T0.CreatedBy,
+          T0.CompletionPct,
+          -- ?? NEW: Fetching the latest active progress and summary
+          ISNULL(LatestProgress.Percentage, 0) AS OverallPercentage,
+          LatestProgress.StatusSummary AS CurrentStatusSummary,
+
+          -- CreatedBy Team Info
+          EM.team AS CreatedBy_Team,
+          T2C.teamid AS CreatedBy_TeamId,
+          T2C.TeamName AS CreatedBy_TeamName,
+
+          -- Main Assignee Team Info  
+          T1A.team AS Assignee_Team,
+          T2A.teamid AS Assignee_TeamId,
+          T2A.TeamName AS Assignee_TeamName,
+
+          -- Issuer Name Logic
+          CASE
+              WHEN @EmployeeId IS NOT NULL THEN
+                  CASE
+                      WHEN EXISTS (
+                          SELECT 1 
+                          FROM WorkStreams WS
+                          WHERE WS.IssueId = T0.Issue_Id 
+                          AND WS.ResourceId = @EmployeeId
+						  AND (WS.StreamStatus IS NULL or WS.StreamStatus <> 17)
+                      ) THEN T3.EmployeeName
+                      WHEN T0.Assignee_Id = @EmployeeId THEN EM.EmployeeName
+                      ELSE EM.EmployeeName
+                  END
+              ELSE EM.EmployeeName
+          END AS Issuer_Name,
+          T0.CreatedAt,
+          T0.Project_Id,
+          T0.Assignee_Id,
+          T3.EmployeeName AS Assignee_Name,
+		  EM.EmployeeName as TicketCreater,
+          T0.Due_Date,
+          T0.RepoId,
+          T0.RepoKey,
+          T0.Hours,
+		  T0.Web,
+		  T0.Functional,
+		  T0.Technical,
+          T0.Client,
+          T0.HtmlDesc,
+          T0.UpdatedBy,
+         
+
+          -- COMPLETE All Assignees JSON with FULL Team Info
+          (
+            SELECT
+                Emp.EmployeeID AS Assignee_Id,
+                Emp.EmployeeName AS Assignee_Name,
+                Emp.team AS Assignee_Team,
+                TM.TeamID AS Assignee_TeamId,
+                TM.TeamName AS Assignee_TeamName,
+                CR.RoleType AS Assignee_Type,
+                CR.StreamId,
+                CR.StreamStatus,
+                SM_WS.Status_Name AS StatusName,
+                CR.CompletionPct,
+                CR.TargetDate,
+                CR.ThreadId,
+                CR.ParentThreadId,
+                (
+                    SELECT
+                        WH.HandsOffId,
+                        WH.IssueId,
+                        WH.SourceStreamId,
+                        WH.TargetStreamId,
+                        WH.InitiatingThreadId,
+                        WH.Status,
+                        WH.CompletionPct,
+                        WH.ResolvedByHandOffId,
+                        WH.CreatedBy,
+                        WH.CreatedAt
+                    FROM WorkStreamHandOffs WH
+                    WHERE WH.IssueId = T0.Issue_Id AND WH.SourceStreamId = CR.StreamId
+                    FOR JSON PATH
+                ) AS HandOffData
+            FROM
+            (
+                -- Main Assignee
+                SELECT
+                    T0.Assignee_Id AS EmpId,
+                    ''Main Assignee'' AS RoleType,
+                    CAST(NULL AS UNIQUEIDENTIFIER) AS StreamId,
+                    CAST(NULL AS INT) AS StreamStatus,
+                    CAST(NULL AS DECIMAL(18,0)) AS CompletionPct,
+                    CAST(NULL AS DATETIME2(7)) AS TargetDate,
+                    CAST(NULL AS INT) AS ThreadId,
+                    CAST(NULL AS BIGINT) AS ParentThreadId
+                WHERE T0.Assignee_Id IS NOT NULL
+
+                UNION ALL
+
+                -- WorkStreams Assignees (ResourceId -> EmployeeMaster -> TEAMMASTER)
+                SELECT
+                    WS.ResourceId AS EmpId,
+                    WS.StreamName AS RoleType,
+                    WS.StreamId,
+                    WS.StreamStatus,
+                    WS.CompletionPct,
+                    WS.TargetDate,
+                    WS.ThreadId,
+                    WS.ParentThreadId
+                FROM WorkStreams WS
+                WHERE WS.IssueId = T0.Issue_Id
+                  AND WS.ResourceId IS NOT NULL
+                  AND (WS.StreamStatus IS NULL OR WS.StreamStatus <> 17)
+            ) CR
+            LEFT JOIN EmployeeMaster Emp
+                ON Emp.EmployeeID = CR.EmpId
+            LEFT JOIN TEAMMASTER TM
+                ON Emp.team = TM.TeamID
+            LEFT JOIN StatusMasters SM_WS
+                ON SM_WS.Status_Id = CR.StreamStatus
+            FOR JSON PATH, INCLUDE_NULL_VALUES
+         ) AS All_Assignees,
+
+          -- UpdatedAt Logic
+          CASE 
+              WHEN T5.LastUpdated IS NULL THEN T0.UpdatedAt
+               WHEN T0.UpdatedAt IS NOT NULL AND T5.LastUpdated IS NOT NULL THEN
+        CASE 
+            WHEN T0.UpdatedAt > T5.LastUpdated THEN T0.UpdatedAt
+            ELSE T5.LastUpdated
+        END
+              ELSE T5.LastUpdated
+          END AS UpdatedAt,
+
+          -- Labels
+          (
+              SELECT
+                  L.Id AS LABEL_ID,
+                  L.Title AS LABEL_TITLE,
+                  L.Color AS LABEL_COLOR
+              FROM ISSUE_LABELS IL
+              INNER JOIN LabelMaster L
+                  ON L.Id = IL.Label_Id
+              WHERE IL.Issue_Id = T0.Issue_Id
+              FOR JSON PATH
+          ) AS Labels_JSON,
+
+          -- Attachments
+          (
+              SELECT
+                  AM.AttachmentId,
+                  AM.FileName,
+                  AM.RelativePath
+              FROM ATTACHMENTMASTER AM
+              WHERE TRY_CAST(AM.ModuleId AS UNIQUEIDENTIFIER) = T0.Issue_Id
+              FOR JSON PATH
+          ) AS Attachment_JSON,
+
+          ROW_NUMBER() OVER (ORDER BY T0.CreatedAt DESC) AS RowNum,
+          T0.Priority,
+          T0.ReopenedBy,
+		  T0.PriorityRequest,
+		  T0.FuncResponse,
+		  T0.IsCloseRequested,
+		  T0.WebResponse,
+		  T0.TechnicalResponse,
+		  t5.commenttext,
+		  T0.AdminResponse,
+		 CASE 
+           WHEN T0.RaiseToClient = 0 THEN CAST(0 AS BIT)  
+        ELSE CAST(1 AS BIT)                           
+           END AS RaiseToClient
+    FROM ISSUEMASTER T0
+    --LEFT JOIN EmployeeMaster T1C ON T1C.EmployeeID = T0.CreatedBy
+    LEFT JOIN (
+    SELECT
+        Issue_Id,
+        COUNT(ThreadId) AS ThreadCount
+    FROM ISSUETHREADS
+	WHERE (@RepoId IS NULL) OR (@RepoId IS NOT NULL AND toClient = 1)
+    GROUP BY Issue_Id
+) TC ON TC.Issue_Id = T0.Issue_Id
+    LEFT JOIN EmployeeMaster T1A ON T1A.EmployeeID = T0.Assignee_Id
+    LEFT JOIN TEAMMASTER T2A ON T1A.Team = T2A.TeamID
+    LEFT JOIN EmployeeMaster T3 ON T3.EmployeeID = T0.Assignee_Id
+    LEFT JOIN EmployeeMaster EM ON EM.EmployeeID = T0.CreatedBy
+	  LEFT JOIN TEAMMASTER T2C ON EM.Team = T2C.TeamID
+    LEFT JOIN StatusMasters SM ON SM.Status_Id = T0.Status
+    LEFT JOIN (
+    SELECT Issue_Id,
+           UpdatedAt AS LastUpdated,
+           CommentText
+    FROM (
+        SELECT
+            Issue_Id,
+            UpdatedAt,
+            CommentText,
+            ROW_NUMBER() OVER (
+                PARTITION BY Issue_Id
+                ORDER BY UpdatedAt DESC
+            ) AS RN
+        FROM ISSUETHREADS
+    ) X
+    WHERE RN = 1
+) T5 ON T5.Issue_Id = T0.Issue_Id
+
+    -- ?? NEW: OUTER APPLY grabs the TOP 1 most recent active log per ticket!
+    OUTER APPLY (
+        SELECT TOP 1 Percentage, StatusSummary
+        FROM TicketProgressLogs TPL
+        WHERE TPL.Issue_Id = T0.Issue_Id 
+          AND TPL.IsActive = 1
+        ORDER BY TPL.CreatedAt DESC
+    ) LatestProgress
+
+    WHERE 1 = 1
+
+    ';
+
+    -- Filters
+    IF @IssueId IS NOT NULL
+        SET @sql += ' AND T0.Issue_Id = @IssueId';
+
+    IF @ProjectId IS NOT NULL
+        SET @sql += ' AND T0.Project_Id = @ProjectId';
+
+    IF @RepoId IS NOT NULL
+        SET @sql += ' AND T0.RepoId = @RepoId';
+
+    IF @EmployeeId IS NOT NULL
+    BEGIN
+        SET @sql += '
+        AND (
+            T0.CreatedBy = @EmployeeId 
+            OR T0.Assignee_Id = @EmployeeId 
+            OR EXISTS (
+                SELECT 1 
+                FROM WorkStreams WS 
+                WHERE WS.IssueId = T0.Issue_Id 
+                AND WS.ResourceId = @EmployeeId
+				AND (WS.StreamStatus IS NULL OR WS.StreamStatus <> 17)
+            )
+        )';
+    END
+
+	-- Role filter
+SET @sql += '
+AND (
+    (@Role = 3 AND T0.RaiseToClient = 1)   -- Role 3: only RaiseToClient=1
+    OR (@Role <> 3)                        -- Other roles: no extra filter
+)
+';
+	set @sql += '
+	ORDER BY
+		CASE 
+			WHEN @EmployeeId IS NOT NULL AND T0.Assignee_Id = @EmployeeId AND T0.IsCloseRequested = 1 THEN 1
+			WHEN T0.PriorityRequest = 1 THEN 1
+			WHEN T0.FuncResponse = 1 THEN 1
+			WHEN T0.WebResponse = 1 THEN 1
+			WHEN T0.TechnicalResponse = 1 THEN 1
+			WHEN T0.AdminResponse = 1 THEN 1
+			ELSE 0
+		END DESC, 
+		UpdatedAt DESC
+	'
+
+    EXEC sp_executesql
+        @sql,
+       N'@IssueId UNIQUEIDENTIFIER, @ProjectId UNIQUEIDENTIFIER, @RepoId UNIQUEIDENTIFIER, @EmployeeId UNIQUEIDENTIFIER, @Role INT',
+       @IssueId, @ProjectId, @RepoId, @EmployeeId, @Role;
+END
+
+
+--EXEC [GetIssuesByID] 'WG_APP', NULL,NULL,NULL,'74B04DE5-64EC-4178-8D80-08DE49B84CA3',2
+
+
+
+-----------------------------------------------------------------------------------------------------------------
+
+ALTER PROCEDURE [dbo].[SP_MeetingComplete]
+(
+      @MeetingId UNIQUEIDENTIFIER,
+      @ActualStartTime DATETIME2,
+      @ActualEndTime DATETIME2,
+      @MeetingSummary NVARCHAR(MAX),
+      @CompletedBy UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+
+SET NOCOUNT ON;
+
+BEGIN TRY
+
+BEGIN TRAN;
+
+INSERT INTO MeetingCompletion
+(
+    meeting_id,
+    actual_start_time,
+    actual_end_time,
+    duration_minutes,
+    meeting_summary,
+    completedby
+)
+VALUES
+(
+    @MeetingId,
+    @ActualStartTime,
+    @ActualEndTime,
+    DATEDIFF(MINUTE,@ActualStartTime,@ActualEndTime),
+    @MeetingSummary,
+    @CompletedBy
+);
+
+UPDATE MeetingMaster
+SET
+
+    status='Completed',
+    updated_at=dbo.GET_IST_DATE(),
+    updated_by=@CompletedBy
+
+WHERE meeting_id=@MeetingId;
+
+COMMIT;
+
+END TRY
+
+BEGIN CATCH
+
+ROLLBACK;
+
+THROW;
+
+END CATCH
+
+END
+
+----------------------------------------------------------------------------------------------
+
+ALTER PROCEDURE [dbo].[GETTHREADLIST] 
+  @DbName NVARCHAR(255),
+  @IssuesId UNIQUEIDENTIFIER,
+  @Role int
+AS
+BEGIN
+     SET NOCOUNT ON;
+
+    DECLARE @sql NVARCHAR(MAX);
+    DECLARE @IssuerSelect NVARCHAR(MAX);
+    DECLARE @IssuerJoin_Thread NVARCHAR(MAX);
+
+	SET @IssuerJoin_Thread = '
+        LEFT JOIN EmployeeMaster EM
+               ON EM.EmployeeID = T1.CreatedBy
+        --LEFT JOIN ' + QUOTENAME(@DbName) + '.dbo.Clients CL
+        --       ON CL.Client_Id = T1.CreatedBy
+		';
+
+    SET @IssuerSelect = '
+        CASE 
+            WHEN t2.EmployeeName IS NOT NULL THEN t2.EmployeeName
+            WHEN t3.UserName IS NOT NULL THEN t3.UserName
+            ELSE NULL 
+        END
+    ';
+
+SET @sql = '
+    SELECT 
+          T1.ThreadId
+        , T1.Issue_Id
+        , T1.CommentText
+        , '+ @IssuerSelect + ' AS CreatedBy
+		, T1.CreatedBy as CreatedId
+        , T1.CreatedAt
+        , T1.UpdatedBy
+        , T1.UpdatedAt
+		, T1.HtmlDesc
+		, T1.HandsOffId
+		, T1.WorkStreamId
+		, T1.Ref_Id
+		, T1.ThreadType
+		, T1.MeetingId
+		, t2.team
+        
+        -- Fetch Co-Contributors as a JSON Array
+        , (
+            SELECT 
+                TCC.EmployeeId AS id,
+                EM_CC.EmployeeName AS name,
+				EM_CC.Team AS team
+            FROM ' + QUOTENAME(@DbName) + '.dbo.ThreadCoContributors TCC
+            JOIN ' + QUOTENAME(@DbName) + '.dbo.Employeemaster EM_CC ON EM_CC.EmployeeID = TCC.EmployeeId
+            WHERE TCC.ThreadId = T1.ThreadId
+            FOR JSON PATH
+          ) AS CoContributors_JSON
+          
+		, (
+			  SELECT 
+					ER.Id
+				,	ER.Emoji
+				,	ER.CreatedBy
+				,	ER.CreatedAt	
+				,	EM_ER.EmployeeName AS name
+			  FROM ' + QUOTENAME(@DbName) + '.dbo.Emoji_Reactions ER
+			  join ' + QUOTENAME(@DbName) + '.dbo.Employeemaster EM_ER ON EM_ER.EmployeeID = ER.CreatedBy
+			  WHERE ER.ThreadId = T1.ThreadId
+			  FOR JSON PATH
+			) AS Reactions_JSON
+			
+		-- 🌟 NEW: Fetch Nested Meeting Details (Scheduled & Completed)
+		, (
+		      SELECT 
+		          MM.title AS [Scheduled.Title],
+		          MM.meeting_date AS [Scheduled.Date],
+		          MM.start_time AS [Scheduled.StartTime],
+		          MM.end_time AS [Scheduled.EndTime],
+		          MM.slot_duration AS [Scheduled.Duration],
+		          MM.meeting_summary AS [Scheduled.Summary],
+		          
+		          MC.actual_start_time AS [Completed.ActualStartTime],
+		          MC.actual_end_time AS [Completed.ActualEndTime],
+		          MC.duration_minutes AS [Completed.DurationMinutes],
+		          MC.meeting_summary AS [Completed.Summary]
+		          
+		      FROM ' + QUOTENAME(@DbName) + '.dbo.MeetingMaster MM
+		      LEFT JOIN ' + QUOTENAME(@DbName) + '.dbo.MeetingCompletion MC 
+		             ON MC.meeting_id = MM.meeting_id
+		      WHERE MM.meeting_id = T1.MeetingId
+		      FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
+		  ) AS MeetingDetails_JSON
+
+		, T1.From_Time
+		, T1.To_Time
+		, T1.Hours
+		, T1.CompletionPct
+        
+        -- Fetch specific Thread Status & Name (Defaults to 5 / Open)
+        , ISNULL(TRY_CAST(History.NewValue AS INT), 5) AS ThreadStatusId
+        , CASE 
+            WHEN SM.Status_Name IS NOT NULL THEN SM.Status_Name 
+            ELSE ''Open'' 
+          END AS ThreadStatusName ,
+
+		   CASE 
+           WHEN T1.toClient = 0 THEN CAST(0 AS BIT)  
+        ELSE CAST(1 AS BIT)                            
+           END AS toClient
+
+    FROM ' + QUOTENAME(@DbName) + '.dbo.ISSUETHREADS T1
+	LEFT JOIN ' + QUOTENAME(@DbName) + '.dbo.Employeemaster t2 ON t1.updatedby = t2.employeeid
+	LEFT JOIN ' + QUOTENAME(@DbName) + '.dbo.RepoUsers t3 ON t3.UserId = t1.updatedby
+    
+    -- Look up the TicketHistory table to see if this specific thread changed the ticket status
+    OUTER APPLY (
+        SELECT TOP 1 TH.NewValue
+        FROM ' + QUOTENAME(@DbName) + '.dbo.TicketHistory TH
+        WHERE TH.ThreadId = T1.ThreadId 
+          AND TH.IssueId = T1.Issue_Id
+          AND TH.FieldName = ''Status''
+        ORDER BY TH.CreatedAt DESC
+    ) AS History
+
+    -- Join StatusMaster to get the readable name of the status (Closed, Cancelled, etc.)
+    LEFT JOIN ' + QUOTENAME(@DbName) + '.dbo.StatusMasters SM 
+           ON SM.Status_Id = TRY_CAST(History.NewValue AS INT)
+
+    WHERE T1.Issue_Id = @IssuesId
+	AND (
+        (@Role = 3 AND T1.ToClient = 1)  -- If role 3, only ToClient=1
+     OR (@Role <> 3) 
+  )
+	ORDER BY T1.UpdatedAt ASC;
+    ';
+
+EXEC sp_executesql 
+        @sql,
+        N'@IssuesId UNIQUEIDENTIFIER, @Role int',
+        @IssuesId,
+        @Role;
+END
+
+
+--EXEC GETTHREADLIST 'WGNEST', '622F6FBC-5858-43CB-BF94-F3DA61039E39',3
