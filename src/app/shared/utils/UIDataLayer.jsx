@@ -128,6 +128,9 @@ const
         toClient: thread.toClient,
         team: thread.team,
         Ref_Id: thread.Ref_Id,
+        ThreadType: thread.ThreadType || "Comment",
+        MeetingId: thread.MeetingId,
+        MeetingDetails_JSON: thread.MeetingDetails_JSON,
 
         // 🔥 Injected Role Flag
         isViewer: isViewer,

@@ -100,7 +100,9 @@ const REALTIME_ENTITY_CONFIG = {
   ThreadsList: {
     type: "query",
     // Exact key resolved from the incoming message at runtime
-    queryKey: (msg) => queryKeys.ticket.thread(msg.IssueId ?? msg.issueId),
+    queryKey: (msg) => queryKeys.ticket.thread(
+      msg.IssueId ?? msg.issueId ?? msg.Payload?.Issue_Id
+  ),
 
     sort: "asc", // chronological
 

@@ -108,7 +108,7 @@ export function buildPath(key, params = {}, queryParams = {}) {
   if (!node) throw new Error(`[routeRegistry] Unknown nav key: "${key}"`);
 
   const missing = [];
-  const path = node.fullPath.replace(/:([^/]+)/g, (_, name) => {
+  let path = node.fullPath.replace(/:([^/]+)/g, (_, name) => {
     if (params[name] == null) { missing.push(name); return `:${name}`; }
     return encodeURIComponent(params[name]);
   });

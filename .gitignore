@@ -28,3 +28,6 @@ pnpm-lock.yaml
 public.zip
 dist.zip
 src/chat.md
+.vs/VSWorkspaceState.json
+.vs/UI/v17/.wsuo
+.vs/UI/v17/DocumentLayout.json

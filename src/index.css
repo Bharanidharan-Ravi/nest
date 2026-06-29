@@ -106,34 +106,34 @@ html {
 
   /* Resting State */
   .wg-mui-input .MuiOutlinedInput-root {
-    @apply bg-gray-50 rounded-md transition-all text-sm text-gray-900;
+    @apply bg-white rounded-lg transition-all text-sm text-slate-800;
   }
 
   .wg-mui-input .MuiOutlinedInput-notchedOutline {
-    @apply border-gray-500;
+    @apply border-slate-200/80 transition-colors duration-150;
   }
 
   /* Hover State */
   .wg-mui-input .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline {
-    @apply border-gray-500;
+    @apply border-slate-300;
   }
 
   /* Focus/Active State */
   .wg-mui-input .MuiOutlinedInput-root.Mui-focused {
-    @apply bg-white;
+    @apply bg-white shadow-sm;
   }
 
   .wg-mui-input .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline {
-    @apply border-gray-500 border-[1px] ring-0;
+    @apply border-slate-800 border-[1px] ring-0;
   }
 
   /* Label Styling */
   .wg-mui-input .MuiInputLabel-root {
-    @apply text-sm text-gray-800;
+    @apply text-xs text-slate-400 font-medium tracking-wide;
   }
 
   .wg-mui-input .MuiInputLabel-root.Mui-focused {
-    @apply text-gray-900 border-red-500;
+    @apply text-slate-800;
   }
 
   /* Custom Scrollbar Utilities */

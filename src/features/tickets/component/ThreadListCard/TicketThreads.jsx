@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import { FaHistory, FaArrowRight, FaTags, FaClock, FaTimes } from "react-icons/fa";
+import { FaHistory, FaArrowRight, FaTags, FaClock, FaTimes, FaVideo } from "react-icons/fa";
 import { ListProvider } from "../../../../packages/ui-List/components/ListProvider";
 import { ListCardView } from "../../../../packages/ui-List/components/ListCardView";
 import EntityFormPage from "../../../../packages/crud/pages/EntityFormPage";
@@ -15,6 +15,7 @@ import apiClient from "../../../../core/api/apiClient";
 import { queryClient } from "../../../../core/api/queryClient";
 import { GitCommitIcon } from "lucide-react";
 import ConfirmDialog, { useConfirmDialog } from "../../../../app/shared/confirmation/confirmationModel";
+import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingScheduler";
 
 dayjs.extend(relativeTime);
 
@@ -62,6 +63,7 @@ const TicketThreads = ({
 
   const [overrides, setOverRide, getItem] = useThreadOverRides();
   const [replyingToThread, setReplyingToThread] = useState(null)
+  const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
 
   const { dialogProps, openDialog } = useConfirmDialog();
   
@@ -135,7 +137,7 @@ let parsedReactionsJSON = []
         if (thread.CoContributors_JSON) {
           parsedCoContributors = JSON.parse(thread.CoContributors_JSON);
         } 
-        console.log("thread :", thread)
+        // console.log("thread :", thread)
         if (thread.Reactions_JSON) {
           parsedReactionsJSON = JSON.parse(thread.Reactions_JSON);
         }
@@ -165,6 +167,9 @@ let parsedReactionsJSON = []
         toClient: thread.toClient,
         team: thread.team,
         Ref_Id: thread.Ref_Id,
+        ThreadType: thread.ThreadType || "Comment",
+        MeetingId: thread.MeetingId,
+        MeetingDetails_JSON: thread.MeetingDetails_JSON,
       };
     });
   }, [threadsData, assigneesJsonString]);
@@ -562,6 +567,24 @@ let parsedReactionsJSON = []
 
   return (
     <div className="w-full flex flex-col gap-6">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+        <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+          <span>Activity & Discussion</span>
+          <span className="bg-slate-100 text-slate-600 text-xs px-2 py-0.5 rounded-full font-medium font-sans">
+            {threadsData?.length || 0}
+          </span>
+        </h3>
+        {!formContext?.isViewer && (
+          <button
+            onClick={() => setIsMeetingModalOpen(true)}
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-slate-200 shadow-sm transition-all duration-150 flex items-center justify-center cursor-pointer"
+            title="Schedule Meeting"
+          >
+            <FaVideo size={14} />
+          </button>
+        )}
+      </div>
+
       <div className="relative pl-0">
         <div className="absolute left-[19px] top-0 bottom-0 w-0.5 bg-gray-200 z-0" />
 
@@ -575,8 +598,8 @@ let parsedReactionsJSON = []
       {/* REPLY / REOPEN FORM */}
       {/* ===================================== */}
       {!editingItem && (
-        <div id="thread-compose-area" className="rounded-3xl p-2">
-          <div className={`overflow-hidden bg-white ${replyingToThread ? "border border-gray-200 rounded-xl" : "border border-gray-200 rounded-xl"}`}>
+        <div id="thread-compose-area" className="mt-8 border border-slate-200/80 bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] overflow-hidden transition-all duration-300">
+          <div className="flex flex-col">
 
             {replyingToThread && (
               (() => {
@@ -633,6 +656,23 @@ let parsedReactionsJSON = []
           </div>
         </div>
       )}
+
+      {/* Meeting Form Modal */}
+      <MeetingFormModal
+        isOpen={isMeetingModalOpen}
+        mode="Create"
+        modalMode="meeting"
+        currentUserId={currentUser?.userId}
+        params={{
+          ticketId: ticketId,
+          projectId: parentTicket?.Project_Id,
+          ticketTitle: parentTicket?.Title,
+        }}
+        onClose={() => setIsMeetingModalOpen(false)}
+        onSuccess={() => {
+          setIsMeetingModalOpen(false);
+        }}
+      />
     </div>
   );
 };

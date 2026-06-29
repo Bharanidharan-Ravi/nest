@@ -377,10 +377,9 @@ export const MeetinglFieldConfig = () => [
       "Project_Name", // 3. labelKey
     ),
     initValueResolver: ({ context, masterData, formData }) => {
-      const ticketId = formData?.ticket?.value?.id;
-      const projectId = context?.ticketMaster
-        ?.find(t => t.Issue_Id === ticketId || context.fromTicketId
-        )
+      const ticketId = formData?.ticket?.value?.id || context?.fromTicketId;
+      const projectId = context?.fromProjectId || context?.ticketMaster
+        ?.find(t => t.Issue_Id === ticketId)
         ?.Project_Id;
       const project = masterData?.ProjectList
         ?.find(p => p.Id === projectId)

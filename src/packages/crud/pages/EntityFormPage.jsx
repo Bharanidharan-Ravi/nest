@@ -275,7 +275,7 @@ export default function EntityFormPage({
               handleFormReset();
               onCancel?.();
             }}
-            className={`wg-btn-secondary ${theme.submitBtn || ""} ml-3`}
+            className={`wg-btn-secondary ${theme.cancelBtn || ""} ml-3`}
           >
             Cancel
           </button>

@@ -14,18 +14,13 @@ import {
   FaUsers,
   FaTimes,
 } from "react-icons/fa";
-
-
 import { useList } from "../../../packages/ui-List/context/ListContext";
 import { meetingFormConfig } from "../config/Meetingform.config";
-
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
-import { useLocation, useParams, useSearchParams } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../../../core/query/queryKeys";
-
+import { useParams } from "react-router-dom";
 
 
 
@@ -161,7 +156,7 @@ const TypeBadge = ({ type }) => (
 /* Meeting Form Modal                                                   */
 /* ------------------------------------------------------------------ */
 
-const MeetingFormModal = ({
+export const MeetingFormModal = ({
   isOpen,
   mode,
   selectedEvent,
@@ -188,15 +183,26 @@ const MeetingFormModal = ({
         const ticket = (ticketMaster || []).find(
           (t) => t.Issue_Id === ticketId
         );
-        if (!ticket) return null;
-      
-        return {
-          value: {
-            id: ticket.Issue_Id,
-            name: ticket.Title,
-          },
-          label: ticket.Title,
-        };
+        if (ticket) {
+          return {
+            value: {
+              id: ticket.Issue_Id,
+              name: ticket.Title,
+            },
+            label: ticket.Title,
+          };
+        }
+        const fallbackTitle = params?.ticketTitle || context?.fromTicketTitle;
+        if (fallbackTitle) {
+          return {
+            value: {
+              id: ticketId,
+              name: fallbackTitle,
+            },
+            label: fallbackTitle,
+          };
+        }
+        return null;
       },
       // optionsResolver receives live formData at render time
       optionsResolver: ({ formData }) => {
@@ -211,7 +217,7 @@ const MeetingFormModal = ({
       ...meetingFormConfig,
       fields: [...(meetingFormConfig.fields || []), ticketField],
     };
-  }, [ticketMaster]); // only rebuilds when ticketMaster list changes
+  }, [ticketMaster, params]); // only rebuilds when ticketMaster list or params changes
 
   if (!isOpen) return null;
 
@@ -221,7 +227,9 @@ const MeetingFormModal = ({
     ticketMaster,
     modalMode,
     currentUserId,
-    fromTicketId:params.ticketId
+    fromTicketId: params?.ticketId,
+    fromProjectId: params?.projectId,
+    fromTicketTitle: params?.ticketTitle
   };
 
   const handleSuccess = () => {
@@ -665,79 +673,6 @@ const FilterDropdown = ({ label, value, options, onChange }) => (
     </select>
   </div>
 );
-
-// const ListView = ({ meetings, onSelectMeeting }) => {
-//   const [status,   setStatus]   = useState("All");
-//   const [priority, setPriority] = useState("All");
-//   const [type,     setType]     = useState("All");
-
-//   const typeOptions = useMemo(() => {
-//     const set = new Set(meetings.map((m) => m.type).filter(Boolean));
-//     return ["All", ...Array.from(set)];
-//   }, [meetings]);
-
-//   const filtered = useMemo(() =>
-//     meetings
-//       .filter((m) => status   === "All" || m.status   === status)
-//       .filter((m) => priority === "All" || m.priority === priority.toUpperCase())
-//       .filter((m) => type     === "All" || m.type     === type)
-//       .sort((a, b) => {
-//         const dc = (a.date || "").localeCompare(b.date || "");
-//         return dc !== 0 ? dc : (a.startTime || "").localeCompare(b.startTime || "");
-//       }),
-//     [meetings, status, priority, type]
-//   );
-
-//   return (
-//     <div className="flex flex-col h-full overflow-auto">
-//       <div className="flex items-center justify-between gap-4 px-5 py-3 border-b border-gray-100 flex-wrap">
-//         <div className="flex items-center gap-5 flex-wrap">
-//           <FilterDropdown label="Status"   value={status}   options={STATUS_OPTIONS}   onChange={setStatus} />
-//           <FilterDropdown label="Priority" value={priority} options={PRIORITY_OPTIONS} onChange={setPriority} />
-//           <FilterDropdown label="Type"     value={type}     options={typeOptions}      onChange={setType} />
-//         </div>
-//         <span className="text-sm text-gray-400">{filtered.length} meeting(s)</span>
-//       </div>
-
-//       <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
-//         {filtered.length === 0 ? (
-//           <div className="text-center text-gray-400 text-sm py-10">
-//             No meetings match the selected filters.
-//           </div>
-//         ) : (
-//           filtered.map((m) => (
-//             <button
-//               key={m.id}
-//               onClick={() => onSelectMeeting(m)}
-//               className={`w-full text-left rounded-lg px-4 py-3 transition hover:shadow-sm ${
-//                 STATUS_BAR_COLOR[m.status] || "bg-sky-50 border-l-4 border-sky-400"
-//               }`}
-//             >
-//               <div className="flex items-start justify-between gap-3">
-//                 <div className="flex items-start gap-2">
-//                   <span className="mt-1.5 w-2 h-2 rounded-full bg-sky-400 shrink-0" />
-//                   <div>
-//                     <p className="font-semibold text-gray-900">{m.title}</p>
-//                     <p className="text-xs text-gray-500 mt-0.5">
-//                       {m.refId && <span>{m.refId} · </span>}
-//                       {new Date(m.date).toLocaleDateString("en-US", { weekday: "short", day: "2-digit", month: "short" })}
-//                       {m.startTime && ` ${formatTime(m.startTime)}`}
-//                       {m.host && <span> · {m.host}</span>}
-//                     </p>
-//                   </div>
-//                 </div>
-//                 <div className="flex items-center gap-2 shrink-0">
-//                   <TypeBadge type={m.type} />
-//                   <PriorityBadge priority={m.priority} />
-//                 </div>
-//               </div>
-//             </button>
-//           ))
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
 const ListView = ({ meetings, onSelectMeeting }) => {
   const [status, setStatus] = useState("All");
   const [priority, setPriority] = useState("All");
