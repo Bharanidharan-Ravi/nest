@@ -167,6 +167,9 @@ export const MeetingFormModal = ({
   onClose,
   onSuccess,
 }) => {
+
+  console.log("ticketMaster",ticketMaster);
+  
   // Build dynamic config here (safe — not inside useMemo with a hook)
   const dynamicConfig = useMemo(() => {
     const ticketField = {
@@ -177,11 +180,11 @@ export const MeetingFormModal = ({
       required: false,
       dataType: "string",
       apiKey: "Ticket_id",
-      initValueResolver: ({ context, masterData }) => {
+      initValueResolver: ({ context }) => {
         const ticketId = context?.fromTicketId;
         if (!ticketId) return null;
         const ticket = (ticketMaster || []).find(
-          (t) => t.Issue_Id === ticketId
+          (t) => t.Issue_Id == ticketId
         );
         if (ticket) {
           return {
@@ -193,6 +196,7 @@ export const MeetingFormModal = ({
           };
         }
         const fallbackTitle = params?.ticketTitle || context?.fromTicketTitle;
+        
         if (fallbackTitle) {
           return {
             value: {
@@ -205,9 +209,9 @@ export const MeetingFormModal = ({
         return null;
       },
       // optionsResolver receives live formData at render time
-      optionsResolver: ({ formData }) => {
+      optionsResolver: ({ formData,context }) => {
         const selectedProjectId = formData?.project?.value?.id;
-        return (ticketMaster || [])
+        return (context.ticketMaster || [])
           .filter((t) => (selectedProjectId ? t.Project_Id === selectedProjectId : true))
           .map((t) => ({ value: { id: t.Issue_Id, name: t.Title }, label: t.Title }));
       },
@@ -220,6 +224,7 @@ export const MeetingFormModal = ({
   }, [ticketMaster, params]); // only rebuilds when ticketMaster list or params changes
 
   if (!isOpen) return null;
+console.log("params",params);
 
   const context = {
     isEdit: mode === "Edit",
@@ -860,7 +865,7 @@ const MeetingScheduler = () => {
   const today = useMemo(() => new Date(), []);
 
   const { data = [] } = useList();
-  const { data: ticketMaster = [] } = useTicketMaster({ employeeId: currentUserId });
+  const { data: ticketMaster = [] } = useTicketMaster();
 
   // Calendar state
   const [activeDate, setActiveDate] = useState(today);

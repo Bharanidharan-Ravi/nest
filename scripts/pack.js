@@ -6,6 +6,7 @@ import path from 'path';
 // Usage: `node pack.js`, `node pack.js api`, or `node pack.js ui`
 const target = process.argv[2]?.toLowerCase() || 'both';
 
+// const backupDir = 'D:/live work/WGNestPack/backup/codemanual';
 const backupDir = 'D:/live work/WGNestPack/backup/codemanual';
 
 // 2. Configuration for paths and ignores
@@ -15,7 +16,7 @@ const config = {
         ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**', '**/.git/**']
     },
     api: {
-        source: 'D:/live work/Github/API/WGNestAPIGateway',
+        source: 'D:/live work/IQS_Forge',
         ignore: ['**/bin/**', '**/obj/**', '**/.git/**']
     }
 };

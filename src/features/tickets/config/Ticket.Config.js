@@ -1,3 +1,4 @@
+import { TrainFrontTunnelIcon } from "lucide-react";
 import {
   buildOptionsResolver,
   sumHHMM,
@@ -561,6 +562,27 @@ export const TicketFieldConfig = () => [
     },
     customValidator: makeAtLeastOneValidator("Technical"),
   },
+  {
+    label: "Private",
+    name: "IsPrivate",
+    type: "checkbox",
+    ui: "mui",
+    required: false,
+    dataType: "boolean",
+    apiKey: "IsPrivate",
+    colSpan: 2,
+    
+    initValueResolver: ({ context,formData }) => {
+      console.log("is edit",context.isEdit);
+      console.log("is entity",context.entityData);
+      console.log("is value",context.entityData?.IsPrivate);
+      console.log("is formData",formData);
+     if(context.isEdit && context.entityData?.IsPrivate===true){
+      return true
+     }
+    return false},
+    visibleWhen: ({ context }) =>TrainFrontTunnelIcon,
+  },
 
 
   {
@@ -644,4 +666,5 @@ export const TicketFieldConfig = () => [
       return !context?.isViewer;
     },
   },
+ 
 ];

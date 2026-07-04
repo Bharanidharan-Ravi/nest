@@ -18,9 +18,11 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
       payload:{
           configKeys:["BannerData"],
           params:{
-              BannerData:{BannerMessageId,
+            BannerData:{
+               BannerMessageId,
               FromDate,
               ToDate,}
+             
           }
       },
       options:{
@@ -31,11 +33,15 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
   }
 
-export const getMessageType = () => {
+export const getMessageType = (MessageTypeId=null) => {
     const query = queryKeys.BannerDataType.all;
   
     const payload = buildSyncPayload({
       configKey: "BannerDataType",
+      ...(MessageTypeId && {
+       params:{
+        MessageTypeId:MessageTypeId
+       }})
     });
     return useApiQuery({
       queryKey: query,

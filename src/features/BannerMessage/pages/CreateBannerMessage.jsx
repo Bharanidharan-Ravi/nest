@@ -66,15 +66,14 @@ const CreateBanner = () => {
     initValueResolver: ({ context }) => {
       // On create — default Active
       if (!context.isEdit || !context.entityData) {
-        return MessageTypeOption[0] ?? null;
+        return null
       }
-
       const apiVal = context.entityData?.MessageTypeId;
+      const matched = MessageTypeOption.find(
+        (opt) => opt.value.id === apiVal
+      )
 
-      const matched = MessageTypeOption.find((opt) => {
-        return opt.value.id === apiVal;
-      });
-      return matched ?? MessageTypeOption[0] ?? null;
+      return matched ??null;
     },
   };
   const basefields = BannerFormConfig.fields.filter(

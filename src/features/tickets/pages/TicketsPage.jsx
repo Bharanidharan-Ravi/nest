@@ -7,6 +7,7 @@ import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import TicketListCard from "../component/TicketListCard";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import {
   useEmployeeOptions,
@@ -21,12 +22,70 @@ import {
 } from "../../../core/auth/useCurrentUser";
 import { TicketsHeader } from "./TicketsHeader";
 
+function getCurrentUserId(currentUser) {
+  return String(
+    currentUser?.userId ||
+      currentUser?.id ||
+      currentUser?.employeeId ||
+      "",
+  ).toLowerCase();
+}
+
+function isTicketPrivate(ticket) {
+  return Boolean(ticket?.isPrivate || ticket?.IsPrivate);
+}
+
+function getMainAssigneeId(ticket) {
+  return String(
+    ticket?.assigneeId ||
+      ticket?.assignee_Id ||
+      ticket?.Assignee_Id ||
+      "",
+  ).toLowerCase();
+}
+
+function getAllAssigneeIds(ticket) {
+  var raw = ticket?.multiAssignees || ticket?.All_Assignees || [];
+  if (typeof raw === "string") {
+    try {
+      raw = JSON.parse(raw);
+    } catch (e) {
+      raw = [];
+    }
+  }
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map(function (a) {
+      return String(
+        a?.Assignee_Id ||
+          a?.assigneeId ||
+          a?.AssigneeId ||
+          "",
+      ).toLowerCase();
+    })
+    .filter(Boolean);
+}
+
+function canViewTicket(ticket, currentUserId) {
+  if (!isTicketPrivate(ticket)) return true;
+  if (!currentUserId) return false;
+
+  const creatorId = String(ticket?.createdBy || ticket?.CreatedBy || "").toLowerCase();
+  const mainAssigneeId = getMainAssigneeId(ticket);
+  const allAssigneeIds = getAllAssigneeIds(ticket);
+
+  if (creatorId && creatorId === currentUserId) return true;
+  if (mainAssigneeId && mainAssigneeId === currentUserId) return true;
+  if (allAssigneeIds.includes(currentUserId)) return true;
+
+  return false;
+}
+
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
   const { isViewer } = useCurrentUser();
-
   const { data } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
@@ -37,7 +96,6 @@ export default function TicketsPage() {
   const employeeFilterOptions = useEmployeeOptions(true);
   const repoFilterOptions = useRepoOptions(true);
   const teamFilterOptions = useTeamOptions(true);
-
   const currentUser = readUserFromSession();
   const currentUserId =
     currentUser?.id ?? currentUser?.userId ?? currentUser?.UserId ?? null;
@@ -252,7 +310,6 @@ export default function TicketsPage() {
         allowMultiple: true,
         customFilter: (item, value) => {
           if (!value || value === "") return true;
-
           return item.multiAssignees?.some(
             (a) =>
               String(a.Assignee_TeamId) === String(value) &&

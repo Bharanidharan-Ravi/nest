@@ -564,6 +564,7 @@ let parsedReactionsJSON = []
   // =========================================================
   // RENDER
   // =========================================================
+console.log("parentTicket :", parentTicket);
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -665,8 +666,8 @@ let parsedReactionsJSON = []
         currentUserId={currentUser?.userId}
         params={{
           ticketId: ticketId,
-          projectId: parentTicket?.Project_Id,
-          ticketTitle: parentTicket?.Title,
+          projectId: parentTicket?.project,
+          ticketTitle: parentTicket?.title,
         }}
         onClose={() => setIsMeetingModalOpen(false)}
         onSuccess={() => {
