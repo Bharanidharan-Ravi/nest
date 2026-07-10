@@ -3,91 +3,394 @@ import "./utilities.css";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FiAlertTriangle, FiCheckCircle, FiClock } from "react-icons/fi";
+import { useMemo, useState } from "react";
 dayjs.extend(relativeTime);
+
+// export function HtmlRenderer({ html }) {
+//   const highlightFiles = (htmlString) => {
+//     const cleanHtml = DOMPurify.sanitize(htmlString);
+//     const parser = new DOMParser();
+//     const doc = parser.parseFromString(cleanHtml, "text/html");
+
+//     // Find all links with data-type="file-attachment"
+//     const fileLinks = doc.querySelectorAll('a[data-type="file-attachment"]');
+
+//     fileLinks.forEach((link) => {
+//       const filename = link.getAttribute("filename") || link.textContent;
+
+//       // Create a span element to style the file pill
+//       const span = doc.createElement("span");
+//       span.className = "highlight-pill";
+//       span.innerHTML = `<i class="file-icon"> </i> ${filename}`;
+
+//       link.textContent = "";
+//       link.appendChild(span);
+
+//       // Removed target="_blank" so it doesn't even try to open a new tab
+//       link.setAttribute("download", filename);
+//     });
+
+//     return doc.body.innerHTML;
+//   };
+
+//   const handleContainerClick = async (event) => {
+//     // 1. Check if a file link was clicked
+//     const link = event.target.closest('a[data-type="file-attachment"]');
+//     if (!link) return;
+
+//     // 2. STOP the browser immediately. No previews, no new tabs.
+//     event.preventDefault();
+
+//     const filename =
+//       link.getAttribute("download") ||
+//       link.getAttribute("filename") ||
+//       "download";
+
+//     try {
+//       // 3. Fetch the actual file data
+//       const response = await fetch(link.href);
+//       if (!response.ok) throw new Error("Network response was not ok");
+
+//       // 4. Get the blob, but FORCE it to be an 'octet-stream' (binary download)
+//       const originalBlob = await response.blob();
+//       const forceDownloadBlob = new Blob([originalBlob], {
+//         type: "application/octet-stream",
+//       });
+
+//       const downloadUrl = window.URL.createObjectURL(forceDownloadBlob);
+
+//       // 5. Create a temporary, invisible link to trigger the pure download
+//       const tempLink = document.createElement("a");
+//       tempLink.style.display = "none";
+//       tempLink.href = downloadUrl;
+//       tempLink.download = filename;
+
+//       document.body.appendChild(tempLink);
+//       tempLink.click();
+
+//       // 6. Clean up
+//       window.URL.revokeObjectURL(downloadUrl);
+//       document.body.removeChild(tempLink);
+//     } catch (error) {
+//       console.error("Failed to download the file directly:", error);
+//       // We do NOT use window.open here anymore, so it will never preview.
+//       alert("Failed to download file. Please check your network connection.");
+//     }
+//   };
+
+//   const highlightedHtml = highlightFiles(html);
+
+//   return (
+//     <div
+//       className="html-renderer"
+//       dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+//       onClick={handleContainerClick}
+//     />
+//   );
+// }
+// export function HtmlRenderer({ html }) {
+//   const [previewImage, setPreviewImage] = useState(null);
+
+//   const highlightedHtml = useMemo(() => {
+//     const cleanHtml = DOMPurify.sanitize(html);
+//     const parser = new DOMParser();
+//     const doc = parser.parseFromString(cleanHtml, "text/html");
+
+//     // Style file attachments
+//     const fileLinks = doc.querySelectorAll('a[data-type="file-attachment"]');
+
+//     fileLinks.forEach((link) => {
+//       const filename = link.getAttribute("filename") || link.textContent;
+
+//       const span = doc.createElement("span");
+//       span.className = "highlight-pill";
+//       span.innerHTML = `<i class="file-icon"></i> ${filename}`;
+
+//       link.textContent = "";
+//       link.appendChild(span);
+
+//       link.setAttribute("download", filename);
+//     });
+
+//     // Make images look clickable
+//     const images = doc.querySelectorAll("img");
+
+//     images.forEach((img) => {
+//       img.style.cursor = "pointer";
+//       img.style.maxWidth = "100%";
+//       img.style.borderRadius = "8px";
+//     });
+
+//     return doc.body.innerHTML;
+//   }, [html]);
+
+//   const handleContainerClick = async (event) => {
+//     // ============================
+//     // Image Preview
+//     // ============================
+//     const img = event.target.closest("img");
+
+//     if (img) {
+//       event.preventDefault();
+//       event.stopPropagation();
+
+//       setPreviewImage(img.src);
+//       return;
+//     }
+
+//     // ============================
+//     // File Download
+//     // ============================
+//     const link = event.target.closest('a[data-type="file-attachment"]');
+
+//     if (!link) return;
+
+//     event.preventDefault();
+//     event.stopPropagation();
+
+//     const filename =
+//       link.getAttribute("download") ||
+//       link.getAttribute("filename") ||
+//       "download";
+
+//     try {
+//       const response = await fetch(link.href);
+
+//       if (!response.ok) {
+//         throw new Error("Failed to download.");
+//       }
+
+//       const originalBlob = await response.blob();
+
+//       const blob = new Blob([originalBlob], {
+//         type: "application/octet-stream",
+//       });
+
+//       const url = window.URL.createObjectURL(blob);
+
+//       const a = document.createElement("a");
+//       a.href = url;
+//       a.download = filename;
+//       a.style.display = "none";
+
+//       document.body.appendChild(a);
+//       a.click();
+
+//       document.body.removeChild(a);
+//       window.URL.revokeObjectURL(url);
+//     } catch (err) {
+//       console.error(err);
+//       alert("Failed to download file.");
+//     }
+//   };
+
+//   return (
+//     <>
+//       <div
+//         className="html-renderer"
+//         dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+//         onClick={handleContainerClick}
+//       />
+
+//       {/* Image Preview Modal */}
+//       {previewImage && (
+//         <div
+//           className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4"
+//           onClick={() => setPreviewImage(null)}
+//         >
+//           <div
+//             className="relative"
+//             onClick={(e) => e.stopPropagation()}
+//           >
+//             <button
+//               className="absolute -top-10 right-0 text-white text-3xl font-bold"
+//               onClick={() => setPreviewImage(null)}
+//             >
+//               ×
+//             </button>
+
+//             <img
+//               src={previewImage}
+//               alt="Preview"
+//               className="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl"
+//             />
+//           </div>
+//         </div>
+//       )}
+//     </>
+//   );
+// }
 
 export function HtmlRenderer({ html }) {
   const highlightFiles = (htmlString) => {
     const cleanHtml = DOMPurify.sanitize(htmlString);
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(cleanHtml, "text/html");
 
-    // Find all links with data-type="file-attachment"
-    const fileLinks = doc.querySelectorAll('a[data-type="file-attachment"]');
+    // ===============================
+    // Highlight file attachments
+    // ===============================
+    const fileLinks = doc.querySelectorAll(
+      'a[data-type="file-attachment"]'
+    );
 
     fileLinks.forEach((link) => {
-      const filename = link.getAttribute("filename") || link.textContent;
+      const filename =
+        link.getAttribute("filename") || link.textContent;
 
-      // Create a span element to style the file pill
       const span = doc.createElement("span");
+
       span.className = "highlight-pill";
-      span.innerHTML = `<i class="file-icon"> </i> ${filename}`;
+      span.innerHTML = `
+        <i class="file-icon"></i> ${filename}
+      `;
 
       link.textContent = "";
       link.appendChild(span);
 
-      // Removed target="_blank" so it doesn't even try to open a new tab
       link.setAttribute("download", filename);
     });
+
+
+    // ===============================
+    // Make images clickable
+    // ===============================
+    const images = doc.querySelectorAll("img");
+
+    images.forEach((img) => {
+      img.style.cursor = "pointer";
+      img.style.maxWidth = "100%";
+      img.style.borderRadius = "8px";
+    });
+
 
     return doc.body.innerHTML;
   };
 
+
   const handleContainerClick = async (event) => {
-    // 1. Check if a file link was clicked
-    const link = event.target.closest('a[data-type="file-attachment"]');
+
+    // =====================================
+    // IMAGE CLICK -> OPEN NEW TAB
+    // =====================================
+    const img = event.target.closest("img");
+
+    if (img) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      window.open(
+        img.src,
+        "_blank",
+        "noopener,noreferrer"
+      );
+
+      return;
+    }
+
+
+    // =====================================
+    // FILE ATTACHMENT DOWNLOAD
+    // =====================================
+    const link = event.target.closest(
+      'a[data-type="file-attachment"]'
+    );
+
     if (!link) return;
 
-    // 2. STOP the browser immediately. No previews, no new tabs.
+
     event.preventDefault();
+    event.stopPropagation();
+
 
     const filename =
       link.getAttribute("download") ||
       link.getAttribute("filename") ||
       "download";
 
+
     try {
-      // 3. Fetch the actual file data
+
       const response = await fetch(link.href);
-      if (!response.ok) throw new Error("Network response was not ok");
 
-      // 4. Get the blob, but FORCE it to be an 'octet-stream' (binary download)
-      const originalBlob = await response.blob();
-      const forceDownloadBlob = new Blob([originalBlob], {
-        type: "application/octet-stream",
-      });
+      if (!response.ok) {
+        throw new Error(
+          "Network response was not ok"
+        );
+      }
 
-      const downloadUrl = window.URL.createObjectURL(forceDownloadBlob);
 
-      // 5. Create a temporary, invisible link to trigger the pure download
-      const tempLink = document.createElement("a");
+      const originalBlob =
+        await response.blob();
+
+
+      const forceDownloadBlob =
+        new Blob(
+          [originalBlob],
+          {
+            type: "application/octet-stream",
+          }
+        );
+
+
+      const downloadUrl =
+        window.URL.createObjectURL(
+          forceDownloadBlob
+        );
+
+
+      const tempLink =
+        document.createElement("a");
+
+
       tempLink.style.display = "none";
       tempLink.href = downloadUrl;
       tempLink.download = filename;
 
+
       document.body.appendChild(tempLink);
+
       tempLink.click();
 
-      // 6. Clean up
-      window.URL.revokeObjectURL(downloadUrl);
+
       document.body.removeChild(tempLink);
+
+      window.URL.revokeObjectURL(
+        downloadUrl
+      );
+
+
     } catch (error) {
-      console.error("Failed to download the file directly:", error);
-      // We do NOT use window.open here anymore, so it will never preview.
-      alert("Failed to download file. Please check your network connection.");
+
+      console.error(
+        "Failed to download file:",
+        error
+      );
+
+      alert(
+        "Failed to download file. Please check your network connection."
+      );
     }
   };
 
-  const highlightedHtml = highlightFiles(html);
+
+  const highlightedHtml = useMemo(
+    () => highlightFiles(html),
+    [html]
+  );
+
 
   return (
     <div
       className="html-renderer"
-      dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+      dangerouslySetInnerHTML={{
+        __html: highlightedHtml,
+      }}
       onClick={handleContainerClick}
     />
   );
 }
-
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {

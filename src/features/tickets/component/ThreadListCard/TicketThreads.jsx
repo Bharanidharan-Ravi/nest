@@ -473,31 +473,83 @@ let parsedReactionsJSON = []
       // HISTORY EVENTS (CLEAN & COMPACT UI)
       // =====================================
 
+      // if (item.isTimelineEvent) {
+      //   if (formContext.isViewer) return null;
+
+      //   let EventIcon = FaHistory;
+      //   if (item.eventType === "WORKSTREAM_CREATED") EventIcon = FaArrowRight;
+      //   if (item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED") EventIcon = FaTags;
+      //   if (item.eventType === "TICKET_UPDATED") EventIcon = FaClock;
+
+      //   return (
+      //     <div key={item.id} className="flex items-start gap-3 w-full mb-3 relative group hover:bg-gray-50/50 py-1 -ml-1 rounded transition-colors">
+      //       <div className="flex-shrink-0 relative z-10 flex justify-center w-10 mt-[2px] ml-1">
+      //         <div className="w-5 h-5 rounded-full bg-gray-100/80 flex items-center justify-center text-gray-500">
+      //           <EventIcon className="text-[10px]" />
+      //         </div>
+      //       </div>
+
+      //       <div className="flex-1 text-[12px] text-gray-600 leading-tight pt-[3px]">
+      //         {item.summary.startsWith(item.actorName) ? (
+      //           <span>
+      //             <span className="font-semibold text-gray-800 mr-1">{item.actorName}</span>
+      //             <span>{item.summary.replace(item.actorName, "").trim()}</span>
+      //           </span>
+      //         ) : (
+      //           <span> {item.summary} by if(item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED"|| item.eventType === "TICKET_UPDATED"){
+      //             item.actorName
+      //           } </span>
+      //         )}
+      //         <span className="text-[11px] text-gray-400 ml-2 whitespace-nowrap">
+      //           {dayjs(item.createdAt).fromNow()}
+      //         </span>
+      //       </div>
+      //     </div>
+      //   );
+      // }
       if (item.isTimelineEvent) {
         if (formContext.isViewer) return null;
-
+      
         let EventIcon = FaHistory;
         if (item.eventType === "WORKSTREAM_CREATED") EventIcon = FaArrowRight;
         if (item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED") EventIcon = FaTags;
         if (item.eventType === "TICKET_UPDATED") EventIcon = FaClock;
-
+      
         return (
-          <div key={item.id} className="flex items-start gap-3 w-full mb-3 relative group hover:bg-gray-50/50 py-1 -ml-1 rounded transition-colors">
+          <div
+            key={item.id}
+            className="flex items-start gap-3 w-full mb-3 relative group hover:bg-gray-50/50 py-1 -ml-1 rounded transition-colors"
+          >
             <div className="flex-shrink-0 relative z-10 flex justify-center w-10 mt-[2px] ml-1">
               <div className="w-5 h-5 rounded-full bg-gray-100/80 flex items-center justify-center text-gray-500">
                 <EventIcon className="text-[10px]" />
               </div>
             </div>
-
+      
             <div className="flex-1 text-[12px] text-gray-600 leading-tight pt-[3px]">
               {item.summary.startsWith(item.actorName) ? (
                 <span>
-                  <span className="font-semibold text-gray-800 mr-1">{item.actorName}</span>
+                  <span className="font-semibold text-gray-800 mr-1">
+                    {item.actorName}
+                  </span>
                   <span>{item.summary.replace(item.actorName, "").trim()}</span>
                 </span>
               ) : (
-                <span>{item.summary}</span>
+                <span>
+                  {item.summary}
+                  {(item.eventType === "LABEL_ADDED" ||
+                    item.eventType === "LABEL_REMOVED" ||
+                    item.eventType === "TICKET_UPDATED" || item.eventType ==="STATUS_CHANGED") && (
+                    <>
+                      {" "}by{" "}
+                      <span className="font-semibold text-gray-800">
+                        {item.actorName}
+                      </span>
+                    </>
+                  )}
+                </span>
               )}
+      
               <span className="text-[11px] text-gray-400 ml-2 whitespace-nowrap">
                 {dayjs(item.createdAt).fromNow()}
               </span>
@@ -505,7 +557,6 @@ let parsedReactionsJSON = []
           </div>
         );
       }
-
       // =====================================
       // EDIT FORM
       // =====================================
@@ -564,8 +615,7 @@ let parsedReactionsJSON = []
   // =========================================================
   // RENDER
   // =========================================================
-console.log("parentTicket :", parentTicket);
-
+console.log("parentTicket",parentTicket)
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -663,11 +713,11 @@ console.log("parentTicket :", parentTicket);
         isOpen={isMeetingModalOpen}
         mode="Create"
         modalMode="meeting"
-        currentUserId={currentUser?.userId}
-        params={{
-          ticketId: ticketId,
-          projectId: parentTicket?.project,
-          ticketTitle: parentTicket?.title,
+        context={{
+          currentUserId:currentUser?.userId,
+          fromTicketId: ticketId,
+          fromProjectId: parentTicket?.project,
+          fromTicketTitle: parentTicket?.title,
         }}
         onClose={() => setIsMeetingModalOpen(false)}
         onSuccess={() => {

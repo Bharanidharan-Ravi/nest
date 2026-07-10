@@ -16,6 +16,8 @@ export default function EntityFormPage({
   onCancel,
   onSuccessCallback,
 }) {
+ 
+  
   const navigate = useNavigate();
   const smartNav = useSmartNavigation();
   const { data: masterData } = useMasterData();
@@ -26,7 +28,7 @@ export default function EntityFormPage({
     reset();
     setTempFiles([]);
   };
-
+  console.log("formData",formData);
   const { mutate, isPending } = useApiMutation({
     url: config.api,
     method: mode === "Update" ? "PUT" : "POST",
@@ -223,7 +225,7 @@ export default function EntityFormPage({
             });
           }
           // 3. UPDATED FALLBACK BUTTON: Handles Custom Modes (like "Reopen")
-          const isCustomMode = mode !== "Create" && mode !== "Edit"&& mode !== "Update";
+          const isCustomMode = mode !== "Create" && mode !== "Edit"&& mode !== "Update" &&mode!== "Complete" ;
 
           // Dynamically looks for a theme key based on the mode (e.g., theme.reopenBtn)
           const customThemeClass =

@@ -170,6 +170,32 @@ const REALTIME_ENTITY_CONFIG = {
     wrapList: (_oldData, list, shape) =>
       shape === "array" ? list : (list[0] ?? null),
   },
+  MeetingData: {
+    type: "query",
+    queryKey: (msg) =>{
+      queryKeys.MeetingData.list(
+        msg.Payload?.Employee_Id ??
+        msg.Employee_Id ??
+        msg.employeeId
+      )
+    },
+    sort: "desc",
+    extractList: (data) => ({
+      list: Array.isArray(data)
+        ? data
+        : Array.isArray(data?.Data)
+          ? data.Data
+          : [],
+      shape: Array.isArray(data) ? "array" : "data",
+    }),
+  
+    wrapList: (oldData, list, shape) =>
+      shape === "array"
+        ? list
+        : { ...(oldData ?? {}), Data: list },
+  },
+
+
   // ─────────────────────────────────────────────────────────────────────────
   //  ADDING A NEW ENTITY IN THE FUTURE
   //  Copy-paste one of the blocks below, fill in the queryKey and list shape.

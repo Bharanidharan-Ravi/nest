@@ -238,6 +238,8 @@ export default function DaysOfWeekPicker({
   required,
   disabled = false,
 }) {
+
+  console.log("value",value)
   const selected = useMemo(() => normaliseToSet(value), [value]);
 
   const toggle = (dayId) => {
@@ -245,15 +247,12 @@ export default function DaysOfWeekPicker({
 
     const id = String(dayId);
     const next = new Set(selected);
-
     if (next.has(id)) {
       next.delete(id);
     } else {
       next.add(id);
     }
-
     const binaryValue = serialiseToBinary(next);
-
     onChange?.(name, binaryValue);
   };
 

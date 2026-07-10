@@ -50,10 +50,7 @@ const CreateBanner = () => {
     },
   };
 
-  const MessageTypeOption = (MessageType || []).map((mt) => ({
-    label: mt.Type_Name,
-    value: { id: mt.MessageTypeId, name: mt.Type_Name },
-  }));
+console.log("entityData",entityData);
 
   const MessageTypefield = {
     name: "MessageType",

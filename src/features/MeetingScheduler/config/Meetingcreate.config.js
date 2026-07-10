@@ -3,7 +3,25 @@
 
 
 import { buildOptionsResolver, calcHHMM } from "../../../app/shared/utilities/utilities";
+const recurrenceOptions =
+  [
+    { label: "One Time", value: { id: "ONETIME", name: "onetime" } },
+    { label: "Daily", value: { id: "DAILY", name: "daily" } },
+    { label: "Weekly", value: { id: "WEEKLY", name: "weekly" } },
+  ]
 
+const bookingTypeOptions = [
+  { label: "Meeting", value: { id: "meeting", name: "meeting" } },
+  { label: "Interview", value: { id: "interview", name: "interview" } },
+  { label: "Demo", value: { id: "demo", name: "demo" } },
+  { label: "Discussion", value: { id: "discussion", name: "discussion" } },
+  { label: "SupportCall", value: { id: "supportCall", name: "supportCall" } },
+];
+
+const hostTypeOptions = [
+  { label: "Employee", value: { id: "Employee", name: "Employee" } },
+  { label: "Client", value: { id: "Client", name: "Client" } },
+];
 export const MeetinglFieldConfig = () => [
   {
     name: "host_Type",
@@ -13,16 +31,18 @@ export const MeetinglFieldConfig = () => [
     apiKey: "host_type",
     dataType: "string",
     initValueResolver: ({ context }) => {
-      return {
-        label: "Employee",
-        value: { id: "Employee", name: "Employee" }
-      };
+      const value = context.entityData?.host_type;
+      if (context.isEditMode) {
+        return (
+          hostTypeOptions.find(
+            option => option.value?.id === value
+          ) || hostTypeOptions.find(o => o.value?.id === "Employee")
+        );
+      }
+      return hostTypeOptions.find(o => o.value?.id === "Employee");
     },
     required: true,
-    options: [
-      { label: "Employee", value: { id: "Employee", name: "Employee" } },
-      { label: "Client", value: { id: "Client", name: "Client" } },
-    ],
+    options: hostTypeOptions
   },
   {
     label: "Host Name",
@@ -33,8 +53,7 @@ export const MeetinglFieldConfig = () => [
     colSpan: 6,
     dataType: "string",
     apiKey: "host_id",
-    optionsResolver: ({ masterData, formData }) => {
-      // 1. Employee options
+    optionsResolver: ({ masterData, context, formData }) => {
       const employeeOptions =
         (masterData?.EmployeeList || [])
           .filter((user) => user.Status === "Active")
@@ -45,63 +64,54 @@ export const MeetinglFieldConfig = () => [
               name: user.UserName,
             },
           })) || [];
-
-      // 2. Repo (client) options
-      const repoOptions =
-        (masterData?.RepoList || []).flatMap((repo) => {
-          let users = [];
-          try {
-            users = JSON.parse(repo.RepoUserList || "[]");
-          } catch (e) {
-            users = [];
-          }
-          return users
-            .filter((user) => user.Status === "Active")
-            .map((user) => ({
-              label: user.UserName,
-              value: {
-                id: user.UserId,
-                name: user.UserName,
-              },
-            }));
-        });
-
-      // 3. Return based on selected host type
+      const repoOptions = (masterData?.RepoList || []).flatMap((repo) =>
+        (repo.repoUsers || [])
+          .filter((user) => user.Status === "Active")
+          .map((user) => ({
+            label: user.UserName,
+            value: {
+              id: user.UserId,
+              name: user.UserName,
+            },
+          }))
+      );
       const selectedType = formData?.host_Type?.value?.id;
-
       if (selectedType === "Employee") return employeeOptions;
       if (selectedType === "Client") return repoOptions;
-
-      // Default empty if no type selected
       return [];
     },
-    // initValueResolver: ({ context, masterData, formData }) => {
-    //   const currentUserId = context?.currentUserId;
+    initValueResolver: ({ context, masterData, formData }) => {
+      const currentUserId = context.isEditMode ? context.entityData.host_id : context?.currentUserId;
+      if (!currentUserId) return null;
+      const selectedType =
+        formData?.host_Type?.value?.id || formData?.host_Type?.id;
+      const currentUser = (masterData?.EmployeeList || []).find(
+        (user) => user.UserID === currentUserId
+      );
+      if (!currentUser) return null;
+      return {
+        label: currentUser.UserName,
+        value: {
+          id: currentUser.UserID,
+          name: currentUser.UserName,
+        },
+      };
+    },
+  },
 
-    //   if (!currentUserId) return null;
 
-    //   const selectedType =
-    //     formData?.host_Type?.value?.id || formData?.host_Type?.id;
-    //     // const optionsMaster =[...masterData.EmployeeList,...masterData.RepoList]
-    //   // ONLY for Employee
-    //   if (selectedType != "Employee") return null;
-
-    //   const currentUser = (masterData?.EmployeeList || []).find(
-    //     (user) => user.UserID === currentUserId
-    //   );
-
-    //   if (!currentUser) return null;
-
-    //   return {
-    //     label: currentUser.UserName,
-    //     value: {
-    //       id: currentUser.UserID,
-    //       name: currentUser.UserName,
-    //     },
-    //   };
-    // },
-
-    // visibleWhen: (formData) => !!formData?.host_Type,
+  {
+    label: "Meeting title",
+    name: "title",
+    type: "text",
+    ui: "mui",
+    required: true,
+    dataType: "string",
+    colSpan: 12,
+    apiKey: "title",
+    initValueResolver: ({ context }) => {
+      return context.isEditMode ? context.entityData.title : ""
+    }
   },
   {
     name: "recurrence_type",
@@ -111,28 +121,20 @@ export const MeetinglFieldConfig = () => [
     apiKey: "recurrence_type",
     dataType: "string",
     required: true,
-    options: [
-      { label: "One Time", value: { id: "ONETIME", name: "onetime" } },
-      { label: "Daily", value: { id: "DAILY", name: "daily" } },
-      { label: "Weekly", value: { id: "WEEKLY", name: "weekly" } },
-    ],
+    options: recurrenceOptions,
+
     initValueResolver: ({ context }) => {
-      return {
-        label: "One Time",
-        value: { id: "ONETIME", name: "onetime" }
-      };
+      if (context.isEditMode) {
+        const currentType = context.entityData.recurrence_type;
+        const matched = recurrenceOptions.find((opt) => opt.value.id === currentType)
+        return matched || recurrenceOptions[0]
+      }
+      return recurrenceOptions[0];
+      // return {
+      //   label: "One Time",
+      //   value: { id: "ONETIME", name: "onetime" }
+      // };
     },
-  },
-  {
-    label: "Meeting title",
-    name: "title",
-    type: "text",
-    ui: "mui",
-    required: true,
-    dataType: "string",
-    apiKey: "title",
-
-
   },
   {
     label: "Meeting Date",
@@ -142,25 +144,20 @@ export const MeetinglFieldConfig = () => [
     required: true,
     dataType: "string",
     apiKey: "meeting_Date",
-    visibleWhen: (formData, context) => {
+    visibleWhen: (formData) => {
       return formData?.recurrence_type?.value?.id === "ONETIME";
     },
-    initValueResolver: ({ context, formData }) => {
-      const recurrenceId =
-      formData?.recurrence_type?.value?.id ||
-      formData?.recurrence_type?.id ||
-      formData?.recurrence_type;
-    const isOneTime = recurrenceId === "ONETIME";
-      if (isOneTime) {
-        const today = new Date();
-        const yyyy = today.getFullYear();
-        const mm = String(today.getMonth() + 1).padStart(2, "0");
-        const dd = String(today.getDate()).padStart(2, "0");
-        return `${yyyy}-${mm}-${dd}`;
+    initValueResolver: ({ context,formData }) => {
+      const isEditMode = context?.isEditMode;
+      if (isEditMode) {
+        return context?.entityData?.meeting_date
+          ? context.entityData.meeting_date.split("T")[0]
+          : "";
       }
-      return "";
-    }
+      return  new Date().toISOString().split("T")[0]
+    },
   },
+
   {
     label: "Validate From",
     name: "validate_From",
@@ -172,10 +169,12 @@ export const MeetinglFieldConfig = () => [
       return formData?.recurrence_type?.value?.id !== "ONETIME";
     },
     apiKey: "valid_from_date",
-    // fullWidth: true,
-
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.valid_from_date ?? "" : "",
+    initValueResolver: ({ context, formData }) => {
+      if (context.isEditMode) {
+        return context.entityData?.valid_from_date?.split("T")[0] || "";
+      }
+      return  new Date().toISOString().split("T")[0] ;
+    }
   },
   {
     label: "Validate To",
@@ -188,10 +187,13 @@ export const MeetinglFieldConfig = () => [
       return formData?.recurrence_type?.value?.id !== "ONETIME";
     },
     apiKey: "valid_to_date",
-    // fullWidth: true,
-
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.valid_to_date ?? "" : "",
+    initValueResolver: ({ context, formData }) => {
+      if (context.isEditMode) {
+        return context.entityData?.valid_to_date?.split("T")[0] || "";
+      }
+      const isVisible = formData?.recurrence_type?.value?.id !== "ONETIME";
+      return new Date().toISOString().split("T")[0];
+    }
   },
   {
     label: "Start Time",
@@ -202,20 +204,38 @@ export const MeetinglFieldConfig = () => [
     dataType: "string",
     apiKey: "start_time",
     customValidator: (value, data, context) => {
-      const start = new Date(value);
-      const now = new Date();
-      // Rule 1: cannot be in the past
-      if (start < now) {
-        return "Start time cannot be in the past";
+      console.log("value, data, context",value, data, context);
+      
+      if (!value) return true;
+      const [hours, minutes] = value.split(":").map(Number);
+      const selectedTime = hours * 60 + minutes;
+      // Office starts at 10:00 AM
+      if (selectedTime < 600) {
+        return "Start Time cannot be before 10:00 AM";
       }
-      const hour = start.getHours();
-      if (hour < 10) {
-        return "Start time cannot be before 10:00 AM";
+      if (context.isEditMode) return true;
+      const currentDate = new Date().toISOString().split("T")[0];
+      if (data.meeting_Date === currentDate) {
+        const now = new Date();
+        const currentTime = now.getHours() * 60 + now.getMinutes();
+    
+        return selectedTime >= currentTime
+          ? true
+          : "Start Time cannot be before the current time";
       }
-      return true; // valid
+      return true;
+      // const now = new Date();
+      // const currentTime = now.getHours() * 60 + now.getMinutes();
+      // return selectedTime >= currentTime
+      //   ? true
+      //   : "Start Time cannot be before the current time";
     },
-    initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.start_time ?? "" : "",
+    initValueResolver: ({ context }) => {
+      if (context.isEditMode) {
+        return context.entityData?.start_time?.slice(0, 5) ?? "";
+      }
+      return new Date().toTimeString().slice(0, 5);
+    }
   },
   {
     label: "End Time",
@@ -224,12 +244,53 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     required: true,
     dataType: "string",
-    // customComponent:FileAttachmentInput,
     apiKey: "end_time",
-    // fullWidth: true,
-
     initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.end_time ?? "" : "",
+      context.isEditMode
+        ? context.entityData?.end_time?.slice(0, 5) :"",
+        // : (() => {
+        //   const date = new Date();
+        //   date.setMinutes(date.getMinutes() + 10);
+        //   return date.toTimeString().slice(0, 5);
+        // })(),
+    customValidator: (value, data) => {
+      if (!value || !data.start_time) return true;
+
+      const [endHour, endMinute] = value.split(":").map(Number);
+      const [startHour, startMinute] = data.start_time.split(":").map(Number);
+
+      return endHour * 60 + endMinute >= startHour * 60 + startMinute
+        ? true
+        : "End Time cannot be earlier than Start Time";
+    },
+  },
+  {
+    label: "Slot Duration",
+    name: "slot_Duration",
+    type: "flexHours",
+    ui: "mui",
+    required: true,
+    dataType: "string",
+    apiKey: "slot_duration",
+    effectDependencies: ["start_time", "end_time"],
+    effectResolver: (formData) => {
+      if (formData.start_time && formData.end_time) {
+        return calcHHMM(formData.start_time, formData.end_time);
+      }
+      return formData.slot_Duration || "";
+    },
+    initValueResolver: ({ context, masterData, formData }) => {
+      const start = formData?.start_time?.slice(0, 5) ?? "";
+      const end = formData?.end_time?.slice(0, 5) ?? "";
+      console.log("start",start);
+      console.log("end",end);
+      if (start && end) {
+        return calcHHMM(start, end);
+      }
+      return context.isEditMode
+        ? context.entityData?.slot_duration ?? ""
+        : "";
+    },
   },
 
   {
@@ -251,10 +312,11 @@ export const MeetinglFieldConfig = () => [
       { label: "Sat", value: { id: 6, name: "Saturday" } },
     ],
     visibleWhen: (formData, context) => {
-      return formData?.recurrence_type?.value?.id === "WEEKLY";
+      const type = formData?.recurrence_type?.value?.id;
+      return type && type !== "ONETIME" && type !== "DAILY";
     },
     initValueResolver: ({ context }) => {
-      return context.isEdit ? (context.entityData?.recurrence_type ?? "") : "";
+      return context.isEditMode ? (context.entityData?.days_of_week ?? "") : "";
     },
 
   },
@@ -271,6 +333,18 @@ export const MeetinglFieldConfig = () => [
       "UserName",
       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
     ),
+    initValueResolver: ({ context }) => {
+      if (!context.isEditMode) return [];
+      const raw = context.entityData?.InternalParticipants;
+      const parsed = typeof raw === "string" ? JSON.parse(raw || "[]") : (raw || []);
+      return parsed.map((p) => ({
+        label: p.Participant_Name,
+        value: {
+          id: p.Participant_Id,
+          name: p.Participant_Name,
+        },
+      }));
+    },
   },
   {
     label: "Client Participants",
@@ -279,12 +353,9 @@ export const MeetinglFieldConfig = () => [
     multiple: true,
     apiKey: "clientParticipants",
     ui: "mui",
-    // visibleWhen: (formData, context) => {
-    //   return formData?.host_Type?.label === "Client";
-    // },
     optionsResolver: ({ masterData, context }) => {
-      // const repoList =
-      //   masterData?.RepoList || context?.data?.RepoList || [];
+      console.log("context", context);
+
       const options = masterData?.RepoList.flatMap((repo) => {
         const users = JSON.parse(repo.RepoUserList || "[]");
         return users
@@ -300,9 +371,20 @@ export const MeetinglFieldConfig = () => [
 
       return options;
     },
-
+    initValueResolver: ({ context }) => {
+      if (!context.isEditMode) return [];
+      const raw = context.entityData?.ClientParticipants;
+      const parsed =
+        typeof raw === "string" ? JSON.parse(raw || "[]") : (raw || []);
+      return parsed.map((p) => ({
+        label: p.Participant_Name,
+        value: {
+          id: p.Participant_Id,
+          name: p.Participant_Name,
+        },
+      }));
+    },
   },
-
   {
     name: "booking_Type",
     label: "Meeting Type",
@@ -311,99 +393,82 @@ export const MeetinglFieldConfig = () => [
     apiKey: "booking_type",
     dataType: "string",
     required: true,
-    options: [
-      { label: "Meeting", value: { id: "meeting", name: "meeting" } },
-      { label: "Interview", value: { id: "interview", name: "interview" } },
-      { label: "Demo", value: { id: "demo", name: "demo" } },
-      { label: "Discussion", value: { id: "discussion", name: "discussion" } },
-      { label: "SupportCall", value: { id: "supportCall", name: "supportCall" } },
-    ],
-
-  },
-  {
-    label: "Meeting Summary",
-    name: "meeting_Summary",
-    type: "text",
-    ui: "mui",
-    required: false,
-    dataType: "string",
-    // customComponent:FileAttachmentInput,
-    apiKey: "meeting_summary",
-    // fullWidth: true,
+    options: bookingTypeOptions,
     initValueResolver: ({ context }) =>
-      context.isEdit ? context.entityData?.meeting_summary ?? "" : "",
+      context.isEditMode
+        ? bookingTypeOptions.find(
+          option => option.value.id === context.entityData?.booking_type
+        ) || null
+        : null,
   },
-  {
-    label: "Slot Duration",
-    name: "slot_Duration",
-    type: "flexHours",
-    ui: "mui",
-    required: true,
-    dataType: "string",
-    apiKey: "slot_duration",
+  // {
+  //   label: "Meeting Summary",
+  //   name: "meeting_Summary",
+  //   type: "text",
+  //   ui: "mui",
+  //   required: false,
+  //   dataType: "string",
+  //   // customComponent:FileAttachmentInput,
+  //   apiKey: "meeting_summary",
+  //   // fullWidth: true,
+  //   initValueResolver: ({ context }) =>
+  //     context.isEditMode ? context.entityData?.meeting_summary ?? "" : "",
+  // },
 
-    effectDependencies: ["start_time", "end_time"],
-
-    effectResolver: (formData) => {
-      const start = formData.start_time;
-      const end = formData.end_time;
-
-      // If both times are present → calculate duration
-      if (start && end) {
-        return calcHHMM(start, end);
-      }
-      // If only one is present → invalid/incomplete state
-      if ((start && !end) || (!start && end)) {
-        return null;
-      }
-
-      // fallback (optional manual value support)
-      return formData.slot_duration || null;
-    },
-  },
   {
     label: "Project",
     name: "project",
     type: "select",
     ui: "mui",
-    required: false,
+    required: true,
     dataType: "string",
-    // customComponent:FileAttachmentInput,
     apiKey: "project_id",
-    // fullWidth: true, 
     optionsResolver: buildOptionsResolver(
       "ProjectList", // 1. listKey
       "Id", // 2. idKey
       "Project_Name", // 3. labelKey
     ),
     initValueResolver: ({ context, masterData, formData }) => {
+      if (context?.isEditMode) {
+        const projectId = context?.entityData?.project_id;
+        const project = masterData?.ProjectList?.find(
+          (p) => p.Id === projectId
+        );
+        return project
+          ? {
+            label: project.Project_Name,
+            value: {
+              id: project.Id,
+              name: project.Project_Name,
+            },
+          }
+          : null;
+      }
       const ticketId = formData?.ticket?.value?.id || context?.fromTicketId;
       const projectId = context?.fromProjectId || context?.ticketMaster
         ?.find(t => t.Issue_Id === ticketId)
         ?.Project_Id;
       const project = masterData?.ProjectList
         ?.find(p => p.Id === projectId)
-
       return project && {
         label: project.Project_Name,
         value: { id: project.Id, name: project.Project_Name },
       };
     },
-    customFilter: (item, selectedValue) => {
-      if (!selectedValue) return true;
-
-      const safeSelected = String(selectedValue).toLowerCase();
-      if (
-        item.assignedTo &&
-        String(item.assignedTo).toLowerCase() === safeSelected
-      ) {
-        return true;
-      }
-      if (selectedValue === "__no_owner__") {
-        return !item.assignedTo || item.assignedTo === "" || item.assignedTo === null
-      }
-      return false;
-    },
+    // customFilter: (item, selectedValue) => {
+    //   if (!selectedValue) return true;
+    //   const safeSelected = String(selectedValue).toLowerCase();
+    //   if (
+    //     item.assignedTo &&
+    //     String(item.assignedTo).toLowerCase() === safeSelected
+    //   ) {
+    //     return true;
+    //   }
+    //   if (selectedValue === "__no_owner__") {
+    //     return !item.assignedTo || item.assignedTo === "" || item.assignedTo === null
+    //   }
+    //   return false;
+    // },
   },
 
 

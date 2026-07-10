@@ -30,7 +30,6 @@ export function readUserFromSession() {
       ];
     const sessionId = decoded["SessionId"];
     const jwtId = decoded["JwtId"];
-    
     return {
       token,
       role: Number(role) || 0,

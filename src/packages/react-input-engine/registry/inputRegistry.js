@@ -18,6 +18,9 @@ import ToggleSwitchField from "../adapters/mui/ToggleSwitchField";
 import FileAttachmentInput from "../adapters/mui/Attachment";
 import MuiCheckbox from "../adapters/mui/MuiCheckbox";
 import MuiSwitch from "../adapters/mui/MuiSwitch";
+import DaysOfWeekPicker from "../adapters/mui/DaysOfWeek";
+
+import ListCheckBox from "../adapters/mui/CheckBoxList";
 
 export const inputRegistry = {
   mui: {
@@ -34,6 +37,8 @@ export const inputRegistry = {
     switch: MuiSwitch,
     adAttach: FileAttachmentInput,
     checkbox: MuiCheckbox,
+    weeks :DaysOfWeekPicker,
+    ListCheckBox:ListCheckBox
   },
   html: {
     text: HtmlTextInput,

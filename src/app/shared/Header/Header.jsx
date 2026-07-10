@@ -26,7 +26,8 @@ import {
   Info,
   AlertCircle,
   XCircle,
-  Clock
+  Clock,
+  Calendar
 } from 'lucide-react';
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
@@ -54,7 +55,9 @@ const Header = ({ toggleMobileMenu }) => {
   const { isViewer } = useCurrentUser();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [meetingShowNotifications, setMeetinShowNotifications] = useState(false);
   const dropdownRef = useRef(null);
+  const meetingRef = useRef(null);
   const [showStaleTickets, setShowStaleTickets] = useState(false)
   const staleTicketsRef = useRef(null)
   const UserName = user?.name || "Test";
@@ -62,11 +65,10 @@ const Header = ({ toggleMobileMenu }) => {
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
-  const { data: notificationList } = getNotification(showNotifications);
-
-  // const {data:statleTicketsData}=useGetStaleTicketData(user?.userId)
-  // const staleTickets=statleTicketsData?.GetStaleTicketsForAssignee?.Data||[]
-  // const staleCount=staleTickets.length;
+  const { data: notificationList } = getNotification(
+    meetingShowNotifications || showNotifications
+  );
+  console.log("notificationList",notificationList);
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
 
   const staleTickets = statleTicketsData || [];
@@ -79,10 +81,16 @@ const Header = ({ toggleMobileMenu }) => {
   const { data: bannerListWrapper } = useBannerMessage();
   const bannerContainerRef = useRef(null);
   const bannerTrackRef = useRef(null);
-
   const [repeatedBanners, setRepeatedBanners] = useState([]);
   const [animationDuration, setAnimationDuration] = useState(40);
+  const meetingNotifications = useMemo(() => {
+    return notificationList?.filter(
+      (item) => item.entityType === "MEETING"
+    ) || [];
+  }, [notificationList]);
 
+  const meetingCount = meetingNotifications.length;
+  
   const markSeen = async () => {
     try {
       await executeApi({
@@ -100,8 +108,11 @@ const Header = ({ toggleMobileMenu }) => {
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownVisible(false);
+      if (
+        meetingRef.current &&
+        !meetingRef.current.contains(event.target)
+      ) {
+        setMeetinShowNotifications(false);
       }
 
       if (
@@ -110,10 +121,12 @@ const Header = ({ toggleMobileMenu }) => {
       ) {
         setShowNotifications(false);
       }
-      if (staleTicketsRef.current &&
+
+      if (
+        staleTicketsRef.current &&
         !staleTicketsRef.current.contains(event.target)
       ) {
-        setShowStaleTickets(false)
+        setShowStaleTickets(false);
       }
     };
 
@@ -123,14 +136,13 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+console.log("meetingShowNotifications",meetingShowNotifications);
+useEffect(() => {
+  if (!showNotifications && !meetingShowNotifications) return;
+  markSeen();
+  useNotificationStore.getState().reset();
 
-  useEffect(() => {
-    if (!showNotifications) return;
-
-    markSeen();
-
-    useNotificationStore.getState().reset();
-  }, [showNotifications]);
+}, [showNotifications, meetingShowNotifications]);
   const setCount = useNotificationStore((s) => s.setCount);
   const count = useNotificationStore((s) => s.count);
   useEffect(() => {
@@ -190,50 +202,50 @@ const Header = ({ toggleMobileMenu }) => {
   }, [bannerListWrapper]);
   // Add this function inside your component
   const getBannerIcon = (iconClass, colorCode) => {
-  const props = {
-    size: 18,
-    color: colorCode,
-    strokeWidth: 2,
+    const props = {
+      size: 18,
+      color: colorCode,
+      strokeWidth: 2,
+    };
+
+    switch (iconClass) {
+      case "ti-reload":
+        return <RefreshCw {...props} />;
+
+      case "ti-alert":
+        return <AlertTriangle {...props} />;
+
+      case "ti-user":
+        return <UserPlus {...props} />;
+
+      case "ti-check":
+        return <CheckCircle {...props} />;
+
+      case "ti-info-alt":
+        return <Bell {...props} />;
+
+      case "ti-info-circle":
+        return <Info {...props} />;
+
+      case "ti-trophy":
+        return <Trophy {...props} />;
+
+      case "ti-exclamation-circle":
+        return <AlertCircle {...props} />;
+
+      case "ti-megaphone":
+        return <Megaphone {...props} />;
+
+      case "ti-star":
+        return <PartyPopper {...props} />;
+
+      case "ti-times":
+        return <XCircle {...props} />;
+
+      default:
+        return <Info {...props} />;
+    }
   };
-
-  switch (iconClass) {
-    case "ti-reload":
-      return <RefreshCw {...props} />;
-
-    case "ti-alert":
-      return <AlertTriangle {...props} />;
-
-    case "ti-user":
-      return <UserPlus {...props} />;
-
-    case "ti-check":
-      return <CheckCircle {...props} />;
-
-    case "ti-info-alt":
-      return <Bell {...props} />;
-
-    case "ti-info-circle":
-      return <Info {...props} />;
-
-    case "ti-trophy":
-      return <Trophy {...props} />;
-
-    case "ti-exclamation-circle":
-      return <AlertCircle {...props} />;
-
-    case "ti-megaphone":
-      return <Megaphone {...props} />;
-
-    case "ti-star":
-      return <PartyPopper {...props} />;
-
-    case "ti-times":
-      return <XCircle {...props} />;
-
-    default:
-      return <Info {...props} />;
-  }
-};
   const now = useMemo(() => dayjs(), []);
 
   const filteredBanners = useMemo(() => {
@@ -338,11 +350,109 @@ const Header = ({ toggleMobileMenu }) => {
           </div>
         )}
         {/* Right Side: Breadcrumbs & User Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" ref={meetingRef}>
           <Breadcrumbs />
           {/* {!isViewer && ( */}
           {!isViewer && (
             <>
+              <div className="relative cursor-pointer" >
+                <Calendar
+                  size={24}
+                  onClick={() => setMeetinShowNotifications((prev) => !prev)}
+                />
+
+                {count > 0 && (
+                  <span
+                    className="
+        absolute
+        -top-2
+        -right-2
+        bg-red-500
+        text-white
+        text-xs
+        rounded-full
+        min-w-[18px]
+        h-[18px]
+        flex
+        items-center
+        justify-center
+        px-1
+      "
+                  >
+                    {count > 99 ? "99+" : count}
+                  </span>
+                )}
+
+                {meetingShowNotifications && (
+                  <div
+                    className="
+        absolute
+        right-0
+        top-12
+        w-[420px]
+        bg-white
+        rounded-xl
+        shadow-2xl
+        border
+        border-gray-200
+        z-50
+        overflow-hidden
+      "
+                  >
+
+                    <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
+                      <h3 className="font-semibold text-sm">Meetings </h3>
+
+                      <span className="bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded-full">
+                        {meetingCount || 0}
+                      </span>
+                    </div>
+
+
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {notificationList?.length > 0 ? (
+                        notificationList
+                          ?.filter((item) => item.entityType === "MEETING")
+                          .map((item) => (
+                            <div
+                              key={item.id || item.notificationId}
+                              className="px-4 py-2.5 border-b hover:bg-gray-50 cursor-pointer transition"
+                            >
+                              <div className="flex flex-col gap-1 min-w-0">
+
+                                {/* Title */}
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <h4 className="text-sm font-medium text-gray-900 truncate">
+                                    {item.title}
+                                  </h4>
+                                </div>
+
+                                {/* Message */}
+                                <p className="text-sm text-gray-600 truncate">
+                                  {item.message}
+                                </p>
+
+                                {/* Actor + Time */}
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span>Scheduled By: {item.actorName}</span>
+
+                                  <span>
+                                    {dayjs(item?.createdAt).fromNow()}
+                                  </span>
+                                </div>
+
+                              </div>
+                            </div>
+                          ))
+                      ) : (
+                        <div className="p-8 text-center text-gray-500">
+                          No Meetings
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="relative cursor-pointer" ref={staleTicketsRef}>
                 <Clock
                   size={24}
@@ -544,7 +654,8 @@ const Header = ({ toggleMobileMenu }) => {
                     {/* Body */}
                     <div className="max-h-[300px] overflow-y-auto">
                       {notificationList?.length > 0 ? (
-                        notificationList.map((item) => (
+                        notificationList
+                         ?.filter((item) => item.entityType === "TICKET").map((item) => (
                           <div
                             key={item.id}
                             className="

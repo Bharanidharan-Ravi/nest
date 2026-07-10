@@ -138,9 +138,14 @@ export default function TicketsPage() {
     return false;
   };
 
-  const ticketList = useMemo(() => {
-    const rawList = (data ?? []).map(normalizeTicket);
-    return rawList.filter((item) => isAllowedToView(item, currentUserId));
+  // const ticketList = useMemo(() => {
+  //   const rawList = (data ?? []).map(normalizeTicket);
+  //   return rawList.filter((item) => isAllowedToView(item, currentUserId));
+  const TicketList = useMemo(() => {
+    const normalized = (data || []).map(normalizeTicket);
+    return normalized.filter(function (ticket) {
+      return canViewTicket(ticket, currentUserId);
+    });
   }, [data, currentUserId]);
 
   const listConfigWithNav = {
@@ -344,7 +349,7 @@ export default function TicketsPage() {
       <div className="w-full pb-10">
         <ListProvider
           config={listConfigWithNav}
-          data={ticketList}
+          data={TicketList}
           userRole={currentUser?.role}
         >
           {!repoId && !projId && (
