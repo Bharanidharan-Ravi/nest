@@ -1,0 +1,394 @@
+USE [WG_APP]
+GO
+/****** Object:  StoredProcedure [dbo].[SP_MeetingComplete]    Script Date: 7/10/2026 6:33:13 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[SP_MeetingComplete]
+(
+      @MeetingId UNIQUEIDENTIFIER,
+      @ActualStartTime DATETIME2,
+      @ActualEndTime DATETIME2,
+      @MeetingSummary NVARCHAR(MAX),
+      @CompletedBy UNIQUEIDENTIFIER
+)
+AS
+BEGIN
+
+SET NOCOUNT ON;
+
+BEGIN TRY
+
+BEGIN TRAN;
+
+INSERT INTO MeetingCompletion
+(
+    meeting_id,
+    actual_start_time,
+    actual_end_time,
+    duration_minutes,
+    meeting_summary,
+    completedby
+)
+VALUES
+(
+    @MeetingId,
+    @ActualStartTime,
+    @ActualEndTime,
+    DATEDIFF(MINUTE,@ActualStartTime,@ActualEndTime),
+    @MeetingSummary,
+    @CompletedBy
+);
+
+UPDATE MeetingMaster
+SET
+
+    status='Completed',
+    updated_at=dbo.GET_IST_DATE(),
+    updated_by=@CompletedBy
+
+WHERE meeting_id=@MeetingId;
+
+COMMIT;
+
+END TRY
+
+BEGIN CATCH
+
+ROLLBACK;
+
+THROW;
+
+END CATCH
+
+END
+
+====================================================
+USE [WG_APP]
+GO
+/****** Object:  StoredProcedure [dbo].[Sp_GetUpcomingMeetings]    Script Date: 7/10/2026 6:32:47 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+
+ALTER PROCEDURE [dbo].[Sp_GetUpcomingMeetings]
+ @DbName NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @Today DATE = CAST(GETDATE() AS DATE);
+
+    SELECT
+        T0.meeting_id,
+        T0.title,
+        T0.recurrence_type,
+        T0.start_time,
+        T0.end_time,
+        T0.booking_type,
+
+        CASE
+            WHEN T0.recurrence_type = 'ONETIME' THEN
+                CONVERT(VARCHAR(10), T0.meeting_date, 23)
+
+            WHEN T0.recurrence_type IN ('DAILY', 'WEEKLY') THEN
+                CONCAT(
+                    CONVERT(VARCHAR(10), T0.valid_from_date, 103),
+                    ' - ',
+                    CONVERT(VARCHAR(10), T0.valid_to_date, 103)
+                )
+        END AS [Date],
+
+        CAST(
+            DATEDIFF(MINUTE,
+                CAST(T0.start_time AS TIME),
+                CAST(T0.end_time AS TIME)
+            ) / 60.0
+        AS DECIMAL(5,2)) AS DurationHours,
+
+        T0.days_of_week,
+        T0.host_id AS Organizer_Id,
+        T1.EmployeeName AS Organizer,
+        T0.status
+    FROM dbo.MeetingMaster T0
+    LEFT JOIN dbo.EmployeeMaster T1
+        ON T1.EmployeeID = T0.created_by
+    WHERE
+        (
+            (T0.recurrence_type = 'ONETIME'
+             AND CAST(T0.meeting_date AS DATE) >= @Today)
+            OR
+            (T0.recurrence_type IN ('DAILY', 'WEEKLY')
+             AND @Today BETWEEN CAST(T0.valid_from_date AS DATE)
+                             AND CAST(T0.valid_to_date AS DATE))
+        )
+        AND ISNULL(T0.status, '') <> 'Completed'
+		  ORDER BY T0.created_at desc;
+		;
+END
+
+--exec Sp_GetUpcomingMeetings 'WG_APP'
+
+select * from MeetingMaster
+======================================================================================
+USE [WG_APP]
+GO
+/****** Object:  StoredProcedure [dbo].[sp_GetMeetings]    Script Date: 7/10/2026 6:32:32 PM ******/
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+ALTER PROCEDURE [dbo].[sp_GetMeetings]
+    @DbName  NVARCHAR(100),
+    @EmployeeId UNIQUEIDENTIFIER = NULL,
+    @FromDate   DATE = NULL,
+    @ToDate     DATE = NULL,
+    @MeetingId  UNIQUEIDENTIFIER  = NULL
+ AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH CandidateMeetings AS (
+        SELECT DISTINCT m.meeting_id
+        FROM [dbo].[MeetingMaster] m
+    --    WHERE
+    --        (@FromDate IS NULL OR m.meeting_date >= @FromDate)
+    --        AND (@ToDate IS NULL OR m.meeting_date <= @ToDate)
+    --        AND (
+    --            @EmployeeId IS NULL
+    --            OR m.host_id = @EmployeeId
+    --            OR EXISTS (
+    --                SELECT 1
+    --                FROM [dbo].[meeting_attendance] a
+    --                WHERE a.meeting_id = m.meeting_id
+    --                  AND a.participant_id = @EmployeeId
+    --            )
+    --        )
+    --),
+	WHERE
+(
+    @MeetingId IS NOT NULL
+    AND m.meeting_id = @MeetingId
+)
+OR
+(
+    @MeetingId IS NULL
+    AND (@FromDate IS NULL OR m.meeting_date >= @FromDate)
+    AND (@ToDate IS NULL OR m.meeting_date <= @ToDate)
+    AND (
+        @EmployeeId IS NULL
+        OR m.host_id = @EmployeeId
+        OR EXISTS (
+            SELECT 1
+            FROM dbo.meeting_attendance a
+            WHERE a.meeting_id = m.meeting_id
+              AND a.participant_id = @EmployeeId
+        )
+    )
+)
+),
+    Attendees AS (
+        SELECT
+            a.meeting_id,
+            a.participant_id,
+            a.participant_type,
+            a.participant_role,
+            a.invite_status,
+            a.attendance_status,
+            COALESCE(emp.EmployeeName, cli.UserName, CAST(a.participant_id AS NVARCHAR(36))) AS participant_name
+        FROM [dbo].[meeting_attendance] a
+        INNER JOIN CandidateMeetings cm ON cm.meeting_id = a.meeting_id
+        LEFT JOIN [dbo].[EMPLOYEEMASTER] emp
+               ON emp.EmployeeID = a.participant_id
+              AND a.participant_type = 'Employee'
+        LEFT JOIN [dbo].[RepoUsers] cli
+               ON cli.UserId = a.participant_id
+              AND a.participant_type = 'Client'
+    ),
+
+    InternalJSON AS (
+        SELECT
+            meeting_id,
+            (
+                SELECT
+                    participant_id AS Participant_Id,
+                    participant_name AS Participant_Name,
+                    participant_role AS Participant_Role,
+                    invite_status AS Invite_Status,
+                    attendance_status AS Attendance_Status
+                FROM Attendees i
+                WHERE i.meeting_id = a.meeting_id
+                  AND i.participant_type = 'Employee'
+                FOR JSON PATH
+            ) AS InternalParticipants_Json
+        FROM Attendees a
+        GROUP BY meeting_id
+    ),
+
+    ClientJSON AS (
+        SELECT
+            meeting_id,
+            (
+                SELECT
+                    participant_id AS Participant_Id,
+                    participant_name AS Participant_Name,
+                    participant_role AS Participant_Role,
+                    invite_status AS Invite_Status,
+                    attendance_status AS Attendance_Status
+                FROM Attendees c
+                WHERE c.meeting_id = a.meeting_id
+                  AND c.participant_type = 'Client'
+                FOR JSON PATH
+            ) AS ClientParticipants_Json
+        FROM Attendees a
+        GROUP BY meeting_id
+    )
+
+    SELECT
+        m.meeting_id AS Meeting_Id,
+        m.title AS Title,
+        m.host_type AS Host_Type,
+        m.host_id AS Host_Id,
+
+        COALESCE(emp.EmployeeName, CAST(m.host_id AS NVARCHAR(36))) AS Host_Name,
+
+        pm.Title AS Project_Name,
+        m.booking_type AS Booking_Type,
+        m.project_id AS Project_Id,
+		 pm.ProjectKey ,
+        m.meet_method AS Meet_Method,
+        m.meet_link AS Meet_Link,
+        m.meet_password AS Meet_Password,
+        m.ticket_id AS Ticket_Id,
+		  im.title AS Ticket_Title,
+		  im.Issue_Code,
+        m.meeting_summary AS Meeting_Summary,
+        m.slot_duration AS Slot_Duration,
+        m.recurrence_type AS Recurrence_Type,
+
+        m.meeting_date AS Meeting_Date,
+        m.valid_from_date AS Valid_From_Date,
+        m.valid_to_date AS Valid_To_Date,
+
+        m.start_time AS Start_Time,
+        m.end_time AS End_Time,
+		TN.ThreadId,
+        m.days_of_week AS Days_Of_Week,
+        m.status AS Status,
+        m.created_at AS Created_At,
+		     m.created_by AS Created_By,
+		 m.updated_at AS Updated_At,
+		  m.updated_by AS Updated_By,
+
+        ISNULL(ij.InternalParticipants_Json, '[]') AS InternalParticipants,
+        ISNULL(cj.ClientParticipants_Json, '[]') AS ClientParticipants
+
+    FROM [dbo].[MeetingMaster] m
+    INNER JOIN CandidateMeetings cm ON cm.meeting_id = m.meeting_id
+
+    LEFT JOIN [dbo].[EMPLOYEEMASTER] emp
+        ON emp.EmployeeID = m.host_id
+
+    LEFT JOIN [dbo].[ProjectMasters] pm
+        ON pm.Id = m.project_id
+
+    LEFT JOIN InternalJSON ij
+        ON ij.meeting_id = m.meeting_id
+
+    LEFT JOIN ClientJSON cj
+        ON cj.meeting_id = m.meeting_id
+		LEFT JOIN [dbo].[IssueMaster] im
+    ON im.Issue_Id = m.ticket_id  
+LEFT JOIN [dbo].[ISSUETHREADS] TN
+    ON TN.Issue_Id = m.ticket_id  and TN.MeetingId = m.meeting_id
+   ORDER BY m.created_at desc;
+END;
+
+
+
+--EXEC dbo.sp_GetMeetings @DbName='WG_APP', @EmployeeId = '74B04DE5-64EC-4178-8D80-08DE49B84CA3',@FromDate='2026-07-03',@ToDate='2026-07-03';
+--select * from ISSUETHREADS;
+--select * from MeetingMaster
+==============================================================================================
+USE [WG_APP]
+GO
+
+/****** Object:  Table [dbo].[NotificationAudience]    Script Date: 7/10/2026 6:32:06 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[NotificationAudience](
+	[AudienceId] [uniqueidentifier] NOT NULL,
+	[NotificationId] [uniqueidentifier] NOT NULL,
+	[AudienceType] [varchar](50) NOT NULL,
+	[AudienceValue] [nvarchar](200) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[AudienceId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
+================================================================================================
+USE [WG_APP]
+GO
+
+/****** Object:  Table [dbo].[NotificationMaster]    Script Date: 7/10/2026 6:31:44 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[NotificationMaster](
+	[NotificationId] [uniqueidentifier] NOT NULL,
+	[EventType] [varchar](50) NOT NULL,
+	[EntityType] [varchar](50) NOT NULL,
+	[EntityId] [uniqueidentifier] NOT NULL,
+	[RepositoryId] [uniqueidentifier] NULL,
+	[Title] [nvarchar](200) NOT NULL,
+	[Message] [nvarchar](max) NULL,
+	[ActorId] [uniqueidentifier] NULL,
+	[ActorName] [nvarchar](200) NULL,
+	[CreatedAt] [datetime2](7) NOT NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[NotificationId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+ALTER TABLE [dbo].[NotificationMaster] ADD  DEFAULT (getutcdate()) FOR [CreatedAt]
+GO
+
+
+============================================================
+USE [WG_APP]
+GO
+
+/****** Object:  Table [dbo].[NotificationUserState]    Script Date: 7/10/2026 6:31:24 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[NotificationUserState](
+	[UserId] [uniqueidentifier] NOT NULL,
+	[LastSeenAt] [datetime2](7) NULL,
+	[LastNotificationId] [uniqueidentifier] NULL,
+	[UpdatedAt] [datetime2](7) NULL,
+PRIMARY KEY CLUSTERED 
+(
+	[UserId] ASC
+)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+) ON [PRIMARY]
+GO
+
+
