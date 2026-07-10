@@ -25,6 +25,7 @@ export const formatRepo = (raw) => {
     id: raw.Repo_Id,
     name: raw.Title,
     key: raw.RepoKey,
+    repoUserList: raw.RepoUserList,
   };
 };
 

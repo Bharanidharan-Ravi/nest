@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 
 export function useUrlSync(state) {
   const [searchParams, setParams] = useSearchParams();
+console.log("searchParams",searchParams);
 
   useEffect(() => {
     if (state.config.syncUrl === false) return;

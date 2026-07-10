@@ -36,6 +36,8 @@ export const useRegistryQuery = (
     const { data: masterData, isLoading, isError, error } = useMasterData();
     const rawList = masterData?.[config.masterKey] ?? [];
     const data = rawList.map(config.adapter).filter(Boolean);
+   
+    
     return { data, isLoading, isError, error };
   }
 
@@ -80,7 +82,6 @@ export const useRegistryQuery = (
       ? data.map(config.adapter).filter(Boolean)
       : config.adapter(data);
   }
-
   if (config.enrich) {
     data = enrichData(data, config.enrich);
   }

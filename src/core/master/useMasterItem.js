@@ -18,6 +18,8 @@ export const useMasterList = (masterKey, params = {}, overrides = {}) => {
 //   useMasterFind("employee", "name", "John")
 export const useMasterFind = (masterKey, field, value) => {
   const list = useMasterList(masterKey);
+  // console.log("list",list,masterKey);
+  
   if (!value) return null;
   return list.find((item) => item[field] === value) ?? null;
 };

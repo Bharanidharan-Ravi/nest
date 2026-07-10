@@ -10,6 +10,7 @@
 // ---------------------------------------------------------
 
 export const mapFormToDto = (formData = {}, fields = [], context = {}) => {
+  
   const dto = {};
   const processField = (field, sourceData, target) => {
     // ====================================================================
@@ -26,21 +27,38 @@ export const mapFormToDto = (formData = {}, fields = [], context = {}) => {
     // ----------------------------------------
     // 1️⃣ Hidden field (auto inject)
     // ----------------------------------------
-    if (field.hidden) {
-      // 🔥 Extract the current value from the form data context first
-      const currentValue = sourceData[field.name];
+    // if (field.hidden) {
+    //   // 🔥 Extract the current value from the form data context first
+    //   const currentValue = sourceData[field.name];
 
-      target[field.apiKey] = convertType(
-        // If currentValue exists (even if it's 0 or false), use it.
-        // Otherwise, fall back to defaultValue or null.
-        currentValue !== undefined && currentValue !== null
-          ? currentValue
-          : (field.defaultValue ?? null),
-        field.dataType,
-      );
+ 
+    //   target[field.apiKey] = convertType(
+    //     // If currentValue exists (even if it's 0 or false), use it.
+    //     // Otherwise, fall back to defaultValue or null.
+    //     currentValue !== undefined && currentValue !== null
+    //       ? currentValue
+    //       : (field.defaultValue ?? null),
+    //     field.dataType,
+    //   );
+    //   console.log("target",target);
+    //   return;
+    // }
+    if (field.hidden) {
+      const currentValue = sourceData[field.name];
+      let valueToAssign;
+      if (Array.isArray(currentValue)) {
+        valueToAssign = currentValue.map(item => ({
+          id: item.value?.id
+        }));
+      } else {
+        valueToAssign =
+          currentValue !== undefined && currentValue !== null
+            ? currentValue
+            : (field.defaultValue ?? null);
+      }
+      target[field.apiKey] = convertType(valueToAssign, field.dataType);
       return;
     }
-
     const rawValue = sourceData[field.name];
 
     // ----------------------------------------

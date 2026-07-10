@@ -174,8 +174,11 @@ export const ThreadFormConfig = {
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
             onClick: ({ submitForm, formData,setErrors }) =>{
               const errors={};
+           
+              
               const percentage=formData?.TicketOverallPercentage
               const summary=stripHtml(formData?.TicketStatusSummary)
+              if(!context.isViewer){
               if(percentage===undefined||percentage===null||percentage===""||Number(percentage)<0){
                 errors.TicketOverallPercentage="Please select Battery % less than 100"
               }else if(Number(percentage)>=100){
@@ -184,12 +187,13 @@ export const ThreadFormConfig = {
               if(!summary){
                 errors.TicketStatusSummary="Status Summary mandatory before reopen"
               }
+            }
+              console.log("errors",errors,);
               if (Object.keys(errors).length>0){
                 setErrors(prev=>({...prev,...errors}))
                 return
               }
               submitForm({ IsReopenRequest: true })},
-           
         },
       ];
     }

@@ -3,18 +3,21 @@
 // All master selectors live here.
 // Components import from this file only — never from useMasterItem directly.
 
+import { useMemo } from "react";
 import { useEnrichedMaster } from "../enrich/useEnrichedMaster";
 import { useRegistryQuery } from "../query/useRegistryQuery";
 import { MASTER_REGISTRY } from "../registry/masterRegistry";
 import { useMasterFilter, useMasterFind, useMasterList } from "../useMasterItem";
 
 // ─── Find helpers ─────────────────────────────────────────────────────────────
-export const useEmployeeById   = (id)   => useMasterFind("employee", "id",   id);
+export const useEmployeeById = (id) => useMasterFind("employee", "id", id);
 export const useEmployeeByName = (name) => useMasterFind("employee", "name", name);
-export const useRepoById       = (id)   => useMasterFind("repo",     "id",   id);
-export const useRepoByKey      = (key)  => useMasterFind("repo",     "key",  key);
-export const useProjectById    = (id)   => useMasterFind("project",  "id",   id);
-export const useProjectMaster  = ()      => useMasterList("project");
+export const useRepoById = (id) => useMasterFind("repo", "id", id);
+export const useRepoByKey = (key) => useMasterFind("repo", "key", key);
+export const useProjectById = (id) => useMasterFind("project", "id", id);
+export const useProjectMaster = () => useMasterList("project");
+export const useRepoWithOutId = () => useMasterList("repo");
+
 export const useTicketMaster = (Id) => {
   const ticket = useMasterList(
     "ticketMaster",
@@ -26,16 +29,16 @@ export const useTicketMaster = (Id) => {
     MASTER_REGISTRY.ticketMaster.enrich
   );
 };
-export const useTeamMaster  = ()      => useMasterList("team");
+export const useTeamMaster = () => useMasterList("team");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
-export const useActiveEmployees  = ()    => useMasterFilter("employee", (e) => e.isActive);
-export const useProjectsByRepoId = (rid) => useMasterFilter("project",  (p) => p.repoId === rid);
+export const useActiveEmployees = () => useMasterFilter("employee", (e) => e.isActive);
+export const useProjectsByRepoId = (rid) => useMasterFilter("project", (p) => p.repoId === rid);
 export const useTicketProgress = (issueId, overrides = {}) => {
   // Pass { issueId } into the params object (the 3rd argument)
   return useRegistryQuery(
-    MASTER_REGISTRY, 
-    "ticketProgress", 
-    { issueId }, 
+    MASTER_REGISTRY,
+    "ticketProgress",
+    { issueId },
     overrides
   );
 };
@@ -71,56 +74,128 @@ export const useMasterOptions = ({
 
   return prependOption ? [prependOption, ...options] : options;
 };
+// export const useMasterOptions = ({
+//   masterKey,
+//   valueShape = "object",
+//   filterFn = null,
+//   prependOption = null,
+//   labelKey = "name",
+//   valueKey = "id",
+//   fromRepoUsers = false,
+//   nestedKey = null,
+//   nestedLabelKey = null,
+//   nestedValueKey = null,
+// }) => {
+//   const list = useMasterList(masterKey);
+//   const options = useMemo(() => {
+//     const filtered = filterFn ? list.filter(filterFn) : list;
 
+//     let result = [];
+//     if (fromRepoUsers) {
+//       const seen = new Map();
+//       filtered.forEach((item) => {
+//         const nestedList =
+//           typeof item[nestedKey] === "string"
+//             ? JSON.parse(item[nestedKey] || "[]")
+//             : item[nestedKey] || [];
+//         nestedList.forEach((nested) => {
+//           const key = nested[nestedValueKey];
+//           if (!seen.has(key)) {
+//             seen.set(key, {
+//               label: nested[nestedLabelKey],
+//               value:
+//                 valueShape === "simple"
+//                   ? key
+//                   : {
+//                       id: key,
+//                       name: nested[nestedLabelKey],
+//                     },
+//             });
+//           }
+//         });
+//       });
+//       result = Array.from(seen.values());
+//     } else {
+//       result = filtered.map((item) => ({
+//         label: item[labelKey],
+//         value:
+//           valueShape === "simple"
+//             ? item[valueKey]
+//             : {
+//               id: item[valueKey],
+//               name: item[labelKey],
+//             },
+//       }));
+//     }
+//     return prependOption ? [prependOption, ...result] : result;
+//   }, [
+//     list,
+//     filterFn,
+//     prependOption,
+//     fromRepoUsers,
+//     nestedKey,
+//     nestedLabelKey,
+//     nestedValueKey,
+//     labelKey,
+//     valueKey,
+//     valueShape,
+//   ]);
+
+//   return options;
+// };
 // ─── Predefined option shortcuts ─────────────────────────────────────────────
 export const useEmployeeOptions = (includeAll = false, role = "Employee", overrides = {}) =>
   useMasterOptions({
-    masterKey:     "employee",
-    filterFn:      (e) => e.isActive,
+    masterKey: "employee",
+    filterFn: (e) => e.isActive,
     prependOption: includeAll ? { label: `All ${role}s`, value: "" } : null,
-    valueShape:    "simple", // 👈 This is the default
+    valueShape: "simple", // 👈 This is the default
     ...overrides,            // 👈 Anything passed from the component will override the lines above
   });
 
-export const useRepoOptions = (includeAll = false) =>
+export const useRepoOptions = (includeAll = false,fromRepoUsers = false) =>
   useMasterOptions({
-    masterKey:     "repo",
-    valueShape:    "simple",
-    prependOption: includeAll ? { label: "All Repositories", value: "" } : null,
+    masterKey: "repo",
+    valueShape: "simple",
+    fromRepoUsers,
+    nestedKey : "repoUserList",
+    nestedLabelKey : "UserName",
+    nestedValueKey : "UserId",
+    prependOption: includeAll ? { label: fromRepoUsers ? "All User" :"All Repositories", value: "" } : null,
   });
 
 export const useProjectOptions = (includeAll = false) =>
   useMasterOptions({
-    masterKey:     "project",
-    valueShape:    "simple",
-    prependOption: includeAll ? { label: "All Projects",     value: "" } : null,
+    masterKey: "project",
+    valueShape: "simple",
+    prependOption: includeAll ? { label: "All Projects", value: "" } : null,
   });
 
-export const useLabelOptions = (includeAll = false) => 
+export const useLabelOptions = (includeAll = false) =>
   useMasterOptions({
-    masterKey:     "label",
-    valueShape:    "simple",
-    filterFn:      (e) => e.isActive,
-    prependOption: includeAll ? { label: "All Labels",       value: "" } : null,
+    masterKey: "label",
+    valueShape: "simple",
+    filterFn: (e) => e.isActive,
+    prependOption: includeAll ? { label: "All Labels", value: "" } : null,
   });
 
 export const useTeamOptions = (includeAll = false) =>
   useMasterOptions({
-    masterKey:     "team",
-    valueShape:    "simple",
-    prependOption: includeAll ? { label: "All Teams",        value: "" } : null,
+    masterKey: "team",
+    valueShape: "simple",
+    prependOption: includeAll ? { label: "All Teams", value: "" } : null,
   });
 
 export const useTicketStatusOptions = (includeAll = false) =>
   useMasterOptions({
-    masterKey:     "ticketStatus",
-    valueShape:    "simple",
-    prependOption: includeAll ? { label: "All Statuses",     value: "" } : null,
+    masterKey: "ticketStatus",
+    valueShape: "simple",
+    prependOption: includeAll ? { label: "All Statuses", value: "" } : null,
   });
 
 export const useDepartmentOptions = (includeAll = false) =>
   useMasterOptions({
-    masterKey:     "department",
-    valueShape:    "simple",
-    prependOption: includeAll ? { label: "All Departments",  value: "" } : null,
+    masterKey: "department",
+    valueShape: "simple",
+    prependOption: includeAll ? { label: "All Departments", value: "" } : null,
   });

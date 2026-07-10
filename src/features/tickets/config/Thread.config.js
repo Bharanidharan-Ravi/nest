@@ -108,6 +108,14 @@ export const ThreadFieldConfig = (ticketId) => [
       
     },
   },
+
+  {
+    name: "move_to",
+    apiKey: "Move_to", 
+    hidden: true, // 👈 Keeps it invisible in the UI
+    dataType: "string",
+    initValueResolver: ({ context }) => context?.shareFormData?.move_to ?? null
+  },
   {
     label: "From-time (24h Format)",
     name: "fromTime",

@@ -353,6 +353,18 @@ export default function TicketListCard({
                   )}
                 </div>
               )}
+
+              {item.move_toJson && (
+                <div className="flex items-center ticket-assignees">
+                  {JSON.parse(item.move_toJson).map((user, index) => (
+                    <Tooltip key={index} title={user.Title} arrow>
+                      <div className="avatar">
+                        {user.Title?.charAt(0).toUpperCase()}
+                      </div>
+                    </Tooltip>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Timesheet */}
@@ -361,45 +373,45 @@ export default function TicketListCard({
               item.EndTime ||
               item.ConsumeTime ||
               item.Comment) && (
-              <div className="ticket-timesheet-info">
-                {/* working time */}
-                {item.StartTime && item.EndTime && (
-                  <span className="timesheet-item">
-                    <FiClock className="due-icon" />
-                    Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                    {dayjs(item.EndTime).format("HH:mm")}
-                  </span>
-                )}
-
-                {/* time taken */}
-                {item.ConsumeTime && (
-                  <>
-                    <span className="meta-divider">•</span>
+                <div className="ticket-timesheet-info">
+                  {/* working time */}
+                  {item.StartTime && item.EndTime && (
                     <span className="timesheet-item">
-                      Time taken: {item.ConsumeTime} hr
+                      <FiClock className="due-icon" />
+                      Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
+                      {dayjs(item.EndTime).format("HH:mm")}
                     </span>
-                  </>
-                )}
+                  )}
 
-                {/* view cmnt */}
-                {item.Comment && (
-                  <>
-                    <span className="meta-divider">•</span>
-                    <span
-                      className="comment-toggle"
-                      onClick={(e) => {
-                        // 👈 FIX: Add 'e' here
-                        e.stopPropagation();
-                        e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
-                        setIsCommentExpanded(!isCommentExpanded);
-                      }}
-                    >
-                      {isCommentExpanded ? "Hide Comment" : "View Comment"}
-                    </span>
-                  </>
-                )}
-              </div>
-            )}
+                  {/* time taken */}
+                  {item.ConsumeTime && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span className="timesheet-item">
+                        Time taken: {item.ConsumeTime} hr
+                      </span>
+                    </>
+                  )}
+
+                  {/* view cmnt */}
+                  {item.Comment && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <span
+                        className="comment-toggle"
+                        onClick={(e) => {
+                          // 👈 FIX: Add 'e' here
+                          e.stopPropagation();
+                          e.preventDefault(); // 👈 Good practice to prevent default action if inside an anchor tag
+                          setIsCommentExpanded(!isCommentExpanded);
+                        }}
+                      >
+                        {isCommentExpanded ? "Hide Comment" : "View Comment"}
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
             {item.Comment && isCommentExpanded && (
               <div className="comment-content">{item.Comment} </div>
             )}
@@ -470,7 +482,7 @@ export default function TicketListCard({
           </div> */}
 
           <div className="flex items-end gap-4">
-            {/* LEFT COLUMN */}
+
 
             <div className="flex flex-col items-center gap-2">
               {!isViewer && (

@@ -15,7 +15,7 @@ export const MASTER_REGISTRY = {
   },
   repo: {
     source: "masterData",
-    masterKey: "RepoList",
+    masterKey: "RepoList.",
     adapter: formatRepo,
   },
   project: {

@@ -68,7 +68,17 @@ const Header = ({ toggleMobileMenu }) => {
   const { data: notificationList } = getNotification(
     meetingShowNotifications || showNotifications
   );
-  console.log("notificationList",notificationList);
+
+  const notificationCounts = data || {};
+
+const meetingCount = notificationCounts.MEETING_CREATED || 0;
+console.log("meetingCount",meetingCount);
+
+const ticketCount =
+  (notificationCounts.TICKET_CREATED || 0) +
+  (notificationCounts.TICKET_UPDATED || 0);
+
+
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
 
   const staleTickets = statleTicketsData || [];
@@ -83,14 +93,9 @@ const Header = ({ toggleMobileMenu }) => {
   const bannerTrackRef = useRef(null);
   const [repeatedBanners, setRepeatedBanners] = useState([]);
   const [animationDuration, setAnimationDuration] = useState(40);
-  const meetingNotifications = useMemo(() => {
-    return notificationList?.filter(
-      (item) => item.entityType === "MEETING"
-    ) || [];
-  }, [notificationList]);
 
-  const meetingCount = meetingNotifications.length;
-  
+
+
   const markSeen = async () => {
     try {
       await executeApi({
@@ -136,7 +141,6 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-console.log("meetingShowNotifications",meetingShowNotifications);
 useEffect(() => {
   if (!showNotifications && !meetingShowNotifications) return;
   markSeen();
@@ -146,8 +150,8 @@ useEffect(() => {
   const setCount = useNotificationStore((s) => s.setCount);
   const count = useNotificationStore((s) => s.count);
   useEffect(() => {
-    setCount(data ?? 0);
-  }, [data, setCount]);
+    setCount(ticketCount);
+  }, [ticketCount, setCount]);
   const handleIconClick = () => {
     setDropdownVisible((prev) => !prev);
   };
@@ -361,7 +365,7 @@ useEffect(() => {
                   onClick={() => setMeetinShowNotifications((prev) => !prev)}
                 />
 
-                {count > 0 && (
+                {meetingCount > 0 && (
                   <span
                     className="
         absolute
@@ -379,7 +383,7 @@ useEffect(() => {
         px-1
       "
                   >
-                    {count > 99 ? "99+" : count}
+                    {meetingCount > 99 ? "99+" : meetingCount}
                   </span>
                 )}
 

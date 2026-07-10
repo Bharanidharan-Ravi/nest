@@ -15,7 +15,8 @@ import apiClient from "../../../../core/api/apiClient";
 import { queryClient } from "../../../../core/api/queryClient";
 import { GitCommitIcon } from "lucide-react";
 import ConfirmDialog, { useConfirmDialog } from "../../../../app/shared/confirmation/confirmationModel";
-import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingScheduler";
+import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingFormModal";
+
 
 dayjs.extend(relativeTime);
 
@@ -56,6 +57,9 @@ const TicketThreads = ({
   setEditingItem,
   currentUser,
 }) => {
+
+  console.log("threadsData",threadsData);
+  
   const [expandCount, setExpandCount] = useState(0);
   
   // Track which history blocks have been expanded
@@ -275,7 +279,7 @@ let parsedReactionsJSON = []
       if (item.isChatThread) {
         let replyToName = null;
         if (previousCommenter && previousCommenter !== item.CreatedBy) {
-          replyToName = previousCommenter;
+          replyToName = previousCommenter;   
         }
         previousCommenter = item.CreatedBy;
         return {
@@ -287,6 +291,7 @@ let parsedReactionsJSON = []
       return item;
     });
   }, [filteredThreads, historyData, formContext.isViewer]);
+console.log("enrichedTimeline",enrichedTimeline);
 
   // =========================================================
   // LOCAL HISTORY COLLAPSE LOGIC
@@ -472,49 +477,12 @@ let parsedReactionsJSON = []
       // =====================================
       // HISTORY EVENTS (CLEAN & COMPACT UI)
       // =====================================
-
-      // if (item.isTimelineEvent) {
-      //   if (formContext.isViewer) return null;
-
-      //   let EventIcon = FaHistory;
-      //   if (item.eventType === "WORKSTREAM_CREATED") EventIcon = FaArrowRight;
-      //   if (item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED") EventIcon = FaTags;
-      //   if (item.eventType === "TICKET_UPDATED") EventIcon = FaClock;
-
-      //   return (
-      //     <div key={item.id} className="flex items-start gap-3 w-full mb-3 relative group hover:bg-gray-50/50 py-1 -ml-1 rounded transition-colors">
-      //       <div className="flex-shrink-0 relative z-10 flex justify-center w-10 mt-[2px] ml-1">
-      //         <div className="w-5 h-5 rounded-full bg-gray-100/80 flex items-center justify-center text-gray-500">
-      //           <EventIcon className="text-[10px]" />
-      //         </div>
-      //       </div>
-
-      //       <div className="flex-1 text-[12px] text-gray-600 leading-tight pt-[3px]">
-      //         {item.summary.startsWith(item.actorName) ? (
-      //           <span>
-      //             <span className="font-semibold text-gray-800 mr-1">{item.actorName}</span>
-      //             <span>{item.summary.replace(item.actorName, "").trim()}</span>
-      //           </span>
-      //         ) : (
-      //           <span> {item.summary} by if(item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED"|| item.eventType === "TICKET_UPDATED"){
-      //             item.actorName
-      //           } </span>
-      //         )}
-      //         <span className="text-[11px] text-gray-400 ml-2 whitespace-nowrap">
-      //           {dayjs(item.createdAt).fromNow()}
-      //         </span>
-      //       </div>
-      //     </div>
-      //   );
-      // }
       if (item.isTimelineEvent) {
         if (formContext.isViewer) return null;
-      
         let EventIcon = FaHistory;
         if (item.eventType === "WORKSTREAM_CREATED") EventIcon = FaArrowRight;
         if (item.eventType === "LABEL_ADDED" || item.eventType === "LABEL_REMOVED") EventIcon = FaTags;
         if (item.eventType === "TICKET_UPDATED") EventIcon = FaClock;
-      
         return (
           <div
             key={item.id}
@@ -590,7 +558,7 @@ let parsedReactionsJSON = []
       return (
         <ThreadListCard
           item={item}
-          currentUser={currentUser?.name}
+          currentUser={currentUser}
           onEdit={() => setEditingItem(item)}
           formContext={formContext}
           toggles={togglesConfig}

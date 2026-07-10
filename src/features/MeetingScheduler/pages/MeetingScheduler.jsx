@@ -299,12 +299,12 @@
 
 // src/features/meeting-scheduler/components/MeetingScheduler.jsx
 import React, { useCallback, useMemo, useState } from "react";
-import { addMonths, format, subMonths } from "date-fns";
+import { addMonths, endOfDay, format, startOfDay, subMonths } from "date-fns";
 import { useParams } from "react-router-dom";
 import { useList } from "../../../packages/ui-List/context/ListContext"; // adjust to your real path
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { useTicketMaster } from "../../tickets/hooks/useTicketMaster";
-import { useUpcomingMeeting } from "../hooks/useMeetingData";
+import { useMeetingData, useUpcomingMeeting } from "../hooks/useMeetingData";
 import SchedulerSidebar from "../components/SchedulerSidebar";
 import ListView from "../components/ListView";
 import WeekView from "../components/WeeklyView";
@@ -320,7 +320,8 @@ export default function MeetingScheduler() {
   const params = useParams();
   const user = readUserFromSession();
   const currentUserId = user?.userId;
-
+ 
+  
   const { data: upcomingMeetings = [] } = useUpcomingMeeting();
   const { data: ticketMaster = [] } = useTicketMaster();
 
@@ -332,7 +333,22 @@ export default function MeetingScheduler() {
   // BUG FIX: original was `useState( )` followed by a dangling expression
   // statement on the next line — that "initializer" never actually ran.
   const [activeDate, setActiveDate] = useState(todayIso());
+  // const fromDate = useMemo(
+  //   () => format(startOfDay(new Date(activeDate)), "yyyy-MM-dd'T'HH:mm:ss"),
+  //   [activeDate]
+  // );
+  
+  // const toDate = useMemo(
+  //   () => format(endOfDay(new Date(activeDate)), "yyyy-MM-dd'T'HH:mm:ss"),
+  //   [activeDate]
+  // );
+  // const { data: meetingData = [] } = useMeetingData({
+  //   HostId: currentUserId,
+  //   FromDate: fromDate,
+  //   ToDate: toDate,
+  // });
 
+  // console.log("meetingData",meetingData);
   // BUG FIX: original object literal had `fromProjectId`/`fromTicketTitle`
   // written *after* the closing `})` of useMemo, i.e. outside the object and
   // outside the callback entirely — dead, unreachable code that silently

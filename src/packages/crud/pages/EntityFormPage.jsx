@@ -94,6 +94,8 @@ export default function EntityFormPage({
     }
 
     const dto = buildDto();
+    console.log("dto",dto);
+    
 
     if (tempFiles.length > 0) {
       dto.temp = {
@@ -108,6 +110,8 @@ export default function EntityFormPage({
   };
 
   const uploadFile = async (file) => {
+    console.log("file",file);
+    
     const formDataPayload = new FormData();
     formDataPayload.append("files", file);
     const response = await executeApi({
@@ -122,6 +126,8 @@ export default function EntityFormPage({
       },
     });
     // The backend returns the Tempdata object: { FileName, PublicUrl, LocalPath }
+    console.log("response",response);
+    
     const data = response;
 
     // 🔥 2. Save the full temp data object into our React state
@@ -229,8 +235,8 @@ export default function EntityFormPage({
 
           // Dynamically looks for a theme key based on the mode (e.g., theme.reopenBtn)
           const customThemeClass =
-            isCustomMode && theme[`${mode.toLowerCase()}Btn`]
-              ? theme[`${mode.toLowerCase()}Btn`]
+            isCustomMode && theme[`${mode?.toLowerCase()}Btn`]
+              ? theme[`${mode?.toLowerCase()}Btn`]
               : theme.submitBtn || "";
 
           return (

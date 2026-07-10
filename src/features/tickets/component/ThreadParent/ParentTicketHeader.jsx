@@ -250,7 +250,7 @@ const ParentTicketHeader = ({
               Created {dayjs(parentTicket.createdAt).fromNow()} by
               <div
                 className="w-5 h-5 rounded-full bg-gray-100 border border-gray-300 text-gray-600 flex items-center justify-center text-[9px] font-black shadow-xs cursor-help"
-                title={`Creator: ${parentTicket.ticketCreater || parentTicket.createdBy || "System"}`}
+                title={`Creator: ${parentTicket.ticketCreater ?? "System"}`}
               >
                 {getInitials(parentTicket.ticketCreater || parentTicket.createdBy || "System")}
               </div>

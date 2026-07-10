@@ -515,26 +515,91 @@ export const formatTimeHHMM = (dateTime) => {
   return `${hh}:${mm}`;
 };
 
+// export const buildOptionsResolver = (
+//   listKey,
+//   idKey,
+//   labelKey,
+//   filterFn = null,
+//   customMap = null,
+// ) => {
+  
+//   // 🔥 1. Add formData to the destructured arguments
+//   return ({ masterData, context, formData }) => {
+
+//     let list = masterData?.[listKey] || context?.data?.[listKey];
+
+//     if (!Array.isArray(list)) return [];
+
+//     if (filterFn) {
+//       // 🔥 2. Pass the entire state object into the filter function!
+//       list = list.filter((item) =>
+//         filterFn(item, { masterData, context, formData }),
+//       );
+//     }
+
+//     if (customMap) {
+//       return list.map(customMap);
+//     }
+
+//     return list.map((item) => ({
+//       label: item[labelKey],
+//       value: {
+//         id: item[idKey],
+//         name: item[labelKey],
+//       },
+//     }));
+//   };
+// };
 export const buildOptionsResolver = (
   listKey,
   idKey,
   labelKey,
   filterFn = null,
   customMap = null,
+  nestedConfig = null,
 ) => {
-  
-  // 🔥 1. Add formData to the destructured arguments
   return ({ masterData, context, formData }) => {
-
     let list = masterData?.[listKey] || context?.data?.[listKey];
-
     if (!Array.isArray(list)) return [];
 
     if (filterFn) {
-      // 🔥 2. Pass the entire state object into the filter function!
       list = list.filter((item) =>
         filterFn(item, { masterData, context, formData }),
       );
+    }
+
+    // 🔥 Handle nested users like fromRepoUsers
+    if (nestedConfig) {
+      const {
+        nestedKey,
+        nestedIdKey,
+        nestedLabelKey,
+      } = nestedConfig;
+
+      const seen = new Map();
+
+      list.forEach((item) => {
+        const nestedList =
+          typeof item[nestedKey] === "string"
+            ? JSON.parse(item[nestedKey] || "[]")
+            : item[nestedKey] || [];
+
+        nestedList.forEach((nested) => {
+          const key = nested[nestedIdKey];
+
+          if (!seen.has(key)) {
+            seen.set(key, {
+              label: nested[nestedLabelKey],
+              value: {
+                id: key,
+                name: nested[nestedLabelKey],
+              },
+            });
+          }
+        });
+      });
+
+      return Array.from(seen.values());
     }
 
     if (customMap) {
@@ -550,7 +615,6 @@ export const buildOptionsResolver = (
     }));
   };
 };
-
 export const getDueStatus = (dueDate) => {
   if (!dueDate) return null;
   const today = dayjs().startOf("day");

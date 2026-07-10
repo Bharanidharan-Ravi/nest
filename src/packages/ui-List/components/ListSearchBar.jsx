@@ -79,7 +79,7 @@ export function ListSearchBar() {
     const val = e.target.value;
     setInputValue(val);
 
-    // Rebuild query with new free text — keep all existing filters
+    ///Rebuild query with new free text — keep all existing filters
     const { filters: cur } = parseQuery(query);
     const existingFilters = Object.entries(cur).map(
       ([k, v]) => `${k}:${Array.isArray(v) ? v.join(",") : v}`,

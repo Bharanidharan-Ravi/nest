@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useThreadMaster } from "../hooks/useTicketThread";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
@@ -16,6 +16,7 @@ import TicketThreads from "../component/ThreadListCard/TicketThreads";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import {
   useProjectMaster,
+  useRepoById,
   useTeamMaster,
   useTicketMaster,
   useTicketProgress,
@@ -43,9 +44,29 @@ const TicketDetailPage = () => {
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
 
   // const { data: ticketMasterData } = useTicketMaster();
-  const projectMasterData = useProjectMaster();
-  const ticketMasterData = useTicketMaster(ticketId);
 
+  const ticketMasterData = useTicketMaster(ticketId);
+  const derivedMoveto = useMemo(() => {
+    try {
+      const [item] = JSON.parse(ticketMasterData[0]?.move_toJson ?? "[]");
+      console.log("item", item);
+      return item
+        ? {
+          label: item.Title,
+          value: {
+            id: item.Move_to,
+            name: item.Title,
+          },
+        }
+        : {};
+    } catch {
+      return {};
+    }
+  }, [ticketMasterData])
+  const [shareFormData, setShareFormData] = useState({move_to:derivedMoveto});
+  const mergeFormData = (patch) => {
+    setShareFormData((prev) => ({ ...prev, ...patch }));
+  }
   const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
     enabled: !!ticketId, // Only fire if ticketId exists in the URL
@@ -71,31 +92,9 @@ const TicketDetailPage = () => {
     if (sentinelRef.current) observer.observe(sentinelRef.current);
     return () => observer.disconnect();
   }, []);
-  const parentTicket = ticketMasterData &&  ticketMasterData[0];
- 
+  const parentTicket = ticketMasterData && ticketMasterData[0];
 
-  // 1. Process Parent Ticket
-  // const parentTicket = React.useMemo(() => {
-  //   if (!ticketMasterData) return null;
-  //   const targetId = String(ticketId).toLowerCase();
-  //   const ticket = ticketMasterData.find(
-  //     (issue) => issue.Issue_Id?.toLowerCase() === targetId||
-  //     issue.navId?.toLowerCase() === targetId,
-  //   );
-  //   if (!ticket) return null;
 
-  //   const projectDetails = projectMasterData?.find(
-  //     (p) => p.id === ticket.Project_Id,
-  //   );
-
-  //   return {
-  //     ...ticket,
-  //     id: ticket.Issue_Id, // Ensure we have a consistent 'id' field for the ticket
-  //     Project_Name: projectDetails?.name || "Unknown Project",
-  //     projKey: projectDetails?.projectKey || "Unknown Repo",
-  //     Repo_Name: projectDetails?.repoName || "Unknown Repo",
-  //   };
-  // }, [parentTicket, ticketId]);
 
   const bypassThreadRestriction = [14, 15, 16, 17, 18, 19].includes(
     parentTicket?.statusId,
@@ -139,7 +138,7 @@ const TicketDetailPage = () => {
   let userRole = "Standard";
   const isWorkCompleted = evaluatedStream
     ? Number(evaluatedStream.CompletionPct) === 100 ||
-      [14, 15, 16].includes(evaluatedStream.StreamStatus)
+    [14, 15, 16].includes(evaluatedStream.StreamStatus)
     : false;
 
   if (isOwner && !selectedWorkStream) userRole = "Owner";
@@ -156,6 +155,8 @@ const TicketDetailPage = () => {
     userRole,
     isOwner,
     isViewer,
+    shareFormData,
+    mergeFormData,
     currentUser: user,
     activeWorkStream: evaluatedStream,
     selectedHandoffId: selectedHandoffId,
@@ -326,7 +327,6 @@ const TicketDetailPage = () => {
               />
             )}
           </div>
-
           {/* ========================================= */}
           {/* RIGHT COLUMN: Sticky Sidebar              */}
           {/* ========================================= */}

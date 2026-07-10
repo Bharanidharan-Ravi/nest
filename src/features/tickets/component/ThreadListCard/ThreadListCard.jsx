@@ -177,7 +177,7 @@ const ThreadListCard = ({
   ticketId,
 }) => {
   dayjs.extend(relativeTime);
-  const isMe = item.CreatedBy === currentUser;
+  const isMe = formContext?.isViewer ?item.CreatedId  ===currentUser.userId: item.CreatedBy === currentUser.name;
   const user = readUserFromSession();
 
   // --- STATE ---
@@ -226,7 +226,7 @@ const ThreadListCard = ({
     acc[emoji].count++;
     acc[emoji].users.add(reaction.name);
     acc[emoji].userIds.add(reaction.CreatedBy);
-    if (reaction?.CreatedBy?.toLowerCase() === currentUserId?.toLowerCase() || reaction.CreatedBy === currentUser) {
+    if (reaction?.CreatedBy?.toLowerCase() === currentUserId?.toLowerCase() || reaction.CreatedBy === currentUser.name) {
       acc[emoji].userReactionId = reaction.Id;
     }
     return acc;
@@ -313,14 +313,14 @@ const ThreadListCard = ({
   };
 
   const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
-  const canEdit = isMe && isWithin24Hours;
+  const canEdit = (isMe && isWithin24Hours) ;
 
   const renderCoContributors = (coContributors) => {
     if (formContext?.isViewer) return null;
     if (!coContributors || coContributors.length === 0) return null;
 
-    const isSelfSupport = coContributors.some((c) => c.id === currentUser || c.name === item.CreatedBy);
-    const othersOnly = coContributors.filter((c) => c.id !== currentUser && c.name !== item.CreatedBy);
+    const isSelfSupport = coContributors.some((c) => c.id === currentUser.userId || c.name === item.CreatedBy);
+    const othersOnly = coContributors.filter((c) => c.id !== currentUser.userId && c.name !== item.CreatedBy);
     const MAX_VISIBLE = 2;
     const visibleNames = coContributors.slice(0, MAX_VISIBLE).map((c) => c.name).join(", ");
     const remainingCount = othersOnly.length - MAX_VISIBLE;
@@ -412,7 +412,7 @@ const ThreadListCard = ({
             : "bg-white/70 border-2 border-gray-100 text-gray-700 rounded-2xl rounded-tl-sm"
           }`}
         >
-          {isMe ? getInitials(currentUser || "You") : user?.role === 3 && item.team !== null ? "WG" : getInitials(item.CreatedBy)}
+          {isMe ? getInitials(currentUser.name || "You") : user?.role === 3 && item.team !== null ? "WG" : getInitials(item.CreatedBy)}
         </div>
       </div>
 
@@ -525,14 +525,14 @@ const ThreadListCard = ({
 
             {/* Actions (Edit / Reply) */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
-              {canEdit && (
+              {/* { canEdit && (
                 <button onClick={onEdit}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors text-gray-400 hover:text-amber-500 hover:bg-black/5"
                   title="Edit Meeting"
                 >
                   <FaEdit size={12} />
                 </button>
-              )}
+              )} */}
               {!formContext?.isViewer && (
                 <button onClick={() => onReply(item)}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors text-gray-400 hover:text-amber-500 hover:bg-black/5"
@@ -719,7 +719,7 @@ const ThreadListCard = ({
                 </div>
               ))}
 
-              {!isMeeting && (
+              {!isMeeting &&  (
                 <button onClick={onEdit} disabled={!canEdit}
                   className={`flex items-center justify-center p-0.5 rounded-full transition-colors ${canEdit ? "text-gray-400 hover:text-blue-600 hover:bg-black/5" : "invisible"}`}
                 >
