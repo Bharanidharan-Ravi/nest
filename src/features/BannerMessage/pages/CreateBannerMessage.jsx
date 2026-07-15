@@ -11,7 +11,6 @@ const CreateBanner = () => {
   const { data: bannerListWrapper } = useBannerMessage(
     isEdit ? params.BannerMessageId : null,
   );
-  console.log("bannerListWrapper :", bannerListWrapper, MessageType);
 
   // Extract single entity from sync/v2 array response
   const entityData =
@@ -50,8 +49,10 @@ const CreateBanner = () => {
     },
   };
 
-console.log("entityData",entityData);
-
+const MessageTypeOption = MessageType?.map((item) => ({
+  label: item.Type_Name,
+  value: { id: item.MessageTypeId, name: item.Type_Name },
+})) || [];
   const MessageTypefield = {
     name: "MessageType",
     label: "Message Type",
@@ -86,7 +87,6 @@ console.log("entityData",entityData);
       ? [...basefields, statusField, MessageTypefield] // status only on edit
       : [...basefields, MessageTypefield],
   };
-  console.log("dynamicConfig :", dynamicConfig);
 
   return (
     <div>

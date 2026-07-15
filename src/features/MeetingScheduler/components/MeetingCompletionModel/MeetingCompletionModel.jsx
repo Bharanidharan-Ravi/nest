@@ -32,7 +32,6 @@ export default function MeetingCompleteModal({
             dataType: "dateTime",
             apiKey: "ActualStartTime",
             initValueResolver: ({ context, formData }) => {
-                console.log("context", context);
                 return context?.start_time?.slice(0, 5) ?? "";
             }
         },

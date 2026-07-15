@@ -13,7 +13,6 @@ const TicketCreatePage = () => {
   const { data: TicketWrapper } = useTicketMaster({
     ticketId: params.ticketId,
   });
-  console.log("TicketWrapper",TicketWrapper);
   
   const { isViewer ,isAdmin} = useCurrentUser();
   const isEdit = !!params.ticketId;

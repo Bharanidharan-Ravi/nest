@@ -573,10 +573,6 @@ export const TicketFieldConfig = () => [
     colSpan: 2,
     
     initValueResolver: ({ context,formData }) => {
-      console.log("is edit",context.isEdit);
-      console.log("is entity",context.entityData);
-      console.log("is value",context.entityData?.IsPrivate);
-      console.log("is formData",formData);
      if(context.isEdit && context.entityData?.IsPrivate===true){
       return true
      }
@@ -619,7 +615,6 @@ export const TicketFieldConfig = () => [
       context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
     customValidator:(value)=>{
-      console.log("value",value);
       
       const stripped=value?.replace(/<[^>]*>/g,"").trim();
       if(!stripped){
@@ -642,23 +637,17 @@ export const TicketFieldConfig = () => [
         : statusOptions.filter((opt) => opt.value.id !== 17  && opt.value.id !== 10); // Create => hide InActive
     },
     initValueResolver: ({ context }) => {
-      console.log("initValueResolver called");
-      console.log("context:", context);
+   
     
       if (!context.isEdit || !context.entityData) {
-        console.log("No edit mode or no entityData → returning default Active");
-        console.log("return value:", statusOptions[0]);
         return statusOptions[0]; // default Active
       }
     
       const apiStatus = context.entityData.statusId;
-      console.log("apiStatus from entityData:", apiStatus);
-      console.log("all statusotions:", statusOptions.map(o=>({label:o.label,id:o.value?.id})));
       const matchedOption =
         statusOptions.find((opt) => opt.value.id === Number(apiStatus)) ||
         statusOptions[0];
     
-      console.log("matchedOption:", matchedOption);
     
       return matchedOption;
     },

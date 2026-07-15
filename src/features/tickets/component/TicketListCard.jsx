@@ -5,7 +5,7 @@ import { GoIssueOpened, GoIssueClosed, GoIssueReopened } from "react-icons/go";
 import { Tooltip } from "@mui/material";
 import "../css/TicketListCard.css";
 import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCompletionIndicator/BatteryCompletionIndicator";
-import { FiCalendar, FiClock, FiMessageSquare, FiX } from "react-icons/fi";
+import { FiCalendar, FiClock, FiMessageCircle, FiMessageSquare, FiX } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { useState } from "react";
@@ -169,9 +169,14 @@ export default function TicketListCard({
           },
         }}
       >
-        <div
+        {/* <div
           key={item.id}
           className={`ticket-row ${focused ? "focused-row" : ""}`}
+        > */}
+        <div
+          key={item.id}
+          className={`ticket-row ${focused ? "focused-row" : ""
+            } ${!isViewer && item.raiseToClient ? "raise-to-client-row" : ""}`}
         >
           {/* LEFT BLOCK: Main Information */}
           <div className="ticket-main">
@@ -268,11 +273,14 @@ export default function TicketListCard({
                     </span>
                   </Tooltip>
 
-                  {!item.isViewer && item.ticketCreater && (
-                    <span className="flex items-center gap-1.5 ml-1">
+                  {!isViewer && item.ticketCreater && (
+                    <span className="flex items-center gap-1 ">
                       <span className="meta-divider text-gray-400">•</span>
+
+                      <span className="text-xs text-gray-500">Created :</span>
+
                       <Tooltip title={item.ticketCreater} arrow>
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 shadow-sm cursor-help">
+                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 shadow-sm ">
                           {getInitials(item.ticketCreater)}
                         </div>
                       </Tooltip>
@@ -353,18 +361,18 @@ export default function TicketListCard({
                   )}
                 </div>
               )}
-
               {item.move_toJson && (
                 <div className="flex items-center ticket-assignees">
                   {JSON.parse(item.move_toJson).map((user, index) => (
                     <Tooltip key={index} title={user.Title} arrow>
-                      <div className="avatar">
+                      <div className="avatar-assignee">
                         {user.Title?.charAt(0).toUpperCase()}
                       </div>
                     </Tooltip>
                   ))}
                 </div>
               )}
+
             </div>
 
             {/* Timesheet */}
@@ -416,74 +424,8 @@ export default function TicketListCard({
               <div className="comment-content">{item.Comment} </div>
             )}
           </div>
-          {/* MIDDLE BLOCK: Due Date */}
-
-          {/* <div className="flex  items-end gap-2">
-               {item.threadCount}
-            <div className="flex flex-col">
-              <button
-                className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center "
-                title="Meeting Scheduler"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openInNewTab(meetingUrl); // or navigate()
-                }}
-              >
-                <FiCalendar className="text-base" />
-              </button>
-            
-            </div>
-            <div className="flex-col">
-              {config?.enablequickStatus && (
-                <button
-                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center mb-2"
-                  title="Quick Status"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setQuickTicketStatus(item);
-                  }}
-                >
-                  <FaHistory className="text-base" />
-                </button>
-              )}
-
-
-           
-              {config?.enablequickComment && (
-                <button
-                  className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
-                  title="Quick Comment"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleQuickComment(item);
-                  }}
-                >
-                  <FiMessageSquare className="text-base" />
-                </button>
-              )}
-            </div>
-            {!isViewer && (
-              <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
-                <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
-                  {item.dueDate
-                    ? dayjs(item.dueDate).format("DD MMM YYYY")
-                    : ""}
-                </div>
-                {dueStatus && (
-                  <div
-                    className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
-                  >
-                    {dueStatus.icon}
-                    <span>{dueStatus.text}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div> */}
 
           <div className="flex items-end gap-4">
-
-
             <div className="flex flex-col items-center gap-2">
               {!isViewer && (
                 <button
@@ -499,8 +441,12 @@ export default function TicketListCard({
                   <FiCalendar className="text-base" />
                 </button>
               )}
-
-              <div className="text-sm text-gray-700">{item.threadCount}</div>
+              <Tooltip title={`${item.threadCount} Thread`} arrow>
+                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
+                  {/* <FiMessageSquare className="text-base text-gray-500" /> */}
+                  <span>{item.threadCount}</span>
+                </div>
+              </Tooltip>
             </div>
 
             {/* RIGHT COLUMN */}

@@ -188,7 +188,6 @@ export const ThreadFormConfig = {
                 errors.TicketStatusSummary="Status Summary mandatory before reopen"
               }
             }
-              console.log("errors",errors,);
               if (Object.keys(errors).length>0){
                 setErrors(prev=>({...prev,...errors}))
                 return

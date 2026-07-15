@@ -68,15 +68,13 @@ const Header = ({ toggleMobileMenu }) => {
   const { data: notificationList } = getNotification(
     meetingShowNotifications || showNotifications
   );
-
   const notificationCounts = data || {};
+  const meetingCount = data?.MEETING_CREATED;
 
-const meetingCount = notificationCounts.MEETING_CREATED || 0;
-console.log("meetingCount",meetingCount);
 
-const ticketCount =
-  (notificationCounts.TICKET_CREATED || 0) +
-  (notificationCounts.TICKET_UPDATED || 0);
+  const ticketCount =
+    (notificationCounts.TICKET_CREATED || 0) +
+    (notificationCounts.TICKET_UPDATED || 0);
 
 
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
@@ -141,17 +139,15 @@ const ticketCount =
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-useEffect(() => {
-  if (!showNotifications && !meetingShowNotifications) return;
-  markSeen();
-  useNotificationStore.getState().reset();
-
-}, [showNotifications, meetingShowNotifications]);
+  useEffect(() => {
+    if (!showNotifications && !meetingShowNotifications) return;
+    markSeen();
+    // useNotificationStore.getState().reset();
+  }, [showNotifications, meetingShowNotifications]);
   const setCount = useNotificationStore((s) => s.setCount);
   const count = useNotificationStore((s) => s.count);
-  useEffect(() => {
-    setCount(ticketCount);
-  }, [ticketCount, setCount]);
+
+
   const handleIconClick = () => {
     setDropdownVisible((prev) => !prev);
   };
@@ -416,10 +412,15 @@ useEffect(() => {
                     <div className="max-h-[300px] overflow-y-auto">
                       {notificationList?.length > 0 ? (
                         notificationList
-                          ?.filter((item) => item.entityType === "MEETING")
+                          ?.filter((item) => item.entityType === "MEETING"
+                        )
                           .map((item) => (
                             <div
                               key={item.id || item.notificationId}
+                              onClick={() => {
+                                goTo(ROUTE_KEYS.MEETING_LIST);
+                                setMeetinShowNotifications(false); // Close the dropdown after navigating
+                              }}
                               className="px-4 py-2.5 border-b hover:bg-gray-50 cursor-pointer transition"
                             >
                               <div className="flex flex-col gap-1 min-w-0">
@@ -599,7 +600,7 @@ useEffect(() => {
                   onClick={() => setShowNotifications((prev) => !prev)}
                 />
 
-                {count > 0 && (
+                {ticketCount > 0 && (
                   <span
                     className="
                   absolute
@@ -617,7 +618,7 @@ useEffect(() => {
                   px-1
                 "
                   >
-                    {count > 99 ? "99+" : count}
+                    {ticketCount > 99 ? "99+" : ticketCount}
                   </span>
                 )}
 
@@ -637,7 +638,7 @@ useEffect(() => {
                   overflow-hidden
                 "
                   >
-                    {/* Header */}
+
                     <div className="flex items-center justify-between px-4 py-2 border-b bg-gray-50">
                       <h3 className="font-semibold text-sm">Notifications</h3>
 
@@ -651,18 +652,17 @@ useEffect(() => {
                       rounded-full
                     "
                       >
-                        {count || 0}
+                        {ticketCount || 0}
                       </span>
                     </div>
 
-                    {/* Body */}
                     <div className="max-h-[300px] overflow-y-auto">
                       {notificationList?.length > 0 ? (
                         notificationList
-                         ?.filter((item) => item.entityType === "TICKET").map((item) => (
-                          <div
-                            key={item.id}
-                            className="
+                          ?.filter((item) => item.entityType === "TICKET").map((item) => (
+                            <div
+                              key={item.id}
+                              className="
                           px-4
                           py-2.5
                           border-b
@@ -670,26 +670,26 @@ useEffect(() => {
                           cursor-pointer
                           transition
                         "
-                            onClick={() => {
-                              goTo(ROUTE_KEYS.TICKET_DETAIL, {
-                                ticketId: item.entityId,
-                              });
-                              setShowNotifications(false); // Close the dropdown after navigating
-                            }}
-                          >
-                            <div className="font-medium text-sm text-gray-800 truncate">
-                              {item.title}
-                            </div>
+                              onClick={() => {
+                                goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                                  ticketId: item.entityId,
+                                });
+                                setShowNotifications(false); // Close the dropdown after navigating
+                              }}
+                            >
+                              <div className="font-medium text-sm text-gray-800 truncate">
+                                {item.title}
+                              </div>
 
-                            <div className="text-xs text-gray-500 mt-1 truncate">
-                              {item.message}
-                            </div>
+                              <div className="text-xs text-gray-500 mt-1 truncate">
+                                {item.message}
+                              </div>
 
-                            <span className="text-xs text-gray-400">
-                              {dayjs(item?.createdAt).fromNow()}
-                            </span>
-                          </div>
-                        ))
+                              <span className="text-xs text-gray-400">
+                                {dayjs(item?.createdAt).fromNow()}
+                              </span>
+                            </div>
+                          ))
                       ) : (
                         <div className="p-8 text-center text-gray-500">
                           No notifications found
@@ -697,7 +697,7 @@ useEffect(() => {
                       )}
                     </div>
 
-                    {/* Footer */}
+
                     <div
                       className="
           border-t

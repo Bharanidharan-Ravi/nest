@@ -1263,8 +1263,6 @@ const MeetingScheduler = () => {
   };
 
   const onEdit =(item)=>{
-    console.log("item",item);
-    
   }
     return (
       <div className="flex flex-col lg:flex-row   bg-white rounded-lg border border-gray-100 overflow-hidden">

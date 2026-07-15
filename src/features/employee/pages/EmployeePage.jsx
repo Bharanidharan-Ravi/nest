@@ -43,9 +43,7 @@ const EmployeePage = () => {
     },
 
     onSelectionChange: (item, isChecked) => {
-      console.log(
-        `Employee ${item.id} ${isChecked ? "selected" : "deselected"}`,
-      );
+    
     },
   };
 

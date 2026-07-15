@@ -154,7 +154,6 @@ const StackedBarDesign = ({ data, graphConfig, setTooltip, config }) => {
   const chartData = useMemo(() => {
     const grouped = {};
     xaxis.forEach((col) => (grouped[col.key] = {}));
-console.log("data :", data);
 
     data.forEach((item) => {
       const rawDate = getSafeValue(item, graphConfig.graphXAxisKey);

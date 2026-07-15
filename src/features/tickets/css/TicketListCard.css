@@ -4,7 +4,10 @@
   gap: 3px;
   height: 28px;
 }
-
+.raise-to-client-row {
+  border-left: 4px solid #f59e0b;
+  /* background: #fffaf0; */
+}
 .inline-flag {
   display: inline-flex;
   align-items: center;
@@ -302,6 +305,37 @@
   display: flex;
   align-items: center;
 }
+.avatar-assignee{
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #ffb300;
+  color: #070707;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  margin-left: -6px;
+  border: 0.5px solid #ffffff;
+  transition: transform 0.1s;
+}
+
+.avatar-assignee:hover {
+  transform: translateY(-2px);
+  z-index: 10;
+}
+
+.avatar-assignee:first-child {
+  margin-left: 0;
+}
+
+/* .avatar-assignee-more {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+ */
+
 
 .avatar {
   width: 22px;

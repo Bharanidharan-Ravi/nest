@@ -13,6 +13,7 @@ import {
 } from "../../../../app/shared/utilities/utilities";
 import { ROUTE_KEYS } from "../../../../core/routing/paths";
 import { createPortal } from "react-dom";
+import { Tooltip } from "@mui/material";
 
 const getTeamColor = (teamName) => {
   let hash = 0;
@@ -248,12 +249,14 @@ const ParentTicketHeader = ({
             <span className="opacity-40">•</span>
             <span className="inline-flex items-center gap-1">
               Created {dayjs(parentTicket.createdAt).fromNow()} by
-              <div
-                className="w-5 h-5 rounded-full bg-gray-100 border border-gray-300 text-gray-600 flex items-center justify-center text-[9px] font-black shadow-xs cursor-help"
-                title={`Creator: ${parentTicket.ticketCreater ?? "System"}`}
-              >
-                {getInitials(parentTicket.ticketCreater || parentTicket.createdBy || "System")}
-              </div>
+              <Tooltip title={parentTicket.ticketCreater} arrow>
+                <div
+                  className="w-5 h-5 rounded-full bg-gray-100 border border-gray-300 text-gray-600 flex items-center justify-center text-[9px] font-black shadow-xs"
+                  // title={`Creator: ${parentTicket.ticketCreater ?? "System"}`}
+                >
+                  {getInitials(parentTicket.ticketCreater || parentTicket.createdBy || "System")}
+                </div>
+              </Tooltip>
             </span>
             {mainAssignee && (
               <>
@@ -408,260 +411,254 @@ const ParentTicketHeader = ({
           parentTicket?.webResponse || parentTicket?.WebResponse ||
           parentTicket?.adminResponse || parentTicket?.AdminResponse
         ) && (
-          <div className="flex flex-wrap gap-2.5 mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-300">
-            {/* Close Request Chip */}
-            {parentTicket?.isCloseRequested && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-rose-50/70 border border-rose-200/60 text-rose-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-rose-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+            <div className="flex flex-wrap gap-2.5 mt-3 w-full animate-in fade-in slide-in-from-top-1 duration-300">
+              {/* Close Request Chip */}
+              {parentTicket?.isCloseRequested && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-rose-50/70 border border-rose-200/60 text-rose-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-rose-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Closure Requested</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-rose-200 text-rose-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Action Required
+                        </span>
+                      )}
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Closure Requested</span>
+                  </div>
+
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold text-rose-400 mb-1 text-[11px] tracking-wide">Ticket Closure Requested</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      An assignee has notified that the work is complete.
+                    </div>
                     {isOwner && (
-                      <span className={`bg-white border border-rose-200 text-rose-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Action Required
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-rose-300 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-rose-500/20 border border-rose-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Action Required
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
+              )}
 
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold text-rose-400 mb-1 text-[11px] tracking-wide">Ticket Closure Requested</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    An assignee has notified that the work is complete.
+              {/* Priority Chip */}
+              {(parentTicket?.priorityRequest || parentTicket?.PriorityRequest) && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-orange-50/70 border border-orange-200/60 text-orange-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-orange-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Priority</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-orange-200 text-orange-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Review Required
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-rose-300 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-rose-500/20 border border-rose-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Action Required
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
 
-            {/* Priority Chip */}
-            {(parentTicket?.priorityRequest || parentTicket?.PriorityRequest) && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-orange-50/70 border border-orange-200/60 text-orange-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-orange-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold text-orange-400 mb-1 text-[11px] tracking-wide">Priority Ticket</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      Admin has notified that the work is in Priority.
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Priority</span>
                     {isOwner && (
-                      <span className={`bg-white border border-orange-200 text-orange-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Review Required
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-orange-300 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-orange-500/20 border border-orange-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Review Required
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
+              )}
 
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold text-orange-400 mb-1 text-[11px] tracking-wide">Priority Ticket</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    Admin has notified that the work is in Priority.
+              {/* Functional Response Chip */}
+              {(parentTicket?.funcResponse || parentTicket?.FuncResponse) && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-purple-50/70 border border-purple-200/60 text-purple-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-purple-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Functional Response</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-purple-200 text-purple-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Response Needed
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-orange-300 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-orange-500/20 border border-orange-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Review Required
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
 
-            {/* Functional Response Chip */}
-            {(parentTicket?.funcResponse || parentTicket?.FuncResponse) && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-purple-50/70 border border-purple-200/60 text-purple-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-purple-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold text-purple-400 mb-1 text-[11px] tracking-wide">Awaiting Functional Response</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      An assignee is waiting for response.
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Functional Response</span>
                     {isOwner && (
-                      <span className={`bg-white border border-purple-200 text-purple-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Response Needed
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-purple-300 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Response Needed
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
+              )}
 
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold text-purple-400 mb-1 text-[11px] tracking-wide">Awaiting Functional Response</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    An assignee is waiting for response.
+              {/* Technical Response Chip */}
+              {(parentTicket?.technicalResponse || parentTicket?.TechnicalResponse) && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-green-50/70 border border-green-200/60 text-green-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-green-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Technical Response</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-green-200 text-green-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Response Needed
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-purple-300 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-purple-500/20 border border-purple-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Response Needed
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
 
-            {/* Technical Response Chip */}
-            {(parentTicket?.technicalResponse || parentTicket?.TechnicalResponse) && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-green-50/70 border border-green-200/60 text-green-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-green-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold text-green-400 mb-1 text-[11px] tracking-wide">Awaiting Technical Response</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      An assignee is waiting for response.
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Technical Response</span>
                     {isOwner && (
-                      <span className={`bg-white border border-green-200 text-green-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Response Needed
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-green-300 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-green-500/20 border border-green-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Response Needed
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
+              )}
 
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold text-green-400 mb-1 text-[11px] tracking-wide">Awaiting Technical Response</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    An assignee is waiting for response.
+              {/* Web Response Chip */}
+              {(parentTicket?.webResponse || parentTicket?.WebResponse) && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-blue-50/70 border border-blue-200/60 text-blue-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Web Response</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-blue-200 text-blue-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Response Needed
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-green-300 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-green-500/20 border border-green-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Response Needed
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
 
-            {/* Web Response Chip */}
-            {(parentTicket?.webResponse || parentTicket?.WebResponse) && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-blue-50/70 border border-blue-200/60 text-blue-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-blue-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold text-blue-400 mb-1 text-[11px] tracking-wide">Awaiting Web Response</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      An assignee is waiting for response.
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Web Response</span>
                     {isOwner && (
-                      <span className={`bg-white border border-blue-200 text-blue-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Response Needed
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-blue-300 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-blue-500/20 border border-blue-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Response Needed
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
+              )}
 
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold text-blue-400 mb-1 text-[11px] tracking-wide">Awaiting Web Response</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    An assignee is waiting for response.
+              {/* Admin Response Chip */}
+              {(parentTicket?.adminResponse || parentTicket?.AdminResponse) && (
+                <div className="relative group/tooltip">
+                  <div
+                    className={`bg-amber-50/70 border border-amber-200/60 text-amber-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-amber-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${isStuck ? "px-2 py-0.5" : "px-3 py-1"
+                      }`}
+                  >
+                    <div className="flex items-center gap-1.5 truncate">
+                      <div className="relative flex h-2 w-2 flex-shrink-0">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                      </div>
+                      <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Admin Response</span>
+                      {isOwner && (
+                        <span className={`bg-white border border-amber-200 text-amber-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
+                          Response Needed
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-blue-300 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-blue-500/20 border border-blue-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Response Needed
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
 
-            {/* Admin Response Chip */}
-            {(parentTicket?.adminResponse || parentTicket?.AdminResponse) && (
-              <div className="relative group/tooltip">
-                <div
-                  className={`bg-amber-50/70 border border-amber-200/60 text-amber-900 rounded-full flex items-center justify-between transition-all duration-300 shadow-2xs hover:bg-amber-50 hover:-translate-y-0.5 hover:shadow-xs cursor-help ${
-                    isStuck ? "px-2 py-0.5" : "px-3 py-1"
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    <div className="relative flex h-2 w-2 flex-shrink-0">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+                  {/* Custom Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
+                    <div className="font-bold mb-1 text-[11px] tracking-wide text-amber-500">Awaiting Admin Response</div>
+                    <div className="text-slate-200 leading-normal font-normal text-[11px]">
+                      An assignee is waiting for response.
                     </div>
-                    <span className="text-[11px] font-bold tracking-wide whitespace-nowrap">Awaiting Admin Response</span>
                     {isOwner && (
-                      <span className={`bg-white border border-amber-200 text-amber-700 font-extrabold uppercase tracking-wider shadow-3xs ml-1 leading-none text-[8px] px-1.5 py-0.5 rounded-full whitespace-nowrap`}>
-                        Response Needed
-                      </span>
+                      <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-amber-400 font-bold flex items-center justify-between">
+                        <span>Owner Action:</span>
+                        <span className="bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
+                          Response Needed
+                        </span>
+                      </div>
                     )}
+                    {/* Tooltip Arrow */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
                   </div>
                 </div>
-
-                {/* Custom Tooltip */}
-                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2.5 w-72 bg-gradient-to-r from-slate-900 to-slate-800 text-white text-xs rounded-xl p-3 shadow-xl border border-white/10 backdrop-blur-xl opacity-0 invisible group-hover/tooltip:opacity-100 group-hover/tooltip:visible transition-all duration-200 z-50 pointer-events-none">
-                  <div className="font-bold mb-1 text-[11px] tracking-wide text-amber-500">Awaiting Admin Response</div>
-                  <div className="text-slate-200 leading-normal font-normal text-[11px]">
-                    An assignee is waiting for response.
-                  </div>
-                  {isOwner && (
-                    <div className="mt-2 pt-1.5 border-t border-white/10 text-[10px] text-amber-400 font-bold flex items-center justify-between">
-                      <span>Owner Action:</span>
-                      <span className="bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded text-white text-[9px] font-bold">
-                        Response Needed
-                      </span>
-                    </div>
-                  )}
-                  {/* Tooltip Arrow */}
-                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-slate-850 rotate-45 -mt-1 border-r border-b border-white/10"></div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
       </div>
 
       <div className="px-4 sm:px-6">

@@ -500,7 +500,6 @@ function MeetingRow({ meeting, isOpen, onToggle, onEdit, onComplete }) {
 }
 
 export default function ListView({ data = [], onEdit, onComplete }) {
-  console.log("data",data);
   
   const [expandedId, setExpandedId] = useState(null);
   const toggle = (id) => setExpandedId((prev) => (prev === id ? null : id));

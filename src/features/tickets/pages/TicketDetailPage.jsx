@@ -42,31 +42,29 @@ const TicketDetailPage = () => {
 
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
-
-  // const { data: ticketMasterData } = useTicketMaster();
-
+  const [shareFormData, setShareFormData] = useState();
   const ticketMasterData = useTicketMaster(ticketId);
-  const derivedMoveto = useMemo(() => {
-    try {
-      const [item] = JSON.parse(ticketMasterData[0]?.move_toJson ?? "[]");
-      console.log("item", item);
-      return item
-        ? {
-          label: item.Title,
-          value: {
-            id: item.Move_to,
-            name: item.Title,
-          },
-        }
-        : {};
-    } catch {
-      return {};
-    }
-  }, [ticketMasterData])
-  const [shareFormData, setShareFormData] = useState({move_to:derivedMoveto});
+  useEffect(() => {
+    if (!ticketMasterData[0]?.move_toJson) return;
+    const moveToData = JSON.parse(ticketMasterData[0].move_toJson).map((item) => ({
+      label: item.Title,
+      value: {
+        id: item.Move_to,
+        name: item.Title,
+      },
+    }));
+  
+    setShareFormData((prev) => ({
+      ...prev,
+      move_to: moveToData,
+    }));
+  }, [ticketMasterData[0]?.move_toJson]);
+
   const mergeFormData = (patch) => {
     setShareFormData((prev) => ({ ...prev, ...patch }));
   }
+
+  
   const TeamMaster = useTeamMaster();
   const { data: progressLogs, isLoading } = useTicketProgress(ticketId, {
     enabled: !!ticketId, // Only fire if ticketId exists in the URL
@@ -330,7 +328,7 @@ const TicketDetailPage = () => {
           {/* ========================================= */}
           {/* RIGHT COLUMN: Sticky Sidebar              */}
           {/* ========================================= */}
-          {!isViewer && (
+          {/* {!isViewer && ( */}
             <div className="w-full lg:w-1/4">
               <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
                 <AssigneesWidget
@@ -345,7 +343,7 @@ const TicketDetailPage = () => {
                 />
               </div>
             </div>
-          )}
+          {/* )} */}
         </div>
       </div>
 
