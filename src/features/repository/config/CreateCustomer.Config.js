@@ -1,5 +1,9 @@
 // export const CustomerConfig = () => [
-  
+
+import { useTicketStatusOptions } from "../../../core/master/selectors/selectors";
+import { statusOptions } from "../../tickets/config/Ticket.Config";
+
+
 //     {
 //       label: "Customer Name",
 //       name: "CustomerName",
@@ -23,7 +27,7 @@
 //         initValueResolver: (context) =>
 //           context.isEdit ? context.entityData?.MailId : "",
 //       },
-   
+
 //       {
 //         label: "PhoneNumber",
 //         name: "PhoneNumber",
@@ -35,7 +39,7 @@
 //         initValueResolver: (context) =>
 //           context.isEdit ? context.entityData?.PhoneNumber : "",
 //       },
-   
+
 //     {
 //         label: "Login Username",
 //         name: "UserName",
@@ -44,11 +48,11 @@
 //         required: false,
 //         dataType: "string",
 //         apiKey: "UserName",
-        
+
 //         initValueResolver: (context) =>
 //           context.isEdit ? context.entityData?.WGUserName : "",
 //       },
-   
+
 //       {
 //         label: "Password",
 //         name: "Password",
@@ -57,10 +61,10 @@
 //         required: false,
 //         dataType: "string",
 //         apiKey: "Password",
-       
+
 //       },
-   
-     
+
+
 //       {
 //         label: "Status",
 //         name: "Status",
@@ -98,11 +102,11 @@
 //         defaultValue:"3",
 //         required: false,
 //         apiKey: "Role",
-       
+
 //       },
-     
-   
-   
+
+
+
 //   ];
 export const CustomerConfig = () => [
   {
@@ -113,7 +117,7 @@ export const CustomerConfig = () => [
     required: false,
     dataType: "string",
     apiKey: "CustomerName",
-    initValueResolver: ({context}) => {
+    initValueResolver: ({ context }) => {
       const value = context.isEdit ? context.entityData?.UserName : "";
       return value;
     },
@@ -127,7 +131,7 @@ export const CustomerConfig = () => [
     required: false,
     dataType: "string",
     apiKey: "MailId",
-    initValueResolver: ({context})=> {
+    initValueResolver: ({ context }) => {
       const value = context.isEdit ? context.entityData?.MailId : "";
       return value;
     },
@@ -141,7 +145,7 @@ export const CustomerConfig = () => [
     required: false,
     dataType: "string",
     apiKey: "PhoneNumber",
-    initValueResolver: ({context}) => {
+    initValueResolver: ({ context }) => {
       const value = context.isEdit ? context.entityData?.PhoneNumber : "";
       return value;
     },
@@ -155,7 +159,7 @@ export const CustomerConfig = () => [
     required: false,
     dataType: "string",
     apiKey: "UserName",
-    initValueResolver: ({context})=> {
+    initValueResolver: ({ context }) => {
       const value = context.isEdit ? context.entityData?.WGUserName : "";
       return value;
     },
@@ -179,26 +183,29 @@ export const CustomerConfig = () => [
     type: "select",
     ui: "mui",
     required: true,
-    dataType: "string",
-   
     apiKey: "Status",
-    options: [
-      { label: "Active", value: { id: "Active", name: "Active" } },
-      { label: "Inactive", value: { id: "Inactive", name: "Inactive" } },
-    ],
+    optionsResolver: ({ context }) => {
+      return context?.isEdit
+        ? statusOptions.filter(
+          (opt) => opt.value.id === 1 || opt.value.id === 17
+        ) : "";
+    },
     visibleWhen: (formData, context) => context?.isEdit,
-    initValueResolver: (context ) => {
-      return context.isEdit ? (context.entityData?.Status ?? "") : "";
+    initValueResolver: ({ context }) => {
+      if (!context?.isEdit) return null;
+      const matchedOption = statusOptions.find(
+        (opt) => opt.value.name === context?.entityData?.Status
+      );
+      return matchedOption || null;
     },
   },
-
   {
     name: "Repo_Id",
     dataType: "string",
     apiKey: "Repo_Id",
-    initValueResolver: ({context}) => {
-      const value = context.repoId ?? "";
-      return value;
+    initValueResolver: ({ context }) => {
+      return context.repoId ?? "";
+       ;
     },
   },
 
@@ -208,7 +215,7 @@ export const CustomerConfig = () => [
     dataType: "number",
     defaultValue: "3",
     apiKey: "Role",
-    initValueResolver: ({context}) => {
+    initValueResolver: ({ context }) => {
       return context.params?.Role ?? "3"; // Default to "3" if Role is not provided
     },
   },

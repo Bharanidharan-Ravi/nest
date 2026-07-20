@@ -34,6 +34,38 @@ export function formatDate(value) {
   });
 }
 
+/** 
+ * "2026-07-15~2026-07-15" -> "15 Jul 2026"
+ * "2026-07-15~2026-07-19" -> "15 Jul 2026 - 19 Jul 2026"
+ */
+export function formatDateRange(range) {
+  if (!range) return "-";
+  const parts = range.includes("~")
+    ? range.split("~")
+    : range.split(/\s+-\s+/);
+  const [start, end] = parts;
+
+  if (!start) return "-";
+
+  const startDate = new Date(start);
+  const endDate = end ? new Date(end) : startDate;
+
+  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+    return "-";
+  }
+  const format = (date) =>
+    date.toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  const startFormatted = format(startDate);
+  const endFormatted = format(endDate);
+
+  return startFormatted === endFormatted
+    ? startFormatted
+    : `${startFormatted} - ${endFormatted}`;
+}
 /** "01:30:00" (HH:mm:ss) slot duration -> "1h 30m" */
 export function formatDuration(slot) {
   if (!slot) return "-";

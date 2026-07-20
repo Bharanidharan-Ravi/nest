@@ -81,6 +81,7 @@ export function TimesheetSummary() {
     });
     return tree;
   }, [data]);
+console.log("treeData :", treeData, data);
 
   // Expand all repos by default
   useEffect(() => {
@@ -187,6 +188,7 @@ export function TimesheetSummary() {
                     <tbody>
                         {Object.entries(projData.tickets).map(([ticketId, ticketGroup], idx) => {
                             const t = ticketGroup.latest;
+                            console.log("ticketGroup :", projData);
                             
                             const hasHistory = ticketGroup.history.length > 0;
                             const isExpanded = expandedTickets.has(ticketId);

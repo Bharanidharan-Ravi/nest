@@ -167,6 +167,7 @@ useEffect(()=>{
   // ── Dropdown options ──────────────────────────────────────────────────────
   const employeeFilterOptions = useEmployeeOptions(true);
   const projectFilterOptions = useProjectOptions(true);
+  console.log("projectFilterOptions",projectFilterOptions);
   
   const LabelFilterOptions = useLabelOptions(true);
   const repoFilterOptions = useRepoOptions(true);

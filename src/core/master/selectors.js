@@ -25,6 +25,7 @@ export const useMasterOptions = ({
   const list = useMasterList(masterKey); // ← handles everything internally
 
   const filtered = filterFn ? list.filter(filterFn) : list;
+  console.log("list :", list, filtered);
 
   const options = filtered.map((item) => ({
     label: item[labelKey],

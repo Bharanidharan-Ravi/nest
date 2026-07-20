@@ -12,10 +12,10 @@ import { useMemo } from "react";
 
 
 export function ListLayout({ className }) {
-  const { view, config} = useList();
+  const { view, config } = useList();
   const layoutClasses = className || config.theme?.layout || "flex flex-col w-full";
   const stickyTopValue = config.theme?.stickyTop;
- const renderView = () => {
+  const renderView = () => {
     if (view === "graph") return <ListGraphView />;
     if (view === "table") return <ListTableView />;
     if (view === "card") return <ListCardView />;
@@ -31,15 +31,14 @@ export function ListLayout({ className }) {
   };
   return (
     <div className={`rounded-lg bg-white shadow-sm ${layoutClasses}`}>
-        <div className={`sticky z-20 bg-white border border-gray-200 border-b-0 rounded-t-lg 
-        ${stickyTopValue ? "" : "top-0"}`} style={stickyTopValue ? {top: stickyTopValue} : undefined} >
+      <div className={`sticky z-20 bg-white border border-gray-200 border-b-0 rounded-t-lg 
+        ${stickyTopValue ? "" : "top-0"}`} style={stickyTopValue ? { top: stickyTopValue } : undefined} >
         {config.enableSearch && <ListSearchBar />}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border-b border-gray-200 bg-gray-50 gap-4">
-          
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-3 border-b border-gray-200 bg-gray-50 ">
           {/* 🚀 LEFT SIDE: Tabs, View Switcher (Card/Graph), and Extra Buttons (Uncheck) */}
           <div className="flex items-center gap-3">
             {config.enableTabs && <div><ListTabs /></div>}
-            
+
             {/* Moved ListViewSwitcher here so it anchors to the left! */}
             <ListViewSwitcher />
             {config.tabsExtra && <div className="flex items-center">{config.tabsExtra()}</div>}
@@ -47,7 +46,7 @@ export function ListLayout({ className }) {
 
           {/* 🚀 RIGHT SIDE: Filters and Sorting */}
           <div className="flex flex-wrap items-center justify-end gap-3">
-            <ListFilters />
+            {!config.hideTopFilter ? <ListFilters /> : null}
             {view !== "graph" && <ListSortDropdown />}
           </div>
 
@@ -57,8 +56,8 @@ export function ListLayout({ className }) {
       <div className="flex-1 bg-white p-0 relative border border-gray-200 border-t-0 rounded-b-lg">
         {renderView()}
       </div>
-      {config.Custommodule&&
-      <div><config.Custommodule/></div>
+      {config.Custommodule &&
+        <div><config.Custommodule /></div>
       }
     </div>
   );

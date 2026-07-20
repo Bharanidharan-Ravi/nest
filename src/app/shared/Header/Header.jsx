@@ -68,13 +68,10 @@ const Header = ({ toggleMobileMenu }) => {
   const { data: notificationList } = getNotification(
     meetingShowNotifications || showNotifications
   );
-  const notificationCounts = data || {};
   const meetingCount = data?.MEETING_CREATED;
-
-
   const ticketCount =
-    (notificationCounts.TICKET_CREATED || 0) +
-    (notificationCounts.TICKET_UPDATED || 0);
+    (data?.TICKET_CREATED || 0) +
+    (data?.TICKET_UPDATED || 0);
 
 
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
@@ -94,12 +91,16 @@ const Header = ({ toggleMobileMenu }) => {
 
 
 
-  const markSeen = async () => {
+  const markSeen = async (type) => {
+    console.log("type",type)
     try {
       await executeApi({
         url: "/Notification/mark-seen",
         method: "POST",
-        payload: { sessionId: user.sessionId },
+        payload: {
+          sessionId: user.sessionId,
+          notificationType: type
+        },
       });
 
       // 🔥 FIX 4: Refresh React Query so it knows the count is now 0
@@ -139,11 +140,11 @@ const Header = ({ toggleMobileMenu }) => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
-  useEffect(() => {
-    if (!showNotifications && !meetingShowNotifications) return;
-    markSeen();
-    // useNotificationStore.getState().reset();
-  }, [showNotifications, meetingShowNotifications]);
+  // useEffect(() => {
+  //   if (!showNotifications && !meetingShowNotifications) return;
+  //   markSeen();
+  //   // useNotificationStore.getState().reset();
+  // }, [showNotifications, meetingShowNotifications]);
   const setCount = useNotificationStore((s) => s.setCount);
   const count = useNotificationStore((s) => s.count);
 
@@ -350,7 +351,7 @@ const Header = ({ toggleMobileMenu }) => {
           </div>
         )}
         {/* Right Side: Breadcrumbs & User Profile */}
-        <div className="flex items-center gap-4" ref={meetingRef}>
+        <div className="flex items-center gap-4">
           <Breadcrumbs />
           {/* {!isViewer && ( */}
           {!isViewer && (
@@ -358,7 +359,10 @@ const Header = ({ toggleMobileMenu }) => {
               <div className="relative cursor-pointer" >
                 <Calendar
                   size={24}
-                  onClick={() => setMeetinShowNotifications((prev) => !prev)}
+                  onClick={() => {
+                    setShowNotifications(prev => !prev);
+                    markSeen("MEETING");
+                  }}
                 />
 
                 {meetingCount > 0 && (
@@ -385,6 +389,7 @@ const Header = ({ toggleMobileMenu }) => {
 
                 {meetingShowNotifications && (
                   <div
+                    ref={meetingRef}
                     className="
         absolute
         right-0
@@ -413,7 +418,7 @@ const Header = ({ toggleMobileMenu }) => {
                       {notificationList?.length > 0 ? (
                         notificationList
                           ?.filter((item) => item.entityType === "MEETING"
-                        )
+                          )
                           .map((item) => (
                             <div
                               key={item.id || item.notificationId}
@@ -597,7 +602,11 @@ const Header = ({ toggleMobileMenu }) => {
               <div className="relative cursor-pointer" ref={notificationRef}>
                 <IoNotificationsOutline
                   size={24}
-                  onClick={() => setShowNotifications((prev) => !prev)}
+                  onClick={() => {
+                    setShowNotifications(prev => !prev);
+                    markSeen("TICKET");
+                  }}
+
                 />
 
                 {ticketCount > 0 && (

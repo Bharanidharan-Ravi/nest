@@ -148,6 +148,7 @@ export default function TicketListCard({
   const handleQuickComment = (item) => {
     setQuickFormTicket(item);
   };
+  console.log("item", item);
   return (
     <>
       <Tooltip

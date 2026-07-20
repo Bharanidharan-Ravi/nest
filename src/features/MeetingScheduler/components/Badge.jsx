@@ -10,7 +10,7 @@ export function Pill({ children, tone = "neutral", icon: Icon, className = "" })
   };
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-medium capitalize ${tones[tone]} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-md border px-1  text-[10px] font-small capitalize ${tones[tone]} ${className}`}
     >
       {Icon && <Icon size={10} />}
       {children}
@@ -29,7 +29,7 @@ const DEFAULT_STATUS_TONE = "bg-gray-50 text-gray-600 border-gray-200 ring-gray-
 export function StatusBadge({ status, className = "" }) {
   return (
     <span
-      className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[10px] font-medium ring-1 ${
+      className={`inline-flex items-center rounded-md border px-1 text-[10px] font-small ring-1 ${
         STATUS_TONES[status] ?? DEFAULT_STATUS_TONE
       } ${className}`}
     >

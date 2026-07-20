@@ -20,6 +20,7 @@ export const ProjUIConfig ={
   enableSort: true,
   enableSelection: false,
   enableEdit: true,
+  searchFields: ["title", "repoKey"],
   // allowViewSwitch: true,
   filters: [
     {

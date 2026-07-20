@@ -103,8 +103,8 @@ export function useListState(config, rawData = [], userRole = null) {
   const [filters, setFilters] = useState({});
   const [view, setView] = useState(
     (isUrlSyncEnabled ? searchParams.get(`${prefix}view`) : null) ||
-      config.defaultView ||
-      "table",
+    config.defaultView ||
+    "table",
   );
   const [visibleCount, setVisibleCount] = useState(config.pageSize || 20);
 
@@ -142,17 +142,63 @@ export function useListState(config, rawData = [], userRole = null) {
 
   /* --- API FILTER --- */
   const combinedFiltersForApi = { ...filters, ...queryFilters };
+  // const apiFilterEntries = useMemo(() => {
+  //   if (!config.filters) return [];
+  //   return Object.entries(combinedFiltersForApi).filter(
+  //     ([key]) =>
+  //       config.filters.find((f) => f.key === key)?.filterType === "api",
+  //   );
+  // }, [filters, queryFilters, config.filters]);
+
+
+  // const apiFilterConfig =
+  //   apiFilterEntries.length > 0
+  //     ? config.filters.find((f) => f.key === apiFilterEntries[0][0])
+  //     : null;
+
+  // const apiPayload = useMemo(() => {
+  //   if (apiFilterEntries.length === 0) return undefined;
+
+  //   const result = {};
+
+  //   apiFilterEntries.forEach(([key, value]) => {
+  //     const filterConf = config.filters.find((f) => f.key === key);
+
+
+  //     if (filterConf?.type === "weekRange" || filterConf?.type === "CustomCalender") {
+  //       // ✅ Expands "2026-04-19~2026-04-25" → { FromDate: "...", ToDate: "..." }
+  //       const dateParams = getDateRangeApiParams(filterConf, value);
+  //       Object.assign(result, dateParams);
+  //     } else {
+  //       // 🚀 THE FIX: If the value is an empty string (meaning "All"), convert it to null.
+  //       // This prevents SQL Server from crashing when it expects a UNIQUEIDENTIFIER!
+  //       const finalValue = value === "" ? null : value;
+
+  //       result[filterConf?.apiKey || key] = finalValue;
+  //     }
+  //   });
+
+  //   return result;
+  // }, [apiFilterEntries, config.filters]);
+
+  const allFilters = [
+    ...(config.filters || []),
+    ...(config.CalenderFilter || []),
+  ];
 
   const apiFilterEntries = useMemo(() => {
-    if (!config.filters) return [];
     return Object.entries(combinedFiltersForApi).filter(
       ([key]) =>
-        config.filters.find((f) => f.key === key)?.filterType === "api",
+        allFilters.find((f) => f.key === key)?.filterType === "api",
     );
-  }, [filters, queryFilters, config.filters]);
+  }, [
+    combinedFiltersForApi,
+    allFilters,
+  ]);
+
   const apiFilterConfig =
     apiFilterEntries.length > 0
-      ? config.filters.find((f) => f.key === apiFilterEntries[0][0])
+      ? allFilters.find((f) => f.key === apiFilterEntries[0][0])
       : null;
 
   const apiPayload = useMemo(() => {
@@ -161,23 +207,25 @@ export function useListState(config, rawData = [], userRole = null) {
     const result = {};
 
     apiFilterEntries.forEach(([key, value]) => {
-      const filterConf = config.filters.find((f) => f.key === key);
+      const filterConf = allFilters.find((f) => f.key === key);
 
-      if (filterConf?.type === "weekRange") {
-        // ✅ Expands "2026-04-19~2026-04-25" → { FromDate: "...", ToDate: "..." }
+      if (!filterConf) return;
+
+      if (
+        filterConf?.type === "weekRange" ||
+        filterConf?.type === "CustomCalender"
+      ) {
         const dateParams = getDateRangeApiParams(filterConf, value);
         Object.assign(result, dateParams);
       } else {
-        // 🚀 THE FIX: If the value is an empty string (meaning "All"), convert it to null.
-        // This prevents SQL Server from crashing when it expects a UNIQUEIDENTIFIER!
         const finalValue = value === "" ? null : value;
-
-        result[filterConf?.apiKey || key] = finalValue;
+        result[filterConf.apiKey || key] = finalValue;
       }
     });
 
     return result;
-  }, [apiFilterEntries, config.filters]);
+  }, [apiFilterEntries, allFilters]);
+
 
   const { data: apiFilteredData, dataUpdatedAt } = useApiQuery({
     queryKey: [apiFilterConfig?.configKey, apiPayload],
@@ -185,9 +233,9 @@ export function useListState(config, rawData = [], userRole = null) {
     method: apiFilterConfig?.method || "POST",
     payload: apiFilterConfig
       ? buildSyncPayload({
-          configKey: apiFilterConfig.configKey,
-          customParams: apiPayload,
-        })
+        configKey: apiFilterConfig.configKey,
+        customParams: apiPayload,
+      })
       : undefined,
     source: apiFilterConfig?.configKey,
     options: {
@@ -623,6 +671,7 @@ export function useListState(config, rawData = [], userRole = null) {
     config.enablePagination === false
       ? processed
       : processed.slice(0, visibleCount);
+  console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
     setVisibleCount((v) => v + (config.pageSize || 20));

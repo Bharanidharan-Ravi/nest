@@ -14,6 +14,7 @@ export const useMeetingData = ({
   
     url: "/sync/v2",
     method: "POST",
+    queryKey: queryKeys.MeetingData.list(HostId),
     payload: {
       ConfigKeys: ["MeetingData"],
       Params: {
@@ -38,6 +39,7 @@ export const useUpcomingMeeting = () => {
   return useApiQuery({
     url: "/sync/v2",
     method: "POST",
+    queryKey: ["UpcomingMeeting"],
     payload: {
       ConfigKeys: ["UpcomingMeeting"],
     },

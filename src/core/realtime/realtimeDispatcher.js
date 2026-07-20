@@ -170,15 +170,33 @@ const REALTIME_ENTITY_CONFIG = {
     wrapList: (_oldData, list, shape) =>
       shape === "array" ? list : (list[0] ?? null),
   },
+
   MeetingData: {
     type: "query",
-    queryKey: (msg) =>{
-      queryKeys.MeetingData.list(
-        msg.Payload?.Employee_Id ??
-        msg.Employee_Id ??
-        msg.employeeId
-      )
+  
+    queryKeys: (msg) => {
+      const payload = msg.Payload ?? {};
+  const parseParticipants =(val)=>{
+    if(!val) return [];
+    if(Array.isArray(val)) return val;
+    try{
+      return JSON.parse(val);
+    }catch{
+      return [];
+    }
+  };
+  const internal = parseParticipants(payload.InternalParticipants);
+  const client = parseParticipants(payload.ClientParticipants);
+      const keys = [
+        payload.Host_Id,
+        ...(internal).map(x => x.Participant_Id),
+        ...(client).map(x => x.Participant_Id),
+      ]
+        .filter(Boolean)
+        .map(id => queryKeys.MeetingData.list(String(id).toLowerCase()));
+        return keys;
     },
+  
     sort: "desc",
     extractList: (data) => ({
       list: Array.isArray(data)
@@ -196,39 +214,6 @@ const REALTIME_ENTITY_CONFIG = {
   },
 
 
-  // ─────────────────────────────────────────────────────────────────────────
-  //  ADDING A NEW ENTITY IN THE FUTURE
-  //  Copy-paste one of the blocks below, fill in the queryKey and list shape.
-  //  That's it.  No new functions, no edits anywhere else.
-  // ─────────────────────────────────────────────────────────────────────────
-
-  // DailyPlan: {
-  //   type: "queries",
-  //   queryKey: [...queryKeys.dailyPlan.all, "list"],
-  //   sort: "desc",
-  //   extractList: (data) => ({
-  //     list: Array.isArray(data) ? data : (data?.Data ?? []),
-  //     shape: Array.isArray(data) ? "array" : "data",
-  //   }),
-  //   wrapList: (oldData, list, shape) =>
-  //     shape === "array" ? list : { ...oldData, Data: list },
-  // },
-
-  // Sprint: {
-  //   type: "queries",
-  //   queryKey: [...queryKeys.sprint.all, "list"],
-  //   sort: "desc",
-  //   extractList: (data) => ({ list: Array.isArray(data) ? data : [], shape: "array" }),
-  //   wrapList: (_oldData, list) => list,
-  // },
-
-  // WorkStream: {
-  //   type: "query",
-  //   queryKey: (msg) => queryKeys.workStream.detail(msg.WorkStreamId ?? msg.workStreamId),
-  //   sort: "asc",
-  //   extractList: (data) => ({ list: data?.Items ?? [], shape: "items" }),
-  //   wrapList: (oldData, list) => ({ ...oldData, Items: list }),
-  // },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -239,7 +224,7 @@ export const handleRealtimeMessage = (queryClient, message) => {
   const action = message.Action ?? message.action;
   const payload = message.Payload ?? message.payload;
   const keyField = message.KeyField ?? message.keyField;
-
+  console.warn("[Realtime] message:", entity,action,payload,keyField);
   if (!entity || !action || !payload || !keyField) {
     console.warn("[Realtime] Dropped invalid message:", message);
     return;
@@ -269,6 +254,7 @@ function applyEntityConfig(
   message,
 ) {
   const updater = (oldData) => {
+    
     if (config.scopeGuard && !config.scopeGuard(oldData, payload))
       return oldData;
 
@@ -292,9 +278,16 @@ function applyEntityConfig(
       updater,
     );
   } else if (config.type === "query") {
+    if(config.queryKeys){
+      const keys = config.queryKeys(message) || [];
+      keys.forEach((key)=>{
+        if(key)queryClient.setQueryData(key,updater)
+      })
+    }else{
     // Exact key derived from the message payload
     const key = config.queryKey(message);
     if (key) queryClient.setQueryData(key, updater);
+    }
   }
 }
 
@@ -330,7 +323,6 @@ function safeExtract(data, extractFn) {
 }
 
 function applyAction(list, action, payload, keyField, sortDir) {
-  console.log("oldData :", list, action, payload, keyField, sortDir);
   if (!Array.isArray(list)) return [];
   const targetVal = normalize(getCI(payload, keyField));
   const match = (x) => normalize(getCI(x, keyField)) === targetVal;

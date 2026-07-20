@@ -35,6 +35,7 @@ export const repoListConfig = {
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,
+  searchFields: ["title", "key"],
   // allowViewSwitch: true,
   filters: [
     {

@@ -3,6 +3,8 @@ import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
+import { TrainFrontTunnelIcon } from "lucide-react";
+import { safeParseList } from "../../MeetingScheduler/hooks/participants";
 const isBypassStatus = (data) => {
   const statusId = data?.Status?.value?.id;
   const statusName = data?.Status?.value?.name;
@@ -23,7 +25,7 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
     // Not in edit mode ? skip validation
     return true;
   }
-  
+
   // 🔥 Skip hours validation if the ticket is set to Hold, InActive, or InQueue
   if (isBypassStatus(formData)) {
     return true;
@@ -43,7 +45,7 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
   return true;
 };
 
-const statusOptions = [
+export const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
   { label: "InActive", value: { id: 17, name: "InActive" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
@@ -276,15 +278,45 @@ export const TicketFieldConfig = () => [
     name: "assignedTo",
     type: "select",
     ui: "mui",
-    optionsResolver: buildOptionsResolver(
-      "EmployeeList",
-      "UserID",
-      "UserName",
-      (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-    ),
+    optionsResolver: ({ masterData, formData }) => {
+      const employeeOptions = buildOptionsResolver(
+        "EmployeeList",
+        "UserID",
+        "UserName",
+        (user) => user.Status === "Active"
+      )({ masterData });
+
+      if (!formData?.Rasieticket) {
+        return employeeOptions;
+      }
+      const repo = masterData.RepoList.find(
+        r => r.Repo_Id === formData?.repository?.value?.id
+      );
+      const repoUsers = repo?.RepoUserList
+        ? safeParseList(repo.RepoUserList)
+          .filter(u => u.Status === "Active")
+          .map(u => ({
+            label: `${u.UserName} - (Repo User)`,
+            value: {id:u.UserId,name:u.UserName}
+          }))
+        : [];
+
+      // Merge without duplicates
+      const merged = [...repoUsers, ...employeeOptions]
+
+      return merged;
+    },
+    // optionsResolver: buildOptionsResolver(
+    //   "EmployeeList",
+    //   "UserID",
+    //   "UserName",
+    //   (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+    // ),
     initValueResolver: ({ context, masterData }) => {
       // ✅ 1. Check if we are editing and actually have the ID
       if (context.isEdit && context.entityData?.assignedTo) {
+        console.log("context",context);
+        
         // ✅ 2. Return the constructed object immediately
         return {
           label: context.entityData.assginedName || "Unknown",
@@ -407,7 +439,7 @@ export const TicketFieldConfig = () => [
       if (context?.isEdit) {
         return true;
       }
-      
+
       if (!value) return true;
       const dueDate = new Date(value);
       const today = new Date();
@@ -573,14 +605,16 @@ export const TicketFieldConfig = () => [
     colSpan: 2,
     
     initValueResolver: ({ context,formData }) => {
+      console.log("is edit",context.isEdit);
+      console.log("is entity",context.entityData);
+      console.log("is value",context.entityData?.IsPrivate);
+      console.log("is formData",formData);
      if(context.isEdit && context.entityData?.IsPrivate===true){
       return true
      }
     return false},
     visibleWhen: ({ context }) =>TrainFrontTunnelIcon,
   },
-
-
   {
     name: "TicketOverallPercentage",
     label: "Overall Ticket Progress (%)",
@@ -614,10 +648,9 @@ export const TicketFieldConfig = () => [
     initValueResolver: ({ context }) =>
       context.isEdit ? context.entityData?.description : "",
     apiKey: "Description",
-    customValidator:(value)=>{
-      
-      const stripped=value?.replace(/<[^>]*>/g,"").trim();
-      if(!stripped){
+    customValidator: (value) => {
+      const stripped = value?.replace(/<[^>]*>/g, "").trim();
+      if (!stripped) {
         return "Description is required";
       }
       return true
@@ -634,21 +667,20 @@ export const TicketFieldConfig = () => [
     optionsResolver: ({ context }) => {
       return context?.isEdit
         ? statusOptions // Edit => show all including InActive
-        : statusOptions.filter((opt) => opt.value.id !== 17  && opt.value.id !== 10); // Create => hide InActive
+        : statusOptions.filter((opt) => opt.value.id !== 17 && opt.value.id !== 10); // Create => hide InActive
     },
     initValueResolver: ({ context }) => {
-   
-    
+
       if (!context.isEdit || !context.entityData) {
         return statusOptions[0]; // default Active
       }
-    
+
       const apiStatus = context.entityData.statusId;
       const matchedOption =
         statusOptions.find((opt) => opt.value.id === Number(apiStatus)) ||
         statusOptions[0];
-    
-    
+
+
       return matchedOption;
     },
     visibleWhen: (formData, context) => {

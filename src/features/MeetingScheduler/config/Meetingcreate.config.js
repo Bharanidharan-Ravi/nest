@@ -204,6 +204,7 @@ export const MeetinglFieldConfig = () => [
     dataType: "string",
     apiKey: "start_time",
     customValidator: (value, data, context) => {
+      console.log("value, data, context",value, data, context);
       
       if (!value) return true;
       const [hours, minutes] = value.split(":").map(Number);
@@ -281,6 +282,8 @@ export const MeetinglFieldConfig = () => [
     initValueResolver: ({ context, masterData, formData }) => {
       const start = formData?.start_time?.slice(0, 5) ?? "";
       const end = formData?.end_time?.slice(0, 5) ?? "";
+      console.log("start",start);
+      console.log("end",end);
       if (start && end) {
         return calcHHMM(start, end);
       }
@@ -351,6 +354,7 @@ export const MeetinglFieldConfig = () => [
     apiKey: "clientParticipants",
     ui: "mui",
     optionsResolver: ({ masterData, context }) => {
+      console.log("context", context);
 
       const options = masterData?.RepoList.flatMap((repo) => {
         const users = JSON.parse(repo.RepoUserList || "[]");

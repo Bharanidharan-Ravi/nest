@@ -73,7 +73,9 @@ const ProjectPage = () => {
       { key: "owner", view: "Emp", options: employeeFilterOptions, allowedRoles:[1,2] },
     ],
     onSelectionChange: (item, isChecked) => {
-    
+      console.log(
+        `Item ${item.id} is now ${isChecked ? "selected" : "unselected"}`,
+      );
     },
     onEditClick: (item) => {
       goTo(editRouteKey, { projId: item.id });

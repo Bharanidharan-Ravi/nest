@@ -21,8 +21,10 @@ export function MeetingFormModal({ isOpen, onClose, onSuccess, context }) {
       initValueResolver: ({ context: ctx }) => {
         const ticketId = ctx?.isEditMode ? ctx.entityData?.ticket_id : ctx?.fromTicketId;
         if (!ticketId) return null;
+console.log("ticketId",ticketId);
 
         const ticket = (ticketMaster || []).find((t) => t.Issue_Id == ticketId); // eslint-disable-line eqeqeq
+        console.log("ticket",ticket);
         
         if (ticket) {
           return { value: { id: ticket.Issue_Id, name: ticket.Title }, label: ticket.Title };

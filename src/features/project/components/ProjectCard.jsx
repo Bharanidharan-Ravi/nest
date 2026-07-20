@@ -36,7 +36,7 @@ export default function ProjectCard({ item }) {
 
         {/* 2. Key/Tag */}
         <span className="text-xs font-mono font-medium text-gray-500 bg-gray-100 border border-gray-200 px-1.5 py-0.5 rounded">
-          {item.projectKey || item.repoKey || "NO-KEY"}
+          {item.repoKey || "NO-KEY"}
         </span>
 
         {/* 3. Title */}
