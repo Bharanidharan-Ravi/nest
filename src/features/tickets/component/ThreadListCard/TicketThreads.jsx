@@ -57,8 +57,6 @@ const TicketThreads = ({
   setEditingItem,
   currentUser,
 }) => {
-
-  console.log("threadsData",threadsData);
   
   const [expandCount, setExpandCount] = useState(0);
   
@@ -291,7 +289,6 @@ let parsedReactionsJSON = []
       return item;
     });
   }, [filteredThreads, historyData, formContext.isViewer]);
-console.log("enrichedTimeline",enrichedTimeline);
 
   // =========================================================
   // LOCAL HISTORY COLLAPSE LOGIC
@@ -583,7 +580,6 @@ console.log("enrichedTimeline",enrichedTimeline);
   // =========================================================
   // RENDER
   // =========================================================
-console.log("parentTicket",parentTicket)
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="flex items-center justify-between border-b border-slate-100 pb-3">

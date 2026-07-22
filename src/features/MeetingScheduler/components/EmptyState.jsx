@@ -15,7 +15,7 @@ export function EmptyState({
 }) {
   return (
     <div
-      className={`h-full flex flex-col items-center justify-center gap-2 bg-gray-50 p-10 text-center ${className}`}
+      className={`h-full flex flex-col items-center justify-center gap-2 bg-gray-50 p-10 text-center `}
     >
       <Icon size={28} className="text-gray-300" aria-hidden="true" />
       <p className="text-sm font-medium text-gray-500">{title}</p>

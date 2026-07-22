@@ -56,7 +56,6 @@ export const useEntityForm = (config, context = {}) => {
     () => ({ ...resolvedInitialData, ...formData }),
     [resolvedInitialData, formData],
   );
-console.log("resolvedInitialData",resolvedInitialData);
 
   const processedFields = useMemo(() => {
     const baseFields = config.fields || [];

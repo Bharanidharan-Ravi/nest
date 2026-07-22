@@ -25,7 +25,6 @@ export const TicketFormConfig = {
         
         // 1. Get the requested status (Default to 1: Active)
         const requestedStatusId = formData?.Status?.value?.id || 1;
-        console.log("requestedStatusId :", requestedStatusId);
         
         // 2. Identify if the requested status REQUIRES strict validation
         // 1 = Active, 10 = Need Confirmation

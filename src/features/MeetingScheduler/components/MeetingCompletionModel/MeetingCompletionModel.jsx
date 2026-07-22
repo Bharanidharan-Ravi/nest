@@ -4,6 +4,7 @@ import EntityFormPage from "../../../../packages/crud/pages/EntityFormPage";
 import { formatDate } from "../../Helpers/dateTime";
 import { CalendarDays, CheckCircle2, Clock3, X } from "lucide-react";
 import { safeParseList } from "../../hooks/participants";
+import { useMemo } from "react";
 function BuildAttendeeOptions(meeting) {
     const internal = safeParseList(meeting.InternalParticipants);
     const client = safeParseList(meeting.ClientParticipants);
@@ -20,7 +21,8 @@ export default function MeetingCompleteModal({
     onClose,
     handleSuccess
 }) {
-
+  const attendeOptions = useMemo(()=>
+    BuildAttendeeOptions(meeting),[meeting.meeting_id])
 
     const completeField = (meeting) => [
         {
@@ -32,7 +34,6 @@ export default function MeetingCompleteModal({
             dataType: "dateTime",
             apiKey: "ActualStartTime",
             initValueResolver: ({ context, formData }) => {
-                console.log("context", context);
                 return context?.start_time?.slice(0, 5) ?? "";
             }
         },
@@ -71,9 +72,9 @@ export default function MeetingCompleteModal({
             ui: "mui", // Or "html"
             colSpan: 3,
             groupName: "Meeting Attendees",
-            options :BuildAttendeeOptions(meeting),
+            options :attendeOptions,
             initValueResolver: ({ context }) => {
-                return BuildAttendeeOptions(meeting).map(o =>o.value);
+                return attendeOptions.map(o =>o.value);
               },
         }
     ]

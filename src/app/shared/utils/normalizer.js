@@ -37,6 +37,7 @@ export const normalizeTicket = (ticket) => ({
   technicalResponse: ticket.TechnicalResponse,
   adminResponse: ticket.AdminResponse,
   raiseToClient: ticket.RaiseToClient,
+  privateTicket :ticket.IsPrivate ?? false,
   clientTime: ticket.Client,
   webTime: ticket.Web,
   technicalTime: ticket.Technical,
@@ -147,6 +148,7 @@ export const normalizeTimelineList = (historyList) => {
     id: item.Id,
     ticketId: item.IssueId,
     eventType: item.EventType,
+    entityType: item.EntityType,
     title: item.Summary || "No Action", // This will show as the main text
     actorName: item.ActorName || "System",
     createdAt: item.CreatedAt,

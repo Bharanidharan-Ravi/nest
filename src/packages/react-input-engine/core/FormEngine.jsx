@@ -39,7 +39,6 @@ const FormEngine = ({
   // 🔥 Build the elements array manually so we can inject headers
   const renderElements = [];
   let currentGroupName = null;
-console.log("fields",fields);
 
   if (fields?.length > 0) {
     fields.forEach((field, index) => {

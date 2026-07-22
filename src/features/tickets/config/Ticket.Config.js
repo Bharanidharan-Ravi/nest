@@ -3,7 +3,6 @@ import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
-import { TrainFrontTunnelIcon } from "lucide-react";
 import { safeParseList } from "../../MeetingScheduler/hooks/participants";
 const isBypassStatus = (data) => {
   const statusId = data?.Status?.value?.id;
@@ -315,7 +314,6 @@ export const TicketFieldConfig = () => [
     initValueResolver: ({ context, masterData }) => {
       // ✅ 1. Check if we are editing and actually have the ID
       if (context.isEdit && context.entityData?.assignedTo) {
-        console.log("context",context);
         
         // ✅ 2. Return the constructed object immediately
         return {
@@ -604,15 +602,11 @@ export const TicketFieldConfig = () => [
     apiKey: "IsPrivate",
     colSpan: 2,
     
-    initValueResolver: ({ context,formData }) => {
-      console.log("is edit",context.isEdit);
-      console.log("is entity",context.entityData);
-      console.log("is value",context.entityData?.IsPrivate);
-      console.log("is formData",formData);
-     if(context.isEdit && context.entityData?.IsPrivate===true){
-      return true
-     }
-    return false},
+    initValueResolver: ({ context }) => {
+      return context.isEdit
+        ? Boolean(context.entityData?.privateTicket)
+        : false;
+    },
     visibleWhen: ({ context }) =>TrainFrontTunnelIcon,
   },
   {

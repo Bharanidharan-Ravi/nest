@@ -111,7 +111,9 @@ export default function TicketsPage() {
       : ROUTE_KEYS.TICKET_CREATE;
 
   const isAllowedToView = (item, userId) => {
-    if (Number(item?.statusId) !== 19) return true;
+    // console.log("iyttregtbjfsdg",item.privateTicket,typeof(item.privateTicket))
+    // if (Number(item?.statusId) !== 19 ) return true;
+    if(!item.privateTicket)return true;
     if (!userId) return false;
 
     const normalizedUserId = String(userId).toLowerCase().trim();
@@ -119,7 +121,7 @@ export default function TicketsPage() {
     const assignedTo = String(item?.assignedTo ?? "")
       .toLowerCase()
       .trim();
-    if (assignedTo && assignedTo === normalizedUserId) return true;
+    // if (assignedTo && assignedTo === normalizedUserId) return true;
 
     if (Array.isArray(item?.multiAssignees)) {
       return item.multiAssignees.some((assignee) => {

@@ -22,6 +22,7 @@ import { Avatar } from "./Avatar";
 import { Button } from "./Button";
 import { getAllParticipants } from "../hooks/participants";
 import { binaryToDaysList, formatDate, formatDuration, formatTime24h } from "../Helpers/dateTime";
+import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
 
 // BUG FIX: original switch only handled "Scheduled" and "Completed" and fell
 // through to the green "open" icon for everything else — including
@@ -124,15 +125,16 @@ function MeetingRow({ meeting, isOpen, onToggle, onEdit, onComplete }) {
             <IconText icon={Users}>
               {all.length} attendee{all.length === 1 ? "" : "s"}
             </IconText>
-            {/* {meeting.HostName && (
+            {meeting.HostName && (
               <span className="flex items-center gap-1.5">
-                <Avatar
+                {/* <Avatar
                   name={meeting.HostName}
                   size={16}
                   className="border-8 border-black-300 bg-gray-100 text-black-700"
-                />
+                /> */}
+                {/* {meeting.HostName} */}
               </span>
-            )} */}
+            )}
           </div>
         </div>
 
@@ -170,9 +172,16 @@ function MeetingRow({ meeting, isOpen, onToggle, onEdit, onComplete }) {
 
           </div>
 
-          <p className="text-gray-600 leading-relaxed bg-gray-50/70 border border-gray-100 rounded-lg p-3">
+          {/* <p className="text-gray-600 leading-relaxed bg-gray-50/70 border border-gray-100 rounded-lg p-3">
             {meeting.meeting_summary || "No summary added yet."}
-          </p>
+          </p> */}
+          <div className="bg-gray-50/70 border border-gray-100 rounded-lg p-3">
+            {meeting.meeting_summary ? (
+              <HtmlRenderer html={meeting.meeting_summary} />
+            ) : (
+              <span className="text-gray-500">No summary added yet.</span>
+            )}
+          </div>
 
           <ParticipantSection label="Internal" people={internal} />
           <ParticipantSection label="Client" people={client} />

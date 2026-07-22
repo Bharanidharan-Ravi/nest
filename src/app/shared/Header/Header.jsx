@@ -65,14 +65,9 @@ const Header = ({ toggleMobileMenu }) => {
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
-  const { data: notificationList } = getNotification(
-    meetingShowNotifications || showNotifications
-  );
-  const meetingCount = data?.MEETING_CREATED;
-  const ticketCount =
-    (data?.TICKET_CREATED || 0) +
-    (data?.TICKET_UPDATED || 0);
-
+  const { data: notificationList } = getNotification( meetingShowNotifications || showNotifications);
+  const meetingCount = data?.MEETING;
+  const ticketCount =(data?.TICKET || 0)
 
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
 
@@ -91,8 +86,8 @@ const Header = ({ toggleMobileMenu }) => {
 
 
 
+
   const markSeen = async (type) => {
-    console.log("type",type)
     try {
       await executeApi({
         url: "/Notification/mark-seen",
@@ -360,7 +355,8 @@ const Header = ({ toggleMobileMenu }) => {
                 <Calendar
                   size={24}
                   onClick={() => {
-                    setShowNotifications(prev => !prev);
+                    setMeetinShowNotifications(prev => !prev);
+                    setShowNotifications(false); // close ticket dropdown if open
                     markSeen("MEETING");
                   }}
                 />
@@ -604,6 +600,7 @@ const Header = ({ toggleMobileMenu }) => {
                   size={24}
                   onClick={() => {
                     setShowNotifications(prev => !prev);
+                    setMeetinShowNotifications(false);
                     markSeen("TICKET");
                   }}
 

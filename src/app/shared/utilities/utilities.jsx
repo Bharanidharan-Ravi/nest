@@ -222,6 +222,7 @@ dayjs.extend(relativeTime);
 // }
 
 export function HtmlRenderer({ html }) {
+  
   const highlightFiles = (htmlString) => {
     const cleanHtml = DOMPurify.sanitize(htmlString);
 

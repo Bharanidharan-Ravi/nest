@@ -16,7 +16,7 @@ const config = {
         ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**', '**/.git/**']
     },
     api: {
-        source: 'D:/live work/IQS_Forge',
+        source: 'D:\\live work\\Github\\API\\WGNestAPIGateway',
         ignore: ['**/bin/**', '**/obj/**', '**/.git/**']
     }
 };

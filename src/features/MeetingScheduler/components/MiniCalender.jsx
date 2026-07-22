@@ -422,7 +422,6 @@ export function MiniCalendar({
   currentValue,
   updateQuery,
 }) {
-  console.log("filter", filter);
 
   const [calMode, setCalMode] = useState("day");
   const [month, setMonth] = useState(dayjs());

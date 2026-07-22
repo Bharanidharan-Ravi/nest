@@ -671,7 +671,6 @@ export function useListState(config, rawData = [], userRole = null) {
     config.enablePagination === false
       ? processed
       : processed.slice(0, visibleCount);
-  console.log("visibleData :", visibleData);
 
   const loadMore = useCallback(() => {
     setVisibleCount((v) => v + (config.pageSize || 20));
