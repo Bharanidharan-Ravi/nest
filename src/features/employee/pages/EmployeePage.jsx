@@ -4,18 +4,21 @@ import { getEmployeeList } from "../hooks/useEmployeeList";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { EmployeedataTable } from "../config/EmployeeUI";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 const EmployeePage = () => {
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
   const { data } = getEmployeeList();
-
+  const {isAdmin} = useCurrentUser();
+  console.log("user",user);
+  
   const normalizeLabel = (Emp) => {
     // Parse the Attachment_JSON string into an array of objects
     const attachments = Emp.Attachment_JSON
       ? JSON.parse(Emp.Attachment_JSON)
       : [];
+      const canEdit = isAdmin || String(Emp.UserID) === String(user?.userId);
 
     return {
       id: Emp.UserID,
@@ -30,6 +33,7 @@ const EmployeePage = () => {
       Email: Emp.Email,
       PhoneNumber: Emp.PhoneNumber,
       DoB: Emp.DoB,
+      canEdit: canEdit,
     };
   };
 
@@ -37,8 +41,11 @@ const EmployeePage = () => {
 
   const listConfigWithNav = {
     ...EmployeedataTable,
-
+    enableEdit: true,
+    isEditDisabled: (item) => !isAdmin && String(item?.id) !== String(user?.userId),
     onEditClick: (item) => {
+      const allowed = isAdmin || String(item?.id) === String(user?.userId);
+      if (!allowed) return;
       goTo(ROUTE_KEYS.EMPLOYEE_EDIT, { employeeId: item.id });
     },
 
@@ -54,12 +61,14 @@ const EmployeePage = () => {
       <div className="flex justify-between items-center mb-3 flex-none">
         <h2>EmployeeData</h2>
 
+     {isAdmin && (
         <button
           onClick={() => goTo(ROUTE_KEYS.EMPLOYEE_CREATE)}
           className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
         >
           Add Employee
         </button>
+     )}
       </div>
 
       <div className="flex-1 min-h-0">

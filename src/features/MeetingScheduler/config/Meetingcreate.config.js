@@ -130,10 +130,6 @@ export const MeetinglFieldConfig = () => [
         return matched || recurrenceOptions[0]
       }
       return recurrenceOptions[0];
-      // return {
-      //   label: "One Time",
-      //   value: { id: "ONETIME", name: "onetime" }
-      // };
     },
   },
   {
@@ -204,7 +200,6 @@ export const MeetinglFieldConfig = () => [
     dataType: "string",
     apiKey: "start_time",
     customValidator: (value, data, context) => {
-      
       if (!value) return true;
       const [hours, minutes] = value.split(":").map(Number);
       const selectedTime = hours * 60 + minutes;
@@ -214,21 +209,20 @@ export const MeetinglFieldConfig = () => [
       }
       if (context.isEditMode) return true;
       const currentDate = new Date().toISOString().split("T")[0];
-      if (data.meeting_Date === currentDate) {
+    if (value.recurrence_type?.value?.id === "ONETIME") {
+      const currentDate = new Date().toISOString().split("T")[0];
+      if (value.meeting_Date === currentDate) {
         const now = new Date();
         const currentTime = now.getHours() * 60 + now.getMinutes();
-    
+
         return selectedTime >= currentTime
           ? true
           : "Start Time cannot be before the current time";
       }
-      return true;
-      // const now = new Date();
-      // const currentTime = now.getHours() * 60 + now.getMinutes();
-      // return selectedTime >= currentTime
-      //   ? true
-      //   : "Start Time cannot be before the current time";
-    },
+    }
+
+    return true;
+  },
     initValueResolver: ({ context }) => {
       if (context.isEditMode) {
         return context.entityData?.start_time?.slice(0, 5) ?? "";
@@ -247,11 +241,6 @@ export const MeetinglFieldConfig = () => [
     initValueResolver: ({ context }) =>
       context.isEditMode
         ? context.entityData?.end_time?.slice(0, 5) :"",
-        // : (() => {
-        //   const date = new Date();
-        //   date.setMinutes(date.getMinutes() + 10);
-        //   return date.toTimeString().slice(0, 5);
-        // })(),
     customValidator: (value, data) => {
       if (!value || !data.start_time) return true;
 
@@ -351,6 +340,8 @@ export const MeetinglFieldConfig = () => [
     apiKey: "clientParticipants",
     ui: "mui",
     optionsResolver: ({ masterData, context }) => {
+      console.log("context", context);
+
       const options = masterData?.RepoList.flatMap((repo) => {
         const users = JSON.parse(repo.RepoUserList || "[]");
         return users

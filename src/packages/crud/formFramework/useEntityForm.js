@@ -11,6 +11,7 @@ export const useEntityForm = (config, context = {}) => {
   const [formData, setFormData] = useState({});
   const [errors, setErrors] = useState({});
   const { data: masterData } = useMasterData();
+ console.log("formData",formData);
  
   const resolvedInitialData = useMemo(() => {
     // 🔥 RECURSIVE HELPER
@@ -56,6 +57,7 @@ export const useEntityForm = (config, context = {}) => {
     () => ({ ...resolvedInitialData, ...formData }),
     [resolvedInitialData, formData],
   );
+console.log("resolvedInitialData",resolvedInitialData);
 
   const processedFields = useMemo(() => {
     const baseFields = config.fields || [];

@@ -57,6 +57,7 @@ const TicketThreads = ({
   setEditingItem,
   currentUser,
 }) => {
+
   
   const [expandCount, setExpandCount] = useState(0);
   
@@ -416,7 +417,6 @@ let parsedReactionsJSON = []
       ),
     [finalTimeline, getItem],
   );
-
   // =========================================================
   // LIST CONFIG
   // =========================================================
@@ -504,7 +504,7 @@ let parsedReactionsJSON = []
                   {item.summary}
                   {(item.eventType === "LABEL_ADDED" ||
                     item.eventType === "LABEL_REMOVED" ||
-                    item.eventType === "TICKET_UPDATED" || item.eventType ==="STATUS_CHANGED") && (
+                    item.eventType === "TICKET_UPDATED" || item.eventType ==="STATUS_CHANGED" || item.eventType ==="ASSIGNEE_ADDED") && (
                     <>
                       {" "}by{" "}
                       <span className="font-semibold text-gray-800">
@@ -575,7 +575,7 @@ let parsedReactionsJSON = []
   // TERMINAL STATE
   // =========================================================
 
-  const isTerminalState = [14, 15, 16, 17].includes(parentTicket?.statusId);
+  const isTerminalState = [15, 16, 17].includes(parentTicket?.statusId);
 
   // =========================================================
   // RENDER

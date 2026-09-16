@@ -144,11 +144,12 @@ export const useMasterOptions = ({
 //   return options;
 // };
 // ─── Predefined option shortcuts ─────────────────────────────────────────────
-export const useEmployeeOptions = (includeAll = false, role = "Employee", overrides = {}) =>
+// export const useEmployeeOptions = (includeAll = false, role = "Employee", overrides = {}) =>
+  export const useEmployeeOptions = (includeAll = false, role = "Assignee", overrides = {}) =>
   useMasterOptions({
     masterKey: "employee",
     filterFn: (e) => e.isActive,
-    prependOption: includeAll ? { label: `All ${role}s`, value: "" } : null,
+    prependOption: includeAll ? { label: `${role}s`, value: "" } : null,
     valueShape: "simple", // 👈 This is the default
     ...overrides,            // 👈 Anything passed from the component will override the lines above
   });
@@ -161,14 +162,14 @@ export const useRepoOptions = (includeAll = false,fromRepoUsers = false) =>
     nestedKey : "repoUserList",
     nestedLabelKey : "UserName",
     nestedValueKey : "UserId",
-    prependOption: includeAll ? { label: fromRepoUsers ? "All User" :"All Repositories", value: "" } : null,
+    prependOption: includeAll ? { label: fromRepoUsers ? "User" :"Repositories", value: "" } : null,
   });
 
 export const useProjectOptions = (includeAll = false) =>
   useMasterOptions({
     masterKey: "project",
     valueShape: "simple",
-    prependOption: includeAll ? { label: "All Projects", value: "" } : null,
+    prependOption: includeAll ? { label: "Projects", value: "" } : null,
   });
 
 export const useLabelOptions = (includeAll = false) =>
@@ -176,26 +177,26 @@ export const useLabelOptions = (includeAll = false) =>
     masterKey: "label",
     valueShape: "simple",
     filterFn: (e) => e.isActive,
-    prependOption: includeAll ? { label: "All Labels", value: "" } : null,
+    prependOption: includeAll ? { label: "Labels", value: "" } : null,
   });
 
 export const useTeamOptions = (includeAll = false) =>
   useMasterOptions({
     masterKey: "team",
     valueShape: "simple",
-    prependOption: includeAll ? { label: "All Teams", value: "" } : null,
+    prependOption: includeAll ? { label: "Teams", value: "" } : null,
   });
 
 export const useTicketStatusOptions = (includeAll = false) =>
   useMasterOptions({
     masterKey: "ticketStatus",
     valueShape: "simple",
-    prependOption: includeAll ? { label: "All Statuses", value: "" } : null,
+    prependOption: includeAll ? { label: "Statuses", value: "" } : null,
   });
 
 export const useDepartmentOptions = (includeAll = false) =>
   useMasterOptions({
     masterKey: "department",
     valueShape: "simple",
-    prependOption: includeAll ? { label: "All Departments", value: "" } : null,
+    prependOption: includeAll ? { label: "Departments", value: "" } : null,
   });

@@ -33,7 +33,11 @@ export function ListTableView() {
           </tr>
         </thead>
         <tbody>
-          {data.map(item => (
+          {data && data.map(item => {
+            const isDisabled =
+             (typeof config.isEditDisabled === "function" && config.isEditDisabled(item)) ||
+             item.canEdit === false;
+             return (
             <tr 
               key={item.id} 
               onClick={() => config.onItemClick && config.onItemClick(item)}
@@ -62,7 +66,11 @@ export function ListTableView() {
                 <td className="p-3 align-middle text-center" onClick={(e) => e.stopPropagation()}>
                   <button
                     type="button"
-                    className="text-blue-600 hover:text-blue-800 hover:underline px-2 py-1 text-sm font-medium"
+                    className={`px-2 py-1 text-sm font-medium transition-colors ${
+                      isDisabled
+                      ? "text-gray-400 cursor-not-allowed opacity-50"
+                      : "text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                    }`}
                     onClick={(e) => {
                       e.stopPropagation();
                       if (config.onEditClick) config.onEditClick(item);
@@ -73,7 +81,8 @@ export function ListTableView() {
                 </td>
               )}
             </tr>
-          ))}
+             );
+        })}
           {data.length === 0 && (
             <tr>
               <td 

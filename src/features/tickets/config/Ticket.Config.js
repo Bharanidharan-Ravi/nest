@@ -1,8 +1,8 @@
-import { TrainFrontTunnelIcon } from "lucide-react";
 import {
   buildOptionsResolver,
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
+import { TrainFrontTunnelIcon } from "lucide-react";
 import { safeParseList } from "../../MeetingScheduler/hooks/participants";
 const isBypassStatus = (data) => {
   const statusId = data?.Status?.value?.id;
@@ -47,6 +47,7 @@ const makeAtLeastOneValidator = (fieldLabel) => (value, formData, context) => {
 export const statusOptions = [
   { label: "Active", value: { id: 1, name: "Active" } },
   { label: "InActive", value: { id: 17, name: "InActive" } },
+  { label: "Closed", value: { id: 15, name: "Closed" } },
   { label: "Hold", value: { id: 14, name: "Hold" } },
   { label: "InQueue", value: { id: 18, name: "InQueue" } },
   { label: "Need Confirmation", value: { id: 10, name: "Need Confirmation" } },
@@ -277,43 +278,17 @@ export const TicketFieldConfig = () => [
     name: "assignedTo",
     type: "select",
     ui: "mui",
-    optionsResolver: ({ masterData, formData }) => {
-      const employeeOptions = buildOptionsResolver(
-        "EmployeeList",
-        "UserID",
-        "UserName",
-        (user) => user.Status === "Active"
-      )({ masterData });
-
-      if (!formData?.Rasieticket) {
-        return employeeOptions;
-      }
-      const repo = masterData.RepoList.find(
-        r => r.Repo_Id === formData?.repository?.value?.id
-      );
-      const repoUsers = repo?.RepoUserList
-        ? safeParseList(repo.RepoUserList)
-          .filter(u => u.Status === "Active")
-          .map(u => ({
-            label: `${u.UserName} - (Repo User)`,
-            value: {id:u.UserId,name:u.UserName}
-          }))
-        : [];
-
-      // Merge without duplicates
-      const merged = [...repoUsers, ...employeeOptions]
-
-      return merged;
-    },
-    // optionsResolver: buildOptionsResolver(
-    //   "EmployeeList",
-    //   "UserID",
-    //   "UserName",
-    //   (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-    // ),
+   
+    optionsResolver: buildOptionsResolver(
+      "EmployeeList",
+      "UserID",
+      "UserName",
+      (user) => user.Status === "Active", // 👈 Simple 1-condition filter
+    ),
     initValueResolver: ({ context, masterData }) => {
       // ✅ 1. Check if we are editing and actually have the ID
       if (context.isEdit && context.entityData?.assignedTo) {
+        console.log("context",context);
         
         // ✅ 2. Return the constructed object immediately
         return {
@@ -354,24 +329,71 @@ export const TicketFieldConfig = () => [
     multiple: true,
     required: false,
     dataType: "string",
-    optionsResolver: buildOptionsResolver(
-      "EmployeeList",
-      "UserID",
-      "UserName",
-      // This is your custom filterFn. Notice it grabs `formData` from the second argument!
-      (user, { formData }) => {
-        // 1. Check if they are Active
-        if (user.Status !== "Active") return false;
-        // 2. Check if they are already selected in the "assginedTo" field
-        const targetId = formData?.assginedTo?.value?.id;
-        if (targetId && user.UserID === targetId) {
-          return false; // Exclude them if they match!
-        }
+    // optionsResolver: buildOptionsResolver(
+    //   "EmployeeList",
+    //   "UserID",
+    //   "UserName",
+    //   // This is your custom filterFn. Notice it grabs `formData` from the second argument!
+    //   (user, { formData }) => {
+    
+        
+        
+    //     // 1. Check if they are Active
+    //     if (user.Status !== "Active") return false;
+    //     // 2. Check if they are already selected in the "assginedTo" field
+    //     const targetId = formData?.assignees?.value?.id;
+    //     console.log("user",user,formData);
+    //     if (targetId && user.UserID === targetId) {
+    //       return false; // Exclude them if they match!
+    //     }
 
-        // 3. Keep everyone else
-        return true;
-      },
-    ),
+    //     // 3. Keep everyone else
+    //     return true;
+    //   },
+    // ),
+    optionsResolver: ({ masterData, formData }) => {
+      const targetId = formData?.assignees?.value?.id;
+    
+      let employeeOptions = buildOptionsResolver(
+        "EmployeeList",
+        "UserID",
+        "UserName",
+        (user) => user.Status === "Active"
+      )({ masterData });
+    
+      // Remove selected assignee from employee options
+      if (targetId) {
+        employeeOptions = employeeOptions.filter(
+          (user) => user.value.id !== targetId
+        );
+      }
+    
+      if (!formData?.Rasieticket) {
+        return employeeOptions;
+      }
+    
+      const repo = masterData.RepoList.find(
+        (r) => r.Repo_Id === formData?.repository?.value?.id
+      );
+    
+      const repoUsers = repo?.RepoUserList
+        ? safeParseList(repo.RepoUserList)
+            .filter((u) => u.Status === "Active")
+            .filter((u) => u.UserId !== targetId) // remove selected assignee here also
+            .map((u) => ({
+              label: `${u.UserName} - (Repo User)`,
+              value: {
+                id: u.UserId,
+                name: u.UserName
+              }
+            }))
+        : [];
+    
+      // Merge without duplicates
+      const merged = [...repoUsers, ...employeeOptions];
+    
+      return merged;
+    },
     initValueResolver: ({ context, formData }) => {
       if (
         context.isEdit &&
@@ -607,7 +629,11 @@ export const TicketFieldConfig = () => [
         ? Boolean(context.entityData?.privateTicket)
         : false;
     },
-    visibleWhen: ({ context }) =>TrainFrontTunnelIcon,
+    // visibleWhen: ({ context }) =>TrainFrontTunnelIcon,
+       visibleWhen: (formData, context) => {
+      if (context.isViewer) return false;
+      return true;
+    },
   },
   {
     name: "TicketOverallPercentage",
@@ -660,8 +686,8 @@ export const TicketFieldConfig = () => [
     required: true,
     optionsResolver: ({ context }) => {
       return context?.isEdit
-        ? statusOptions // Edit => show all including InActive
-        : statusOptions.filter((opt) => opt.value.id !== 17 && opt.value.id !== 10); // Create => hide InActive
+        ? statusOptions.filter((opt)=>opt.value.id!==15) // Edit => show all including InActive
+        : statusOptions.filter((opt) => opt.value.id !== 17 && opt.value.id !== 10&& opt.value.id !== 15); // Create => hide InActive
     },
     initValueResolver: ({ context }) => {
 

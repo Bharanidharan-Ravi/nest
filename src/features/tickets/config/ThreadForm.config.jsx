@@ -2,6 +2,7 @@ import React from "react";
 import { FaCheckCircle, FaSave, FaTelegramPlane, FaTimesCircle, FaUndo } from "react-icons/fa";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { ThreadFieldConfig } from "./Thread.config";
+import { toast } from "react-toastify";
 
 // 🔥 HELPER: Checks if ONLY the Ticket Status Update fields are filled
 const isProgressOnlyUpdate = (formData, context) => {
@@ -33,10 +34,112 @@ const stripHtml = (str = "") =>
     .replace(/&nbsp;|&zwnj;/gi, "")
     .trim();
 
+// export const validateThreadForm = (formData, context) => {
+//   if (context?.isViewer) {
+//     return {};
+//   }
+//   const errors = {};
+//   const description = stripHtml(formData.description);
+//   const summary = stripHtml(formData.TicketStatusSummary);
+
+//   const hasDescription = !!description;
+//   const hasSummary = !!summary;
+
+
+//   const hasTime =
+//     !!formData.hours ||
+//     (!!formData.fromTime && !!formData.toTime);
+
+//   const hasProgress =
+//     !!formData.TicketOverallPercentage;
+
+//   const original = {
+//     requestClose: !!(
+//       context?.parentTicket?.IsCloseRequested ||
+//       context?.parentTicket?.isCloseRequested
+//     ),
+//     priority: !!(
+//       context?.parentTicket?.PriorityRequest ||
+//       context?.parentTicket?.priorityRequest
+//     ),
+//     functional: !!(
+//       context?.parentTicket?.FuncResponse ||
+//       context?.parentTicket?.funcResponse
+//     ),
+//     web: !!(
+//       context?.parentTicket?.WebResponse ||
+//       context?.parentTicket?.webResponse
+//     ),
+//     technical: !!(
+//       context?.parentTicket?.TechnicalResponse ||
+//       context?.parentTicket?.technicalResponse
+//     ),
+//     admin: !!(
+//       context?.parentTicket?.AdminResponse ||
+//       context?.parentTicket?.adminResponse
+//     ),
+//   };
+
+//   const current = {
+//     requestClose: !!formData.requestClose,
+//     priority: !!formData.Priority,
+//     functional: !!formData["Functional Response"],
+//     web: !!formData["Web Response"],
+//     technical: !!formData["Technical Response"],
+//     admin: !!formData["Admin Response"],
+//   };
+
+//   const togglesChanged = Object.keys(original).some(
+//     key => original[key] !== current[key]
+//   );
+
+//   // Description required
+//   if (
+//     !hasDescription &&
+//     !hasSummary &&
+//     !togglesChanged && !hasProgress
+//   ) {
+//     errors.description = "Description is mandatory.";
+//   }
+
+//   // Description required when logging hours
+//   if (
+//     !hasDescription &&
+//     hasTime &&
+//     !hasSummary &&
+//     !togglesChanged
+//   ) {
+//     errors.description =
+//       "Description is mandatory when logging hours.";
+//   }
+
+//   // Hours required when description entered
+//   if (hasDescription && !hasTime) {
+//     errors.hours =
+//       "Hours are mandatory when description is entered.";
+//   }
+
+//   // Summary required when progress/toggle changed and no description
+//   if (
+//     // !hasDescription &&
+//     (hasProgress) &&
+//     !hasSummary
+//   ) {
+//     errors.TicketStatusSummary =
+//       "Status Summary is required.";
+//   }
+
+//   if (togglesChanged &&
+//     !hasSummary
+//   ) {
+//     errors.TicketStatusSummary =
+//       "Status Summary is mandatory when a toggle is changed.";
+//   }
+
+
+//   return errors;
+// };
 export const validateThreadForm = (formData, context) => {
-  if (context?.isViewer) {
-    return {};
-  }
   const errors = {};
   const description = stripHtml(formData.description);
   const summary = stripHtml(formData.TicketStatusSummary);
@@ -44,14 +147,24 @@ export const validateThreadForm = (formData, context) => {
   const hasDescription = !!description;
   const hasSummary = !!summary;
 
-
   const hasTime =
     !!formData.hours ||
     (!!formData.fromTime && !!formData.toTime);
 
-  const hasProgress =
-    !!formData.TicketOverallPercentage;
-  
+  const hasProgress = !!formData.TicketOverallPercentage;
+  if (context?.isViewer) {
+    if (!hasDescription && !hasSummary) {
+      errors.description = "Description is mandatory.";
+    }
+
+    if (hasDescription && !hasTime) {
+      errors.hours =
+        "Hours are mandatory when description is entered.";
+    }
+
+    return errors;
+  }
+
   const original = {
     requestClose: !!(
       context?.parentTicket?.IsCloseRequested ||
@@ -89,54 +202,75 @@ export const validateThreadForm = (formData, context) => {
   };
 
   const togglesChanged = Object.keys(original).some(
-    key => original[key] !== current[key]
+    (key) => original[key] !== current[key]
   );
 
-  // Description required
-  if (
-    !hasDescription &&
-    !hasSummary &&
-    !togglesChanged && !hasProgress
-  ) {
+  // Normal user validation
+
+  if (!hasDescription && !hasSummary && !togglesChanged && !hasProgress) {
     errors.description = "Description is mandatory.";
   }
 
-  // Description required when logging hours
-  if (
-    !hasDescription &&
-    hasTime &&
-    !hasSummary &&
-    !togglesChanged
-  ) {
+  if (!hasDescription && hasTime && !hasSummary && !togglesChanged) {
     errors.description =
       "Description is mandatory when logging hours.";
   }
 
-  // Hours required when description entered
   if (hasDescription && !hasTime) {
     errors.hours =
       "Hours are mandatory when description is entered.";
   }
 
-  // Summary required when progress/toggle changed and no description
-  if (
-    // !hasDescription &&
-    (hasProgress) &&
-    !hasSummary
-  ) {
+  if (hasProgress && !hasSummary) {
     errors.TicketStatusSummary =
       "Status Summary is required.";
   }
 
-  if (togglesChanged &&
-    !hasSummary
-  ) {
+  if (togglesChanged && !hasSummary) {
     errors.TicketStatusSummary =
       "Status Summary is mandatory when a toggle is changed.";
   }
 
-
   return errors;
+};
+
+const validateTicketDetailsBeforeCommit = (context, openDialog) => {
+  const ticket = context?.parentTicket;
+
+  console.log("ticket", ticket);
+
+  // Only validate required details when status is 18
+  if (ticket?.statusId !== 18) {
+    return true;
+  }
+
+  const hasMissingDetails =
+    !ticket?.label?.length ||
+    !ticket?.priority ||
+    !ticket?.multiAssignees?.length ||
+    !ticket?.assignedTo ||
+    !ticket?.dueDate ||
+    !ticket?.functionalTime ||
+    !ticket?.webTime ||
+    !ticket?.technicalTime ||
+    !ticket?.clientTime;
+
+  console.log("hasMissingDetails", hasMissingDetails);
+
+  if (hasMissingDetails) {
+    openDialog({
+      variant: "info",
+      title: "Update Ticket Details Required",
+      description:
+        "Please update the required ticket details and status before committing this thread.",
+      confirmText: "OK",
+      onConfirm: () => {},
+    });
+
+    return false;
+  }
+
+  return true;
 };
 
 export const ThreadFormConfig = {
@@ -158,6 +292,7 @@ export const ThreadFormConfig = {
     const role = context?.userRole;
     const currentStreamStatus = context?.activeWorkStream?.StreamStatus;
     const openDialog = context?.openDialog;
+
     if (context?.isClosed) {
       return [
         {
@@ -170,27 +305,28 @@ export const ThreadFormConfig = {
           ),
           className:
             "inline-flex items-center bg-green-700 hover:bg-green-600 text-white border border-green-700 shadow-sm text-sm font-semibold pl-3 pr-4 py-1.5 rounded-md transition-all",
-            onClick: ({ submitForm, formData,setErrors }) =>{
-              const errors={};
-           
-              
-              const percentage=formData?.TicketOverallPercentage
-              const summary=stripHtml(formData?.TicketStatusSummary)
-              if(!context.isViewer){
-              if(percentage===undefined||percentage===null||percentage===""||Number(percentage)<0){
-                errors.TicketOverallPercentage="Please select Battery % less than 100"
-              }else if(Number(percentage)>=100){
-                errors.TicketOverallPercentage="Overall Battery % must be less than 100% to reopen"
+          onClick: ({ submitForm, formData, setErrors }) => {
+            const errors = {};
+
+
+            const percentage = formData?.TicketOverallPercentage
+            const summary = stripHtml(formData?.TicketStatusSummary)
+            if (!context.isViewer) {
+              if (percentage === undefined || percentage === null || percentage === "" || Number(percentage) < 0) {
+                errors.TicketOverallPercentage = "Please select Battery % less than 100"
+              } else if (Number(percentage) >= 100) {
+                errors.TicketOverallPercentage = "Overall Battery % must be less than 100% to reopen"
               }
-              if(!summary){
-                errors.TicketStatusSummary="Status Summary mandatory before reopen"
+              if (!summary) {
+                errors.TicketStatusSummary = "Status Summary mandatory before reopen"
               }
             }
-              if (Object.keys(errors).length>0){
-                setErrors(prev=>({...prev,...errors}))
-                return
-              }
-              submitForm({ IsReopenRequest: true })},
+            if (Object.keys(errors).length > 0) {
+              setErrors(prev => ({ ...prev, ...errors }))
+              return
+            }
+            submitForm({ IsReopenRequest: true })
+          },
         },
       ];
     }
@@ -379,6 +515,7 @@ export const ThreadFormConfig = {
       ];
     }
 
+
     if (role === "Owner" && !context.isViewer) {
 
       return [
@@ -401,7 +538,7 @@ export const ThreadFormConfig = {
               return; // 🚨 STOP HERE
             }
             openDialog({
-              variant: "info",
+              variant: "warning",
               title: "Commit this thread to the client?",
               description: "This will update the thread for all participants",
               confirmText: "Yes, Commit",
@@ -436,18 +573,22 @@ export const ThreadFormConfig = {
                   return; // 🚨 STOP HERE
 
                 }
+                if (!validateTicketDetailsBeforeCommit(context,openDialog)) {
+                  return;
+                }
                 let overrides = {
-                 
+
                 };
                 // // if (isProgressOnlyUpdate(formData)) {
                 // //   overrides.IsTicketProgressOnly = true;
                 // // }
-                if(context?.onCommitIntercept){
-                  context.onCommitIntercept((isSupport)=>{
-                    submitForm({...overrides,IsSupport:isSupport})
+                if (context?.onCommitIntercept) {
+                  context.onCommitIntercept((isSupport) => {
+                    submitForm({ ...overrides, IsSupport: isSupport })
                   })
-                }else{
-                submitForm(overrides);}
+                } else {
+                  submitForm(overrides);
+                }
               },
             },
             {
@@ -455,18 +596,18 @@ export const ThreadFormConfig = {
               subtext: "Complete this ticket successfully",
               intent: "success",
               icon: <FaCheckCircle className="text-green-600" />,
-              onClick: ({ submitForm, formData,setErrors }) =>{
-                const errors={};
-                const percentage=formData?.TicketOverallPercentage
-                const summary=stripHtml(formData?.TicketStatusSummary)
-                if(!percentage||Number(percentage)<100){
-                  errors.TicketOverallPercentage="Overall progress must be 100% before closing"
+              onClick: ({ submitForm, formData, setErrors }) => {
+                const errors = {};
+                const percentage = formData?.TicketOverallPercentage
+                const summary = stripHtml(formData?.TicketStatusSummary)
+                if (!percentage || Number(percentage) < 100) {
+                  errors.TicketOverallPercentage = "Overall progress must be 100% before closing"
                 }
-                if(!summary){
-                  errors.TicketStatusSummary="Status Summary mandatory before closing"
+                if (!summary) {
+                  errors.TicketStatusSummary = "Status Summary mandatory before closing"
                 }
-                if (Object.keys(errors).length>0){
-                  setErrors(prev=>({...prev,...errors}))
+                if (Object.keys(errors).length > 0) {
+                  setErrors(prev => ({ ...prev, ...errors }))
                   return
                 }
                 submitForm(
@@ -477,7 +618,8 @@ export const ThreadFormConfig = {
                       formData.description || "Ticket closed by owner.",
                   },
                   true
-                )},
+                )
+              },
             },
             {
               label: "Cancel & Close",
@@ -518,6 +660,9 @@ export const ThreadFormConfig = {
           }));
           return;
         }
+        if (!validateTicketDetailsBeforeCommit(context,openDialog)) {
+          return;
+        } 
         const overrides = {
           Comment: formData.description,
           toClient: isViewer,

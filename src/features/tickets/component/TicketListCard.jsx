@@ -1,4 +1,5 @@
-import React from "react";
+
+import React, { useEffect } from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { GoIssueOpened, GoIssueClosed, GoIssueReopened } from "react-icons/go";
@@ -25,13 +26,16 @@ import { useCallback } from "react";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../config/ThreadForm.config";
 import { ThreadFieldConfig } from "../config/Thread.config";
-import { FaHistory } from "react-icons/fa";
+import { FaHistory, FaRegClock, FaStopwatch } from "react-icons/fa";
 import { HiPause } from "react-icons/hi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useNavigate } from "react-router-dom";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-
+import { parse } from "date-fns";
+import { getEmployeeList } from "../../employee/hooks/useEmployeeList";
+import SmartAvatar from "./SmartAvatar";
 dayjs.extend(relativeTime);
+
 
 export default function TicketListCard({
   item,
@@ -146,8 +150,45 @@ export default function TicketListCard({
     setQuickTicketStatus(null);
   });
   const handleQuickComment = (item) => {
+    console.log('setting quickformtickety',item.navId);
+    
     setQuickFormTicket(item);
   };
+useEffect(()=>{
+  console.log('qick formticket changed',quickFormTicket);
+  
+},[quickFormTicket])
+  const parseToMinutes = (timeStr) => {
+    if (!timeStr) return 0
+    const [h, m] = timeStr.toString().split(':').map(Number)
+    return (h || 0) * 60 + (m || 0)
+  }
+  const isOverEstimate =
+    item.EntireWorkingTime &&
+    item.estimateHours &&
+    parseToMinutes(item.EntireWorkingTime) > parseToMinutes(item.estimateHours)
+
+  const AssigneeAvatar = ({ Assignee_Id, Assignee_Name }) => {
+    const { data: empData } = getEmployeeList()
+    const employee = empData?.find(
+      (e) => e.UserID?.toLowerCase() === Assignee_Id.toLowerCase()
+    )
+    const avatarPath = employee?.PreviewUrl
+    return (
+      <Tooltip title={Assignee_Name} arrow>
+        <div className="assignee-avatar-wrapper">
+          {avatarPath ? (
+            <img
+              className="h-6 w-6 rounded-full object-cover border-2 border-white"
+              src={avatarPath}
+              alt={Assignee_Name}
+            />
+          ) : (<div className="avatar">{getInitials(Assignee_Name)}</div>
+          )}
+        </div>
+      </Tooltip>
+    )
+  }
   return (
     <>
       <Tooltip
@@ -242,27 +283,17 @@ export default function TicketListCard({
             <div className="ticket-meta-row">
               {ProjectDetails && (
                 <div className="ticket-repo-info">
-                  <Tooltip title={ProjectDetails.repoName} arrow>
-                    <span className="repo-key">
-                      {ProjectDetails?.repoName
-                        ?.split(" ")
-                        .map((word) => word[0]?.toUpperCase())
-                        .join("")}
-                    </span>
-                  </Tooltip>
+
+                  <span className="repo-key">
+                    {ProjectDetails.repoName}
+                  </span>
+
                   <span className="meta-divider">•</span>
-                  <Tooltip title={ProjectDetails.name} arrow>
-                    <span className="project-key">
-                      {/* {ProjectDetails.name.split(" ").length > 2
-                        ? ProjectDetails.name.split(" ").slice(0, 2).join(" ") +
-                        "..."
-                        : ProjectDetails.name} */}
-                      {ProjectDetails.name
-                        ?.split(" ")
-                        .map((word) => word[0]?.toUpperCase())
-                        .join("")}
-                    </span>
-                  </Tooltip>
+
+                  <span className="project-key">
+                    {ProjectDetails.name}
+                  </span>
+
                   <span className="meta-divider">•</span>
                   <Tooltip
                     title={dayjs(item.createdAt).format("YYYY-MM-DD")}
@@ -275,14 +306,17 @@ export default function TicketListCard({
 
                   {!isViewer && item.ticketCreater && (
                     <span className="flex items-center gap-1 ">
-                      <span className="meta-divider text-gray-400">•</span>
+                      {/* <span className="meta-divider text-gray-400">•</span> */}
 
-                      <span className="text-xs text-gray-500">Created :</span>
-
+                      <span className="text-xs text-gray-500">by</span>
                       <Tooltip title={item.ticketCreater} arrow>
-                        <div className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-100 border border-gray-200 text-[10px] font-bold text-gray-600 shadow-sm ">
-                          {getInitials(item.ticketCreater)}
-                        </div>
+                        <span>
+                          <SmartAvatar
+                            name={item.ticketCreater}
+                            className="w-7 h-7 text-[10px]"
+                          />
+
+                        </span>
                       </Tooltip>
                     </span>
                   )}
@@ -293,22 +327,45 @@ export default function TicketListCard({
                   <>
                     <div className="ticket-repo-info">
                       {mainAssignee && (
-                        <span>Owner: {mainAssignee.Assignee_Name}</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-xs text-gray-500">Owner:</span>
+                          <Tooltip title={mainAssignee.Assignee_Name} arrow>
+                            <span>
+                              <SmartAvatar
+                                name={mainAssignee.Assignee_Name}
+                                className="w-7 h-7 text-[10px]"
+                              />
+                            </span>
+                          </Tooltip>
+                        </div>
+
                       )}
                     </div>
                   </>
                   {/* Assignees Avatars */}
+                  <span className="text-xs text-gray-500">Assignees:</span>
                   <div className="ticket-assignees">
+
                     {uniqueAssignees.slice(0, 3).map((a) => (
-                      <Tooltip
-                        key={a.Assignee_Id}
-                        title={a.Assignee_Name}
-                        arrow
-                      >
-                        <div className="avatar">
-                          {getInitials(a.Assignee_Name)}
-                        </div>
-                      </Tooltip>
+                      // <Tooltip
+                      //   key={a.Assignee_Id}
+                      //   title={a.Assignee_Name}
+                      //   arrow
+                      // >
+                      //   {/* <div className="avatar">
+                      //     {getInitials(a.Assignee_Name)}
+                      //   </div> */}
+                      //   <AssigneeAvatar
+                      //     Assignee_Id={a.Assignee_Id}
+                      //     Assignee_Name={a.Assignee_Name} />
+                      // </Tooltip>
+                      <div key={a.Assignee_Id} className="assignee-avatar-wrapper">
+                        <SmartAvatar
+                          userId={a.Assignee_Id}
+                          name={a.Assignee_Name}
+                          className="w-7 h-7 text-[11px]"
+                        />
+                      </div>
                     ))}
                     {uniqueAssignees.length > 3 && (
                       <div className="avatar avatar-more">
@@ -361,17 +418,7 @@ export default function TicketListCard({
                   )}
                 </div>
               )}
-              {item.move_toJson && (
-                <div className="flex items-center ticket-assignees">
-                  {JSON.parse(item.move_toJson).map((user, index) => (
-                    <Tooltip key={index} title={user.Title} arrow>
-                      <div className="avatar-assignee">
-                        {user.Title?.charAt(0).toUpperCase()}
-                      </div>
-                    </Tooltip>
-                  ))}
-                </div>
-              )}
+
 
             </div>
 
@@ -424,9 +471,8 @@ export default function TicketListCard({
               <div className="comment-content">{item.Comment} </div>
             )}
           </div>
-
-          <div className="flex items-end gap-4">
-            <div className="flex flex-col items-center gap-2">
+          <div className="ticket-right-grid">
+            <div className="grid-col">
               {!isViewer && (
                 <button
                   className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
@@ -441,16 +487,16 @@ export default function TicketListCard({
                   <FiCalendar className="text-base" />
                 </button>
               )}
-              <Tooltip title={`${item.threadCount} Thread`} arrow>
-                <div className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-gray-100 text-gray-700 text-sm">
-                  {/* <FiMessageSquare className="text-base text-gray-500" /> */}
-                  <span>{item.threadCount}</span>
-                </div>
-              </Tooltip>
+              {item.threadCount &&
+                <Tooltip title={`${item.threadCount} Thread`} arrow>
+                  <div className="inline-flex items-center gap-1 px-2  rounded-full bg-gray-200 text-gray-700 text-sm">
+                    {/* <FiMessageSquare className="text-base text-gray-500" /> */}
+                    <span>{item.threadCount}</span>
+                  </div>
+                </Tooltip>
+              }
             </div>
-
-            {/* RIGHT COLUMN */}
-            <div className="flex flex-col items-center gap-2">
+            <div className="grid-col">
               {config?.enablequickStatus && (
                 <button
                   className="p-1 rounded-md text-gray-500 hover:text-blue-600 bg-gray-50 hover:bg-blue-50 border border-gray-200 hover:border-blue-300 transition-all duration-150 flex items-center justify-center"
@@ -477,11 +523,9 @@ export default function TicketListCard({
                 </button>
               )}
             </div>
-
-            {/* DUE DATE BLOCK (unchanged) */}
             {!isViewer && (
-              <div className="flex flex-col items-end text-right w-[90px] flex-shrink-0">
-                <div className="text-sm font-semibold text-gray-800 whitespace-nowrap">
+              <div className="grid-col">
+                <div className="due-date-text">
                   {item.dueDate
                     ? dayjs(item.dueDate).format("DD MMM YYYY")
                     : ""}
@@ -489,7 +533,7 @@ export default function TicketListCard({
 
                 {dueStatus && (
                   <div
-                    className={`flex items-center text-[11px] whitespace-nowrap mt-3 ${dueStatus.className}`}
+                    className={`due-status-row ${dueStatus.className}`}
                   >
                     {dueStatus.icon}
                     <span>{dueStatus.text}</span>
@@ -499,39 +543,91 @@ export default function TicketListCard({
             )}
           </div>
 
-          {/* RIGHT BLOCK: Progress & Actions */}
-          <div className="ticket-progress">
-            <div className="battery-header">
+          <div className="grid-col">
+            <div className="grid-row">
               {!isViewer && (
-                <BatteryCompletionIndicator
-                  value={item.overallPercentage ?? 0}
-                />
+                <>
+                  <BatteryCompletionIndicator
+                    value={item.overallPercentage ?? 0}
+                  />
+                  {item.estimateHours &&
+                    <div className="estimate-row">
+                      <span className="estimate-time">
+                        <FaRegClock size={12} />
+                        {item.estimateHours}hr
+                      </span>
+                    </div>
+                  }
+
+                </>
               )}
-              <div className="edit-icon">{renderEdit && renderEdit()}</div>
-            </div>
-            {!isViewer && (
-              <div className="update-info">
-                <div className="ticket-assignees">
-                  <Tooltip key={updated?.id} title={updated?.name} arrow>
-                    <div className="avatar">{getInitials(updated?.name)} </div>
-                  </Tooltip>
-                </div>
-                <p>
-                  {" "}
-                  Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
-                </p>
+
+              <div className="edit-icon">
+                {renderEdit && renderEdit()}
               </div>
-            )}
+            </div>
+
+            <div className="grid-row updated-row">
+              {!isViewer && (
+                <>
+                  <div className="updated-user">
+                    <Tooltip key={updated?.id} title={updated?.name} arrow>
+                      {/* <div className="avatar">
+                        {getInitials(updated?.name)}
+                      </div> */}
+                      <span>
+                        <SmartAvatar
+                          userId={updated?.id}
+                          name={updated?.name}
+                          className="w-6 h-6 text-[10px]"
+                        />
+                      </span>
+                    </Tooltip>
+
+                    <p className="text-xs text-gray-500 updated-text">
+                      Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
+                    </p>
+                  </div>
+                  {item.EntireWorkingTime &&
+                    <div className="estimate-row">
+                      <span className={`estimate-time ${isOverEstimate ? 'over-estimate' : ''}`}>
+                        <FaStopwatch size={12} />
+                        {item.EntireWorkingTime}hr
+                      </span>
+                    </div>
+                  }
+                </>
+              )}
+              {item.move_toJson && (
+                <div className="flex items-center last-assignees">
+                  {JSON.parse(item.move_toJson).map((user, index) => (
+                    <Tooltip key={index} title={user.Title} arrow>
+                      <div className="avatar-assignee">
+                        {user.Title?.charAt(0).toUpperCase()}
+                      </div>
+                      {/* <span className="assignee-avatar-wrapper">
+                        <SmartAvatar
+                          name={user.Title}
+                          className="w-6 h-6 text-[10px]"
+                        />
+                      </span> */}
+                    </Tooltip>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
-      </Tooltip>
-      {(isQuickFormOpen || isQuickStatusOpen) && (
+      </Tooltip >
+      {(isQuickFormOpen ||isQuickStatusOpen) && (
         <>
           {/* 1. Backdrop */}
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-[9999] transition-opacity"
             onClick={(e) => {
               e.stopPropagation(); // Prevent backdrop click from opening ticket
+              setQuickFormTicket(null)
               closeQuickForm();
             }}
           />
@@ -630,7 +726,8 @@ export default function TicketListCard({
             </div>
           </div>
         </>
-      )}
+      )
+      }
     </>
   );
 }

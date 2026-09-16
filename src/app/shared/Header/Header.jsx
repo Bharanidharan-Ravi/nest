@@ -65,9 +65,9 @@ const Header = ({ toggleMobileMenu }) => {
 
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
-  const { data: notificationList } = getNotification( meetingShowNotifications || showNotifications);
+  const { data: notificationList } = getNotification(meetingShowNotifications || showNotifications);
   const meetingCount = data?.MEETING;
-  const ticketCount =(data?.TICKET || 0)
+  const ticketCount = (data?.TICKET || 0)
 
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
 
@@ -88,6 +88,7 @@ const Header = ({ toggleMobileMenu }) => {
 
 
   const markSeen = async (type) => {
+    console.log("type", type)
     try {
       await executeApi({
         url: "/Notification/mark-seen",
@@ -688,12 +689,15 @@ const Header = ({ toggleMobileMenu }) => {
                               </div>
 
                               <div className="text-xs text-gray-500 mt-1 truncate">
-                                {item.message}
+                                <Tooltip title={item.message} arrow>
+                                  {item.message}
+                                </Tooltip>
                               </div>
 
-                              <span className="text-xs text-gray-400">
-                                {dayjs(item?.createdAt).fromNow()}
-                              </span>
+                              <div className="text-xs text-gray-400 mt-1 flex items-center justify-between">
+                                <span>Created By: {item.actorName}</span>
+                                <span>{dayjs(item.createdAt).fromNow()}</span>
+                              </div>
                             </div>
                           ))
                       ) : (

@@ -115,8 +115,12 @@ const createMentionExtension = (
       items: ({ query }) => {
         const currentList = listsRef.current[listKey] || [];
         return currentList
-          .filter((item) =>
-            item[displayKey]?.toLowerCase().includes(query.toLowerCase()),
+          .filter(
+            (item) =>
+              item.Status=== "Active" &&
+              item[displayKey]
+                ?.toLowerCase()
+                .includes(query.toLowerCase())
           )
           .slice(0, 5);
       },

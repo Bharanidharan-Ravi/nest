@@ -18,7 +18,7 @@ export const fetchemployeeList = (config = {}, EmployeeId = null) => {
   });
 };
 
-export const getEmployeeList = (EmployeeId = null) => {  
+export const getEmployeeList = (EmployeeId = null,overrideOptions={}) => {  
   const query = EmployeeId
     ? queryKeys.employee.list(EmployeeId)
     : queryKeys.employee.all;
@@ -32,6 +32,7 @@ export const getEmployeeList = (EmployeeId = null) => {
     options: {
       staleTime: 0,
       enabled: true,
+      ...overrideOptions,
     },
   });
 };

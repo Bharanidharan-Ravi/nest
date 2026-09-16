@@ -14,7 +14,7 @@ export function ListCardView() {
   const advanced = config.enableCardControls;
 
   return (
-    <div className={containerClasses}>
+    <div >
       {data.map((item) => {
         const isDisabled =
           config.disabledIds?.includes(item.id || item.issueId) || false;

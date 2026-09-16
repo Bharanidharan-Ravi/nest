@@ -16,9 +16,9 @@ import React, { useEffect, useCallback, useState } from "react";
 const VARIANT_STYLES = {
   // Primary action (e.g. "Commit to Client") — uses the brand amber/yellow
   info: {
-    backdrop:   "bg-black/10",
-    iconWrap:   "bg-amber-50 border-amber-200",
-    iconColor:  "text-amber-500",
+    backdrop: "bg-black/10",
+    iconWrap: "bg-amber-50 border-amber-200",
+    iconColor: "text-amber-500",
     titleColor: "text-gray-800",
     confirmBtn:
       "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold shadow-sm",
@@ -32,9 +32,9 @@ const VARIANT_STYLES = {
   },
   // Reversible action (e.g. "Remove commitment") — neutral amber-orange
   warning: {
-    backdrop:   "bg-black/10",
-    iconWrap:   "bg-orange-50 border-orange-200",
-    iconColor:  "text-orange-400",
+    backdrop: "bg-black/10",
+    iconWrap: "bg-orange-50 border-orange-200",
+    iconColor: "text-orange-400",
     titleColor: "text-gray-800",
     confirmBtn:
       "bg-orange-400 hover:bg-orange-500 text-white font-semibold shadow-sm",
@@ -48,9 +48,9 @@ const VARIANT_STYLES = {
   },
   // Destructive action — muted red, still feels within the app's calm tone
   danger: {
-    backdrop:   "bg-black/15",
-    iconWrap:   "bg-red-50 border-red-200",
-    iconColor:  "text-red-400",
+    backdrop: "bg-black/15",
+    iconWrap: "bg-red-50 border-red-200",
+    iconColor: "text-red-400",
     titleColor: "text-gray-800",
     confirmBtn:
       "bg-red-500 hover:bg-red-600 text-white font-semibold shadow-sm",
@@ -92,18 +92,18 @@ const ConfirmDialog = ({ config, onClose }) => {
   if (!config) return null;
 
   const {
-    variant     = "info",
+    variant = "info",
     title,
     description,
     confirmText = "Confirm",
-    cancelText  = "Cancel",
+    cancelText ,
     onConfirm,
     onCancel,
   } = config;
   const s = VARIANT_STYLES[variant] ?? VARIANT_STYLES.info;
 
   const handleConfirm = () => { onConfirm?.(); onClose(); };
-  const handleCancel  = () => { onCancel?.();  onClose(); };
+  const handleCancel = () => { onCancel?.(); onClose(); };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -123,11 +123,10 @@ const ConfirmDialog = ({ config, onClose }) => {
                    shadow-lg w-full max-w-[360px] mx-4 overflow-hidden"
       >
         {/* Top accent bar — thin brand stripe */}
-        <div className={`h-1 w-full ${
-          variant === "info"    ? "bg-amber-400"  :
+        <div className={`h-1 w-full ${variant === "info" ? "bg-amber-400" :
           variant === "warning" ? "bg-orange-400" :
-                                  "bg-red-400"
-        }`} />
+            "bg-red-400"
+          }`} />
 
         <div className="px-6 pt-6 pb-5">
           {/* Icon */}
@@ -159,17 +158,17 @@ const ConfirmDialog = ({ config, onClose }) => {
 
           {/* Buttons */}
           <div className={`flex gap-2.5 ${description ? "" : "mt-5"}`}>
-            {/* Cancel — matches the app's plain outline secondary style */}
-            <button
-              onClick={handleCancel}
-              className="flex-1 px-4 py-2 rounded-xl border border-gray-200
-                         text-gray-500 text-[13px] font-medium
-                         hover:bg-gray-50 hover:border-gray-300
-                         transition-colors duration-150"
-            >
-              {cancelText}
-            </button>
-
+            {cancelText &&
+              < button
+                onClick={handleCancel}
+                className="flex-1 px-4 py-2 rounded-xl border border-gray-200
+            text-gray-500 text-[13px] font-medium
+            hover:bg-gray-50 hover:border-gray-300
+            transition-colors duration-150"
+              >
+                {cancelText}
+              </button>
+            }
             {/* Confirm — variant-coloured */}
             <button
               onClick={handleConfirm}
@@ -181,7 +180,7 @@ const ConfirmDialog = ({ config, onClose }) => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 
@@ -190,7 +189,7 @@ export default ConfirmDialog;
 // ── useConfirmDialog hook ─────────────────────────────────────────────────────
 export function useConfirmDialog() {
   const [config, setConfig] = useState(null);
-  const openDialog  = useCallback((cfg) => setConfig(cfg), []);
+  const openDialog = useCallback((cfg) => setConfig(cfg), []);
   const closeDialog = useCallback(() => setConfig(null), []);
   return {
     dialogProps: { config, onClose: closeDialog },

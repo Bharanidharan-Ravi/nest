@@ -39,10 +39,31 @@ export const ThreadFieldConfig = (ticketId) => [
     ui: "editor",
     dataType: "string",
     apiKey: "CommentText",
+    customValidator: (value, formData, context) => {
+      if (!context?.isEdit) return true;
+      const descriptionText = (value || formData?.description || "")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&nbsp;|&zwnj;/gi, "")
+        .trim();
+  
+      // Description is empty
+      if (!descriptionText) {
+        return "Description is required";
+      }
+  
+      return true;
+    },
+  
+    
     initValueResolver: ({ context }) => context?.editingItem?.description || "",
     requiredWhen: (context, formData) => {
       // Red asterisk shows if they entered time
       return !!formData?.hours || !!formData?.fromTime;
+    },
+    
+    visibleWhen: (formData, context) => {
+      if (context?.isViewer) return true;
+      return ![15, 16].includes(context?.parentTicket?.statusId);
     },
   },
   {
@@ -103,15 +124,15 @@ export const ThreadFieldConfig = (ticketId) => [
     // defaultValue: "DABB7622-0BF8-4CC9-80C3-08DE5A6D4989",
     initValueResolver: ({ context }) => {
       // Pulls the StreamId directly from the sidebar card they clicked!
-      const val=context?.replyingToId??null
+      const val = context?.replyingToId ?? null
       return val
-      
+
     },
   },
 
   {
     name: "move_to",
-    apiKey: "Move_to", 
+    apiKey: "Move_to",
     hidden: true, // 👈 Keeps it invisible in the UI
     dataType: "string",
     initValueResolver: ({ context }) => context?.shareFormData?.move_to ?? null
@@ -133,7 +154,7 @@ export const ThreadFieldConfig = (ticketId) => [
       // return Boolean(formData?.hours);
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
+      return !context?.isViewer && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     customValidator: (value, formData, context) => {
       if (context.isViewer) return true
@@ -157,7 +178,7 @@ export const ThreadFieldConfig = (ticketId) => [
       // return Boolean(formData?.hours);
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
+      return !context?.isViewer && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     // 🔥 FIX 3: Enforce pair validation & logic check
     customValidator: (value, formData, context) => {
@@ -169,7 +190,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return true;
     },
   },
- {
+  {
     name: "hours",
     apiKey: "Hours",
     type: "time",
@@ -194,17 +215,17 @@ export const ThreadFieldConfig = (ticketId) => [
       return formData.hours || null;
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
+      return  ![15, 16].includes(context?.parentTicket?.statusId);
     },
     disableWhen: (context, formData) => {
       if (isTimeLocked(context)) return true;
       return Boolean(formData?.fromTime && formData?.toTime);
     },
     forceSubmit: (context) => context.isEdit !== true,
-    
+
     // 🔥 UPDATED: Rejects 0.00 / 00:00 and enforces a minimum threshold of 5 minutes (00:05)
     customValidator: (value, formData, context) => {
-      if (context.isViewer || isTimeLocked(context)) return true;
+      if ( isTimeLocked(context)) return true;
 
       const description = formData?.description?.replace(/<[^>]*>?/gm, "").trim();
       const hasDescription = !!description;
@@ -213,12 +234,12 @@ export const ThreadFieldConfig = (ticketId) => [
       const getMinutes = (timeVal) => {
         if (!timeVal) return 0;
         const str = String(timeVal).trim();
-        
+
         if (str.includes(":")) {
           const [h, m] = str.split(":").map(Number);
           return (Number.isNaN(h) ? 0 : h * 60) + (Number.isNaN(m) ? 0 : m);
         }
-        
+
         const parsedFloat = parseFloat(str);
         return Number.isNaN(parsedFloat) ? 0 : Math.round(parsedFloat * 60);
       };
@@ -264,7 +285,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return currentStatus === "AWAITING_CLIENT" || currentStatus === "HOLD";
     },
     visibleWhen: (formData, context) => {
-      return (!context?.isViewer);
+      return !context?.isViewer && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     initValueResolver: ({ context, formData }) => {
       return (
@@ -285,7 +306,7 @@ export const ThreadFieldConfig = (ticketId) => [
     dataType: "string",
     apiKey: "NextAssignees",
     visibleWhen: (formData, context) => {
-      return !context?.isViewer && !context?.isEdit;
+      return !context?.isViewer && !context?.isEdit && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     transform: (mappedArray, formData) => {
       const streamId = formData?.UpdateStatus?.value?.id || 0;
@@ -332,9 +353,8 @@ export const ThreadFieldConfig = (ticketId) => [
       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
     ),
     visibleWhen: (formData, context) => {
-      return !context?.isViewer;
+      return !context?.isViewer && ![15, 16].includes(context?.parentTicket?.statusId);
     },
-
     // 🔥 1. FIX: Load the saved Co-Contributors when the edit form opens!
     initValueResolver: ({ context }) => {
       if (
@@ -391,7 +411,10 @@ export const ThreadFieldConfig = (ticketId) => [
     visibleWhen: (formData, context) => {
       const isViewer = context?.isViewer;
       const isEdit = context?.isEdit;
-      if (isViewer || isEdit) return false;
+      const statusId = context?.parentTicket?.statusId;
+
+      if (isViewer || isEdit || [15, 16].includes(statusId)) return false;
+
       return true;
     },
 
@@ -413,7 +436,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
-      return !context?.isViewer && !context?.isEdit;
+      return !context?.isViewer && !context?.isEdit && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     transform: (value) => value === true ? true : false
   },
@@ -432,7 +455,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
-      return !context?.isViewer && !context?.isEdit;
+      return !context?.isViewer && !context?.isEdit && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     transform: (value) => value === true ? true : false
   },
@@ -451,7 +474,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
-      return !context?.isViewer && !context?.isEdit;
+      return !context?.isViewer && !context?.isEdit && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     transform: (value) => value === true ? true : false
   },
@@ -470,7 +493,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return isActive ? true : null;
     },
     visibleWhen: (formData, context) => {
-      return !context?.isViewer && !context?.isEdit;
+      return !context?.isViewer && !context?.isEdit && ![15, 16].includes(context?.parentTicket?.statusId);
     },
     transform: (value) => value === true ? true : false
   },
@@ -518,17 +541,17 @@ export const ThreadFieldConfig = (ticketId) => [
       return !context?.isEdit && !context?.isViewer;
     },
     effectDependencies: ["copyDescription", "description"],
-     effectResolver: (formData) => {
+    effectResolver: (formData) => {
       if (formData.copyDescription) {
         const parser = new DOMParser();
         const doc = parser.parseFromString(formData.description || "", "text/html");
-        
+
         // Remove elements including video and audio
         doc.querySelectorAll('a[href],.zip,img,.attachment,[data-type="attachment"],figure,video,audio').forEach(el => el.remove());
-        
+
         // Get the cleaned text content
         let cleanDesc = doc.body.textContent || doc.body.innerText || "";
-        
+
         // Remove any remaining HTML tags and attachment-related text
         cleanDesc = cleanDesc
           .replace(/<[^>]*>/g, "")
@@ -542,7 +565,7 @@ export const ThreadFieldConfig = (ticketId) => [
           .replace(/audio/gi, "")
           .replace(/\s+/g, " ")
           .trim();
-        
+
         return cleanDesc || "";
       }
     }

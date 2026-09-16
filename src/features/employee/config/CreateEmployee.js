@@ -1,3 +1,9 @@
+const canViewFields = (arg1, arg2)=> {
+  const context = arg2?.isEdit !== undefined ? arg2 : arg1?.context || arg1 || {};
+  if (!context?.isEdit) return true;
+  return Boolean(context?.isAdmin);
+};
+
 export const EmployeeConfig = () => [
   {
     label: "Attachment",
@@ -35,6 +41,7 @@ export const EmployeeConfig = () => [
     isMulti: false,
     ui: "mui",
     apiKey: "Employee",
+    visibleWhen:canViewFields,
     // initValueResolver: (context) =>
     //   context.isEdit ? context.entityData?.CreatedFor : "",
 
@@ -171,6 +178,7 @@ export const EmployeeConfig = () => [
     isMulti: false,
     ui: "mui",
     apiKey: "Login",
+    visibleWhen:canViewFields,
     fields: [
       {
         label: "UserName",
@@ -184,15 +192,19 @@ export const EmployeeConfig = () => [
         },
       },
       {
-        label: "password",
+        label: "Password",
         name: "Password",
         type: "text",
         apiKey: "Password",
         dataType: "string",
-        required: true,
-        customValidator: (value) =>
-          value?.length >= 4 || "Password must be minimum 4 characters",
-        visibleWhen: (formData, context) => !context?.isEdit,
+        required: ({context}) => !context?.isEdit,
+        customValidator: (value, _formData, context) => {
+          if (context?.isEdit){
+            if (!value) return true;
+            return value.length >= 4 || "Password must be minimum 4 characters";
+          }
+          return value?.length >= 4 || "Password must be minimum 4 characters";
+        },
       },
       {
         label: "Role",
@@ -204,16 +216,6 @@ export const EmployeeConfig = () => [
         required: false,
         dataType: "number",
         apiKey: "Role",
-      },
-      {
-        label: "DBName",
-        name: "DBName",
-        type: "text",
-        ui: "mui",
-        hidden: true,
-        defaultValue: "WG_APP",
-        dataType: "string",
-        apiKey: "DBName",
       },
       {
         name: "status",

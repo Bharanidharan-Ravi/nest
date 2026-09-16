@@ -1,37 +1,29 @@
-import { useState,useEffect } from "react";
-const AvatarCell=({PreviewUrl})=>{
-    const[compressedsrc,setcompressedsrc]=useState(null);    
+import { useState } from "react";
 
-    useEffect(()=>{
-        if(!PreviewUrl) return;
-        const img= new Image();
-        img.crossOrigin="anonymous";
-        img.onload=()=>{
-            try{
-            const canvas =document.createElement("canvas");
-            canvas.width=48;
-            canvas.height=48;
-            const ctx =canvas.getContext("2d");
-            ctx.drawImage(img,0,0,48,48);
-            setcompressedsrc(canvas.toDataURL("image/webp",0.8));
-            }catch(e){
-                console.warn("Canvas CORS error",e)
-                setcompressedsrc(PreviewUrl)
-            }
-        }
-        img.onerror=()=>setcompressedsrc(null)
-        img.src=PreviewUrl;       
-    },[PreviewUrl]);
+const AvatarCell = ({ PreviewUrl, name }) => {
+    const [hasError, setHasError] = useState(false);
 
-    return(
-        <div className="flex items-center justify-center h-12 w-12">
+    if (!PreviewUrl || hasError) {
+        const initial = name ? name.trim().charAt(0).toUpperCase() : "?";
+        return (
+            <div className="flex items-center justify-center">
+                <div className="h-9 w-9 rounded-full bg-gray-200 text-gray-700 font-semibold flex items-center justify-center text-xs border border-gray-300 flex-shrink-0 shadow-sm">
+                    {initial}
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="flex items-center justify-center">
             <img
-            className="h-12 w-12 rounded-ful object-cover border"
-            src={compressedsrc||"default-avatar-path.jpg"}
-            alt="Avatar"
+                className="h-9 w-9 rounded-full object-cover border border-gray-200 flex-shrink-0 shadow-sm"
+                src={PreviewUrl}
+                alt={name || "Avatar"}
+                onError={() => setHasError(true)}
             />
         </div>
     )
-}
+};
 
 export default AvatarCell

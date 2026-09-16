@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
+import AvatarCell from "../components/AvatarCell";
 
 export const EmployeedataTable = {
   syncUrl: false,
@@ -62,26 +63,14 @@ export const EmployeedataTable = {
     {
       key: "AvatarPath",
       label: "Avatar",
-      render: (item) => {
-        const relativepath = item?.AvatarPath;
-        return (
-          <div className="flex items-center justify-center h-30">
-            {relativepath ? (
-              <img
-                className="h-10 W-10 rounded-full object-cover border"
-                src={`${relativepath}`}
-                alt="Avatar"
-              />
-            ) : (
-              <img
-                className="h-10 W-10 rounded-full object-cover border"
-                src="default-avatar-path.jpg"
-                alt="Default Avatar"
-              />
-            )}
+      render: (item) => (
+        <div className="flex items-center h-30">
+          <AvatarCell
+           PreviewUrl={item.AvatarPath || item.PreviewUrl}
+           name={item.UserName || item.EmployeeName}
+           />
           </div>
-        );
-      },
+        ),
     },
   ],
 };

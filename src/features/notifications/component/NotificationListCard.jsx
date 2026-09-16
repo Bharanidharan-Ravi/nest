@@ -2,9 +2,10 @@ import React from "react";
 import dayjs from "dayjs";
 import { FiClock, FiUser, FiBell, FiMessageSquare, FiAlertCircle } from "react-icons/fi";
 import { LuTicket } from "react-icons/lu";
+import { Tooltip } from "@mui/material";
 
 export default function NotificationListCard({ item }) {
-  
+
   // Icon helper (Optional: keep or remove based on your preference)
   const getIcon = () => {
     switch (item?.entityType?.toUpperCase()) {
@@ -19,14 +20,16 @@ export default function NotificationListCard({ item }) {
   return (
     // 🔥 USES EXACT CLASSES FROM TIMELINE: border-l-4, rounded-lg, shadow-sm
     <div className="bg-white border-l-4 border-blue-500 rounded-lg p-4 shadow-sm mb-3 flex justify-between items-center hover:shadow-md transition-all">
-      
+
       {/* 1. Main Content Container */}
       <div className="flex flex-col gap-1">
-        
+
         {/* Title: Same bold font size */}
-        <h4 className="text-sm font-semibold text-gray-800">
-          {getIcon()} {item.title}
-        </h4>
+       
+          <h4 className="text-sm font-semibold text-gray-800">
+            {getIcon()} {item.title}
+          </h4>
+  
 
         {/* Meta Row: Same gap, same text size, same gray color */}
         <div className="flex items-center gap-4 text-xs text-gray-500 mt-0.5">
@@ -41,7 +44,9 @@ export default function NotificationListCard({ item }) {
 
       {/* 2. Right Side: Optional Message content */}
       <div className="text-sm text-gray-600 max-w-[40%] text-right truncate">
+         <Tooltip title={item.message} arrow>
         {item.message}
+        </Tooltip>
       </div>
     </div>
   );

@@ -11,6 +11,14 @@ const CreateBanner = () => {
   const { data: bannerListWrapper } = useBannerMessage(
     isEdit ? params.BannerMessageId : null,
   );
+  console.log("bannerListWrapper :", bannerListWrapper, MessageType);
+  const MessageTypeOption=MessageType?.map((item)=>({
+    label:item.Type_Name,
+    value:{
+      id:item.MessageTypeId,
+      name:item.Type_Name
+    }
+  })) || []
 
   // Extract single entity from sync/v2 array response
   const entityData =
@@ -48,10 +56,9 @@ const CreateBanner = () => {
       return matched ?? statusOptions[0];
     },
   };
-const MessageTypeOption = MessageType?.map((item) => ({
-  label: item.Type_Name,
-  value: { id: item.MessageTypeId, name: item.Type_Name },
-}));
+
+console.log("entityData",entityData);
+
   const MessageTypefield = {
     name: "MessageType",
     label: "Message Type",

@@ -4,6 +4,7 @@ const VIEW_LABELS = {
   table: "Table",
   card: "Card",
   graph: "Graph",
+  report: "Report",
 };
 
 export function ListViewSwitcher() {

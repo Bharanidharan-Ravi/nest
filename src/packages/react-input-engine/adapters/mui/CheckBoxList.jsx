@@ -114,16 +114,6 @@ const ListCheckBox = ({
     <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between pb-2 border-b border-gray-100">
         <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          <input
-            type="checkbox"
-            checked={allSelected}
-            ref={(el) => {
-              if (el) {
-                el.indeterminate = someSelected;
-              }
-            }}
-            onChange={(e) => handleToggleAll(e.target.checked)}
-          />
           Select All
         </label>
 

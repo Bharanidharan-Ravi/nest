@@ -14,6 +14,7 @@ import {
 import { ROUTE_KEYS } from "../../../../core/routing/paths";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@mui/material";
+import SmartAvatar from "../SmartAvatar";
 
 const getTeamColor = (teamName) => {
   let hash = 0;
@@ -152,6 +153,7 @@ const ParentTicketHeader = ({
       case 15: return { label: "Closed", color: "text-red-600" };
       case 18: return { label: "In Queue", color: " text-yellow-800" };
       case 14: return { label: "On Hold", color: "text-orange-800" };
+      case 17:return{label:"Inactive", color: "text-red-600"}
       default: return null;
     }
   };
@@ -164,9 +166,14 @@ const ParentTicketHeader = ({
       />
 
       <div
-        className={`sticky top-0 z-30 w-full transition-all duration-300 ${isStuck
-          ? "py-2 px-4 sm:px-6 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 shadow-md shadow-gray-100/50"
-          : "py-3 px-4 sm:px-6 bg-white border-b border-gray-100"
+        className={`sticky top-0 z-30 w-full transition-all duration-300 
+          ${isStuck
+            ? `py-2 px-4 sm:px-6 bg-white/95 backdrop-blur-xl border-b border-gray-200/80 shadow-md shadow-gray-100/50${!isViewer && parentTicket.raiseToClient
+              ? "bg-yellow-50/95 border-yellow-300/800"
+              : "bg-white/95 border-gray-200/80"}`
+            : `py-3 px-4 sm:px-6 border-b ${!isViewer && parentTicket.raiseToClient
+              ? "bg-yellow-50 border-yellow-200"
+              : "bg-white border-gray-100"}`
           }`}
       >
         {/* ROW 1: Code, Title, Labels, Due, Edit with space-between and GitHub-style inline wrap */}
@@ -243,25 +250,48 @@ const ParentTicketHeader = ({
         <div className="flex flex-wrap lg:flex-nowrap items-center justify-between w-full gap-3 mt-2">
           {/* Metadata Row */}
           <div className="flex items-center gap-2 flex-wrap text-xs text-gray-500 font-medium">
-            <span className="text-[#4b7ed6] font-bold tracking-wide uppercase">{getAbbreviation(parentTicket.repoName)}</span>
+            <span className="text-[#4b7ed6] font-bold tracking-wide uppercase">{parentTicket.repoName}</span>
             <span className="opacity-40">•</span>
-            <span className="text-[#4b7ed6] font-bold tracking-wide uppercase">{getAbbreviation(parentTicket.projectName)}</span>
+            <span className="text-[#4b7ed6] font-bold tracking-wide uppercase">{parentTicket.projectName}</span>
             <span className="opacity-40">•</span>
             <span className="inline-flex items-center gap-1">
-              Created {dayjs(parentTicket.createdAt).fromNow()} by
-              <Tooltip title={parentTicket.ticketCreater} arrow>
-                <div
-                  className="w-5 h-5 rounded-full bg-gray-100 border border-gray-300 text-gray-600 flex items-center justify-center text-[9px] font-black shadow-xs"
-                  // title={`Creator: ${parentTicket.ticketCreater ?? "System"}`}
-                >
-                  {getInitials(parentTicket.ticketCreater || parentTicket.createdBy || "System")}
-                </div>
-              </Tooltip>
+              Created {dayjs(parentTicket.createdAt).fromNow()}
+
+              {!isViewer && (
+                <>
+                  {" by"}
+                  <Tooltip
+                    title={parentTicket.ticketCreater || parentTicket.createdBy || "System"}
+                    arrow
+                  >
+                    <span>
+                      <SmartAvatar
+                        name={
+                          parentTicket.ticketCreater ||
+                          parentTicket.createdBy ||
+                          "System"
+                        }
+                        className="w-7 h-7 text-[10px]"
+                      />
+                    </span>
+                  </Tooltip>
+                </>
+              )}
             </span>
-            {mainAssignee && (
+
+            {!isViewer && mainAssignee && (
               <>
                 <span className="opacity-40">•</span>
-                <span>Owner: <strong className="text-gray-700 font-semibold">{mainAssignee.Assignee_Name}</strong></span>
+                {/* <span>Owner: <strong className="text-gray-700 font-semibold">{mainAssignee.Assignee_Name}</strong></span> */}
+                <span>Owner:</span>
+                <Tooltip title={` ${mainAssignee.Assignee_Name}`} arrow>
+                  <span className="flex items-center gap-1">
+                    <SmartAvatar
+                      name={mainAssignee.Assignee_Name}
+                      className="w-7 h-7 text-[10px]"
+                    />
+                  </span>
+                </Tooltip>
               </>
             )}
           </div>

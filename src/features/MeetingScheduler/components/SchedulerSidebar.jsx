@@ -120,12 +120,14 @@ export default function SchedulerSidebar({
   currentUserId,
   currentValue
 }) {
+  console.log("upcomingMeetings",upcomingMeetings)
   const { config, query, setQuery } = useList();
   const [searchTerm, setSearchTerm] = useState("");
   const datesWithMeetings = useMemo(() => {
     return upcomingMeetings
       .filter((meeting) => {
         const participants = safeParseList(meeting.Participants);
+console.log("participants",participants);
 
         return participants.some(
           (user) =>

@@ -3,10 +3,12 @@ import { EmployeeFormConfig } from "../config/EmployeeForm";
 import { useParams }      from "react-router-dom"
 import { getEmployeeList, getTeamMaster } from "../hooks/useEmployeeList";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 const EmployeeCreate = () => {
 
   const params = useParams();
+  const { isAdmin } = useCurrentUser();
 
   const isEdit = !!params.employeeId
 
@@ -37,7 +39,7 @@ const EmployeeCreate = () => {
         <EntityFormPage
           mode={isEdit ? "Update" : "Create"}
           config={dynamicConfig}
-          context={{ params, isEdit, entityData, data }}
+          context={{ params, isEdit, entityData, data, isAdmin }}
           module="Employee"
         />
       </div>

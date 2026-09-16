@@ -7,13 +7,13 @@ import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import TicketListCard from "../component/TicketListCard";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import {
   useEmployeeOptions,
   useLabelOptions,
   useProjectOptions,
   useRepoOptions,
+  useRepoWithOutId,
   useTeamOptions,
 } from "../../../core/master/selectors/selectors";
 import {
@@ -21,81 +21,57 @@ import {
   useCurrentUser,
 } from "../../../core/auth/useCurrentUser";
 import { TicketsHeader } from "./TicketsHeader";
-
-function getCurrentUserId(currentUser) {
-  return String(
-    currentUser?.userId ||
-      currentUser?.id ||
-      currentUser?.employeeId ||
-      "",
-  ).toLowerCase();
-}
-
-function isTicketPrivate(ticket) {
-  return Boolean(ticket?.isPrivate || ticket?.IsPrivate);
-}
-
-function getMainAssigneeId(ticket) {
-  return String(
-    ticket?.assigneeId ||
-      ticket?.assignee_Id ||
-      ticket?.Assignee_Id ||
-      "",
-  ).toLowerCase();
-}
-
-function getAllAssigneeIds(ticket) {
-  var raw = ticket?.multiAssignees || ticket?.All_Assignees || [];
-  if (typeof raw === "string") {
-    try {
-      raw = JSON.parse(raw);
-    } catch (e) {
-      raw = [];
-    }
+export const isAllowedToView = (item, userId) => {
+  const normalizedUserId = String(userId ?? "").toLowerCase().trim();
+  if (!item?.privateTicket && Number(item?.statusId) !== 19) {
+    return true;
   }
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .map(function (a) {
-      return String(
-        a?.Assignee_Id ||
-          a?.assigneeId ||
-          a?.AssigneeId ||
-          "",
-      ).toLowerCase();
-    })
-    .filter(Boolean);
-}
+  // Public items or items not in restricted status are visible to everyone.
+  const assignedTo = String(item?.assignedTo ?? "")
+    .toLowerCase()
+    .trim();
+  if (assignedTo === normalizedUserId) return true;
 
-function canViewTicket(ticket, currentUserId) {
-  if (!isTicketPrivate(ticket)) return true;
-  if (!currentUserId) return false;
+  if (!userId) return false;
+  // Allow multi assignees.
+  if (Array.isArray(item?.multiAssignees)) {
+    return item.multiAssignees.some((assignee) => {
+      const assigneeId = String(assignee?.Assignee_Id ?? "")
+        .toLowerCase()
+        .trim();
 
-  const creatorId = String(ticket?.createdBy || ticket?.CreatedBy || "").toLowerCase();
-  const mainAssigneeId = getMainAssigneeId(ticket);
-  const allAssigneeIds = getAllAssigneeIds(ticket);
+      const assigneeName = String(assignee?.Assignee_Name ?? "")
+        .toLowerCase()
+        .trim();
 
-  if (creatorId && creatorId === currentUserId) return true;
-  if (mainAssigneeId && mainAssigneeId === currentUserId) return true;
-  if (allAssigneeIds.includes(currentUserId)) return true;
+      return (
+        assigneeId === normalizedUserId ||
+        assigneeName === normalizedUserId
+      );
+    });
+  }
 
   return false;
-}
-
+};
 export default function TicketsPage() {
   const { repoId, projId } = useParams();
   const activeProjectId = projId;
   const { goTo } = useSmartNavigation();
   const { isViewer } = useCurrentUser();
+
   const { data } = useTicketMaster({
     repoId: repoId ?? null,
     projectId: activeProjectId ?? null,
   });
+  // const data  = useTicketMaster(activeProjectId);
 
   const projectFilterOptions = useProjectOptions(true);
   const labelFilterOptions = useLabelOptions(true);
   const employeeFilterOptions = useEmployeeOptions(true);
   const repoFilterOptions = useRepoOptions(true);
+  const repoMaster = useRepoWithOutId();
   const teamFilterOptions = useTeamOptions(true);
+
   const currentUser = readUserFromSession();
   const currentUserId =
     currentUser?.id ?? currentUser?.userId ?? currentUser?.UserId ?? null;
@@ -108,48 +84,12 @@ export default function TicketsPage() {
     ? ROUTE_KEYS.REPO_TICKET_CREATE
     : projId
       ? ROUTE_KEYS.PROJ_TICKET_CREATE
-      : ROUTE_KEYS.TICKET_CREATE;
+      : ROUTE_KEYS.TICKET_CREATE
 
-  const isAllowedToView = (item, userId) => {
-    // console.log("iyttregtbjfsdg",item.privateTicket,typeof(item.privateTicket))
-    // if (Number(item?.statusId) !== 19 ) return true;
-    if(!item.privateTicket)return true;
-    if (!userId) return false;
-
-    const normalizedUserId = String(userId).toLowerCase().trim();
-
-    const assignedTo = String(item?.assignedTo ?? "")
-      .toLowerCase()
-      .trim();
-    // if (assignedTo && assignedTo === normalizedUserId) return true;
-
-    if (Array.isArray(item?.multiAssignees)) {
-      return item.multiAssignees.some((assignee) => {
-        const assigneeId = String(assignee?.Assignee_Id ?? "")
-          .toLowerCase()
-          .trim();
-        const assigneeName = String(assignee?.Assignee_Name ?? "")
-          .toLowerCase()
-          .trim();
-        return (
-          assigneeId === normalizedUserId || assigneeName === normalizedUserId
-        );
-      });
-    }
-
-    return false;
-  };
-
-  // const ticketList = useMemo(() => {
-  //   const rawList = (data ?? []).map(normalizeTicket);
-  //   return rawList.filter((item) => isAllowedToView(item, currentUserId));
-  const TicketList = useMemo(() => {
-    const normalized = (data || []).map(normalizeTicket);
-    return normalized.filter(function (ticket) {
-      return canViewTicket(ticket, currentUserId);
-    });
+  const ticketList = useMemo(() => {
+    const rawList = (data ?? []).map(normalizeTicket);
+    return rawList.filter((item) => isAllowedToView(item, currentUserId));
   }, [data, currentUserId]);
-
   const listConfigWithNav = {
     ...TicketListConfig(isViewer),
     enablequickComment: isViewer ? false : true,
@@ -157,17 +97,36 @@ export default function TicketsPage() {
     filters: [
       ...(!repoId
         ? [
-            {
-              key: "repoId",
-              view: "Repo",
-              allowMultiple: true,
-              showCounts: true,
-              allowedRoles: [1, 2],
-              options: repoFilterOptions,
-            },
-          ]
+          {
+            key: "repoId",
+            view: "Repo",
+            allowMultiple: true,
+            showCounts: true,
+            allowedRoles: [1, 2],
+            options: repoFilterOptions,
+          },
+        ]
         : []),
 
+
+      {
+        key: "project",
+        view: "Project",
+        allowedRoles: [1, 2, 3],
+        allowMultiple: true,
+        showCounts: true,
+        options: projectFilterOptions,
+      },
+      {
+        key: "label",
+        view: "Label",
+        allowedRoles: [1, 2, 3],
+        showCounts: true,
+        options: labelFilterOptions,
+        filterType: "array",
+        allowMultiple: true,
+        filterKey: "LABEL_ID",
+      },
       {
         key: "assginedTo",
         view: "owner",
@@ -190,8 +149,8 @@ export default function TicketsPage() {
           const selectedValues = Array.isArray(selectedValue)
             ? selectedValue
             : String(selectedValue)
-                .split(",")
-                .map((v) => v.trim());
+              .split(",")
+              .map((v) => v.trim());
 
           return selectedValues.some((val) => {
             const assignedTo = item.assignedTo
@@ -207,55 +166,95 @@ export default function TicketsPage() {
           });
         },
       },
-
       {
         key: "multiAssignees",
         view: "Assignee",
-        allowedRoles: [1, 2],
-        options: employeeFilterOptions,
+        allowedRoles: [1, 2, 3],
+        options: isViewer
+          ? [
+            { label: "Assignees", value: "" },
+            ...repoFilterOptions.filter(
+              (item) => item.label !== "Repositories"
+            ),
+            {
+              label: "WorkGlow Solutions",
+              value: "7c4039b9-248c-4d4c-a66b-976554d603b1"
+            },
+          ]
+          : [
+            ...employeeFilterOptions,
+          ],
         filterType: "custom",
         allowMultiple: true,
         showCounts: true,
         customFilter: (item, selectedValues) => {
           if (!selectedValues || selectedValues.length === 0) return true;
-
           const values = Array.isArray(selectedValues)
             ? selectedValues.map((v) => String(v).toLowerCase())
             : [String(selectedValues).toLowerCase()];
 
           if (Array.isArray(item.multiAssignees)) {
-            return item.multiAssignees.some((assignee) => {
+            const isAssigneeMatch = item.multiAssignees.some((assignee) => {
               if (assignee.Assignee_Type === "Main Assignee") return false;
 
               const assigneeName = String(
-                assignee.Assignee_Name || "",
+                assignee.Assignee_Name || ""
               ).toLowerCase();
+
               const assigneeId = String(
-                assignee.Assignee_Id || "",
+                assignee.Assignee_Id || ""
               ).toLowerCase();
 
               return (
-                values.includes(assigneeName) || values.includes(assigneeId)
+                values.includes(assigneeName) ||
+                values.includes(assigneeId)
               );
             });
+
+            if (isAssigneeMatch) return true;
+          }
+          if (item.move_toJson) {
+            try {
+              const moveToData = JSON.parse(item.move_toJson);
+
+              const isMoveToMatch = moveToData.some((move) => {
+                const moveId = String(
+                  move.Move_to || ""
+                ).toLowerCase();
+
+                const moveTitle = String(
+                  move.Title || ""
+                ).toLowerCase();
+
+                return (
+                  values.includes(moveId) ||
+                  values.includes(moveTitle)
+                );
+              });
+
+              if (isMoveToMatch) return true;
+            } catch (error) {
+              console.error("Move_toJson parse error:", error);
+            }
           }
 
           return false;
         },
       },
-
       {
         key: "customBoolean",
         view: "Special Flags",
         showCounts: true,
         options: [
-          { label: "All Flags", value: "allFlags" },
+          { label: "Flags", value: "allFlags" },
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
           { label: "Technical Response", value: "technicalResponse" },
           { label: "Web Response", value: "webResponse" },
           { label: "Admin Response", value: "adminResponse" },
+           {label:"Client Tickets",value:"raiseToClient"},
+          
         ],
         filterType: "custom",
         allowedRoles: [1, 2],
@@ -264,9 +263,9 @@ export default function TicketsPage() {
           const values = Array.isArray(selectedValues)
             ? selectedValues
             : String(selectedValues)
-                .split(",")
-                .map((v) => v.trim())
-                .filter(Boolean);
+              .split(",")
+              .map((v) => v.trim())
+              .filter(Boolean);
 
           const flagFields = [
             "isCloseRequested",
@@ -275,6 +274,7 @@ export default function TicketsPage() {
             "webResponse",
             "technicalResponse",
             "adminResponse",
+            "raiseToClient"
           ];
 
           if (values.includes("allFlags")) {
@@ -286,27 +286,6 @@ export default function TicketsPage() {
           return values.some((field) => item[field] === true);
         },
       },
-
-      {
-        key: "project",
-        view: "Project",
-        allowedRoles: [1, 2, 3],
-        allowMultiple: true,
-        showCounts: true,
-        options: projectFilterOptions,
-      },
-
-      {
-        key: "label",
-        view: "Label",
-        allowedRoles: [1, 2, 3],
-        showCounts: true,
-        options: labelFilterOptions,
-        filterType: "array",
-        allowMultiple: true,
-        filterKey: "LABEL_ID",
-      },
-
       {
         key: "teamId",
         view: "Team",
@@ -317,6 +296,7 @@ export default function TicketsPage() {
         allowMultiple: true,
         customFilter: (item, value) => {
           if (!value || value === "") return true;
+
           return item.multiAssignees?.some(
             (a) =>
               String(a.Assignee_TeamId) === String(value) &&
@@ -324,6 +304,124 @@ export default function TicketsPage() {
           );
         },
       },
+      {
+        key: "move_toJson",
+        view: "Handler",
+        allowedRoles: [1, 2],
+        options: [
+          { label: "Handler", value: "" },
+          ...repoFilterOptions.filter(
+            (item) => item.label !== "Repositories"),
+        ],
+        filterType: "custom",
+        showCounts: true,
+        customFilter: (item, selectedValues) => {
+          if (!selectedValues || selectedValues.length === 0) return true;
+          const values = Array.isArray(selectedValues)
+            ? selectedValues.map((v) => String(v).toLowerCase())
+            : [String(selectedValues).toLowerCase()];
+
+          if (item.move_toJson) {
+            try {
+              const moveToData = JSON.parse(item.move_toJson);
+              const isMoveToMatch = moveToData.some((move) => {
+                const moveId = String(
+                  move.Move_to || "",
+                ).toLowerCase();
+
+                const moveTitle = String(
+                  move.Title || "",
+                ).toLowerCase();
+
+                return (
+                  values.includes(moveId) ||
+                  values.includes(moveTitle)
+                );
+              });
+
+              if (isMoveToMatch) return true;
+
+            } catch (error) {
+              console.error("Move_toJson parse error:", error);
+            }
+          }
+
+          return false;
+        },
+      },
+      {
+        key: "overallPercentage",
+        view: "Battery",
+        allowedRoles: [1, 2],
+        allowMultiple: true,
+        showCounts: true,
+      
+        options: [
+          { label: "Battery", value: "" },
+          { label: "0% - 20%", value: "0-20" },
+          { label: "21% - 40%", value: "21-40" },
+          { label: "41% - 60%", value: "41-60" },
+          { label: "61% - 80%", value: "61-80" },
+          { label: "81% - 100%", value: "81-100" },
+        ],
+      
+        filterType: "custom",
+      
+        customFilter: (item, selectedValues) => {
+          // No filter / All Battery
+          if (
+            selectedValues == null ||
+            selectedValues === "" ||
+            (Array.isArray(selectedValues) && selectedValues.length === 0)
+          ) {
+            return true;
+          }
+      
+          const values = Array.isArray(selectedValues)
+            ? selectedValues.map((v) => String(v).trim())
+            : String(selectedValues)
+                .split(",")
+                .map((v) => v.trim())
+                .filter(Boolean);
+      
+          // IMPORTANT: normalized item uses lowercase property
+          const percentage = Number(item.overallPercentage);
+      
+          // Handle null / undefined / invalid percentage
+          if (
+            item.overallPercentage == null ||
+            Number.isNaN(percentage)
+          ) {
+            return false;
+          }
+      
+          return values.some((value) => {
+            switch (value) {
+              case "0-20":
+                return percentage >= 0 && percentage <= 20;
+      
+              case "21-40":
+                return percentage > 20 && percentage <= 40;
+      
+              case "41-60":
+                return percentage > 40 && percentage <= 60;
+      
+              case "61-80":
+                return percentage > 60 && percentage <= 80;
+      
+              case "81-100":
+                return percentage > 80 && percentage <= 100;
+      
+              default:
+                return false;
+            }
+          });
+        },
+      },
+      
+
+
+
     ],
     onItemClick: (item) => {
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.id });
@@ -335,23 +433,10 @@ export default function TicketsPage() {
 
   return (
     <>
-      {/* {!repoId && !projId && (
-        <div className="flex justify-between items-center mb-4 flex-none px-2">
-          <h2 className="text-2xl font-bold text-gray-800">Tickets</h2>
-
-          <button
-            onClick={() => goTo(createRouteKey, { repoId, projId })}
-            className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"
-          >
-            Create New Tickets
-          </button>
-        </div>
-      )} */}
-
       <div className="w-full pb-10">
         <ListProvider
           config={listConfigWithNav}
-          data={TicketList}
+          data={ticketList}
           userRole={currentUser?.role}
         >
           {!repoId && !projId && (

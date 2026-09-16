@@ -238,6 +238,8 @@ export default function DaysOfWeekPicker({
   required,
   disabled = false,
 }) {
+
+  console.log("value",value)
   const selected = useMemo(() => normaliseToSet(value), [value]);
 
   const toggle = (dayId) => {

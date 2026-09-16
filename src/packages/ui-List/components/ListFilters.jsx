@@ -163,60 +163,54 @@ export function ListFilters() {
         const selectedValues = Array.isArray(rawParsedValue)
           ? rawParsedValue.map(String)
           : rawParsedValue !== undefined &&
-              rawParsedValue !== null &&
-              rawParsedValue !== ""
+            rawParsedValue !== null &&
+            rawParsedValue !== ""
             ? [String(rawParsedValue)]
             : [];
 
         const isMultiSelect = !!filter.allowMultiple;
         const isOpen = openDropdownKey === filter.key;
+        const filteredOptions = [...(filter.options || [])]
+          .filter((opt) =>
+            opt.label.toLowerCase().includes(searchQuery.toLowerCase()),
+          )
+          .sort((a, b) => {
+            const aIsAll = isAllOption(a.value);
+            const bIsAll = isAllOption(b.value);
 
-        const filteredOptions = React.useMemo(() => {
-          return [...(filter.options || [])]
-            .filter((opt) =>
-              opt.label.toLowerCase().includes(searchQuery.toLowerCase()),
-            )
-            .sort((a, b) => {
-              const aIsAll = isAllOption(a.value);
-              const bIsAll = isAllOption(b.value);
+            // Always pin All at top
+            if (aIsAll) return -1;
+            if (bIsAll) return 1;
 
-              // Always pin All at top
-              if (aIsAll) return -1;
-              if (bIsAll) return 1;
+            const aSelected = selectedValues.includes(String(a.value));
+            const bSelected = selectedValues.includes(String(b.value));
 
-              const aSelected = selectedValues.includes(String(a.value));
-              const bSelected = selectedValues.includes(String(b.value));
+            // Selected options under All
+            if (aSelected && !bSelected) return -1;
+            if (!aSelected && bSelected) return 1;
 
-              // Selected options under All
-              if (aSelected && !bSelected) return -1;
-              if (!aSelected && bSelected) return 1;
+            if (filter.showCounts) {
+              const countA = filterCounts[filter.key]?.[a.value] ?? 0;
+              const countB = filterCounts[filter.key]?.[b.value] ?? 0;
 
-              if (filter.showCounts) {
-                const countA = filterCounts[filter.key]?.[a.value] ?? 0;
+              if (countA !== countB) return countB - countA;
+            }
 
-                const countB = filterCounts[filter.key]?.[b.value] ?? 0;
-
-                if (countA !== countB) return countB - countA;
-              }
-
-              return a.label.localeCompare(b.label);
-            });
-        }, [
-          filter.options,
-          filterCounts,
-          filter.key,
-          selectedValues,
-          searchQuery,
-        ]);
+            return a.label.localeCompare(b.label);
+          });
 
         const activeOption = filter.options?.find((opt) =>
           selectedValues.includes(String(opt.value)),
         ) ||
           filter.options?.[0] || { label: "No options", value: "" };
+        // const entityLabel = filter.options
+        //   ?.find((opt) => /^all\s+/i.test(opt.label))
+        //   ?.label?.replace(/^all\s+/i, "")
+        //   .trim();
         const entityLabel = filter.options
-          ?.find((opt) => /^all\s+/i.test(opt.label))
-          ?.label?.replace(/^all\s+/i, "")
-          .trim();
+          ?.find((opt) => opt.value === "")
+          ?.label?.trim();
+
         const selectedLabel =
           isMultiSelect && selectedValues.length > 1
             ? `${selectedValues.length} ${entityLabel}`
@@ -402,13 +396,12 @@ export function ListFilters() {
                           data-value={opt.value}
                           ref={(el) => (optionsRefs.current[index] = el)}
                           onClick={handleSelect}
-                          className={`px-2 py-2 mx-1 rounded-md text-xs cursor-pointer flex items-center gap-2 transition-colors ${
-                            isSelected
+                          className={`px-2 py-2 mx-1 rounded-md text-xs cursor-pointer flex items-center gap-2 transition-colors ${isSelected
                               ? "font-semibold text-brand-yellow bg-brand-yhover"
                               : isHighlighted
                                 ? "bg-gray-100 text-gray-900"
                                 : "text-gray-700 hover:bg-gray-50"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center justify-between w-full">
                             <div className="flex items-center gap-2 truncate pr-2">

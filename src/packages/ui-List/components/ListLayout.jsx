@@ -17,6 +17,7 @@ export function ListLayout({ className }) {
   const stickyTopValue = config.theme?.stickyTop;
   const renderView = () => {
     if (view === "graph") return <ListGraphView />;
+    if (view === "report") return <ListGraphView />;
     if (view === "table") return <ListTableView />;
     if (view === "card") return <ListCardView />;
 

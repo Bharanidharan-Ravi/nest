@@ -63,7 +63,7 @@ export const TicketListConfig = (isViewer = false) => ({
   enableCardControls: true,
   enablequickComment: true,
   enablequickStatus: true,
-  searchFields: ["title", "ticketKey"],
+  searchFields: ["title", "ticketKey","priority"],
   filters: [
     {
       key: "status",

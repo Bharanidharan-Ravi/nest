@@ -14,6 +14,7 @@ import apiClient from "../../../../core/api/apiClient";
 import { queryClient } from "../../../../core/api/queryClient";
 import { queryKeys } from "../../../../core/query/queryKeys";
 import { useApiMutation } from "../../../../core/query/useApiMutation";
+import SmartAvatar from "../SmartAvatar";
 
 // --- PROFESSIONAL EMOJI LIST ---
 const PROFESSIONAL_EMOJIS = ["👍", "👎", "😄", "🎉", "😕", "❤️", "🚀", "👀", "✅", "🙌"];
@@ -403,7 +404,7 @@ const ThreadListCard = ({
 
       {/* 1. THE AVATAR */}
       <div className="flex-shrink-0 relative z-10 mt-0.5">
-        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shadow-xs transition-all duration-300 ${isMeeting
+        {/* <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold shadow-xs transition-all duration-300 ${isMeeting
           ? isMeetingCompleted
             ? "bg-green-600 text-white border border-green-700"
             : "bg-[#ffb300] text-white border border-[#ffb300]"
@@ -413,7 +414,18 @@ const ThreadListCard = ({
           }`}
         >
           {isMe ? getInitials(currentUser.name || "You") : user?.role === 3 && item.team !== null ? "WG" : getInitials(item.CreatedBy)}
-        </div>
+        </div> */}
+        <SmartAvatar
+        userId={isMe ? currentUser.userId:undefined}
+        name={isMe ? currentUser.name : user?.role === 3 && item.team !== null ? "WG":item.CreatedBy}
+        extraClasses={
+          isMeetingCompleted
+          ? "bg-green-600 text-white border border-green-700"
+        
+        : isMe
+          ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 text-gray-800"
+          : "bg-white/70 border-2 border-gray-100 text-gray-700 "
+        }/>
       </div>
 
       {isMeeting && meetingInfo ? (
@@ -561,7 +573,7 @@ const ThreadListCard = ({
                 {meetingInfo.completed?.summary && (
                   <div className="pl-3 border-l-4 border-green-500 bg-green-50/10 py-1.5 pr-2 rounded-r-lg">
                     <strong className="text-[9px] text-green-700 uppercase tracking-widest block mb-1 font-bold">Meeting Notes</strong>
-                    <p className="text-slate-800 leading-relaxed m-0 text-xs italic font-medium">"{meetingInfo.completed.summary}"</p>
+                    <HtmlRenderer html={meetingInfo.completed.summary} />
                   </div>
                 )}
               </div>
@@ -675,7 +687,7 @@ const ThreadListCard = ({
             : "bg-gradient-to-b from-[#4b7ed6]/10 to-white border-[#4b7ed6]/20 rounded-xl shadow-[#4b7ed6]/10"
           : !formContext.isViewer && item.toClient ? "bg-green-100/80 border-green-500/60 rounded-xl rounded-tl-sm"
             : isMe ? "bg-yellow-50/80 border-yellow-200/60 rounded-xl rounded-tr-sm"
-              : "bg-white/70 border-gray-200 rounded-xl rounded-tl-sm"
+              : "bg-white/70 border-gray-300 rounded-xl rounded-tl-sm"
           }`}
         >
           {/* Header */}

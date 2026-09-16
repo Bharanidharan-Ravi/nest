@@ -11,6 +11,7 @@ export const normalizeTicket = (ticket) => ({
   description: ticket.HtmlDesc || ticket.Description,
   assignedTo: ticket.Assignee_Id,
   assginedName: ticket.Assignee_Name,
+  EntireWorkingTime:ticket.TotalConsumeTime,
   estimateHours: ticket.hours || ticket.Hours,
   createdAt: ticket.CreatedAt,
   updatedAt: ticket.UpdatedAt,
@@ -23,7 +24,6 @@ export const normalizeTicket = (ticket) => ({
   reopenedBy: ticket.ReopenedBy,
   priority: ticket.Priority,
   move_toJson :ticket.Move_toJson,
-  // Safely parse JSON strings, fallback to empty arrays if null/invalid
   multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
   label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
   completionPct: ticket.CompletionPct,
@@ -73,9 +73,12 @@ export const normalizeCheckedTickets = (item) => ({
   UncheckComment: item.UncheckComment ?? "-",
   project: item.Project_ID,
   title: item.Title,
+  privateTicket :item.IsPrivate ?? false,
   label: item.Labels_JSON ? JSON.parse(item.Labels_JSON) : [],
   multiAssignees: item.All_Assignees ? JSON.parse(item.All_Assignees) : [],
   CompletionPct: item.CompletionPct,
+  overallPercentage: item.OverallPercentage,
+  estimateHours: item.hours || item.Hours,
   dueDate: item.Due_Date,
   createdAt: item.CreatedAt,
   ticketKey: item.Issue_Code,
@@ -108,6 +111,7 @@ export const createTimesheetNormalizer = (Timedata) => {
     repoName: Timedata.Repository_Name,
     updatedAt: Timedata.UpdatedAt,
     CompletionPct: Timedata.CompletionPct,
+    privateTicket :Timedata.IsPrivate ?? false,
     createdAt: Timedata.CreatedAt,
     updatedBy: Timedata.UpdatedBy,
     threadStatusName: Timedata.ThreadStatusName,
@@ -118,6 +122,8 @@ export const createTimesheetNormalizer = (Timedata) => {
     CurrentStatusSummary: Timedata.CurrentStatusSummary,
     label: Timedata.Labels_JSON ? JSON.parse(Timedata.Labels_JSON) : [],
     IsPrivate:Timedata.IsPrivate,
+    estimateHours:Timedata.EstimatedHours,
+    EntireWorkingTime:Timedata.EntireConsumeTime
   };
 };
 
