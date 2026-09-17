@@ -1,32 +1,21 @@
 import { executeApi } from "../../../core/api/executor";
 
-// Background calls: no global loader
-const silent = { _silent: true };
+// Background calls: no global loader, and no global error toast — the chat
+// identity store handles failures itself (a 404 on getMine is normal on first login)
+const background = { _silent: true, _noErrorToast: true };
 
 export const chatKeysApi = {
-  getStatus: (deviceId) =>
-    executeApi({
-      url: "/ChatKeys/status",
-      method: "GET",
-      params: { deviceId },
-      config: silent,
-    }),
+  /** The logged-in user's key bundle. Rejects with a 404 axios error if none is registered. */
+  getMine: () =>
+    executeApi({ url: "/ChatKeys/me", method: "GET", config: background }),
 
-  registerIdentity: ({ deviceId, publicKey, deviceInfo }) =>
-    executeApi({
-      url: "/ChatKeys/identity",
-      method: "POST",
-      payload: { DeviceId: deviceId, PublicKey: publicKey, DeviceInfo: deviceInfo },
-      config: silent,
-    }),
+  /** First-time registration. Body: { PublicKey, WrappedByPassword, PasswordSalt, WrappedByRecovery, RecoverySalt } */
+  register: (registration) =>
+    executeApi({ url: "/ChatKeys/me", method: "POST", payload: registration, config: background }),
 
-  registerPreKey: ({ deviceId, keyId, publicKey, signature }) =>
-    executeApi({
-      url: "/ChatKeys/prekey",
-      method: "POST",
-      payload: { DeviceId: deviceId, KeyId: keyId, PublicKey: publicKey, Signature: signature },
-      config: silent,
-    }),
+  /** Re-wrap under a new password. Body: { WrappedByPassword, PasswordSalt, KeyVersion } */
+  rewrap: (rewrap) =>
+    executeApi({ url: "/ChatKeys/rewrap", method: "POST", payload: rewrap, config: background }),
 
   // ASP.NET Core's [FromQuery] List<Guid> binds "userIds=a&userIds=b", not axios's
   // default "userIds[]=a&userIds[]=b" — build the query string ourselves to match.
@@ -36,7 +25,7 @@ export const chatKeysApi = {
     return executeApi({
       url: `/ChatKeys/participants?${query.toString()}`,
       method: "GET",
-      config: silent,
+      config: background,
     });
   },
 };

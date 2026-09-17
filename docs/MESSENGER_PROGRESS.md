@@ -6,6 +6,161 @@
 > time meaningful progress is made. Keep entries short — link to code instead
 > of re-explaining it.
 
+## ⚠️ Redesign in progress — see `docs/messengernewPrompt.md`
+
+The device-based design below (Steps 1–3) is being **replaced** by a user-based
+design (one key pair per user, wrapped by password + recovery code), built in
+the 8 phases of `messengernewPrompt.md`. Steps 1–3 below are kept for history only.
+
+### Phase 1 — Schema & key directory — ✅ DONE (automated tests pass + verified end-to-end in Swagger against the real DB)
+
+**Manually verified in Swagger (real WGNEST DB, logged-in JWT):**
+`GET /me` 404 before registering → `POST /me` 200 (KeyVersion 1) → repeat same
+body 200 no-op → different PublicKey 409 → `GET /me` 200 matches → `GET
+/participants?userIds=<self>` 200 returns the entry → `POST /rewrap` (KeyVersion
+1) 200, KeyVersion bumped to 2, RotatedAt set, recovery wrapping untouched.
+Stale-KeyVersion rewrap rejected with 400. All matched expected behavior.
+
+**Tests:** new xunit project `APIGateWay.Tests` (added to `WGNestAPIGateway.sln`) —
+first backend test project in this repo. `ChatKeyRepoTests.cs` (19 tests, all
+passing) covers `ChatKeyRepo` against an EF Core InMemory database, faking
+`IDomainService`/`ILoginContextService`/`IRequestStepContext` (`Fakes/FakeDomainService.cs`):
+register (success, no-op resend, conflict on a different key, bad public key,
+undersized wrapped blob, bad salt length), get-mine (null when unregistered,
+returned after registration, not leaked to another userId), rewrap (404 with
+no key, version bump + fields updated, 400 on stale KeyVersion), participants
+(400 empty, 400 over 200, users without a key omitted, duplicate ids deduped).
+Run with `dotnet test "APIGateWay.Tests/APIGateWay.Tests.csproj"` from
+`WGNestAPIGateway/`. **Not covered by these tests** (need a real SQL Server + a
+browser): the actual schema script, EF migrations/model binding against the
+real `APIGatewayDBContext`, and the HTTP layer (`ChatKeysController`, JWT auth,
+`RepoScopePolicy`).
+
+- SQL: `scripts/chat_e2ee_master_schema.sql` — drops ALL old chat tables
+  (ChatIdentityKeys, ChatSignedPreKeys, ChatConversations, ChatConversationMembers,
+  ChatEncryptedMessages, ChatMessageKeys) and creates ChatUserKeys,
+  ChatConversations, ChatConversationMembers, ChatEncryptedMessages,
+  ChatMessageKeys, ChatMessageReactions, ChatMessageTags, ChatMediaAttachments.
+  Old `chat_e2ee_keys.sql` / `chat_e2ee_messages.sql` deleted.
+- Backend (`D:\live work\Github\API\WGNestAPIGateway`):
+  - Models `ChatsModal/Master/ChatUserKey.cs`, `ChatConversation.cs` (+ Member,
+    `ChatConversationType` enum : byte), `ChatEncryptedMessage.cs` (+ MessageKey),
+    `ChatMessageExtras.cs` (Reaction, Tag, MediaAttachment). Composite keys +
+    unique indexes configured in `APIGatewayDBContext.OnModelCreating`.
+  - Removed: `ChatIdentityKey`, `ChatSignedPreKey`, `ChatMessageDtos`, `IChatRepo`,
+    `ChatRepo`, `ChatsController` (1:1 messaging is rebuilt in Phase 4).
+  - `ChatKeysController`: `GET /me` (404 if none), `POST /me` (same PublicKey = no-op,
+    different = 409), `POST /rewrap` (requires matching KeyVersion, bumps it),
+    `GET /participants?userIds=..` (users without a key are omitted, max 200).
+  - Builds with 0 errors.
+- Frontend: `useChatKeyRotation` unwired from `App.jsx`; `MessengerFeature`
+  unregistered in `bootstrap.js` until Phase 4. Old device-based files under
+  `src/features/messenger/` are dead code, replaced in Phases 2–4.
+- Leftover scaffolds `ChatRoom`/`ChatParticipant`/`ChatMessage` still untouched.
+
+### Phase 2 — Frontend crypto engine — ✅ CODE DONE + TESTS PASS
+
+All in `src/features/messenger/e2ee/`:
+- `userKeyManager.js` — `generateUserKeyPair` (ECDH P-256, deriveBits),
+  `deriveWrappingKey` (PBKDF2-SHA256, 600k iterations -> AES-256-GCM),
+  `wrapPrivateKey` / `unwrapPrivateKey` (blob = [12-byte IV | ciphertext], unwrap
+  imports NON-extractable), `rewrapPrivateKey` (decrypts to pkcs8 and re-encrypts
+  under a new secret without ever making an extractable CryptoKey).
+  High-level flows for Phase 3: `createUserKeyBundle(password)` (returns the
+  `POST /me` body + recovery code + stored key), `unlockWithPassword(bundle, pw)`,
+  `recoverWithCode(bundle, code, currentPassword)` (returns the `POST /rewrap` body).
+  Errors: `WrongSecretError` (wrong password/code), `InvalidRecoveryCodeError` (malformed code).
+- `recoveryCode.js` — 24-char **Crockford** Base32 (the plan's example uses 8/9,
+  which RFC 4648 Base32 lacks), grouped `XXXX-XXXX-...`. `normalizeRecoveryCode`
+  strips dashes/whitespace, upper-cases, maps I/L->1 and O->0; the normalized form
+  is the PBKDF2 secret.
+- `keyStore.js` — rewritten. IndexedDB `wg-e2ee` v2, store `userKeys` keyed by
+  userId (the old `deviceKeys` store is deleted on upgrade). `put` refuses
+  extractable keys. `get` / `put` / `delete`.
+- Deleted `useChatKeyRotation.js`. `keyManager.js`, `messageCrypto.js`, `useChat.js`
+  and `MessengerPage.jsx` are still the old device-based code, replaced in Phase 4.
+- Smoke-checked in Node: create -> unlock -> wrong password rejected -> recover with
+  a lower-case, space-separated code -> re-wrapped key unlocks with the new
+  password and is the same key pair. Output sizes match the Phase 1 server limits.
+- **Tests:** `recoveryCode.test.js` (14) + `userKeyManager.test.js` (27) — 41 new
+  tests, all passing (plus the 12 pre-existing messenger tests, unaffected).
+  Covers: generation/format/normalize/validate for recovery codes (Crockford
+  alphabet, look-alike mapping, idempotence); ECDH keypair + SPKI export/import
+  agreeing on the same shared secret; PBKDF2 determinism per secret+salt; wrap/
+  unwrap round-trip (unwrapped key non-extractable, blob = IV + ciphertext);
+  `WrongSecretError` on wrong password/salt/tampered bytes; `rewrapPrivateKey`
+  (new salt, old secret no longer opens the new blob); `createUserKeyBundle`
+  payload shape and size limits matched against the Phase 1 server's actual
+  validation ranges; `recoverWithCode`/`unlockWithPassword` end-to-end,
+  `InvalidRecoveryCodeError` vs `WrongSecretError` distinction. Run:
+  `npx vitest run src/features/messenger`.
+  Runs in ~27s — expected, since 600,000 real PBKDF2 iterations run per
+  wrap/unwrap call and many tests call it 2-4 times.
+  **Not tested:** `keyStore.js` (thin IndexedDB wrapper — no fake-indexeddb
+  dependency in this repo; same gap existed for the old device-based keyStore).
+  Full suite: one pre-existing failure in `src/core/query/queryKeys.test.js`,
+  unrelated to messenger and unmodified by this work (confirmed via git log).
+
+### Phase 3 — Login integration & recovery UI — ✅ CODE DONE (no automated tests yet, scenario-checked manually)
+
+**`chatIdentityStore.js`** (new, `src/features/messenger/e2ee/`) — zustand store,
+the state machine driving everything: `IDLE -> INITIALIZING -> READY`, or
+`LOCKED_NEED_RECOVERY` (password changed since the key was wrapped) /
+`LOCKED_NEED_PASSWORD` (key not in this browser, e.g. cleared site data) /
+`UNSUPPORTED` (no secure context/WebCrypto/IndexedDB) / `ERROR`.
+- `initializeAfterLogin({ userId, password })` — called right after login with
+  the password still in memory. 404 from `GET /me` -> creates a key, POSTs it,
+  and stores the recovery code in `pendingRecoveryCode` (shown once by the modal).
+  409 (another tab/device registered first) -> fetches and uses their key instead.
+  Wrong password (`WrongSecretError`, i.e. password was reset) -> drops any stale
+  local key and opens the unlock modal in recovery mode.
+- `restoreSession({ userId })` — called on app load with no password available
+  (page reload). Reuses the local IndexedDB key if its public key still matches
+  the server's; otherwise `LOCKED_NEED_PASSWORD`. Network/server failure with an
+  existing local key -> stays `READY` (offline-tolerant); no local key -> `ERROR`.
+- `unlockWithPassword` / `unlockWithRecoveryCode` — used by `UnlockChatModal`.
+  Recovery re-wraps under the current password (`POST /rewrap`); on a 409/400
+  KeyVersion race it re-fetches the bundle and retries once. Asks for the current
+  password only when it isn't already in memory from login.
+- `forgetLocalKey` — called on logout; deletes the IndexedDB key for that user
+  (shared-computer safety) and resets in-memory state.
+- The login password is held in a closure variable, never in the store or any
+  storage, and is dropped as soon as a flow no longer needs it.
+  A `generation` counter invalidates in-flight flows if a newer one starts
+  (e.g. rapid re-login) or `reset()`/logout runs mid-flight.
+- `chatKeys.api.js` — updated to Phase 1's endpoints (`getMine`/`register`/`rewrap`/
+  `getParticipantKeys`); calls pass `_noErrorToast` (new axios config flag added
+  to `apiClient.js`'s response interceptor) so an expected 404 on first login
+  doesn't pop the global error toast — the store handles it silently.
+- **UI:** `SaveRecoveryCodeModal.jsx` (copy button + confirmation checkbox,
+  can't be dismissed until both are done), `UnlockChatModal.jsx` (password mode
+  and recovery-code mode, switchable; recovery mode asks for the current
+  password only if needed), `ChatIdentityModals.jsx` wrapping both, mounted once
+  in `App.jsx`. `useChatIdentity.js` — `useChatIdentitySession(token)` (mounted in
+  App; drives `restoreSession`/`reset` off the token) and `useChatIdentity()` for
+  any component to read status.
+- **Wired in:** `loginPage.jsx` calls `initializeAfterLogin` in the login
+  mutation's `onSuccess`, in the background (not awaited, doesn't block
+  navigation). `App.Hooks/Logout.js`'s `handleLogout` calls `forgetLocalKey`
+  before the session API logout call.
+- **Not wired to a page yet:** nothing surfaces `LOCKED_NEED_PASSWORD` to the
+  user proactively outside of chat itself — Phase 4's chat page is expected to
+  call `openUnlock()` when the user opens chat while locked.
+
+**Verified:** a throwaway scenario test (written, run, deleted — not part of the
+suite) drove `chatIdentityStore` through all 9 flows against fake API/store
+implementations: first login (key created + code shown), page reload (key
+reused), re-login after logout (no new code, same key), login after a password
+reset (locked for recovery), wrong recovery code rejected, correct code
+recovers + rewraps (KeyVersion bumps), re-login with the new password, reload
+with no local key (locked for password) with a recovery-without-memoized-password
+path exercised (asks for and accepts the current password explicitly), and the
+server key being wiped out from under a stale local copy (drops it, locks).
+All 9 passed. `npx vitest run src/features/messenger` (53 pre-existing/Phase 2
+tests) and `npx vite build` both still pass with the new files in place.
+**Not yet tested:** a real browser end-to-end run (real login page, real
+modals, real IndexedDB) — see manual test steps to run before "Phase 3 tests".
+
 ## Scope (full feature, in order)
 
 We are building this **step by step, one piece at a time** — do not jump ahead

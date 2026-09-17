@@ -10,7 +10,6 @@ import { EmployeeFeature } from "../features/employee"
 import { BannerFeature } from "../features/BannerMessage"
 import { NotificationsFeature } from "../features/notifications"
 import { MeetingsFeature } from "../features/MeetingScheduler"
-import { MessengerFeature } from "../features/messenger"
 
 export const bootstrapApp = () => {
   registerFeature(DashboardFeature)
@@ -22,7 +21,8 @@ export const bootstrapApp = () => {
   registerFeature(BannerFeature)
   registerFeature(NotificationsFeature)
   registerFeature(MeetingsFeature)
-  registerFeature(MessengerFeature)
+  // Messenger is re-registered in Phase 4 once the user-based E2EE chat UI exists
+  // (the old device-based page calls APIs removed in Phase 1)
     // 2. Build the nav registry from everything registered above
   //    Pass getAllFeatures() directly — avoids circular import inside routeRegistry
   buildRouteRegistry(getAllFeatures());

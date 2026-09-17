@@ -20,6 +20,8 @@ import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
 import { ROLES } from "../../../core/auth/permissions";
 import { jwtDecode } from "jwt-decode";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { useChatIdentityStore } from "../../messenger/e2ee/chatIdentityStore";
 
 const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
@@ -83,8 +85,16 @@ const LoginPage = () => {
   };
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       loginStore(data);
+
+      // Chat encryption keys are unlocked with the login password. It's passed straight
+      // to the chat identity store (in memory only) and runs in the background.
+      const userId = readUserFromSession()?.userId;
+      if (userId) {
+        useChatIdentityStore.getState().initializeAfterLogin({ userId, password: variables.password });
+      }
+
       const encoded = jwtDecode(data);
       const role = encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
       if (Number(role) === ROLES.VIEWER) {

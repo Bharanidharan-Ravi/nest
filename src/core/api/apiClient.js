@@ -137,7 +137,9 @@ apiClient.interceptors.response.use(
       responseData?.errorMessage ||
       error.message ||
       "Something went wrong";
-    useUIStore.getState().setError(errorMsg);
+    // _noErrorToast: the caller expects this failure (e.g. a 404 meaning "not set up yet")
+    // and handles it itself
+    if (!error.config?._noErrorToast) useUIStore.getState().setError(errorMsg);
     return Promise.reject(error);
   },
 );
