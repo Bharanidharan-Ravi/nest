@@ -1,152 +1,320 @@
 import { describe, expect, it } from "vitest";
-import { fingerprint, generateIdentityKey, generateSignedPreKey } from "./keyManager";
-import { decryptMessage, encryptMessage, verifiedDevices } from "./messageCrypto";
+import { MESSAGE_VERSION, additionalData, decryptMessage, encryptMessage } from "./messageCrypto";
+import { exportPublicKey, fromBase64, generateUserKeyPair, importPrivateKey, toBase64 } from "./userKeyManager";
 
-const CONVERSATION = "11111111-1111-4111-8111-111111111111";
-const ALICE = "aaaaaaaa-0000-4000-8000-000000000001";
-const BOB = "bbbbbbbb-0000-4000-8000-000000000002";
-
-async function makeDevice(userId, preKeyId = 1) {
-  const identity = await generateIdentityKey(0);
-  const preKey = await generateSignedPreKey(identity.privateKey, preKeyId, 0);
-  return {
-    userId,
-    record: { userId, deviceId: crypto.randomUUID(), identity, preKeys: [preKey], currentPreKeyId: preKeyId },
-  };
+/** A user with a real, non-extractable ECDH private key and a base64 SPKI public key. */
+async function makeUser(id) {
+  const keyPair = await generateUserKeyPair();
+  const pkcs8 = new Uint8Array(await crypto.subtle.exportKey("pkcs8", keyPair.privateKey));
+  return { id, privateKey: await importPrivateKey(pkcs8), publicKey: await exportPublicKey(keyPair.publicKey) };
 }
 
-/** Shape returned by GET /ChatKeys/participants */
-async function participantsFor(...devices) {
-  const byUser = new Map();
-  for (const { userId, record } of devices) {
-    const preKey = record.preKeys.find((k) => k.keyId === record.currentPreKeyId);
-    const list = byUser.get(userId) ?? [];
-    list.push({
-      DeviceId: record.deviceId,
-      IdentityPublicKey: record.identity.publicKey,
-      IdentityFingerprint: await fingerprint(record.identity.publicKey),
-      PreKeyId: preKey.keyId,
-      PreKeyPublicKey: preKey.publicKey,
-      PreKeySignature: preKey.signature,
-    });
-    byUser.set(userId, list);
-  }
-  return [...byUser].map(([UserId, Devices]) => ({ UserId, Devices }));
-}
+const conversationId = () => crypto.randomUUID();
+const asRecipients = (users) => users.map((u) => ({ userId: u.id, publicKey: u.publicKey }));
 
-/** What the server stores and returns: the envelope plus metadata, keys filtered per device */
-function asServerMessage(body, senderUserId, forDeviceId) {
+/** Builds the ChatMessageDto shape decryptMessage expects, from encryptMessage's output. */
+function dtoFor(body, senderUserId, conversationId, recipientUserId) {
   return {
-    MessageId: crypto.randomUUID(),
-    ConversationId: CONVERSATION,
+    ConversationId: conversationId,
     SenderUserId: senderUserId,
-    SenderDeviceId: body.SenderDeviceId,
     ClientMessageId: body.ClientMessageId,
-    Ciphertext: body.Ciphertext,
-    Iv: body.Iv,
-    EphemeralPublicKey: body.EphemeralPublicKey,
-    Keys: body.Keys.filter((k) => k.RecipientDeviceId === forDeviceId),
+    EncryptedPayload: body.EncryptedPayload,
+    WrappedMessageKey: body.Keys.find((k) => k.RecipientUserId === recipientUserId)?.WrappedMessageKey,
   };
 }
 
-async function send(from, to, text = "hello bob") {
-  const devices = await verifiedDevices(await participantsFor(...to));
-  return encryptMessage({
-    payload: { type: "text", text },
-    conversationId: CONVERSATION,
-    senderUserId: from.userId,
-    senderDeviceId: from.record.deviceId,
-    devices,
-  });
-}
-
-describe("messageCrypto", () => {
-  it("round-trips a message to every recipient device, including the sender's own", async () => {
-    const alice = await makeDevice(ALICE);
-    const bobLaptop = await makeDevice(BOB);
-    const bobPhone = await makeDevice(BOB);
-
-    const body = await send(alice, [bobLaptop, bobPhone, alice]);
+describe("encryptMessage", () => {
+  it("wraps a 40-byte AES-KW key once per recipient", async () => {
+    const [alice, bob, carol] = await Promise.all([makeUser("alice"), makeUser("bob"), makeUser("carol")]);
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: conversationId(),
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob, carol]),
+    });
 
     expect(body.Keys).toHaveLength(3);
-    expect(body.Ciphertext).not.toContain("hello");
-
-    for (const device of [bobLaptop, bobPhone, alice]) {
-      const result = await decryptMessage(asServerMessage(body, ALICE, device.record.deviceId), device.record);
-      expect(result).toEqual({ status: "ok", body: { v: 1, type: "text", text: "hello bob" } });
-    }
+    expect(body.Keys.map((k) => k.RecipientUserId).sort()).toEqual(["alice", "bob", "carol"]);
+    body.Keys.forEach((k) => expect(fromBase64(k.WrappedMessageKey)).toHaveLength(40));
   });
 
-  it("reports no-key on a device the message wasn't encrypted for", async () => {
-    const alice = await makeDevice(ALICE);
-    const bob = await makeDevice(BOB);
-    const bobNewBrowser = await makeDevice(BOB);
+  it("generates a random ClientMessageId when none is given, and honors one when given", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const args = {
+      payload: { type: "text", text: "hi" },
+      conversationId: conversationId(),
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    };
 
-    const body = await send(alice, [bob, alice]);
-    const result = await decryptMessage(
-      asServerMessage(body, ALICE, bobNewBrowser.record.deviceId),
-      bobNewBrowser.record,
+    const auto1 = await encryptMessage(args);
+    const auto2 = await encryptMessage(args);
+    expect(auto1.ClientMessageId).not.toBe(auto2.ClientMessageId);
+
+    const fixed = await encryptMessage({ ...args, clientMessageId: "fixed-id" });
+    expect(fixed.ClientMessageId).toBe("fixed-id");
+  });
+
+  it("throws when there are no recipients", async () => {
+    const alice = await makeUser("alice");
+    await expect(
+      encryptMessage({
+        payload: { type: "text", text: "hi" },
+        conversationId: conversationId(),
+        senderUserId: alice.id,
+        senderPrivateKey: alice.privateKey,
+        recipients: [],
+      }),
+    ).rejects.toThrow(/no recipients/i);
+  });
+
+  it("throws when the sender isn't one of the recipients", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    await expect(
+      encryptMessage({
+        payload: { type: "text", text: "hi" },
+        conversationId: conversationId(),
+        senderUserId: alice.id,
+        senderPrivateKey: alice.privateKey,
+        recipients: asRecipients([bob]),
+      }),
+    ).rejects.toThrow(/sender must be one of the recipients/i);
+  });
+
+  it("accepts recipient public keys as base64 strings or already-imported CryptoKeys", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const bobKey = await crypto.subtle.importKey(
+      "spki",
+      fromBase64(bob.publicKey),
+      { name: "ECDH", namedCurve: "P-256" },
+      false,
+      [],
     );
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: conversationId(),
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: [
+        { userId: alice.id, publicKey: alice.publicKey }, // string
+        { userId: bob.id, publicKey: bobKey }, // CryptoKey
+      ],
+    });
+    expect(body.Keys).toHaveLength(2);
+  });
+});
 
+describe("additionalData", () => {
+  it("lower-cases and joins the fields, so casing differences still match at decrypt", () => {
+    const a = additionalData({ conversationId: "AAAA", senderUserId: "BBBB", clientMessageId: "CCCC" });
+    const b = additionalData({ conversationId: "aaaa", senderUserId: "bbbb", clientMessageId: "cccc" });
+    expect(new TextDecoder().decode(a)).toBe(`${MESSAGE_VERSION}|aaaa|bbbb|cccc`);
+    expect(a).toEqual(b);
+  });
+});
+
+describe("encryptMessage / decryptMessage round trip", () => {
+  it("lets a recipient decrypt the message", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi 👋 bob" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, bob.id), {
+      privateKey: bob.privateKey,
+      senderPublicKey: alice.publicKey,
+    });
+
+    expect(result).toEqual({ status: "ok", body: { v: 1, type: "text", text: "hi 👋 bob" } });
+  });
+
+  it("lets the sender decrypt their own copy", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "my own message" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, alice.id), {
+      privateKey: alice.privateKey,
+      senderPublicKey: alice.publicKey,
+    });
+
+    expect(result.status).toBe("ok");
+    expect(result.body.text).toBe("my own message");
+  });
+
+  it("returns no-key when the message carries no wrapped key for this reader", async () => {
+    const [alice, bob, carol] = await Promise.all([makeUser("alice"), makeUser("bob"), makeUser("carol")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const dto = { ...dtoFor(body, alice.id, convId, bob.id), WrappedMessageKey: undefined };
+    const result = await decryptMessage(dto, { privateKey: carol.privateKey, senderPublicKey: alice.publicKey });
     expect(result).toEqual({ status: "no-key" });
   });
 
-  it("still decrypts with a retired pre-key after the device rotated", async () => {
-    const alice = await makeDevice(ALICE);
-    const bob = await makeDevice(BOB);
-    const body = await send(alice, [bob, alice]);
+  it("rejects decryption with the wrong reader private key", async () => {
+    const [alice, bob, carol] = await Promise.all([makeUser("alice"), makeUser("bob"), makeUser("carol")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
 
-    const rotated = await generateSignedPreKey(bob.record.identity.privateKey, 2, 0);
-    const bobLater = { ...bob.record, preKeys: [...bob.record.preKeys, rotated], currentPreKeyId: 2 };
-
-    const result = await decryptMessage(asServerMessage(body, ALICE, bob.record.deviceId), bobLater);
-    expect(result.status).toBe("ok");
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, bob.id), {
+      privateKey: carol.privateKey,
+      senderPublicKey: alice.publicKey,
+    });
+    expect(result).toEqual({ status: "error" });
   });
 
-  it("fails if the server moves the ciphertext to another conversation or sender", async () => {
-    const alice = await makeDevice(ALICE);
-    const bob = await makeDevice(BOB);
-    const body = await send(alice, [bob, alice]);
-    const message = asServerMessage(body, ALICE, bob.record.deviceId);
+  it("rejects decryption against the wrong sender public key", async () => {
+    const [alice, bob, mallory] = await Promise.all([makeUser("alice"), makeUser("bob"), makeUser("mallory")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
 
-    const moved = { ...message, ConversationId: "22222222-2222-4222-8222-222222222222" };
-    const spoofed = { ...message, SenderUserId: BOB };
-
-    expect(await decryptMessage(moved, bob.record)).toEqual({ status: "error" });
-    expect(await decryptMessage(spoofed, bob.record)).toEqual({ status: "error" });
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, bob.id), {
+      privateKey: bob.privateKey,
+      senderPublicKey: mallory.publicKey,
+    });
+    expect(result).toEqual({ status: "error" });
   });
 
-  it("fails if the wrapped key was swapped onto a different device", async () => {
-    const alice = await makeDevice(ALICE);
-    const bob = await makeDevice(BOB);
-    const body = await send(alice, [bob, alice]);
+  it("rejects a message the server relabelled with a spoofed sender", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
 
-    // Alice's own envelope relabelled as Bob's
-    const message = asServerMessage(body, ALICE, alice.record.deviceId);
-    message.Keys = message.Keys.map((k) => ({ ...k, RecipientDeviceId: bob.record.deviceId }));
-
-    expect(await decryptMessage(message, bob.record)).toEqual({ status: "error" });
+    const dto = { ...dtoFor(body, alice.id, convId, bob.id), SenderUserId: "mallory" };
+    const result = await decryptMessage(dto, { privateKey: bob.privateKey, senderPublicKey: alice.publicKey });
+    expect(result).toEqual({ status: "error" });
   });
 
-  it("drops devices whose pre-key isn't signed by their identity key", async () => {
-    const bob = await makeDevice(BOB);
-    const attacker = await makeDevice(BOB);
-    const [participant] = await participantsFor(bob);
-    const [attackerParticipant] = await participantsFor(attacker);
+  it("rejects a message the server moved to a different conversation", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
 
-    // Server swaps in its own pre-key under Bob's identity
-    const forged = {
-      ...participant.Devices[0],
-      DeviceId: crypto.randomUUID(),
-      PreKeyPublicKey: attackerParticipant.Devices[0].PreKeyPublicKey,
+    const dto = { ...dtoFor(body, alice.id, convId, bob.id), ConversationId: conversationId() };
+    const result = await decryptMessage(dto, { privateKey: bob.privateKey, senderPublicKey: alice.publicKey });
+    expect(result).toEqual({ status: "error" });
+  });
+
+  it("rejects tampered ciphertext", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: "hi" },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const blob = fromBase64(body.EncryptedPayload);
+    blob[blob.length - 1] ^= 0xff; // flip a byte inside the GCM tag/ciphertext
+    const dto = { ...dtoFor(body, alice.id, convId, bob.id), EncryptedPayload: toBase64(blob) };
+    const result = await decryptMessage(dto, { privateKey: bob.privateKey, senderPublicKey: alice.publicKey });
+    expect(result).toEqual({ status: "error" });
+  });
+
+  it("rejects a wrapped key swapped from another message (different HKDF salt)", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const args = {
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
     };
-    // Or claims a fingerprint that doesn't match the key
-    const wrongFingerprint = { ...participant.Devices[0], DeviceId: crypto.randomUUID(), IdentityFingerprint: "00" };
+    const first = await encryptMessage({ ...args, payload: { type: "text", text: "first" } });
+    const second = await encryptMessage({ ...args, payload: { type: "text", text: "second" } });
 
-    const devices = await verifiedDevices([
-      { UserId: BOB, Devices: [participant.Devices[0], forged, wrongFingerprint] },
-    ]);
+    // Attach the second message's wrapped key (wrong salt) to the first message's envelope
+    const dto = dtoFor(first, alice.id, convId, bob.id);
+    dto.WrappedMessageKey = second.Keys.find((k) => k.RecipientUserId === bob.id).WrappedMessageKey;
 
-    expect(devices.map((d) => d.deviceId)).toEqual([bob.record.deviceId]);
+    const result = await decryptMessage(dto, { privateKey: bob.privateKey, senderPublicKey: alice.publicKey });
+    expect(result).toEqual({ status: "error" });
+  });
+
+  it("rejects a payload that doesn't match the expected text-message shape", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const body = await encryptMessage({
+      payload: { type: "text", text: 12345 }, // wrong type for `text`
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, bob.id), {
+      privateKey: bob.privateKey,
+      senderPublicKey: alice.publicKey,
+    });
+    expect(result).toEqual({ status: "error" });
+  });
+
+  it("returns no-key for a falsy message without throwing", async () => {
+    await expect(decryptMessage(null, {})).resolves.toEqual({ status: "no-key" });
+  });
+
+  it("round-trips a long message with unicode content", async () => {
+    const [alice, bob] = await Promise.all([makeUser("alice"), makeUser("bob")]);
+    const convId = conversationId();
+    const text = `${"a".repeat(3000)} — こんにちは 🎉`;
+    const body = await encryptMessage({
+      payload: { type: "text", text },
+      conversationId: convId,
+      senderUserId: alice.id,
+      senderPrivateKey: alice.privateKey,
+      recipients: asRecipients([alice, bob]),
+    });
+
+    const result = await decryptMessage(dtoFor(body, alice.id, convId, bob.id), {
+      privateKey: bob.privateKey,
+      senderPublicKey: alice.publicKey,
+    });
+    expect(result.body.text).toBe(text);
   });
 });

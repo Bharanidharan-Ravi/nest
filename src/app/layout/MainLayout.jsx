@@ -3,6 +3,7 @@ import { Sidebar } from "./Sidebar";
 import Footer from "../shared/Footer/Footer";
 import Header from "../shared/Header/Header";
 import { useState } from "react";
+import MessageDock from "../../features/messenger/components/MessageDock";
 
 export default function MainLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
@@ -33,6 +34,9 @@ export default function MainLayout() {
       <div className="flex-none">
         <Footer />
       </div>
+
+      {/* Message bar docked at the bottom of every screen */}
+      <MessageDock />
     </div>
   );
 }

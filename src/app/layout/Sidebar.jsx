@@ -6,6 +6,8 @@ import { PERMISSIONS } from "../../core/auth/permissions";
 
 import { useState, useMemo } from "react";
 import { useMasterData } from "../../core/master/masterCall/useMasterData";
+import { ROUTE_KEYS } from "../../core/routing/paths";
+import MessengerNavBadge from "../../features/messenger/components/MessengerNavBadge";
 
 export const Sidebar = ({ isOpen, onClose }) => {
   const { data } = useMasterData();
@@ -93,6 +95,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
             }
           >
             {route.title}
+            {route.key === ROUTE_KEYS.MESSENGER && <MessengerNavBadge />}
           </NavLink>
         ))}
 

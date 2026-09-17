@@ -218,9 +218,17 @@ describe("createUserKeyBundle", () => {
     const { registration, recoveryCode, privateKey, publicKey } = await createUserKeyBundle("Password1!");
 
     expect(Object.keys(registration).sort()).toEqual(
-      ["PasswordSalt", "PublicKey", "RecoverySalt", "WrappedByPassword", "WrappedByRecovery"].sort(),
+      [
+        "PasswordSalt",
+        "PublicKey",
+        "RecoveryCode",
+        "RecoverySalt",
+        "WrappedByPassword",
+        "WrappedByRecovery",
+      ].sort(),
     );
     expect(registration.PublicKey).toBe(publicKey);
+    expect(registration.RecoveryCode).toBe(recoveryCode);
     expect(privateKey.extractable).toBe(false);
 
     // sizes the server accepts: PublicKey <= 256 b64 chars, salts 16-64 bytes decoded,

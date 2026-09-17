@@ -9,7 +9,7 @@ export const chatKeysApi = {
   getMine: () =>
     executeApi({ url: "/ChatKeys/me", method: "GET", config: background }),
 
-  /** First-time registration. Body: { PublicKey, WrappedByPassword, PasswordSalt, WrappedByRecovery, RecoverySalt } */
+  /** First-time registration. Body: { PublicKey, WrappedByPassword, PasswordSalt, WrappedByRecovery, RecoverySalt, RecoveryCode } */
   register: (registration) =>
     executeApi({ url: "/ChatKeys/me", method: "POST", payload: registration, config: background }),
 

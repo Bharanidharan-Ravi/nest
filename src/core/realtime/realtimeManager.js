@@ -1,7 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 import { useAppStore } from "../state/useAppStore";
 import { APP_VERSION } from "../../app/shared/Version";
-import { emitChatMessage } from "./chatChannel";
+import { emitChatMention, emitChatMessage, emitChatReaction, emitChatRead } from "./chatChannel";
 
 let connection = null;
 let isConnecting = false;
@@ -58,6 +58,9 @@ export const connectSignalR = async (
   });
 
   newConnection.on("ChatMessage", emitChatMessage);
+  newConnection.on("ChatRead", emitChatRead);
+  newConnection.on("MessageReactionChanged", emitChatReaction);
+  newConnection.on("ChatMention", emitChatMention);
 
   newConnection.on("VersionUpdated", (latestVersion) => {
     if (latestVersion.Version !== APP_VERSION) {

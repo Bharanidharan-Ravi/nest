@@ -195,12 +195,15 @@ export class WrongSecretError extends Error {
  *
  * @param {string} password  the login password (kept in memory only)
  * @returns {Promise<{
- *   registration: { PublicKey, WrappedByPassword, PasswordSalt, WrappedByRecovery, RecoverySalt },
- *   recoveryCode: string,   // formatted — show once to the user, never store
+ *   registration: { PublicKey, WrappedByPassword, PasswordSalt, WrappedByRecovery, RecoverySalt, RecoveryCode },
+ *   recoveryCode: string,   // formatted — shown once to the user; also escrowed server-side (see registration.RecoveryCode)
  *   privateKey: CryptoKey,  // non-extractable, ready for keyStore
  *   publicKey: string,      // base64 SPKI
  * }>}
- * `registration` is the POST /api/ChatKeys/me body, with base64 fields.
+ * `registration` is the POST /api/ChatKeys/me body, with base64 fields. RecoveryCode
+ * travels in plaintext over TLS and is stored server-side encrypted with an admin-only
+ * key, so support can re-issue it — the server never sees WrappedByPassword/WrappedByRecovery
+ * unwrapped, so it still can't read message content from this alone.
  */
 export async function createUserKeyBundle(password) {
   const keyPair = await generateUserKeyPair();
@@ -224,6 +227,7 @@ export async function createUserKeyBundle(password) {
         PasswordSalt: toBase64(passwordSalt),
         WrappedByRecovery: toBase64(wrappedByRecovery),
         RecoverySalt: toBase64(recoverySalt),
+        RecoveryCode: recoveryCode,
       },
       recoveryCode,
       privateKey,
