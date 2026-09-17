@@ -71,6 +71,7 @@ export const ROUTE_ROLES = {
   MEETING_CREATE_WITH_TICKET: ADMIN_MANAGER,
 
   NOTIFICATIONS: ADMIN_MANAGER,
+  MESSENGER: ADMIN_MANAGER,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────

@@ -13,12 +13,14 @@ import useHeartbeat from "../core/auth/hooks/useHeartbeat";
 import { useRealtimeSync } from "../core/realtime/useRealtimeSync";
 import { useAppStore } from "../core/state/useAppStore";
 import VersionUpdateDialog from "./shared/GlobalUI/VersionUpdateDialog";
+import useChatKeyRotation from "../features/messenger/e2ee/useChatKeyRotation";
 
 function App() {
   useHeartbeat();
   const token = useAppStore((s) => s.token);
 
   useRealtimeSync(token);
+  useChatKeyRotation(token);
 
   const isTestEnv = window.location.pathname.startsWith("/test");
   return (

@@ -1,6 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 import { useAppStore } from "../state/useAppStore";
 import { APP_VERSION } from "../../app/shared/Version";
+import { emitChatMessage } from "./chatChannel";
 
 let connection = null;
 let isConnecting = false;
@@ -55,6 +56,8 @@ export const connectSignalR = async (
     console.log("[SignalR RAW EVENT]:", message);
     onMessage?.(message);
   });
+
+  newConnection.on("ChatMessage", emitChatMessage);
 
   newConnection.on("VersionUpdated", (latestVersion) => {
     if (latestVersion.Version !== APP_VERSION) {

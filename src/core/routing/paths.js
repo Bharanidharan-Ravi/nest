@@ -18,6 +18,7 @@ export const ROUTE_KEYS = {
   // ── App shell ─────────────────────────────────────────────
   DASHBOARD:         "app.dashboard",
   NOTIFICATIONS:     "app.notifications",
+  MESSENGER:         "app.messenger",
 
   // ── Repository ────────────────────────────────────────────
   REPO_LIST:         "repository.list",
@@ -77,6 +78,7 @@ export const PATHS = {
   // ── App shell ─────────────────────────────────────────────
   DASHBOARD:         "/dashboard",
   NOTIFICATIONS:     "/notifications",
+  MESSENGER:         "/messages",
 
   // ── Repository ────────────────────────────────────────────
   REPO_LIST:         "/repository",
