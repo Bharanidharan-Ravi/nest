@@ -1,8 +1,15 @@
 import ChatAvatar from "./ChatAvatar";
-import { conversationAvatarSeed, conversationTitle, isGroupConversation, messagePreview, sameId } from "../hooks/useChat";
+import {
+  conversationAvatarPhoto,
+  conversationAvatarSeed,
+  conversationTitle,
+  isGroupConversation,
+  messagePreview,
+  sameId,
+} from "../hooks/useChat";
 import { formatListTime } from "../utils/chatTime";
 
-export default function ConversationList({ conversations, isLoading, isError, selectedId, onSelect, userId, nameOf }) {
+export default function ConversationList({ conversations, isLoading, isError, selectedId, onSelect, userId, nameOf, photoOf = () => null }) {
   if (isLoading) return <p className="p-4 text-sm text-gray-400">Loading…</p>;
   if (isError) return <p className="p-4 text-sm text-red-600">Couldn't load conversations.</p>;
   if (!conversations?.length) {
@@ -31,7 +38,7 @@ export default function ConversationList({ conversations, isLoading, isError, se
                 sameId(c.ConversationId, selectedId) ? "bg-brand-yellow/30" : "",
               ].join(" ")}
             >
-              <ChatAvatar name={title} seed={conversationAvatarSeed(c, userId)} />
+              <ChatAvatar name={title} seed={conversationAvatarSeed(c, userId)} photoUrl={conversationAvatarPhoto(c, userId, photoOf)} />
               <span className="flex-1 min-w-0">
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`truncate text-sm ${unread ? "font-bold text-gray-900" : "font-medium text-gray-800"}`}>

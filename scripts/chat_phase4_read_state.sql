@@ -7,7 +7,7 @@
 
    Does not touch any data; safe to re-run.
    ============================================================================= */
-USE [WGNEST]
+USE [WG_APP]
 GO
 
 IF COL_LENGTH(N'dbo.ChatConversationMembers', N'LastReadAt') IS NULL

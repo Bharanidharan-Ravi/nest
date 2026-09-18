@@ -38,10 +38,11 @@ export function useChatPeople() {
   return useMemo(() => {
     const all = master?.EmployeeList ?? [];
     const nameOf = (id) => all.find((e) => sameId(e.UserID, id))?.UserName ?? "Unknown user";
+    const photoOf = (id) => all.find((e) => sameId(e.UserID, id))?.PreviewUrl || null;
     const people = all
       .filter((e) => e.Status === "Active" && !sameId(e.UserID, userId))
       .sort((a, b) => a.UserName.localeCompare(b.UserName));
-    return { people, nameOf };
+    return { people, nameOf, photoOf };
   }, [master, userId]);
 }
 
@@ -57,9 +58,21 @@ export const otherMemberId = (conversation, userId) =>
 
 export const isGroupConversation = (conversation) => conversation?.Type === 2;
 
+/** True if `userId` has the Admin role in this group (MemberRoles is empty/absent for Direct chats). */
+export function isGroupAdmin(conversation, userId) {
+  if (!isGroupConversation(conversation)) return false;
+  const roles = conversation?.MemberRoles ?? {};
+  const key = Object.keys(roles).find((id) => sameId(id, userId));
+  return key ? roles[key] === "Admin" : false;
+}
+
 /** Stable avatar seed: the other member for a direct chat, the conversation itself for a group. */
 export const conversationAvatarSeed = (conversation, userId) =>
   isGroupConversation(conversation) ? conversation?.ConversationId : otherMemberId(conversation, userId);
+
+/** Photo to show: the group's own icon, or the other member's employee photo for a direct chat. */
+export const conversationAvatarPhoto = (conversation, userId, photoOf) =>
+  isGroupConversation(conversation) ? conversation?.GroupIconUrl ?? null : photoOf(otherMemberId(conversation, userId));
 
 /** Groups a message's raw {UserId, Emoji} reactions into chips: [{ emoji, count, mine }]. */
 export function groupReactions(message, userId) {
@@ -210,6 +223,17 @@ export function useUpdateGroupMembers(conversationId) {
   return useMutation({
     mutationFn: ({ addUserIds, removeUserIds }) =>
       chatApi.updateGroupMembers(conversationId, { addUserIds, removeUserIds }),
+    onSuccess: (conversation) => {
+      const exists = updateConversation(queryClient, conversation.ConversationId, (c) => ({ ...c, ...conversation }));
+      if (!exists) queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations });
+    },
+  });
+}
+
+export function useUpdateGroupIcon(conversationId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (file) => chatApi.uploadGroupIcon(conversationId, file),
     onSuccess: (conversation) => {
       const exists = updateConversation(queryClient, conversation.ConversationId, (c) => ({ ...c, ...conversation }));
       if (!exists) queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations });

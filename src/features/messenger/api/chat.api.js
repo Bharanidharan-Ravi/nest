@@ -31,6 +31,18 @@ export const chatApi = {
       config: background,
     }),
 
+  /** Admin only. Uploads a new group photo; returns the conversation with its updated GroupIconUrl. */
+  uploadGroupIcon: (conversationId, file) => {
+    const form = new FormData();
+    form.append("Icon", file, file.name || "icon.jpg");
+    return executeApi({
+      url: `/Chats/${conversationId}/icon`,
+      method: "POST",
+      payload: form,
+      config: { ...background, headers: { "Content-Type": "multipart/form-data" } },
+    });
+  },
+
   /** Oldest-first page of messages created before `before` (a CreatedAt from the server). */
   getMessages: (conversationId, { before, take }) =>
     executeApi({

@@ -50,7 +50,7 @@ export default function NewGroupPicker({ onCreate, disabled = false, error, onCa
               key={p.UserID}
               className="flex items-center gap-1 pl-1 pr-1.5 py-0.5 rounded-full bg-gray-100 text-xs text-gray-700"
             >
-              <ChatAvatar name={p.UserName} seed={p.UserID} size="sm" />
+              <ChatAvatar name={p.UserName} seed={p.UserID} photoUrl={p.PreviewUrl} size="sm" />
               <span className="truncate max-w-[8rem]">{p.UserName}</span>
               <button onClick={() => remove(p.UserID)} className="text-gray-400 hover:text-gray-700" aria-label={`Remove ${p.UserName}`}>
                 <X size={11} />
@@ -82,7 +82,7 @@ export default function NewGroupPicker({ onCreate, disabled = false, error, onCa
         </div>
 
         {open && !disabled && (
-          <ul className="absolute z-20 left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+          <ul className="absolute z-20 left-0 right-0 mt-1 max-h-64 overflow-y-auto wg-scrollbar bg-white border border-gray-200 rounded-md shadow-lg">
             {matches.length === 0 ? (
               <li className="px-3 py-2 text-sm text-gray-400">No one found.</li>
             ) : (
@@ -94,7 +94,7 @@ export default function NewGroupPicker({ onCreate, disabled = false, error, onCa
                     onClick={() => add(person)}
                     className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
                   >
-                    <ChatAvatar name={person.UserName} seed={person.UserID} size="sm" />
+                    <ChatAvatar name={person.UserName} seed={person.UserID} photoUrl={person.PreviewUrl} size="sm" />
                     <span className="truncate text-gray-800">{person.UserName}</span>
                   </button>
                 </li>

@@ -44,6 +44,13 @@ import { detectTrigger } from "../utils/tagTrigger";
 
 const NEAR_BOTTOM_PX = 120;
 
+const EMOJI_PICKER_SET = [
+  "😀", "😂", "😍", "😊", "😉", "😘",
+  "😢", "😮", "😡", "😴", "🤔", "🙄",
+  "👍", "👎", "👏", "🙏", "💪", "🤝",
+  "❤️", "🔥", "🎉", "✅", "❌", "⭐",
+];
+
 function sendErrorText(error, nameOf) {
   if (error instanceof RecipientNotReadyError) {
     const names = error.userIds.map(nameOf).join(", ");
@@ -98,6 +105,7 @@ function Timeline({ conversation, nameOf, compact }) {
   const toggleReaction = useToggleReaction(conversationId);
 
   const scrollRef = useRef(null);
+  const scrollRevealTimeout = useRef(null);
   const nearBottom = useRef(true);
   const restoreFrom = useRef(null); // scrollHeight before older messages were prepended
 
@@ -126,16 +134,19 @@ function Timeline({ conversation, nameOf, compact }) {
     const el = scrollRef.current;
     nearBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < NEAR_BOTTOM_PX;
     if (el.scrollTop < 40 && hasNextPage && !isFetchingNextPage) loadOlder();
+    el.classList.add("wg-scrollbar--scrolling");
+    clearTimeout(scrollRevealTimeout.current);
+    scrollRevealTimeout.current = setTimeout(() => el.classList.remove("wg-scrollbar--scrolling"), 800);
   };
 
-  const bubbleWidth = compact ? "max-w-[85%]" : "max-w-[75%]";
+  const bubbleWidth = compact ? "max-w-[75%]" : "max-w-[60%]";
 
   return (
     <>
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className={`flex-1 overflow-y-auto ${compact ? "px-2" : "px-4"} py-3 bg-gray-50 flex flex-col gap-1.5`}
+        className={`flex-1 overflow-y-auto wg-scrollbar ${compact ? "px-2" : "px-4"} py-3 bg-gray-50 flex flex-col gap-1.5`}
       >
         {hasNextPage && (
           <button
@@ -243,7 +254,7 @@ function TaggedText({ text, tags, mine }) {
             onClick={path ? () => navigate(path) : undefined}
             className={[
               "font-semibold rounded px-0.5",
-              mine ? "bg-black/10" : "bg-brand-yellow/30",
+              mine ? "bg-white/20" : "bg-brand-yellow/30",
               path ? "cursor-pointer hover:underline" : "",
             ].join(" ")}
           >
@@ -313,12 +324,12 @@ function MediaAttachmentContent({ message, mine }) {
         ) : (
           <button
             onClick={load}
-            className="flex items-center justify-center h-32 w-full rounded-lg bg-black/5 text-xs text-gray-500"
+            className={`flex items-center justify-center h-32 w-full rounded-lg text-xs ${mine ? "bg-white/10 text-white/80" : "bg-black/5 text-gray-500"}`}
           >
             {state === "loading" ? "Decrypting…" : state === "error" ? "Couldn't load image" : "Tap to view"}
           </button>
         )}
-        <p className="text-[11px] mt-1 truncate">{fileName}</p>
+        <p className="text-[11px] mt-0.5 truncate">{fileName}</p>
       </div>
     );
   }
@@ -327,19 +338,24 @@ function MediaAttachmentContent({ message, mine }) {
     <div className="flex items-center gap-2 min-w-[180px] max-w-[240px]">
       <button
         onClick={load}
-        className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${mine ? "bg-black/10" : "bg-gray-100"}`}
+        className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${mine ? "bg-white/20" : "bg-gray-100"}`}
         aria-label="Download attachment"
       >
         <FileIcon size={15} />
       </button>
       <span className="min-w-0 flex-1">
         <span className="block text-sm truncate">{fileName}</span>
-        <span className="block text-[11px] text-gray-500">
+        <span className={`block text-[11px] ${mine ? "text-white/70" : "text-gray-500"}`}>
           {state === "loading" ? "Decrypting…" : state === "error" ? "Couldn't load" : formatFileSize(size)}
         </span>
       </span>
       {url && (
-        <a href={url} download={fileName} className="shrink-0 p-1 text-gray-500 hover:text-gray-800" aria-label="Save file">
+        <a
+          href={url}
+          download={fileName}
+          className={`shrink-0 p-1 ${mine ? "text-white/80 hover:text-white" : "text-gray-500 hover:text-gray-800"}`}
+          aria-label="Save file"
+        >
           <Download size={15} />
         </a>
       )}
@@ -389,12 +405,12 @@ function VoiceMessagePlayer({ message, mine }) {
       <button
         onClick={toggle}
         disabled={state === "loading"}
-        className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${mine ? "bg-black/10" : "bg-gray-100"}`}
+        className={`shrink-0 h-8 w-8 rounded-full flex items-center justify-center ${mine ? "bg-white/20" : "bg-gray-100"}`}
         aria-label={playing ? "Pause voice message" : "Play voice message"}
       >
         {playing ? <Pause size={14} /> : <Play size={14} />}
       </button>
-      <span className="text-xs text-gray-500">
+      <span className={`text-xs ${mine ? "text-white/70" : "text-gray-500"}`}>
         {state === "loading" ? "Decrypting…" : state === "error" ? "Couldn't load" : formatDuration(durationMs) || "Voice message"}
       </span>
       {url && (
@@ -427,6 +443,9 @@ function MessageBubble({
   const result = message.decrypted;
   const [pickerOpen, setPickerOpen] = useState(false);
 
+  const isImageAttachment =
+    result?.status === "ok" && result.body.type === "media" && (result.body.mimeType ?? "").startsWith("image/");
+
   let content;
   if (result?.status === "ok" && result.body.type === "voice") {
     content = <VoiceMessagePlayer message={message} mine={mine} />;
@@ -434,7 +453,7 @@ function MessageBubble({
     content = <MediaAttachmentContent message={message} mine={mine} />;
   } else if (result?.status === "ok") {
     content = (
-      <p className="text-sm whitespace-pre-wrap break-words">
+      <p className="text-sm whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
         <TaggedText text={result.body.text} tags={message.Tags} mine={mine} />
       </p>
     );
@@ -455,11 +474,11 @@ function MessageBubble({
   return (
     <div
       data-message-id={message.MessageId}
-      className={`group/bubble ${widthClass} ${mine ? "self-end items-end" : "self-start items-start"} flex flex-col ${grouped ? "" : "mt-1.5"} transition-shadow rounded-2xl`}
+      className={`group/bubble ${widthClass} min-w-0 ${mine ? "self-end items-end" : "self-start items-start"} flex flex-col ${grouped ? "" : "mt-1.5"} transition-shadow rounded-2xl`}
     >
       {senderName && !grouped && <span className="text-[11px] text-gray-500 ml-2.5 mb-0.5">{senderName}</span>}
-      <div className="relative flex items-end gap-1">
-        {!mine && (
+      <div className="relative flex items-center gap-1 min-w-0">
+        {mine && (
           <BubbleActions
             onReply={onReply}
             pickerOpen={pickerOpen}
@@ -468,11 +487,12 @@ function MessageBubble({
             align="left"
           />
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 max-w-full">
           <div
             className={[
-              "rounded-2xl px-3 py-1.5 shadow-sm",
-              mine ? "bg-brand-yellow text-black rounded-br-md" : "bg-white text-gray-800 rounded-bl-md",
+              "rounded-2xl shadow-sm",
+              isImageAttachment ? "p-1" : "px-3 py-1.5",
+              mine ? "bg-slate-600 text-white rounded-br-md" : "bg-white text-gray-800 rounded-bl-md",
               message.pending ? "opacity-70" : "",
               message.failed ? "ring-1 ring-red-400" : "",
             ].join(" ")}
@@ -482,7 +502,7 @@ function MessageBubble({
                 onClick={onJumpToReply}
                 className={[
                   "block w-full text-left mb-1 px-2 py-1 rounded-lg border-l-2 text-[11px] truncate",
-                  mine ? "bg-black/10 border-black/30 text-black/70" : "bg-gray-100 border-gray-300 text-gray-500",
+                  mine ? "bg-white/15 border-white/40 text-white/80" : "bg-gray-100 border-gray-300 text-gray-500",
                 ].join(" ")}
               >
                 <span className="font-semibold">{replySource.message ? replySource.senderName : "Original message"}</span>
@@ -491,24 +511,21 @@ function MessageBubble({
               </button>
             )}
             {content}
-            <p className="text-[10px] text-gray-500 text-right mt-0.5">
+            <p className={`text-[9px] text-right mt-0.5 ${mine ? "text-white/70" : "text-gray-500"}`}>
               {message.pending ? "Sending…" : formatMessageTime(message.CreatedAt)}
             </p>
           </div>
           {reactions.length > 0 && (
-            <div className={`flex flex-wrap gap-1 mt-1 ${mine ? "justify-end" : "justify-start"}`}>
+            <div className={`flex flex-wrap gap-2 mt-0.5 px-1 ${mine ? "justify-end" : "justify-start"}`}>
               {reactions.map((chip) => (
                 <button
                   key={chip.emoji}
                   onClick={() => onToggleReaction(chip.emoji)}
-                  className={[
-                    "flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] border",
-                    chip.mine ? "bg-brand-yellow/20 border-brand-yellow text-gray-800" : "bg-white border-gray-200 text-gray-600 hover:border-gray-300",
-                  ].join(" ")}
+                  className={`flex items-center gap-0.5 text-[12px] leading-none ${chip.mine ? "text-amber-700" : "text-gray-600"}`}
                   title={chip.mine ? "Remove your reaction" : "React"}
                 >
                   <span>{chip.emoji}</span>
-                  <span>{chip.count}</span>
+                  <span className="text-[10px]">{chip.count}</span>
                 </button>
               ))}
             </div>
@@ -527,7 +544,7 @@ function MessageBubble({
             )
           )}
         </div>
-        {mine && (
+        {!mine && (
           <BubbleActions
             onReply={onReply}
             pickerOpen={pickerOpen}
@@ -674,6 +691,7 @@ function Composer({
   const [tagsByToken, setTagsByToken] = useState(new Map());
   const [trigger, setTrigger] = useState(null); // { type: "@"|"#", query, start }
   const [entitySourcesEnabled, setEntitySourcesEnabled] = useState(false);
+  const [emojiOpen, setEmojiOpen] = useState(false);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
   const recorder = useVoiceRecorder(onSendVoice);
@@ -725,6 +743,19 @@ function Composer({
     });
   };
 
+  const insertEmoji = (emoji) => {
+    const el = inputRef.current;
+    const cursor = el?.selectionStart ?? text.length;
+    const nextText = `${text.slice(0, cursor)}${emoji}${text.slice(cursor)}`;
+    setText(nextText);
+    setEmojiOpen(false);
+    requestAnimationFrame(() => {
+      const pos = cursor + emoji.length;
+      el?.focus();
+      el?.setSelectionRange(pos, pos);
+    });
+  };
+
   const submit = () => {
     const value = text.trim();
     if (!value || disabled) return;
@@ -740,7 +771,7 @@ function Composer({
   const remaining = MAX_MESSAGE_LENGTH - text.length;
 
   return (
-    <div className={`border-t border-gray-200 bg-white relative ${compact ? "p-2" : "p-3"}`}>
+    <div className={`bg-gray-50 relative pt-0 ${compact ? "px-2 pb-2" : "px-3 pb-3"}`}>
       {replyTo && (
         <div className="flex items-center gap-2 mb-1.5 px-2 py-1 bg-gray-100 rounded-lg border-l-2 border-gray-300">
           <CornerUpLeft size={12} className="text-gray-400 shrink-0" />
@@ -758,7 +789,7 @@ function Composer({
       {mediaError && <p className="text-xs text-red-600 mb-1.5">{mediaError}</p>}
 
       {trigger && matches.length > 0 && (
-        <ul className="absolute z-20 left-2 right-2 bottom-full mb-1 max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+        <ul className="absolute z-20 left-2 right-2 bottom-full mb-1 max-h-56 overflow-y-auto wg-scrollbar bg-white border border-gray-200 rounded-lg shadow-lg">
           {matches.map((item) => (
             <li key={`${item.entityType}:${item.entityId}`}>
               <button
@@ -792,7 +823,7 @@ function Composer({
         </div>
       )}
 
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-1 items-center rounded-3xl border border-gray-200 bg-white px-1 py-0.5 shadow-sm transition-all duration-200 focus-within:border-brand-yellow/60 focus-within:shadow-md">
         <input
           ref={fileInputRef}
           type="file"
@@ -808,7 +839,7 @@ function Composer({
         <button
           onClick={() => fileInputRef.current?.click()}
           disabled={mediaSending || recorder.recording}
-          className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full text-gray-500 hover:bg-gray-100 disabled:opacity-40"
+          className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-white hover:shadow-sm transition-all disabled:opacity-40"
           aria-label="Attach a file"
           title="Attach a file"
         >
@@ -847,30 +878,61 @@ function Composer({
           }}
           maxLength={MAX_MESSAGE_LENGTH}
           rows={1}
-          placeholder="Write a message… (@ to mention, # to tag)"
-          className="flex-1 resize-none text-sm px-3 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:border-gray-500"
+          placeholder="Message"
+          className="flex-1 resize-none text-sm leading-6 bg-transparent px-2 py-1.5 focus:outline-none placeholder:text-gray-400"
         />
+        <div className="relative shrink-0">
+          <button
+            onClick={() => setEmojiOpen((open) => !open)}
+            disabled={disabled}
+            className="h-9 w-9 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-white hover:shadow-sm transition-all disabled:opacity-40"
+            aria-label="Insert emoji"
+            title="Insert emoji"
+          >
+            <Smile size={16} />
+          </button>
+          {emojiOpen && (
+            <>
+              <div className="fixed inset-0 z-10" onClick={() => setEmojiOpen(false)} />
+              <div className="absolute bottom-full right-0 mb-1 z-20 grid grid-cols-6 gap-0.5 max-w-[220px] bg-white border border-gray-200 rounded-xl shadow-lg p-1.5 wg-scrollbar">
+                {EMOJI_PICKER_SET.map((emoji) => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => insertEmoji(emoji)}
+                    className="text-lg leading-none p-1 rounded-lg hover:bg-gray-100"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
         {text.trim() ? (
           <button
             onClick={submit}
             disabled={!text.trim() || disabled}
-            className="h-9 w-9 shrink-0 flex items-center justify-center rounded-full bg-brand-yellow text-black disabled:opacity-40"
+            className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-gradient-to-br from-brand-yellow to-amber-400 text-black shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:hover:scale-100 disabled:shadow-none"
             aria-label="Send"
           >
-            <Send size={16} />
+            <Send size={15} />
           </button>
         ) : (
           <button
             onClick={recorder.recording ? recorder.stop : recorder.start}
             disabled={mediaSending || !recorder.supported}
             className={[
-              "h-9 w-9 shrink-0 flex items-center justify-center rounded-full disabled:opacity-40",
-              recorder.recording ? "bg-red-500 text-white" : "bg-brand-yellow text-black",
+              "h-8 w-8 shrink-0 flex items-center justify-center rounded-full disabled:opacity-40 transition-all hover:shadow-md active:scale-95",
+              recorder.recording
+                ? "bg-red-500 text-white shadow-sm animate-pulse"
+                : "bg-gradient-to-br from-brand-yellow to-amber-400 text-black shadow-sm hover:scale-105",
             ].join(" ")}
             aria-label={recorder.recording ? "Stop and send voice message" : "Record a voice message"}
             title={recorder.supported ? "Record a voice message" : "Voice recording isn't supported in this browser"}
           >
-            {recorder.recording ? <Square size={14} /> : <Mic size={16} />}
+            {recorder.recording ? <Square size={13} /> : <Mic size={15} />}
           </button>
         )}
       </div>

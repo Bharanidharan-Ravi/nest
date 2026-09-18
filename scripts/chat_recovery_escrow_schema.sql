@@ -13,7 +13,7 @@
 
    Does not touch ChatUserKeys or any other existing table.
    ============================================================================= */
-USE [WGNEST]
+USE [WG_APP]
 GO
 SET ANSI_NULLS ON
 GO

@@ -8,7 +8,7 @@
 
    Does not touch any data; safe to re-run.
    ============================================================================= */
-USE [WGNEST]
+USE [WG_APP]
 GO
 
 SET QUOTED_IDENTIFIER ON

@@ -655,6 +655,58 @@ media id needs to travel inside the encrypted envelope for the recipient to know
   non-unique index) — the *code* never creates more than one per message, but nothing at the DB level
   prevents it if some future change did.
 
+### Group info panel + group icon — ✅ CODE DONE (needs the SQL script run + a real API build/test)
+
+**⚠️ Run first:** `scripts/chat_group_icon_schema.sql` on `WGNEST` — adds nullable
+`ChatConversations.GroupIconUrl`.
+
+**Backend** (`ChatConversation.cs`, `ChatMessageDtos.cs`, `IChatRepo`/`ChatRepo.cs`, `ChatsController.cs`):
+- `ChatConversation.GroupIconUrl` (nullable, group-only, mirrors `Title`'s "null for Direct" convention).
+- `ConversationDto` gained `GroupIconUrl` and `MemberRoles: Dictionary<Guid,string>` (Admin/Member per
+  member; empty for Direct) — the frontend had no way to tell who's a group admin before this, only the
+  flat `MemberUserIds` list, so this was added alongside the icon work. Populated in
+  `GetMyConversationsAsync`, `OpenGroupConversationAsync`, `UpdateGroupMembersAsync`, `FindDirectAsync`.
+- New `POST /api/Chats/{conversationId}/icon` (multipart/form-data, `Icon` file field) — Admin-only (same
+  `ChatConversationMember.Role == Admin` check as `UpdateGroupMembersAsync`), Group-only, ≤ 5 MB,
+  JPEG/PNG/GIF/WEBP only (content-type allow-list). Saves to
+  `FileSettings:OriginalFolder/ChatGroupIcons/{conversationId}_{timestamp}{ext}` and builds the public URL
+  the same way `GenerateHelper.GeneratePreviewUrl`/`AttachmentService` already do elsewhere in this codebase
+  (`{request.Scheme}://{request.Host}/Uploads/...`, matching the existing `StaticFolders` → `/Uploads`
+  mapping) — reused that exact convention rather than inventing a new one. **Not end-to-end encrypted** —
+  group icons are a plain static file, same trust level as an employee profile photo; explicitly out of
+  scope for the E2EE pipeline the rest of chat uses.
+- **Not yet verified**: could not run `dotnet build` in this session (see Conventions — needs Visual Studio
+  closed or a temp `-p:OutDir`); review the new code path carefully on the next real build/test pass.
+
+**Frontend** (`src/features/messenger/`):
+- `hooks/useChat.js` — `conversationAvatarPhoto`/`conversationAvatarSeed` (already existed) now actually
+  resolve `GroupIconUrl` since the backend returns it; new `isGroupAdmin(conversation, userId)` reads
+  `MemberRoles`; new `useUpdateGroupIcon(conversationId)` mutation (same cache-patch-on-success pattern as
+  `useUpdateGroupMembers`).
+- `api/chat.api.js` — `uploadGroupIcon(conversationId, file)`, same multipart pattern as `sendMedia`.
+- `components/ChatAvatar.jsx` — new `xl` size (`h-20 w-20 text-xl`) for the panel's large avatar.
+- **New `components/ConversationInfoPanel.jsx`** — slide-over panel (`absolute inset-y-0 right-0`, since
+  it's rendered inside a `relative` section in `MessengerPage.jsx`/`MessageDock.jsx`'s `ChatWindow`, both of
+  which already had `infoOpen` state and the render call wired up from Phase 5's "known gaps" note above).
+  Large avatar (camera-icon overlay to change it, admins of a group only) → title → for groups: member list
+  (avatar, name, "Admin" badge, remove button for admins, "Add members" search box for admins) → a media
+  grid. **Media grid only shows attachments from messages already loaded into the client's React Query
+  cache** (`chatQueryKeys.messages(conversationId)`, flattened pages, filtered to
+  `decrypted.body.type === "media"`) — there's no "list all media in this conversation" backend endpoint,
+  same accepted-gap pattern as Phase 5's reply-quote lookup. Thumbnails decrypt on demand via the existing
+  `decryptMediaAttachment` (same object-URL-with-cleanup pattern as `ConversationView.jsx`'s
+  `MediaAttachmentContent`).
+- Checks: `npm run build` — see result noted where this section was added.
+
+**Known gaps / decisions:**
+- No group title/rename UI in the panel yet (title is shown read-only) — only the icon and membership are
+  editable from this panel; add a rename control later if wanted.
+- No "leave group" self-removal action (same pre-existing gap noted in Phase 5).
+- Direct/contact-info view is intentionally minimal (photo + name only, no member management) per the
+  WhatsApp-style spec — nothing else to show for a 1:1 chat today (no shared-media-only view, no block/report).
+- Group icon upload has no client-side image cropping/resizing — whatever the picked file is (up to 5 MB)
+  is uploaded as-is.
+
 ### Recovery-code escrow (admin-recoverable) — ✅ DONE (backend tests pass, needs the SQL script + a real key)
 
 By design, the recovery code was previously shown once and never sent to the

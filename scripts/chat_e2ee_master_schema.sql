@@ -20,7 +20,7 @@
    messages) is deleted — it was encrypted to per-device keys the new design
    can't use anyway.
    ============================================================================= */
-USE [WGNEST]
+USE [WG_APP]
 GO
 SET ANSI_NULLS ON
 GO

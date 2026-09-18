@@ -46,7 +46,7 @@ export default function NewChatPicker({ onPick, disabled = false, error }) {
       </div>
 
       {open && !disabled && (
-        <ul className="absolute z-20 left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white border border-gray-200 rounded-md shadow-lg">
+        <ul className="absolute z-20 left-0 right-0 mt-1 max-h-64 overflow-y-auto wg-scrollbar bg-white border border-gray-200 rounded-md shadow-lg">
           {matches.length === 0 ? (
             <li className="px-3 py-2 text-sm text-gray-400">No one found.</li>
           ) : (
@@ -58,7 +58,7 @@ export default function NewChatPicker({ onPick, disabled = false, error }) {
                   onClick={() => pick(person)}
                   className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
                 >
-                  <ChatAvatar name={person.UserName} seed={person.UserID} size="sm" />
+                  <ChatAvatar name={person.UserName} seed={person.UserID} photoUrl={person.PreviewUrl} size="sm" />
                   <span className="truncate text-gray-800">{person.UserName}</span>
                 </button>
               </li>
