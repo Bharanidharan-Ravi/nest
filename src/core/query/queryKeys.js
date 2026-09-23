@@ -90,4 +90,8 @@ export const queryKeys = {
     list: () => [...queryKeys.GetUserOnlineStatus.all, "list"],
     detail: (id) => [...queryKeys.GetUserOnlineStatus.all, "detail", id],
   },
+  leaveRequest: {
+    all: ["GetLeaveRequests"],
+    list: () => [...queryKeys.leaveRequest.all, "list"],
+  },
 };

@@ -122,4 +122,16 @@ export const MASTER_REGISTRY = {
     staleTime: Infinity,
     adapter: (raw) => ({ id: raw.DeptCode, name: raw.DeptName }),
   },
+  // Role-aware (employee sees own rows, admin sees all — resolved server-side
+  // from the JWT by /sync/v2), so it goes through "api" not the bulk preload.
+  leaveRequest: {
+    source: "api",
+    queryKey: () => queryKeys.leaveRequest.list(),
+    url: "/sync/v2",
+    method: "POST",
+    source: "GetLeaveRequests",
+    staleTime: 0,
+    payload: () => buildSyncPayload({ configKey: "GetLeaveRequests" }),
+    adapter: (raw) => raw,
+  },
 };

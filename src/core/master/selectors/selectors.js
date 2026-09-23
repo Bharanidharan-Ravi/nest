@@ -30,6 +30,7 @@ export const useTicketMaster = (Id) => {
   );
 };
 export const useTeamMaster = () => useMasterList("team");
+export const useLeaveRequestMaster = () => useMasterList("leaveRequest");
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees = () => useMasterFilter("employee", (e) => e.isActive);
 export const useProjectsByRepoId = (rid) => useMasterFilter("project", (p) => p.repoId === rid);
