@@ -31,17 +31,22 @@
 
 
 
+
 import { useState } from "react";
 import { getInitials } from "../../../app/shared/utilities/utilities";
 import { getEmployeeList } from "../../employee/hooks/useEmployeeList";
 import { Tooltip, Modal, Box, IconButton } from "@mui/material";
 import { FiX } from "react-icons/fi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { fetUserStatus } from "../../Messenger/hooks/useUserStatus";
+import { formateDateTime } from "../../../app/shared/utils/chattime";
 
 const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" }) => {
     const [open, setOpen] = useState(false);
     const { isViewer } = useCurrentUser();
     const { data: empData } = getEmployeeList(null,{enabled:!isViewer});
+    const {data:statusList=[]}=fetUserStatus()
+
     const employee = empData?.find((e) => {
         if (userId && e.UserID)
             return e.UserID.toLowerCase() === userId.toLowerCase();
@@ -51,16 +56,28 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
     });
 
     const avatarPath = employee?.PreviewUrl;
+    const displayName=name||employee?.Employeename
+    ||employee?.UserName
+    ||"Unknown"
 
+    const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
+const lookupId=userId||employee?.EmployeeID||employee?.UserID
+    const status=lookupId?statusMap[lookupId?.toLowerCase()]:null
+    const isOnline=status?.IsActive==true
+    const statusTitle=isOnline
+    ?`Online since ${formateDateTime(status?.LoginAt)}`
+    :status?.LogoutAt
+    ?`Last seen ${formateDateTime(status?.LogoutAt)}`
+    :status?.LoginAt
+    ?`Last login ${formateDateTime(status?.LoginAt)}`
+    :"Offline"
+   
     return (
         <>
             {/* Avatar with zoom + click */}
            
                 <span
-                    onClick={(e) =>{
-                        e.stopPropagation()
-                        setOpen(true)}
-                    }
+                    onClick={(e) =>{ e.stopPropagation(); setOpen(true)} }
                          
                     style={{
                         display: "inline-block",
@@ -70,6 +87,7 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.3)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                 >
+                    <div className="relative inline-block" title={[displayName,statusTitle].filter(Boolean).join("\n")}>
                     {avatarPath ? (
                         <img
                             className={`${className} rounded-full object-cover border-2 border-white shadow-xs`}
@@ -83,6 +101,15 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
                             {getInitials(name || "?")}
                         </div>
                     )}
+                    {status && (
+                        <span className={[
+                            "absolute bottom-0 right-0",
+                            "w-3 h-3 rounded-full",
+                            "border-2 border-white",
+                            isOnline?"bg-green-500":"bg-red-400"
+                        ].join(" ")}/>
+                    )}
+                    </div>
                 </span>
             {/* Profile Popup */}
             {/* Profile Popup */}
@@ -168,3 +195,25 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
 };
 
 export default SmartAvatar;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

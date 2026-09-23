@@ -26,6 +26,7 @@ export const queryKeys = {
       { EmployeeId: employeeId },
     ],
     history: (ticketId) => [...queryKeys.ticket.all, "history", ticketId],
+    feedbacks: (ticketId) => [...queryKeys.ticket.all, "feedbacks", ticketId],
   },
   project: {
     all: ["project"],
@@ -83,5 +84,10 @@ export const queryKeys = {
     all: ["GetStaleTicketsForAssignee"],
     list: () => [...queryKeys.GetStaleTicketsForAssignee.all, "list"],
     detail: (id) => [...queryKeys.GetStaleTicketsForAssignee.all, "detail", id],
+  },
+  GetUserOnlineStatus: {
+    all: ["GetUserOnlineStatus"],
+    list: () => [...queryKeys.GetUserOnlineStatus.all, "list"],
+    detail: (id) => [...queryKeys.GetUserOnlineStatus.all, "detail", id],
   },
 };

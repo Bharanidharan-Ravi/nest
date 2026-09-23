@@ -189,6 +189,7 @@ useEffect(()=>{
       </Tooltip>
     )
   }
+  // console.log("itemmmm",item);
   return (
     <>
       <Tooltip
@@ -309,10 +310,13 @@ useEffect(()=>{
                       {/* <span className="meta-divider text-gray-400">•</span> */}
 
                       <span className="text-xs text-gray-500">by</span>
-                      <Tooltip title={item.ticketCreater} arrow>
+                      <Tooltip  arrow>
                         <span>
                           <SmartAvatar
                             name={item.ticketCreater}
+                            
+                            userId={item.createdBy}
+                            
                             className="w-7 h-7 text-[10px]"
                           />
 
@@ -329,9 +333,10 @@ useEffect(()=>{
                       {mainAssignee && (
                         <div className="flex items-center gap-1">
                           <span className="text-xs text-gray-500">Owner:</span>
-                          <Tooltip title={mainAssignee.Assignee_Name} arrow>
+                          <Tooltip  arrow>
                             <span>
                               <SmartAvatar
+                              userId={mainAssignee.Assignee_Id}
                                 name={mainAssignee.Assignee_Name}
                                 className="w-7 h-7 text-[10px]"
                               />
@@ -571,7 +576,7 @@ useEffect(()=>{
               {!isViewer && (
                 <>
                   <div className="updated-user">
-                    <Tooltip key={updated?.id} title={updated?.name} arrow>
+                    <Tooltip key={updated?.id} >
                       {/* <div className="avatar">
                         {getInitials(updated?.name)}
                       </div> */}

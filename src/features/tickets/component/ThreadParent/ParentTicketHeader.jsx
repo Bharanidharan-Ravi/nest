@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   FaCalendarAlt,
   FaEdit,
   FaHistory,
   FaPlus,
   FaTimes,
+  FaCommentDots,
 } from "react-icons/fa";
 import dayjs from "dayjs";
 import {
@@ -15,6 +16,7 @@ import { ROUTE_KEYS } from "../../../../core/routing/paths";
 import { createPortal } from "react-dom";
 import { Tooltip } from "@mui/material";
 import SmartAvatar from "../SmartAvatar";
+import TicketFeedbackDialog from "../TicketFeedbackDialog";
 
 const getTeamColor = (teamName) => {
   let hash = 0;
@@ -73,6 +75,61 @@ const ParentTicketHeader = ({
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [expandedAssignees, setExpandedAssignees] = useState({});
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+
+const involvedUsers = useMemo(() => {
+  const users = new Map();
+
+  const addUser = (id, name) => {
+    if (id && name) {
+      users.set(String(id).toLowerCase(),{
+        id:String(id),
+        name: String(name).trim(),
+      });
+    }
+  };
+
+  if (mainAssignee?.Assignee_Id && mainAssignee?.Assignee_Name){
+    addUser(mainAssignee.Assignee_Id, mainAssignee.Assignee_Name);
+  }
+
+  if (parentTicket?.assignedTo && parentTicket?.assignedName){
+    addUser(parentTicket.assignedTo, parentTicket.assignedName);
+  }
+
+  if (Array.isArray(parentTicket?.multiAssignees)){
+    parentTicket.multiAssignees.forEach((member)=> {
+      const id = 
+      member.Assignee_Id ||
+      member.AssigneeId ||
+      member.UserId ||
+      member.userId ||
+      member.id ||
+      member.EmployeeId;
+      const name = 
+      member.Assignee_Name ||
+      member.AssigneeName ||
+      member.EmployeeName ||
+      member.name ||
+      member.userName;
+      addUser(id, name);
+    });
+  }
+
+  if (Array.isArray(progressLogs)){
+    progressLogs.forEach((log) => {
+      if (log.Assignee_Id && log.AssigneeName){
+        addUser(log.Assignee_Id, log.AssigneeName);
+      }
+    });
+  }
+
+  return Array.from(users.values());
+},[mainAssignee, parentTicket, progressLogs]);
+
+console.log("multiassigneeraw", parentTicket?.multiAssignees);;
+
+
   const estimateBreakDown = {
     web: parentTicket.webTime || "0:00",
     technical: parentTicket.technicalTime || "0:00",
@@ -157,6 +214,13 @@ const ParentTicketHeader = ({
       default: return null;
     }
   };
+// console.log("Parentticketheaderpros", {
+//   parentTicket,
+//   mainAssignee,
+//   progressLogs,
+//   workstream: parentTicket?.WorkStreams ?? parentTicket?.workStreams,
+//   assignees: parentTicket?.All_Assignees ?? parentTicket?.allAssignees,
+// });
 
   return (
     <>
@@ -232,6 +296,18 @@ const ParentTicketHeader = ({
               </div>
             )}
 
+            {!isViewer && (
+              <button
+                type="button"
+                onClick={() => setShowFeedbackModal(true)}
+                className="inline-flex items-center gap-1 bg-white border border-gray-200 shadow-xs px-2 py-0.5 rounded text-[11px] text-gray-600 hover:text-amber-600 hover:border-amber-300 transotion-colors"
+                title="Feedback & History"
+                >
+                  <FaCommentDots className="text-amber-500" size={12}/>
+                  <span className="font-bold whitespace-nowrap">Feedback</span>
+                </button>
+            )}
+
             <button
               onClick={() =>
                 goTo(ROUTE_KEYS.TICKET_EDIT, {
@@ -261,11 +337,11 @@ const ParentTicketHeader = ({
                 <>
                   {" by"}
                   <Tooltip
-                    title={parentTicket.ticketCreater || parentTicket.createdBy || "System"}
-                    arrow
+                   
                   >
                     <span>
                       <SmartAvatar
+                      userId={parentTicket.createdBy}
                         name={
                           parentTicket.ticketCreater ||
                           parentTicket.createdBy ||
@@ -284,9 +360,10 @@ const ParentTicketHeader = ({
                 <span className="opacity-40">•</span>
                 {/* <span>Owner: <strong className="text-gray-700 font-semibold">{mainAssignee.Assignee_Name}</strong></span> */}
                 <span>Owner:</span>
-                <Tooltip title={` ${mainAssignee.Assignee_Name}`} arrow>
+                <Tooltip >
                   <span className="flex items-center gap-1">
                     <SmartAvatar
+                    userId={mainAssignee.Assignee_Id}
                       name={mainAssignee.Assignee_Name}
                       className="w-7 h-7 text-[10px]"
                     />
@@ -829,6 +906,14 @@ const ParentTicketHeader = ({
             </div>
           </div>
         </div>
+      )}
+      {!isViewer && (
+        <TicketFeedbackDialog
+        open={showFeedbackModal}
+        onClose={()=> setShowFeedbackModal(false)}
+        ticket={parentTicket}
+        involvedUsers={involvedUsers}
+        />
       )}
     </>
   );

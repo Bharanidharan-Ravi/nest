@@ -8,6 +8,8 @@ import {
   sameId,
 } from "../hooks/useChat";
 import { formatListTime } from "../utils/chatTime";
+import { fetUserStatus } from "../hooks/useUserStatus";
+import { formateDateTime, formatLastSeen } from "../../../app/shared/utils/chattime";
 
 export default function ConversationList({ conversations, isLoading, isError, selectedId, onSelect, userId, nameOf, photoOf = () => null }) {
   if (isLoading) return <p className="p-4 text-sm text-gray-400">Loading…</p>;
@@ -15,7 +17,8 @@ export default function ConversationList({ conversations, isLoading, isError, se
   if (!conversations?.length) {
     return <p className="p-4 text-sm text-gray-400">No conversations yet. Search for someone above to start one.</p>;
   }
-
+  const {data:statusList=[]}=fetUserStatus()
+  const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
   return (
     <ul>
       {conversations.map((c) => {
@@ -23,12 +26,21 @@ export default function ConversationList({ conversations, isLoading, isError, se
         const unread = c.UnreadCount ?? 0;
         const last = c.LastMessage;
         const isGroup = isGroupConversation(c);
+        const otherMemberId=isGroup
+        ?null
+        :c.MemberUserIds?.find(id=>!sameId(id,userId))
+        const status=otherMemberId
+        ?statusMap[otherMemberId?.toLowerCase()]
+        :null
+        const online=status?.IsActive===true
         const preview = last
           ? `${sameId(last.SenderUserId, userId) ? "You: " : ""}${messagePreview(last)}`
           : isGroup
             ? `${c.MemberUserIds?.length ?? 0} members`
             : "No messages yet";
-
+        // console.log("otherMemberId",otherMemberId);
+        console.log("status map keys",Object.keys(statusMap).slice(0.3));
+        // console.log("status",status);
         return (
           <li key={c.ConversationId}>
             <button
@@ -38,8 +50,40 @@ export default function ConversationList({ conversations, isLoading, isError, se
                 sameId(c.ConversationId, selectedId) ? "bg-brand-yellow/30" : "",
               ].join(" ")}
             >
-              <ChatAvatar name={title} seed={conversationAvatarSeed(c, userId)} photoUrl={conversationAvatarPhoto(c, userId, photoOf)} />
-              <span className="flex-1 min-w-0">
+              <div className="relative shrink-0"
+              title={!isGroup && status
+                // ?(online
+                //   ?"Online"
+                //   :status.LogoutAt
+                //   ?`Last seen ${formatLastSeen(status.LogoutAt)}`
+                //   :"Offline"
+                // )
+                // :""
+                ?[
+                  status.IsActive===true?"Online":"Offline",
+                  c.LastReadAt
+                  ?`\nLast Read: ${formateDateTime(c.LastReadAt)}`
+                  :"",
+                  status.LogoutAt
+                  ?`\nLast Seen: ${formateDateTime(status.LogoutAt)}`
+                  :"",
+                ].join("")
+                :undefined
+              }>
+              <ChatAvatar 
+              name={title} 
+              seed={conversationAvatarSeed(c, userId)} 
+              photoUrl={conversationAvatarPhoto(c, userId, photoOf)} />
+             {!isGroup && status &&(
+              <span className={[
+                "absolute bottom-0 right-0",
+                "w-3.5 h-3.5 rounded-full",
+                "border-2 border-white",
+                online ?"bg-green-500":"bg-red-400"
+              ].join(" ")}/>
+             )}
+              </div>
+               <span className="flex-1 min-w-0">
                 <span className="flex items-baseline justify-between gap-2">
                   <span className={`truncate text-sm ${unread ? "font-bold text-gray-900" : "font-medium text-gray-800"}`}>
                     {title}

@@ -510,8 +510,25 @@ export function useChatRealtime({ nameOf }) {
 
       const sender = nameOf(message.SenderUserId);
       const text = messagePreview(message);
-      ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text });
-      showDesktopNotification({ title: sender, body: text, conversationId });
+           console.log("charquerykey.Convesation",chatQueryKeys.Conversations);
+      console.log("charquerykey.convesation",chatQueryKeys.conversations);
+      const cachedConvos=queryClient.getQueryData(chatQueryKeys.conversations)
+    console.log("chaed canvos",cachedConvos);
+    console.log("conversation to find",conversationId);
+      const conversation=cachedConvos
+      ?.find(c=>sameId(c.ConversationId,conversationId))
+      console.log("found convertion",conversation);
+      console.log("isGroup",isGroupConversation(conversation));
+      const isGroup=isGroupConversation(conversation)
+      const notifTitle=isGroup
+      ?`${conversationTitle(conversation,userId,nameOf)} : ${sender}`
+      :sender;
+      // ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text });
+      // showDesktopNotification({ title: sender, body: text, conversationId });
+      console.log("ui.notify hit",conversationId);
+      
+      ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text ,title:notifTitle});
+      showDesktopNotification({title:notifTitle,body:text,conversationId})
     });
 
     const offReaction = subscribeChatReaction((evt) => applyReactionDelta(queryClient, evt));
@@ -521,8 +538,19 @@ export function useChatRealtime({ nameOf }) {
       if (ui.isViewing(evt.ConversationId)) return;
       const sender = nameOf(evt.TaggedByUserId);
       const text = `${sender} mentioned ${evt.DisplayText}`;
+ 
       ui.notify({ messageId: evt.MessageId, conversationId: evt.ConversationId, senderUserId: evt.TaggedByUserId, text });
-      showDesktopNotification({ title: "You were mentioned", body: text, conversationId: evt.ConversationId });
+     
+      // showDesktopNotification({ title: "You were mentioned", body: text, conversationId: evt.ConversationId });
+      const mentionCachedConvs=queryClient.getQueryData(chatQueryKeys.Conversations)
+      const mentionConv=mentionCachedConvs
+      ?.find(c=>sameId(c.ConversationId,evt.ConversationId))
+      const mentionIsGroup=isGroupConversation(mentionConv)
+      const mentionTitle=mentionIsGroup
+      ? `${conversationTitle(mentionConv,userId,nameOf)}: You were mentioned`
+      : "You were mentioned"
+      showDesktopNotification({title:mentionTitle,body:text,conversationId:evt.ConversationId})
+
     });
 
     const offRead = subscribeChatRead((read) => {

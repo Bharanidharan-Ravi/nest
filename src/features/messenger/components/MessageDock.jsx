@@ -7,13 +7,14 @@ import ConversationList, { UnreadBadge } from "./ConversationList";
 import ConversationView from "./ConversationView";
 import NewChatPicker from "./NewChatPicker";
 import NewGroupPicker from "./NewGroupPicker";
-import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { ROUTE_ROLES } from "../../../core/auth/permissions";
 import { PATHS } from "../../../core/routing/paths";
 import {
   conversationAvatarPhoto,
   conversationAvatarSeed,
   conversationTitle,
+  isGroupConversation,
   sameId,
   useChatPeople,
   useChatRealtime,
@@ -25,6 +26,8 @@ import {
 } from "../hooks/useChat";
 import { useChatUiStore } from "../state/useChatUiStore";
 import { useScrollReveal } from "../hooks/useScrollReveal";
+import { formatLastSeen } from "../../../app/shared/utils/chattime";
+import { fetUserStatus } from "../hooks/useUserStatus";
 
 const NOTIFICATION_MS = 6000;
 
@@ -86,6 +89,7 @@ function Dock() {
     if (conversationId) useChatUiStore.getState().closeWindow(conversationId);
     navigate(conversationId ? `${PATHS.MESSENGER}?c=${conversationId}` : PATHS.MESSENGER);
   };
+const user=readUserFromSession()
 
   return (
     <>
@@ -136,12 +140,12 @@ function Dock() {
                         disabled={openDirect.isPending}
                         error={openDirect.isError ? "Couldn't open that chat. Try again." : null}
                       />
-                      <button
+                     {user?.role==1 &&( <button
                         onClick={() => setShowGroupPicker(true)}
                         className="mt-1.5 flex items-center gap-1 text-xs font-medium text-gray-600 hover:text-gray-900"
                       >
                         <Users size={13} /> New group
-                      </button>
+                      </button>)}
                     </>
                   )}
                 </div>
@@ -190,7 +194,7 @@ function Dock() {
   );
 }
 
-function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, photoOf, onExpand }) {
+function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, photoOf, onExpand}) {
   const toggleMinimized = useChatUiStore((s) => s.toggleMinimized);
   const closeWindow = useChatUiStore((s) => s.closeWindow);
   const id = conversation.ConversationId;
@@ -263,7 +267,21 @@ function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, p
     else if (minimized) toggleMinimized(id);
     else openInfo();
   };
-
+  const {data:statusList=[]}=fetUserStatus()
+  const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
+  const isGroup = isGroupConversation(conversation);
+  const otherMemberId=isGroup
+  ?null
+  :conversation.MemberUserIds?.find(id=>!sameId(id,userId))
+  const chatStatus=otherMemberId
+  ?statusMap[otherMemberId?.toLowerCase()]
+  :null
+  const chatOnline=chatStatus?.IsActive===true
+  const lastSeenText=chatOnline
+  ?"Online"
+  :chatStatus?.LogoutAt
+  ?`Last seen ${formatLastSeen(chatStatus.LogoutAt)}`
+  :"Offline"
   return (
     <section
       ref={sectionRef}
@@ -281,8 +299,19 @@ function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, p
                 headerMode === "info" ? "opacity-0 -translate-x-1.5" : "opacity-100 translate-x-0"
               } ${heroFlying ? "invisible" : ""}`}
             >
+              <div className="relative" title={!isGroup && chatStatus ? lastSeenText :""}>
               <ChatAvatar name={title} seed={avatarSeed} photoUrl={avatarPhoto} size="sm" />
-            </span>
+              {
+                !isGroup && chatStatus && (
+                  <span className={[
+                    "absolute bottom-0 right-0",
+                    "w-3 h-3 rounded-full border border-white",
+                    chatOnline ? "bg-green-500":"bg-red-400"
+                  ].join(" ")}/>
+                )
+              }
+              </div>
+                 </span>
             <ArrowLeft
               size={16}
               className={`absolute text-gray-500 transition-all duration-300 ease-out ${
@@ -393,7 +422,7 @@ function NotificationStack({ nameOf, photoOf, onOpen, raised }) {
 function NotificationCard({ notification, nameOf, photoOf, onOpen }) {
   const dismiss = useChatUiStore((s) => s.dismissNotification);
   const [hovered, setHovered] = useState(false);
-  const sender = nameOf(notification.senderUserId);
+  const sender = notification.title ?? nameOf(notification.senderUserId);
 
   useEffect(() => {
     if (hovered) return;
@@ -414,7 +443,10 @@ function NotificationCard({ notification, nameOf, photoOf, onOpen }) {
         }}
         className="flex items-start gap-2 flex-1 min-w-0 text-left"
       >
+       
         <ChatAvatar name={sender} seed={notification.senderUserId} photoUrl={photoOf(notification.senderUserId)} size="sm" />
+        
+
         <span className="min-w-0">
           <span className="block text-sm font-semibold text-gray-900 truncate">{sender}</span>
           <span className="block text-xs text-gray-600 line-clamp-2 break-words">{notification.text || "New message"}</span>

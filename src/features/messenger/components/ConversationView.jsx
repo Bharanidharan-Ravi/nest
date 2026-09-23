@@ -82,6 +82,9 @@ function Timeline({ conversation, nameOf, compact }) {
   const queryClient = useQueryClient();
   const conversationId = conversation.ConversationId;
   const isGroup = isGroupConversation(conversation);
+  const theirLastReadAt=!isGroup
+  ?conversation.LastReadAt
+  :null
   const [replyTo, setReplyTo] = useState(null);
 
   // While the timeline is on screen, incoming messages count as read (not notified)
@@ -204,6 +207,7 @@ function Timeline({ conversation, nameOf, compact }) {
                 onReply={() => setReplyTo(m)}
                 onJumpToReply={() => replySource && jumpToMessage(scrollRef, replySource.MessageId)}
                 onToggleReaction={(emoji) => toggleReaction.mutate({ messageId: m.MessageId, emoji })}
+                theirLastReadAt={theirLastReadAt}
               />
             </Fragment>
           );
@@ -439,6 +443,7 @@ function MessageBubble({
   onReply,
   onJumpToReply,
   onToggleReaction,
+  theirLastReadAt
 }) {
   const result = message.decrypted;
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -470,7 +475,7 @@ function MessageBubble({
       </p>
     );
   }
-
+const isRead=mine && theirLastReadAt && new Date(message.CreatedAt)<= new Date(theirLastReadAt)
   return (
     <div
       data-message-id={message.MessageId}
@@ -513,6 +518,16 @@ function MessageBubble({
             {content}
             <p className={`text-[9px] text-right mt-0.5 ${mine ? "text-white/70" : "text-gray-500"}`}>
               {message.pending ? "Sending…" : formatMessageTime(message.CreatedAt)}
+              {mine && !message.pending && !message.failed &&(
+                <span className={
+                  isRead ? "text-blue-300":"text-white/50"
+                }>
+✓ ✓ 
+                </span> )}
+                {mine && message.pending && (
+                  <span className="text-white/40">✓ </span>
+               
+              )}
             </p>
           </div>
           {reactions.length > 0 && (

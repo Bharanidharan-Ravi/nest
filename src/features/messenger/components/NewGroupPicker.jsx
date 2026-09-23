@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { Search, X } from "lucide-react";
 import ChatAvatar from "./ChatAvatar";
 import { useChatPeople } from "../hooks/useChat";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 
 const MAX_RESULTS = 8;
 const MAX_TITLE_LENGTH = 100;
@@ -14,6 +15,9 @@ export default function NewGroupPicker({ onCreate, disabled = false, error, onCa
   const [selected, setSelected] = useState([]); // [{UserID, UserName}]
   const [open, setOpen] = useState(false);
 
+  const user=readUserFromSession()
+  console.log("user",user);
+  
   const matches = useMemo(() => {
     const q = query.trim().toLowerCase();
     const pool = people.filter((p) => !selected.some((s) => s.UserID === p.UserID));
