@@ -1,3 +1,4 @@
+import { MessageSquare } from "lucide-react";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import * as El from "./elements";
@@ -15,6 +16,7 @@ export const MessengerFeature = {
         title: "Messages",
         parent: ROUTE_KEYS.DASHBOARD,
         inSidebar: true,
+        icon: MessageSquare,
       },
     },
   ],

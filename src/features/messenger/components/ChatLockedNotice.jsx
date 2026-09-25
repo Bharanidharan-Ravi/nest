@@ -1,4 +1,4 @@
-import { Lock, Loader2 } from "lucide-react";
+import { Lock } from "lucide-react";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { CHAT_IDENTITY_STATUS, useChatIdentityStore } from "../e2ee/chatIdentityStore";
 
@@ -27,7 +27,6 @@ export default function ChatLockedNotice({ compact = false }) {
   switch (status) {
     case S.IDLE:
     case S.INITIALIZING:
-      icon = <Loader2 size={compact ? 22 : 28} className="text-gray-400 animate-spin" />;
       text = "Setting up secure chat…";
       break;
     case S.LOCKED_NEED_PASSWORD:

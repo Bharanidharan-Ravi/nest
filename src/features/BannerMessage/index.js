@@ -1,3 +1,4 @@
+import { Megaphone } from "lucide-react";
 import { ROUTE_KEYS }    from "../../core/routing/paths";
 import * as El           from "./elements";
 import * as TicketEl     from "../tickets/elements";
@@ -19,6 +20,7 @@ export const BannerFeature = {
         parent:    ROUTE_KEYS.DASHBOARD,
         create:    ROUTE_KEYS.BANNER_CREATE,
         inSidebar: true,
+        icon:      Megaphone,
       },
     },
 

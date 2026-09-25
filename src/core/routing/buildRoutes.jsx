@@ -7,15 +7,21 @@
  */
 
 import { Route, Navigate } from "react-router-dom";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { getAllFeatures } from "../registry/featureRegistry";
 import RoleGuard from "../auth/RoleGuard";
+import { useUIStore } from "../state/useUIStore";
 
-const PageLoader = () => (
-  <div className="flex items-center justify-center h-full w-full min-h-[200px]">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-yellow" />
-  </div>
-);
+// Renders nothing itself — while mounted it shows the global WG owl loader
+// (GlobalUI), so there is only ever one loader on screen.
+const PageLoader = () => {
+  useEffect(() => {
+    const { beginPageLoad, endPageLoad } = useUIStore.getState();
+    beginPageLoad();
+    return endPageLoad;
+  }, []);
+  return null;
+};
 
 const renderRoutes = (routes, basePath = "") => {
    return routes.map((route, index) => {

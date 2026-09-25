@@ -1,3 +1,4 @@
+import { Calendar } from "lucide-react";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import * as El           from "./elements";
@@ -17,6 +18,7 @@ export const MeetingsFeature = {
             parent:    ROUTE_KEYS.DASHBOARD,
             create:    ROUTE_KEYS.MEETING_LIST,
             inSidebar: true,
+            icon:      Calendar,
           },
         },
 

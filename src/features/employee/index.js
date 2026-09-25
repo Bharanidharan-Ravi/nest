@@ -1,3 +1,4 @@
+import { Users } from "lucide-react";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import * as El           from "./elements";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
@@ -16,6 +17,7 @@ export const EmployeeFeature={
         parent:    ROUTE_KEYS.DASHBOARD,
         create:    ROUTE_KEYS.EMPLOYEE_CREATE,
         inSidebar: true,
+        icon:      Users,
       },
     },
 

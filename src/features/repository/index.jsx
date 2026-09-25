@@ -11,6 +11,7 @@
  * Zero cross-feature index imports (only elements — safe lazy wrappers).
  */
 
+import { FolderGit2 } from "lucide-react";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import * as RepoEl from "./elements";
 import * as TicketEl from "../tickets/elements";
@@ -38,6 +39,7 @@ export const RepositoryFeature = {
         parent: ROUTE_KEYS.DASHBOARD,
         create: ROUTE_KEYS.REPO_CREATE,
         inSidebar: true,
+        icon: FolderGit2,
       },
     },
 

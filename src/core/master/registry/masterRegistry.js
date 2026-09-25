@@ -19,7 +19,7 @@ import {
 } from "../../adapters/masterAdapter";
 import { queryKeys } from "../../query/queryKeys";
 import { buildSyncPayload } from "../../sync/buildSyncPayload";
-import { normalizeTicket } from "../../../app/shared/utils/normalizer";
+import { normalizeTicket, normalizeLeaveRequest } from "../../../app/shared/utils/normalizer";
 
 export const MASTER_REGISTRY = {
   // ── Masters from the bulk /sync/v2 preload ────────────────────────────────
@@ -125,13 +125,12 @@ export const MASTER_REGISTRY = {
   // Role-aware (employee sees own rows, admin sees all — resolved server-side
   // from the JWT by /sync/v2), so it goes through "api" not the bulk preload.
   leaveRequest: {
-    source: "api",
     queryKey: () => queryKeys.leaveRequest.list(),
     url: "/sync/v2",
     method: "POST",
     source: "GetLeaveRequests",
     staleTime: 0,
     payload: () => buildSyncPayload({ configKey: "GetLeaveRequests" }),
-    adapter: (raw) => raw,
+    adapter: normalizeLeaveRequest,
   },
 };

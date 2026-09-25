@@ -5,6 +5,7 @@
  * Keep all your existing page imports and logic — only add the nav objects.
  */
 import { lazy } from "react";
+import { LayoutDashboard } from "lucide-react";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 
@@ -24,6 +25,7 @@ export const DashboardFeature = {
         title:     "Dashboard",
         parent:    null,          // root — no parent
         inSidebar: true,
+        icon:      LayoutDashboard,
       },
     },
   ],

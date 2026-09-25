@@ -141,6 +141,31 @@ export const normalizeNotification = (notif) => ({
   isUnread: notif.IsUnread ?? notif.isUnread ?? false,
 });
 
+// Maps usp_GetLeaveRequests output (GetLeaveRequest DTO, ALL_CAPS columns) to the
+// camelCase shape LeaveRequestPage / LeaveRequestFormPage work with.
+export const normalizeLeaveRequest = (raw) => ({
+  id: raw.ID,
+  employeeId: raw.EMPLOYEE_ID,
+  requestedBy: raw.EmployeeName,
+  fromDate: raw.LEAVE_FROM,
+  toDate: raw.LEAVE_TO,
+  leaveTypeId: raw.LEAVE_TYPE_ID,
+  noOfDays: raw.NO_OF_LEAVE_DAYS,
+  comments: raw.COMMENTS,
+  status: raw.STATUS,
+  requestedDate: raw.REQUESTED_DATE,
+  approvedBy: raw.APPROVED_BY,
+  approvedDate: raw.APPROVED_DATE,
+  rejectReason: raw.REJECT_REASON,
+  rejectedBy: raw.REJECTED_BY,
+  rejectedDate: raw.REJECTED_DATE,
+});
+
+export const normalizeLeaveRequestList = (list) => {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeLeaveRequest);
+};
+
 // Helper to normalize an entire array
 export const normalizeNotificationList = (notifications) => {
   if (!Array.isArray(notifications)) return [];

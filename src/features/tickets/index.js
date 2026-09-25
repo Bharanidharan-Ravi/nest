@@ -9,6 +9,7 @@
  * add it here. For now this is a valid registered feature with an empty route list.
  */
 
+import { Ticket } from "lucide-react";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import * as El           from "./elements";
 
@@ -26,6 +27,7 @@ export const TicketsFeature = {
           parent:    ROUTE_KEYS.DASHBOARD,
           create:    ROUTE_KEYS.TICKET_CREATE,
           inSidebar: true,
+          icon:      Ticket,
         },
       },
   

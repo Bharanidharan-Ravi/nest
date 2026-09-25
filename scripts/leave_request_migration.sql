@@ -53,6 +53,7 @@ GO
    EMPLOYEEMASTER (same join key used elsewhere: EMPLOYEEMASTER.EmployeeID).
    ----------------------------------------------------------------------------- */
 CREATE OR ALTER PROCEDURE [dbo].[usp_GetLeaveRequests]
+    @DbName  NVARCHAR(128) = NULL, -- unused; every SyncExecutionService.ExecuteLocalAsync call sends this
     @UserId  UNIQUEIDENTIFIER,
     @IsAdmin BIT = 0
 AS

@@ -2,6 +2,7 @@
  * src/features/project/Index.js
  */
 
+import { FolderKanban } from "lucide-react";
 import { ROUTE_KEYS }    from "../../core/routing/paths";
 import * as El           from "./elements";
 import * as TicketEl     from "../tickets/elements";
@@ -23,6 +24,7 @@ export const ProjectFeature = {
         parent:    ROUTE_KEYS.DASHBOARD,
         create:    ROUTE_KEYS.PROJ_CREATE,
         inSidebar: true,
+        icon:      FolderKanban,
       },
     },
 

@@ -68,6 +68,10 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
         const s = dayjs().startOf("week");
         return `${s.format("YYYY-MM-DD")}~${s.add(6, "day").format("YYYY-MM-DD")}`;
       }
+      if (range === "month") {
+        // No specific date → use current calendar month
+        return `${dayjs().startOf("month").format("YYYY-MM-DD")}~${dayjs().endOf("month").format("YYYY-MM-DD")}`;
+      }
       // Default: today (single day) for daily or unspecified
       const today = dayjs().format("YYYY-MM-DD");
       return `${today}~${today}`;
@@ -205,6 +209,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
         dayjs().startOf("week"),
         dayjs().startOf("week").add(6, "day"),
       );
+    } else if (filterDefaultRange === "month") {
+      applyRange(dayjs().startOf("month"), dayjs().endOf("month"));
     } else {
       const today = dayjs();
       applyRange(today, today);
@@ -216,6 +222,9 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
     filterDefaultRange === "week"
       ? start.isSame(dayjs().startOf("week"), "day") &&
         end.isSame(dayjs().startOf("week").add(6, "day"), "day")
+      : filterDefaultRange === "month"
+      ? start.isSame(dayjs().startOf("month"), "day") &&
+        end.isSame(dayjs().endOf("month"), "day")
       : start.isSame(dayjs(), "day") && end.isSame(dayjs(), "day");
 
   // ── Preset active detection ───────────────────────────────────────────────
@@ -300,7 +309,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
 
   // ── Dynamic reset-button label (short enough to fit the pill) ────────────
   // "Week" for week mode, "Today" for daily/unset — both fit in ~32px width.
-  const resetLabel = filterDefaultRange === "week" ? "Week" : "Today";
+  const resetLabel =
+    filterDefaultRange === "week" ? "Week" : filterDefaultRange === "month" ? "Month" : "Today";
   const yearBase = dayjs().year() - 4 + yearPage * 12;
   const yearRange = Array.from({ length: 12 }, (_, i) => yearBase + i);
 

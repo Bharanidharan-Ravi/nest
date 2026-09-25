@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { executeApi } from "../../../core/api/executor";
 import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
@@ -12,6 +12,7 @@ import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation"
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { getNotification, getTimeline } from "../../../app/Hooks/useNotificationCount";
 import { useSearchParams } from "react-router-dom";
+import { getLocalNotifications, subscribeLocalNotifications } from "../localNotificationStore";
 
 export default function NotificationsPage() {
    const [searchParams, setSearchParams] = useSearchParams();
@@ -24,6 +25,11 @@ export default function NotificationsPage() {
   const { data: timelineData, isLoading: isLoadingTimeline } = getTimeline(
     currentModule === "timeline"
   );
+
+  // Client-side notifications (e.g. new leave requests) — merged in until
+  // a `/notification/create` endpoint exists to raise these server-side.
+  const [localNotifications, setLocalNotifications] = useState(getLocalNotifications());
+  useEffect(() => subscribeLocalNotifications(setLocalNotifications), []);
   // 2. Fetch Timeline (Adjust URL to your actual Timeline endpoint)
   // const { data: timelineData, isLoading: isLoadingTimeline } = useQuery({
   //   queryKey: ["timeline", "list"],
@@ -40,6 +46,10 @@ export default function NotificationsPage() {
   const listConfigWithNav = {
     ...NotificationListConfig(isViewer),
     onItemClick: (item) => {
+      if (item.entityType === "LEAVE_REQUEST") {
+        goTo(ROUTE_KEYS.LEAVE_LIST);
+        return;
+      }
       const createRouteKey = ROUTE_KEYS.TICKET_DETAIL;
       goTo(createRouteKey, { ticketId: item.entityId });
     },
@@ -50,7 +60,7 @@ export default function NotificationsPage() {
       id: "notifications",
       label: "Notifications",
       config: listConfigWithNav,
-      data: notificationsData || [],
+      data: [...localNotifications, ...(notificationsData || [])],
     },
     // 🔥 CONDITIONALLY ADD TIMELINE:
     !isViewer && {

@@ -72,6 +72,8 @@ export const ROUTE_ROLES = {
 
   NOTIFICATIONS: ADMIN_MANAGER,
   MESSENGER: ADMIN_MANAGER,
+
+  LEAVE_LIST: ALL,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────

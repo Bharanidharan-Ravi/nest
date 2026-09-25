@@ -1,3 +1,4 @@
+import { Tag } from "lucide-react";
 import { ROUTE_KEYS }    from "../../core/routing/paths";
 import * as El           from "./elements";
 import * as TicketEl     from "../tickets/elements";
@@ -19,6 +20,7 @@ export const LabelFeature = {
         parent:    ROUTE_KEYS.DASHBOARD,
         create:    ROUTE_KEYS.LABEL_CREATE,
         inSidebar: true,
+        icon:      Tag,
       },
     },
 

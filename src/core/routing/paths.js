@@ -72,6 +72,10 @@ export const ROUTE_KEYS = {
   MEETING_LIST:"meeting.list",
   MEETING_CREATE_WITH_TICKET: "meeting.create.withTicket",
 
+  LEAVE_LIST:   "leave.list",
+  LEAVE_CREATE: "leave.create",
+  LEAVE_EDIT:   "leave.edit",
+
 };
 
 export const PATHS = {
@@ -132,5 +136,9 @@ export const PATHS = {
 
   MEETING_LIST:"/meeting",
   MEETING_CREATE_WITH_TICKET:"/meeting/create/:ticketId",
+
+  LEAVE_LIST:   "/leave",
+  LEAVE_CREATE: "/leave/create",
+  LEAVE_EDIT:   "/leave/:leaveId/edit",
 
 };

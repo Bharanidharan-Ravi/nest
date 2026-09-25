@@ -1,12 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useUIStore } from '../../../core/state/useUIStore';
 
-import { OwlEyeLoader } from "./OwlEyeLoader"; 
-import { useState } from 'react';
+import { WGLogoLoader } from "./WGLogoLoader";
 
 export function GlobalUI() {
-  const { isLoading, error, success, clearMessages } = useUIStore();
+  const { isLoading: apiLoading, pageLoads, error, success, clearMessages } = useUIStore();
+  const isLoading = apiLoading || pageLoads > 0;
   const [showLoader, setShowLoader] = useState(false);
+
+  const loaderVisible = isLoading && showLoader;
 
   // This handles the smooth fade-in/out logic based on the store's isLoading state
   useEffect(() => {
@@ -34,25 +36,19 @@ export function GlobalUI() {
     <>
       {/* GLOBAL LOADER OVERLAY */}
       <div
-        className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/20 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
-          isLoading && showLoader
+        className={`fixed inset-0 z-[9999] flex items-center justify-center bg-white/40 backdrop-blur-[4px] transition-opacity duration-300 ease-in-out ${
+          loaderVisible
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
         }`}
       >
-        {/* Loader Box */}
+        {/* Owl floats straight on the frosted backdrop — no card, no text */}
         <div
-          className={`bg-white p-5 rounded-2xl shadow-2xl flex flex-col items-center gap-3 transition-transform duration-300 ease-in-out ${
-            isLoading && showLoader ? "scale-100" : "scale-95"
+          className={`transition-transform duration-500 ease-out ${
+            loaderVisible ? "scale-100" : "scale-90"
           }`}
         >
-          {/* 🔥 REPLACE THE GENERIC SPINNER WITH YOUR OWL EYE */}
-          <OwlEyeLoader className="w-28 h-auto"/>
-          
-          {/* Optional: Add text below it */}
-          <span className="text-gray-700 font-semibold tracking-wider text-sm mt-2">
-            LOADING
-          </span>
+          <WGLogoLoader className="w-32 h-auto drop-shadow-[0_10px_24px_rgba(255,177,22,0.35)]" />
         </div>
       </div>
 

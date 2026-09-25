@@ -20,6 +20,7 @@ const _registry = new Map();
  * @property {string|null} create
  * @property {boolean}     inSidebar
  * @property {number[]}    allowedRoles   ← NEW: stored so sidebar can filter
+ * @property {Function|null} icon         ← lucide-react icon component, for icon-only rail
  */
 
 // ─── Internals ────────────────────────────────────────────────────────────────
@@ -44,6 +45,7 @@ function traverseRoutes(routes, basePath) {
         create:       route.nav.create       ?? null,
         inSidebar:    route.nav.inSidebar    ?? false,
         allowedRoles: route.allowedRoles     ?? [],  // ← from route definition
+        icon:         route.nav.icon         ?? null,
       });
     }
 

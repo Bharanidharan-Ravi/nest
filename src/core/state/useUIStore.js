@@ -6,6 +6,11 @@ export const useUIStore = create((set, get) => ({
   success: null,
   
   setLoading: (status) => set({ isLoading: status }),
+
+  // Lazy route chunks still downloading (counted, since fallbacks can nest)
+  pageLoads: 0,
+  beginPageLoad: () => set((s) => ({ pageLoads: s.pageLoads + 1 })),
+  endPageLoad: () => set((s) => ({ pageLoads: Math.max(0, s.pageLoads - 1) })),
   
   setError: (msg) => {
     // 🔥 FIX: Prevent the same error toast from popping up multiple times 

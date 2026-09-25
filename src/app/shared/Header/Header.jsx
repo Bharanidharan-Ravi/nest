@@ -1,9 +1,7 @@
 import React, { useState } from "react";
-import { IoMenu } from "react-icons/io5";
 import { useLocation, useNavigate } from "react-router-dom";
 import "./Header.css";
 import { Breadcrumbs } from "../../../core/navigation/Breadcrumbs";
-import workglowlogo from "../../../assets/WORKGLOWLOGO.png";
 import { logoutUser } from "../../../core/auth/authUtils";
 import {
   readUserFromSession,
@@ -49,7 +47,7 @@ import { Megaphone } from "lucide-react";
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
 
-const Header = ({ toggleMobileMenu }) => {
+const Header = () => {
   const navigate = useNavigate();
   const user = readUserFromSession();
   const { isViewer } = useCurrentUser();
@@ -147,14 +145,6 @@ const Header = ({ toggleMobileMenu }) => {
 
   const handleIconClick = () => {
     setDropdownVisible((prev) => !prev);
-  };
-
-  const handleLogoClick = () => {
-    if (location.pathname !== "/dashboard" && isViewer) {
-      navigate("/tickets");
-    } else if (location.pathname !== "/dashboard") {
-      navigate("/dashboard");
-    }
   };
 
   const handleTicket = () => {
@@ -308,27 +298,10 @@ const Header = ({ toggleMobileMenu }) => {
     repeatedBanners.length > 0 ? repeatedBanners : filteredBanners;
   return (
     <>
-      <header className="header py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
-        {/* Left Side: Menu & Logo */}
-        <div className="flex gap-4 items-center">
-          <button
-            className="menu-toggle block p-0 bg-transparent border-none focus:outline-none"
-            onClick={toggleMobileMenu}
-          >
-            <IoMenu size={24} color="black" />
-          </button>
-
-          <div className="flex justify-center" onClick={handleLogoClick}>
-            <img
-              src={workglowlogo}
-              alt="Logo"
-              className="inline-block align-top w-[100px]"
-            />
-          </div>
-        </div>
-
+      <header className="header relative py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
+        {/* Pinned to the true center of the header, independent of the right side's width */}
         {!isViewer && (
-          <div>
+          <div className="absolute left-1/2 -translate-x-1/2">
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 onClick={handleTicket}
@@ -347,7 +320,7 @@ const Header = ({ toggleMobileMenu }) => {
           </div>
         )}
         {/* Right Side: Breadcrumbs & User Profile */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 ml-auto">
           <Breadcrumbs />
           {/* {!isViewer && ( */}
           {!isViewer && (
