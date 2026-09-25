@@ -16,6 +16,7 @@ const fmt = (d) => d.format("YYYY-MM-DD")
 
 export default function LeaveDateRangePicker({ fromDate, toDate, onChange, blockedDates }) {
   const [showCal, setShowCal] = useState(false)
+  const [activeField, setActiveField] = useState(null) // "from" | "to" | null
   const [month, setMonth] = useState(() => (fromDate ? dayjs(fromDate) : dayjs()))
   const [dragStart, setDragStart] = useState(null)
   const [hoverDay, setHoverDay] = useState(null)
@@ -27,6 +28,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
   const toTriggerRef = useRef(null)
   const dragStartRef = useRef(null)
   const hoverDayRef = useRef(null)
+  const activeFieldRef = useRef(null)
 
   const setHover = (d) => {
     hoverDayRef.current = d
@@ -43,6 +45,16 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
 
   const start = fromDate ? dayjs(fromDate) : null
   const end = toDate ? dayjs(toDate) : null
+  // finishSelection is only recreated when `onChange`/`isDisabled` change
+  // (the parent's onChange reference stays fixed between opening the
+  // calendar and picking a date), so it can't rely on the `activeField`
+  // state/closure directly — it would see a stale value from before the
+  // trigger was clicked. Refs are always read at call time, so they don't
+  // go stale.
+  const startRef = useRef(start)
+  const endRef = useRef(end)
+  startRef.current = start
+  endRef.current = end
 
   // ── Outside-click → close calendar ───────────────────────────────────────
   useEffect(() => {
@@ -86,7 +98,24 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
       const target = hd || ds
 
       if (anchor.isSame(target, "day")) {
-        if (!isDisabled(anchor)) onChange(fmt(anchor), fmt(anchor), null)
+        if (!isDisabled(anchor)) {
+          // Editing only the To Date trigger: keep From Date fixed and just
+          // move the end of the range, instead of collapsing both to this day.
+          // If the newly picked To Date would be earlier than the existing
+          // From Date, shrink From down to match instead (keeps the range valid).
+          const field = activeFieldRef.current
+          const curStart = startRef.current
+          const curEnd = endRef.current
+          if (field === "to" && curStart) {
+            const newFrom = anchor.isBefore(curStart, "day") ? anchor : curStart
+            onChange(fmt(newFrom), fmt(anchor), null)
+          } else if (field === "from" && curEnd) {
+            const newTo = anchor.isAfter(curEnd, "day") ? anchor : curEnd
+            onChange(fmt(anchor), fmt(newTo), null)
+          } else {
+            onChange(fmt(anchor), fmt(anchor), null)
+          }
+        }
         dragStartRef.current = null
         setDragStart(null)
         setHover(null)
@@ -135,7 +164,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
     return () => document.removeEventListener("mouseup", onMouseUp)
   }, [finishSelection])
 
-  const openCal = (triggerEl) => {
+  const openCal = (triggerEl, field) => {
     const rect = triggerEl?.getBoundingClientRect()
     if (rect) {
       setCalPosition({
@@ -143,7 +172,9 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
         left: Math.min(rect.left, window.innerWidth - 296),
       })
     }
-    setMonth(start || dayjs())
+    activeFieldRef.current = field
+    setActiveField(field)
+    setMonth((field === "to" ? end : start) || start || dayjs())
     setShowCal(true)
   }
 
@@ -195,7 +226,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
         <button
           type="button"
           ref={fromTriggerRef}
-          onClick={() => (showCal ? setShowCal(false) : openCal(fromTriggerRef.current))}
+          onClick={() => (showCal ? setShowCal(false) : openCal(fromTriggerRef.current, "from"))}
           className="wg-input text-left flex items-center justify-between"
         >
           <span className={fromDate ? "text-gray-800" : "text-gray-400"}>{label(fromDate, "Select date")}</span>
@@ -210,7 +241,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
         <button
           type="button"
           ref={toTriggerRef}
-          onClick={() => (showCal ? setShowCal(false) : openCal(toTriggerRef.current))}
+          onClick={() => (showCal ? setShowCal(false) : openCal(toTriggerRef.current, "to"))}
           className="wg-input text-left flex items-center justify-between"
         >
           <span className={toDate ? "text-gray-800" : "text-gray-400"}>{label(toDate, "Select date")}</span>
