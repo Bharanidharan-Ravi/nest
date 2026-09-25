@@ -104,5 +104,16 @@ export const BannerFieldConfig=()=>[
           return true;
         },
       },
+      {
+        label:"To Client",
+        name:"ToClient",
+        type:"checkbox",
+        ui:"mui",
+        required:false,
+        dataType:"boolean",
+        apiKey:"ToClient",
+        initValueResolver:({context})=>
+          context.isEdit?(context.entityData?.ToClient ?? false):false
+      }
       
 ]

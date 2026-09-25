@@ -31,8 +31,7 @@
 
 
 
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { getInitials } from "../../../app/shared/utilities/utilities";
 import { getEmployeeList } from "../../employee/hooks/useEmployeeList";
 import { Tooltip, Modal, Box, IconButton } from "@mui/material";
@@ -40,10 +39,12 @@ import { FiX } from "react-icons/fi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { fetUserStatus } from "../../Messenger/hooks/useUserStatus";
 import { formateDateTime } from "../../../app/shared/utils/chattime";
+import { useQueryClient } from "@tanstack/react-query";
 
 const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" }) => {
     const [open, setOpen] = useState(false);
     const { isViewer } = useCurrentUser();
+    const queryClient = useQueryClient();
     const { data: empData } = getEmployeeList(null,{enabled:!isViewer});
     const {data:statusList=[]}=fetUserStatus()
 
@@ -55,21 +56,89 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
         return false;
     });
 
-    const avatarPath = employee?.PreviewUrl;
+    // const avatarPath = employee?.PreviewUrl;
     const displayName=name||employee?.Employeename
     ||employee?.UserName
     ||"Unknown"
 
+    const {avatarPath, email} = useMemo(() =>{
+        const targetId = userId?.toLowerCase();
+        const targetName = name?.toLowerCase();
+
+        let resolvedPath = null;
+        let resolvedEmail = null;
+
+        if (empData && empData.length > 0){
+            const employee = empData.find((e) => {
+                if (targetId && e.UserId) return e.UserId.toLowerCase() === targetId;
+                if (targetName && e.UserName) return e.UserName.toLowerCase() === targetName;
+                return false;
+            });
+
+            if (employee) {
+                resolvedPath = employee.PreviewUrl;
+                resolvedEmail = employee.Email;
+                return {avatarPath: resolvedPath, email: resolvedEmail};
+            }
+        }
+
+        const masterQueries = queryClient.getQueriesData({queryKey:["master"]});
+        let repos = [];
+        for (const [key, data] of masterQueries){
+            if (data && data.RepoList){
+                repos = data.RepoList;
+                break;
+            }
+        }
+        
+        if (repos && repos.length > 0){
+            for(const repo of repos){
+                if (repo.RepoUserList){
+                    const users = typeof repo.RepoUserList === "string"
+                    ? JSON.parse(repo.RepoUserList)
+                    :repo.RepoUserList;
+
+                    const foundClient = users.find(u => {
+                        if (targetId && u.UserId) return u.UserId.toLowerCase() === targetId;
+                        if (targetName && u.UserName) return u.UserName.toLowerCase() === targetName;
+                        return false;
+                    });
+
+                    if (foundClient){
+                        resolvedEmail = foundClient.MailId;
+                        if (foundClient.avatarPath){
+                            resolvedPath = foundClient.avatarPath;
+                        }
+                        return {avatarPath: resolvedPath, email: resolvedEmail};
+                    }
+                }
+            }
+        }
+
+        return {avatarPath:null, email:null};
+    }, [userId, name, empData, queryClient]);
+    // const employee = empData?.find((e) => {
+    //     if (userId && e.UserID)
+    //         return e.UserID.toLowerCase() === userId.toLowerCase();
+    //     if (name && e.UserName)
+    //         return e.UserName.toLowerCase() === name.toLowerCase();
+    //     return false;
+    // });
+
+    // const avatarPath = employee?.PreviewUrl;
+
     const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
 const lookupId=userId||employee?.EmployeeID||employee?.UserID
+
+
     const status=lookupId?statusMap[lookupId?.toLowerCase()]:null
-    const isOnline=status?.IsActive==true
+    const isOnline=status?.LastHeartbeat && 
+    (Date.now()-new Date(status.LastHeartbeat).getTime())<=60*1000;
+
     const statusTitle=isOnline
-    ?`Online since ${formateDateTime(status?.LoginAt)}`
-    :status?.LogoutAt
-    ?`Last seen ${formateDateTime(status?.LogoutAt)}`
-    :status?.LoginAt
-    ?`Last login ${formateDateTime(status?.LoginAt)}`
+    ?`Online since ${formateDateTime(status?.LastHeartbeat)}`
+    :status?.LastHeartbeat
+    ?`Last seen ${formateDateTime(status?.LastHeartbeat)}`
     :"Offline"
    
     return (
@@ -183,8 +252,8 @@ const lookupId=userId||employee?.EmployeeID||employee?.UserID
                             {employee?.Team && (
                                 <p className="text-xs text-gray-400">{employee.Team}</p>
                             )} */}
-                            {employee?.Email && employee.Email !== "string" && (
-                                <p className="text-xs text-blue-500 mt-1">Email: {employee.Email}</p>
+                            {email && email !== "string" && (
+                                <p className="text-xs text-blue-500 mt-1">Email: {email}</p>
                             )}
                         </div>
                     </div>

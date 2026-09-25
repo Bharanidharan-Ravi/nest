@@ -109,6 +109,22 @@ import { statusOptions } from "../../tickets/config/Ticket.Config";
 
 //   ];
 export const CustomerConfig = () => [
+
+  {
+    label: "Attachment",
+    name: "Attachment",
+    type: "adAttach",
+    ui: "mui",
+    required: false,
+    dataType: "string",
+    apiKey: "temp",
+    fullWidth: true,
+    initValueResolver: ({ context }) =>
+      context.isEdit
+        ? context.entityData?.PreviewUrl || context.entityData?.AvatarPath || ""
+        : "",
+  },
+
   {
     label: "Customer Name",
     name: "CustomerName",
@@ -205,7 +221,7 @@ export const CustomerConfig = () => [
     apiKey: "Repo_Id",
     initValueResolver: ({ context }) => {
       return context.repoId ?? "";
-       ;
+      ;
     },
   },
 

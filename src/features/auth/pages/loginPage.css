@@ -1,111 +1,351 @@
-.login-container {
-    /* background: linear-gradient(135deg, #000000, #1c1c1c); */
-    position: relative;
-    background-color: white;
-    height: 100vh;
+
+* {
+    box-sizing: border-box;
+  }
+  
+  .wg-page {
+    display: flex;
+    min-height: 100vh;
     width: 100vw;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #ffffff;
+    overflow-x: hidden;
+  }
+  
+  /* ---------- Left Hero Panel ---------- */
+  
+  .wg-hero {
+    position: relative;
+    display: none;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 52%;
+    padding: 56px 64px;
+    background: #17181c;
+    color: #f5f5f4;
     overflow: hidden;
+  }
+  
+  @media (min-width: 1024px) {
+    .wg-hero {
+      display: flex;
+    }
+  }
+  
+  .wg-hero-mark {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 2;
+  }
+    
+  
+  .wg-hero-wordmark {
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: -0.01em;
+    color: #f5f5f4;
+  }
+  
+  .wg-hero-copy {
+    max-width: 440px;
+    z-index: 2;
+  }
+  
+  .wg-hero-heading {
+    font-weight: 700 !important;
+    font-size: 42px !important;
+    line-height: 1.15 !important;
+    color: #ffffff !important;
+    margin-bottom: 16px !important;
+  }
+  
+  .wg-hero-sub {
+    font-size: 15px !important;
+    line-height: 1.6 !important;
+    color: #9a9a95 !important;
+  }
+  
+  .wg-hero-footer {
+    font-size: 12px !important;
+    color: #6f6f6a !important;
+    z-index: 2;
+  }
+  
+  /* ---------- Ticket Stack & Animation ---------- */
+  
+  .wg-ticket-stack {
+    position: relative;
+    z-index: 2;
+    height: 200px;
+    margin: 16px 0;
+  }
+  
+  .wg-ticket-card {
+    position: absolute;
+    width: 400px;
+    background: #202126;
+    border: 1px solid #33342f;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+    animation-duration: 0.6s;
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+    animation-fill-mode: forwards;
+  }
+  
+  .wg-ticket-card--0 {
+    top: 48px;
+    left: 36px;
+    animation-name: cardIn0;
+    animation-delay: 0.15s;
+  }
+  
+  .wg-ticket-card--1 {
+    top: 24px;
+    left: 18px;
+    animation-name: cardIn1;
+    animation-delay: 0.3s;
+  }
+  
+  .wg-ticket-card--2 {
+    top: 0;
+    left: 0;
+    animation-name: cardIn2;
+    animation-delay: 0.45s;
+  }
+  
+  @keyframes cardIn0 {
+    from {
+      opacity: 0;
+      transform: translateY(25px) rotate(-3deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(-3deg);
+    }
+  }
+  
+  @keyframes cardIn1 {
+    from {
+      opacity: 0;
+      transform: translateY(25px) rotate(1.5deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(1.5deg);
+    }
+  }
+  
+  @keyframes cardIn2 {
+    from {
+      opacity: 0;
+      transform: translateY(25px) rotate(-1deg);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) rotate(-1deg);
+    }
+  }
+  
+  .wg-ticket-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  
+  .wg-ticket-id {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 11px;
+    color: #7a7a75;
+  }
+  
+  .wg-ticket-title {
+    font-size: 16px;
+    color: #e5e5e2;
+    line-height: 1.4;
+  }
+  
+  .wg-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 999px;
+  }
+  
+  .wg-status--open {
+    color: #d99a3d;
+    background: rgba(217, 154, 61, 0.12);
+  }
+  
+  .wg-status--progress {
+    color: #f1c40f;
+    background: rgba(241, 196, 15, 0.12);
+  }
+  
+  .wg-status--resolved {
+    color: #4ade80;
+    background: rgba(74, 222, 128, 0.12);
+  }
+  
+  .wg-status-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #f1c40f;
+    animation: wgPulse 1.6s ease-in-out infinite;
+  }
+  
+  @keyframes wgPulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.35;
+      transform: scale(0.8);
+    }
+  }
+  
+  /* ---------- Right Form Panel ---------- */
+  
+  .wg-form-panel {
+    flex: 1;
     display: flex;
     align-items: center;
     justify-content: center;
-}
+    padding: 48px 24px;
+    background: #ffffff;
+  }
+  
+  .wg-form-container,
+  .wg-form-panel .MuiContainer-root {
+    padding: 0 !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  
+  .wg-form-paper,
+  .wg-form-panel .MuiPaper-root {
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: 0 !important;
+    border-style: none !important;
+    outline: none !important;
+    background: transparent !important;
+  }
+  
+  .wg-mobile-mark {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 40px;
+  }
+  
+  @media (min-width: 1024px) {
+    .wg-mobile-mark {
+      display: none;
+    }
+  }
+  
+  .wg-mobile-wordmark {
+    font-weight: 700;
+    font-size: 15px;
+    color: #17181c;
+  }
+  
+  .wg-welcome {
+    font-weight: 700 !important;
+    font-size: 28px !important;
+    color: #17181c !important;
+  }
+  
+  .wg-welcome-sub {
+    font-size: 14px !important;
+    color: #6f6f6a !important;
+    margin-top: 6px !important;
+    margin-bottom: 28px !important;
+  }
+  
+  .wg-form {
+    width: 100%;
+  }
+  
+  .wg-field {
+    margin-bottom: 8px !important;
+  }
+  
+  .wg-field .MuiInput-underline:before {
+    border-bottom-color: #e2e1da;
+  }
+  
+  .wg-field .MuiInput-underline:after {
+    border-bottom-color: #17181c;
+  }
+  
+  .wg-field .MuiInputLabel-root {
+    color: #8c8b85;
+  }
+  
+  .wg-field .MuiInputLabel-root.Mui-focused {
+    color: #17181c;
+  }
+  
+  .wg-field .MuiInputBase-input {
+    color: #17181c;
+  }
+  
+  .wg-field-icon {
+    color: #a4a39c !important;
+    font-size: 20px !important;
+  }
+  
+  .wg-submit {
+    margin-top: 28px !important;
+    margin-bottom: 14px !important;
+    padding: 12px !important;
+    border-radius: 8px !important;
+  }
+  
+  .wg-forgot-row {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .wg-forgot {
+    color: #6f6f6a !important;
+    font-size: 13px !important;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
+  
+  .wg-forgot:hover {
+    color: #17181c !important;
+  }
+  
+  /* ---------- Validation Shake ---------- */
+  
+  @keyframes shake {
+    0% { transform: translateX(0); }
+    20% { transform: translateX(-5px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+    100% { transform: translateX(0); }
+  }
+  
+  .shake {
+    animation: shake 0.3s ease-in-out;
+  }
 
-.login-panel{
-    display: block;
-    position: absolute;
-    width: 200vmax;
-    height:200vmax;
-    top:50%;
-    left:50%;
-    margin-top: -100vmax;
-    transform-origin: 0 50%;
-    transition-delay: 0.18s;
-    z-index:2;
-    opacity:0.75;
-    animation: panelOpen 0.65s cubic-bezier(0.445, 0.05, 0, 1) 0.2s forwards;
-}
-
-.login-panel--top-a{transform: rotate(45deg); background:#fbcb5a}
-.login-panel--top-b{transform: rotate(135deg); background:#252525}
-
-.login-container.is-typing .login-panel{
-    margin-left: 200px;
-    transform-origin: -200px 50%;
-    animation: none;
-}
-
-/* .login-panel--top-a{transform: rotate(45deg); background:#ffcf5f}
-.login-panel--top-b{transform: rotate(135deg); background:#252525} */
-
-.login-container:hover .login-panel{
-    margin-left:200px;
-    transform-origin: -200px 50%;
-    transition-delay: 0s;
-}
-
-.login-floating-logo{
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index:20;
-    pointer-events:none;
-    transition: 
-    top 0.55s cubic-bezier(0.445, 0.05, 0, 1),
-    left 0.55s cubic-bezier(0.445, 0.05, 0, 1),
-    transform 0.55s cubic-bezier(0.445, 0.05, 0, 1),
-    opacity 0.35s ease;
-    transition-delay: 0s;
-}
-
-.login-floating-logo img {
-    width:180px;
-    height: auto;
-    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.18));
-}
-
-.login-container.is-open .login-floating-logo{
-    opacity: 0;
-    pointer-events: none;
-    transition-delay: 0s;
-}
-.login-center{
-    position: absolute !important;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index:10;
-    opacity: 0;
-    pointer-events: none;
-    animation: formFadeIn 0.45s cubic-bezier(0.445, 0.05, 0, 1) 0.55s forwards;
-}
-
-.login-container:hover .login-center {
-    opacity: 1;
-    transition-delay: 0.22s;
-    pointer-events: auto;
-}
-
-.login-container.is-typing .login-panel{
-    margin-left: 200px;
-    transform-origin: -200px 50%;
-    transition-delay:0s;
-}
-
-.login-container.is-typing .login-center{
-    opacity:1;
-    pointer-events: auto;
-    animation: none;
-}
-.login-paper {
-    padding: 32px 28px !important;
-    border-radius: 12px !important;
-    background-color: #ffffff !important;
-    color: #1a1a1a !important;
-}
-
-.login-logo{
-    margin-bottom: 12px;
+  .login-logo{
+    margin-bottom: 24px;
     display: flex;
     justify-content: center;
 }
@@ -116,54 +356,19 @@
     object-fit: contain;
 }
 
-.forgotpassword {
-    display: flex;
-    justify-content: center;
-    width: 100%;
-    color: black;
+.login-logo-divider {
+    width: 50%;
+    height: 1px;
+    background-color: #c4c4c448;
+    margin: 24px auto 20px;
+  }
+
+  input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear {
+  display: none;
 }
 
-@keyframes panelOpen{
-    from{
-        margin-left: 0;
-        transform-origin: 0 50%;
-    }
-    to{
-        margin-left:200px;
-        transform-origin: -200px 50%;
-    }
-}
-
-@keyframes formFadeIn{
-    from{opacity: 0; pointer-events: none;}
-    to{opacity: 1; pointer-events: auto;}
-}
-@keyframes shake {
-    0% {
-        transform: translateX(0);
-    }
-
-    20% {
-        transform: translateX(-5px);
-    }
-
-    40% {
-        transform: translateX(5px);
-    }
-
-    60% {
-        transform: translateX(-5px);
-    }
-
-    80% {
-        transform: translateX(5px);
-    }
-
-    100% {
-        transform: translateX(0);
-    }
-}
-
-.shake {
-    animation: shake 0.3s ease-in-out;
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
 }

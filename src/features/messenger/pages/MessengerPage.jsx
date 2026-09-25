@@ -22,7 +22,7 @@ import {
 } from "../hooks/useChat";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { fetUserStatus } from "../hooks/useUserStatus";
-import { formatLastSeen } from "../../../app/shared/utils/chattime";
+import { formateDateTime, formatLastSeen } from "../../../app/shared/utils/chattime";
 
 export default function MessengerPage() {
  
@@ -69,7 +69,8 @@ const {data:statusList=[]}=fetUserStatus()
   ?statusMap[selectedOtherMemberId?.toLowerCase()]
   :null
 
-  const selectedOnline=selectedStatus?.IsActive===true
+  const selectedOnline=selectedStatus?.LastHeartbeat &&
+  (Date.now()-new Date(selectedStatus.LastHeartbeat).getTime())<=30*1000
   return (
     <div className="absolute inset-0 p-2">
       <div className="flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -137,8 +138,10 @@ const {data:statusList=[]}=fetUserStatus()
                   >
                     <div className="relative shrink-0"
                     title={!selectedIsGroup && selectedStatus
-                      ?(selectedStatus.LogoutAt
-                        ?`Last seen ${formatLastSeen(selectedStatus.LogoutAt)}`
+                      ?(selectedOnline
+                        ? "Online"
+                        : selectedStatus?.LastHeartbeat
+                        ?`Last seen ${formateDateTime(selectedStatus.LastHeartbeat)}`
                         :"Offline"
                       )
                       :""

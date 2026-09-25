@@ -23,6 +23,7 @@ const BannerPage=()=>{
         Type_Name:banner.Type_Name,
         ColorCode:banner.ColorCode,
         IconClass:banner.IconClass,
+        ToClient:banner.ToClient
     })
     const Bannerlist=Array.isArray(banner)
     ?banner.map(normalizeBanner)

@@ -182,12 +182,16 @@ const Header = () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+
   const activeBanners = useMemo(() => {
     return Array.isArray(bannerListWrapper)
-      ? bannerListWrapper.filter((b) => b.Status === "Active")
+      ? bannerListWrapper.filter((b) => b.Status === "Active" && (b.ToClient ? isViewer :!isViewer))
       : [];
   }, [bannerListWrapper]);
   // Add this function inside your component
+
+
   const getBannerIcon = (iconClass, colorCode) => {
     const props = {
       size: 18,
@@ -236,7 +240,7 @@ const Header = () => {
   const now = useMemo(() => dayjs(), []);
 
   const filteredBanners = useMemo(() => {
-    return activeBanners.filter((banner) => dayjs(banner.EndDate).isAfter(now));
+    return activeBanners.filter((banner) => dayjs(banner.EndDate).endOf("day").isAfter(now));
   }, [activeBanners, now]);
 
   useEffect(() => {
@@ -744,7 +748,7 @@ const Header = () => {
           </div>
         </div>
       </header>
-      {!isViewer && activeBanners.length > 0 && (
+      { filteredBanners.length > 0 && (
         <div className="running-banner" ref={bannerContainerRef}>
           <div
             className="running-banner-content"

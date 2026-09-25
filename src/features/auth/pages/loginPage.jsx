@@ -1,18 +1,20 @@
-// import { TextField } from "@mui/material";
 import Bowser from "bowser";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import "./loginPage.css";
 import {
-  Avatar,
   Button,
   TextField,
-  Grid,
   Box,
   Typography,
   Container,
   Paper,
+  IconButton,
+  InputAdornment,
 } from "@mui/material";
+import PersonOutlineIcon from "@mui/icons-material/PersonOutline";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { styled } from "@mui/material/styles";
 import { useMutation } from "@tanstack/react-query";
 import { useAppStore } from "../../../core/state/useAppStore";
@@ -20,18 +22,31 @@ import { loginApi } from "../api/login.api";
 import { useNavigate } from "react-router-dom";
 import { ROLES } from "../../../core/auth/permissions";
 import { jwtDecode } from "jwt-decode";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-import { useChatIdentityStore } from "../../messenger/e2ee/chatIdentityStore";
 
 const YellowButton = styled(Button)(() => ({
   backgroundColor: "#f1c40f",
   color: "#000",
-  fontWeight: "bold",
+  fontWeight: 700,
   textTransform: "none",
+  fontSize: "0.95rem",
+  boxShadow: "none",
   "&:hover": {
     backgroundColor: "#d4ac0d",
+    boxShadow: "none",
   },
 }));
+
+const tickets = [
+  { id: "#1039", title: "Login issue has been resolved", status: "resolved" },
+  { id: "#1041", title: "Dashboard widget overlaps on mobile", status: "progress" },
+  { id: "#1042", title: "Add-on has been deployed in live.", status: "open" },
+];
+
+const statusLabel = {
+  open: "Open",
+  progress: "In progress",
+  resolved: "Resolved",
+};
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({
@@ -39,7 +54,7 @@ const LoginPage = () => {
     password: "",
     remember: false,
   });
-  const hasTyped = useRef(false);
+  const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const [usernameError, setUsernameError] = useState("");
   const [passwordError, setPasswordError] = useState("");
@@ -49,52 +64,29 @@ const LoginPage = () => {
   });
   const userAgent = window.navigator.userAgent;
   const loginStore = useAppStore((s) => s.login);
-  const syncClass = ()=>{
-    const el = document.querySelector(".login-container");
-    if (!el) return;
-    if(hasTyped.current){
-      el.classList.add("is-typing");
-    }else {
-      el.classList.remove("is-typing");
-    }
-  };
-  
+
   const handleChange = (e, setValue, setError, fieldName, characterLimit) => {
     const { name, value, type, checked } = e.target;
 
-    // Check length limit
     if (value.length <= characterLimit) {
       setValue(value);
-      setFormData({
-        ...formData,
+      setFormData((prev) => ({
+        ...prev,
         [name]: type === "checkbox" ? checked : value,
-      });
+      }));
       setError("");
-      setShakeField({ ...shakeField, [name]: false }); // stop shaking if valid
-      const u = name === "username" ? value : formData.username;
-      const p = name === "password" ? value : formData.password;
-      hasTyped.current = u.trim().length > 0 || p.trim().length > 0;
-      syncClass();
+      setShakeField((prev) => ({ ...prev, [name]: false }));
     } else {
-      setError(
-        `Maximum ${characterLimit} characters allowed for ${fieldName}.`,
-      );
-      setShakeField({ ...shakeField, [name]: true }); // trigger shake
-      setTimeout(() => setShakeField({ ...shakeField, [name]: false }), 300);
+      setError(`Maximum ${characterLimit} characters allowed for ${fieldName}.`);
+      setShakeField((prev) => ({ ...prev, [name]: true }));
+      setTimeout(() => setShakeField((prev) => ({ ...prev, [name]: false })), 300);
     }
   };
+
   const { mutate, isPending } = useMutation({
     mutationFn: loginApi,
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       loginStore(data);
-
-      // Chat encryption keys are unlocked with the login password. It's passed straight
-      // to the chat identity store (in memory only) and runs in the background.
-      const userId = readUserFromSession()?.userId;
-      if (userId) {
-        useChatIdentityStore.getState().initializeAfterLogin({ userId, password: variables.password });
-      }
-
       const encoded = jwtDecode(data);
       const role = encoded["http://schemas.microsoft.com/ws/2008/06/identity/claims/role"];
       if (Number(role) === ROLES.VIEWER) {
@@ -104,11 +96,6 @@ const LoginPage = () => {
       }
     },
   });
-  //   onSuccess: (data) => {      
-  //     loginStore(data); // store token
-  //     navigate("/dashboard?module=dash_tickets");
-  //   },
-  // });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -136,38 +123,66 @@ const LoginPage = () => {
       password: formData.password,
       DeviceInfo: JSON.stringify(browser.parsedResult),
     };
-    // const result = await loginThunk(body);
     mutate(body);
-    // if (result) {
-    //   onLogin(result);
-    // }
   };
 
   return (
-    <Box
-      className="login-container">
-      <div className="login-panel login-panel--top-a" />
-      <div className="login-panel login-panel--top-b" />
-      <div className="login-panel login-panel--top-a" />
-      <div className="login-panel login-panel--top-b" />
+    <Box className="wg-page">
+      {/* Left hero panel */}
+      <Box className="wg-hero">
+        <Box className="wg-hero-mark">
+          <span className="wg-hero-wordmark"></span>
+        </Box>
 
-      <Container component="main" maxWidth="xs" className="login-center">
-        <Paper
-          elevation={10}
-          className="login-paper">
-          <Box
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
+        <Box className="wg-hero-copy">
+          <Typography component="h1" className="wg-hero-heading">
+            Task management designed for seamless collaboration.
+          </Typography>
+          <Typography className="wg-hero-sub">
+            Track, assign, and resolve issues without losing the thread.
+          </Typography>
+        </Box>
+
+        <Box className="wg-ticket-stack" aria-hidden="true">
+          {tickets.map((t, i) => (
+            <Box key={t.id} className={`wg-ticket-card wg-ticket-card--${i}`}>
+              <Box className="wg-ticket-row">
+                <span className="wg-ticket-id">{t.id}</span>
+                <span className={`wg-status wg-status--${t.status}`}>
+                  {t.status === "progress" && <span className="wg-status-dot" />}
+                  {statusLabel[t.status]}
+                </span>
+              </Box>
+              <Box className="wg-ticket-title">{t.title}</Box>
+            </Box>
+          ))}
+        </Box>
+
+        <Typography className="wg-hero-footer">
+          © {new Date().getFullYear()} WorkGlow Solutions. Every ticket, tracked.
+        </Typography>
+      </Box>
+
+      {/* Right form panel */}
+      <Box className="wg-form-panel">
+        <Container component="main" maxWidth="xs" className="wg-form-container">
+          <Paper elevation={0} className="wg-form-paper">
+            <Box className="wg-mobile-mark">
+              <span className="wg-owl wg-owl--dark" aria-hidden="true">
+                <span className="wg-owl-eye" />
+                <span className="wg-owl-eye" />
+              </span>
+              <span className="wg-mobile-wordmark">WorkGlow</span>
+            </Box>
+
             <Box className="login-logo">
               <img src="/WORKGLOW LOGO.png" alt="logo-wg" className="login-logo-img" />
             </Box>
+            <Box className="login-logo-divider" />
 
-            <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1, width: "100%" }}>
+            <Box component="form" onSubmit={handleSubmit} className="wg-form">
               <TextField
+                variant="standard"
                 margin="normal"
                 required
                 fullWidth
@@ -176,12 +191,12 @@ const LoginPage = () => {
                 name="username"
                 autoComplete="username"
                 autoFocus
-                className={shakeField.username ? "shake" : ""}
+                className={`wg-field ${shakeField.username ? "shake" : ""}`}
                 value={formData.username}
                 onChange={(e) =>
                   handleChange(
                     e,
-                    (v) => setFormData({ ...formData, username: v }),
+                    (v) => setFormData((prev) => ({ ...prev, username: v })),
                     setUsernameError,
                     "Username",
                     20,
@@ -189,27 +204,31 @@ const LoginPage = () => {
                 }
                 error={!!usernameError}
                 helperText={usernameError}
-                InputLabelProps={{ style: { color: "#000" } }}
                 InputProps={{
-                  style: { color: "#000", borderColor: "#f1c40f" },
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <PersonOutlineIcon className="wg-field-icon" />
+                    </InputAdornment>
+                  ),
                 }}
               />
 
               <TextField
+                variant="standard"
                 margin="normal"
                 required
                 fullWidth
                 name="password"
                 label="Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 id="password"
-                className={shakeField.password ? "shake" : ""}
+                className={`wg-field ${shakeField.password ? "shake" : ""}`}
                 autoComplete="current-password"
                 value={formData.password}
                 onChange={(e) =>
                   handleChange(
                     e,
-                    (v) => setFormData({ ...formData, password: v }),
+                    (v) => setFormData((prev) => ({ ...prev, password: v })),
                     setPasswordError,
                     "Password",
                     30,
@@ -217,32 +236,50 @@ const LoginPage = () => {
                 }
                 error={!!passwordError}
                 helperText={passwordError}
-                InputLabelProps={{ style: { color: "#000" } }}
                 InputProps={{
-                  style: { color: "#000", borderColor: "#f1c40f" },
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon className="wg-field-icon" />
+                    </InputAdornment>
+                  ),
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        onClick={() => setShowPassword((v) => !v)}
+                        edge="end"
+                        size="small"
+                      >
+                        {showPassword ? (
+                          <VisibilityOffIcon className="wg-field-icon" fontSize="small" />
+                        ) : (
+                          <VisibilityIcon className="wg-field-icon" fontSize="small" />
+                        )}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
                 }}
               />
+
               <YellowButton
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2, py: 1.2, borderRadius: 2 }}
+                className="wg-submit"
                 disabled={isPending}
               >
-                Sign In
+                {isPending ? "Signing in…" : "Sign In"}
               </YellowButton>
 
-              <Grid container className="forgotpassword">
-                <Grid size="grow">
-                  <Typography variant="body2" sx={{ cursor: "pointer" }}>
-                    Forgot password?
-                  </Typography>
-                </Grid>
-              </Grid>
+              {/* <Box className="wg-forgot-row">
+                <Typography variant="body2" className="wg-forgot">
+                  Forgot password?
+                </Typography>
+              </Box> */}
             </Box>
-          </Box>
-        </Paper>
-      </Container>
+          </Paper>
+        </Container>
+      </Box>
     </Box>
   );
 };

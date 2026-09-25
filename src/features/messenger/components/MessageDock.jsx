@@ -276,11 +276,12 @@ function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, p
   const chatStatus=otherMemberId
   ?statusMap[otherMemberId?.toLowerCase()]
   :null
-  const chatOnline=chatStatus?.IsActive===true
+  const chatOnline=chatStatus?.LastHeartbeat &&
+  (Date.now()-new Date(chatStatus.LastHeartbeat).getTime())<=30*1000
   const lastSeenText=chatOnline
   ?"Online"
-  :chatStatus?.LogoutAt
-  ?`Last seen ${formatLastSeen(chatStatus.LogoutAt)}`
+  :chatStatus?.LastHeartbeat
+  ?`Last seen ${formatLastSeen(chatStatus.LastHeartbeat)}`
   :"Offline"
   return (
     <section

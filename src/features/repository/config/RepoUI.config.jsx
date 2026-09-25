@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import relativeTime from 'dayjs/plugin/relativeTime';
 import RepoCardList from "../Components/RepoCard";
+import AvatarCell from "../../employee/components/AvatarCell";
 
 dayjs.extend(relativeTime);
 
@@ -31,7 +32,7 @@ export const RepoUIConfig = {
 
 export const repoListConfig = {
   defaultView: "card",
-  pageSize:100,
+  pageSize: 100,
   enableSearch: true,
   enableTabs: true, // 👈 required
   enableSort: true,
@@ -121,6 +122,18 @@ export const CustomerData = {
 
   columns: [
     {
+      key: "AvatarPath",
+      label: "Avatar",
+      render: (item) => (
+        <div className="flex items-center h-30">
+          <AvatarCell
+            PreviewUrl={item.AvatarPath || item.PreviewUrl}
+            name={item.UserName}
+          />
+        </div>
+      ),
+    },
+    {
       key: "UserName",
       label: "UserName",
       render: (item) => <div className="h-30">{item.UserName}</div>,
@@ -146,12 +159,12 @@ export const CustomerData = {
     //   label: "Status",
     //   render: (item) => <div className="h-30">{item.Status}</div>,
     // },
-    
+
     {
       key: "WGUserName",
       label: "Login Username",
       render: (item) => <div className="h-30">{item.WGUserName}</div>,
     },
-    
+
   ],
 };

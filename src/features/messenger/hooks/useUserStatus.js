@@ -14,12 +14,14 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
       method: "POST",
       payload: payload,
       source: "GetUserOnlineStatus",
+      silent: true,
       options: {
         staleTime: 0,
         refetchInterval:30_000,
         refetchOnWindowFocus:true,
         refetchOnMount:true,
-        enabled: true,
+        enabled: true, 
+        
       },
     });
   };

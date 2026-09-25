@@ -32,7 +32,8 @@ export default function ConversationList({ conversations, isLoading, isError, se
         const status=otherMemberId
         ?statusMap[otherMemberId?.toLowerCase()]
         :null
-        const online=status?.IsActive===true
+        const online=status?.LastHeartbeat && 
+        (Date.now()-new Date(status.LastHeartbeat).getTime())<=30*1000
         const preview = last
           ? `${sameId(last.SenderUserId, userId) ? "You: " : ""}${messagePreview(last)}`
           : isGroup
@@ -52,22 +53,22 @@ export default function ConversationList({ conversations, isLoading, isError, se
             >
               <div className="relative shrink-0"
               title={!isGroup && status
-                // ?(online
-                //   ?"Online"
-                //   :status.LogoutAt
-                //   ?`Last seen ${formatLastSeen(status.LogoutAt)}`
-                //   :"Offline"
-                // )
-                // :""
-                ?[
-                  status.IsActive===true?"Online":"Offline",
-                  c.LastReadAt
-                  ?`\nLast Read: ${formateDateTime(c.LastReadAt)}`
-                  :"",
-                  status.LogoutAt
-                  ?`\nLast Seen: ${formateDateTime(status.LogoutAt)}`
-                  :"",
-                ].join("")
+                ?(status.LastHeartbeat && (Date.now() - new Date(status.LastHeartbeat).getTime())
+                  ?"Online"
+                  :status.LastHeartbeat
+                  ?`Last seen ${formatLastSeen(status.LastHeartbeat)}`
+                  :"Offline"
+                )
+                
+                // ?[
+                //   status.IsActive===true?"Online":"Offline",
+                //   c.LastReadAt
+                //   ?`\nLast Read: ${formateDateTime(c.LastReadAt)}`
+                //   :"",
+                //   status.LogoutAt
+                //   ?`\nLast Seen: ${formateDateTime(status.LogoutAt)}`
+                //   :"",
+                // ].join("")
                 :undefined
               }>
               <ChatAvatar 

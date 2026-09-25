@@ -5,7 +5,6 @@ import { handleRealtimeMessage } from "./realtimeDispatcher";
 import { readUserFromSession } from "../auth/useCurrentUser";
 import { useNotificationStore } from "../state/useNotificationStore";
 import { versionChecker } from "../../app/Hooks/VersionChecker";
-import { queryKeys } from "../query/queryKeys";
 
 const DEDUP_MAX_SIZE = 300;
 
@@ -58,18 +57,8 @@ export const useRealtimeSync = (getToken) => {
           
           useNotificationStore.getState().increment();
           queryClient.invalidateQueries({ queryKey: ["notification"] });
-          // Also refresh live lists that surface via notifications (e.g. Leave Requests)
-          // so a new/decided request appears immediately without a manual reload.
-          queryClient.invalidateQueries({ queryKey: queryKeys.leaveRequest.all });
+          
         }
-        return;
-      }
-
-      // Leave requests are a role-aware server query (not a patchable cache list),
-      // so a create/decision just refetches the list and the sidebar badge count.
-      if (entity.toLowerCase() === "leaverequest") {
-        queryClient.invalidateQueries({ queryKey: queryKeys.leaveRequest.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.notification.unreadCount() });
         return;
       }
 

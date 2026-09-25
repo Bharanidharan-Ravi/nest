@@ -49,9 +49,11 @@ import { useParams, useSearchParams } from "react-router-dom";
 import { CustomerFormConfig } from "../config/customerForm";
 import { useClientData } from "../hooks/useRepoMaster";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 const CustomerCreatePage = () => {
   const params = useParams();
+  const { isAdmin } = useCurrentUser();
   const repoId=params.repoId
   const userId=params.userId
   const isEdit = !!userId;
@@ -75,7 +77,7 @@ const CustomerCreatePage = () => {
       <EntityFormPage
         mode={isEdit ? "Update" : "Create"}
         config={dynamicConfig}
-        context={{  params,isEdit, entityData,repoId }}
+        context={{  params,isEdit, entityData,repoId, isAdmin }}
         module="Customer"
       />
     </div>

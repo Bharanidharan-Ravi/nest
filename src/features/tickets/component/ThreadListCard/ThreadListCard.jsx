@@ -416,7 +416,7 @@ const ThreadListCard = ({
           {isMe ? getInitials(currentUser.name || "You") : user?.role === 3 && item.team !== null ? "WG" : getInitials(item.CreatedBy)}
         </div> */}
         <SmartAvatar
-        userId={isMe ? currentUser.userId:undefined}
+        userId={item.CreatedId || (isMe ? currentUser.userId : undefined)}
         name={isMe ? currentUser.name : user?.role === 3 && item.team !== null ? "WG":item.CreatedBy}
         extraClasses={
           isMeetingCompleted

@@ -13,7 +13,8 @@ const Bannerlist = ({ item }) => {
     ) : null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className={`flex flex-col gap-2 ${
+      item.ToClient ? "border-l-4 border-orange-300 pl-2":""}`}>
       <div className="flex items-center gap-2">
         {statusIcon && <span className="flex-shrink-0">{statusIcon}</span>}
 

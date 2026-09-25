@@ -39,8 +39,8 @@ export const ROUTE_ROLES = {
   REPO_CREATE: ADMIN_MANAGER,
   REPO_DETAIL: ALL,             // ← Role 3 CAN open a specific repo
   REPO_OVERVIEW: ALL,
-  REPO_CUSTOMER_CREATE: ALL,
-  REPO_CUSTOMER_EDIT: ALL,
+  REPO_CUSTOMER_CREATE: ADMIN_ONLY,
+  REPO_CUSTOMER_EDIT: ADMIN_ONLY,
 
   // ── Tickets (all roles) ──────────────────────────────────────────────
   TICKET_LIST: ALL,
@@ -84,6 +84,9 @@ export const PERMISSIONS = {
   REPO_CREATE: ADMIN_MANAGER,
   REPO_EDIT: ADMIN_MANAGER,
   REPO_DELETE: ADMIN_ONLY,
+
+  REPO_CUSTOMER_CREATE: ADMIN_ONLY,
+  REPO_CUSTOMER_EDIT: ADMIN_ONLY,
 
   // Tickets
   TICKET_CREATE: ALL,
