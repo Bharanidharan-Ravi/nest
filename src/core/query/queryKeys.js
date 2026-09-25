@@ -94,4 +94,8 @@ export const queryKeys = {
     all: ["GetLeaveRequests"],
     list: () => [...queryKeys.leaveRequest.all, "list"],
   },
+  permissionRequest: {
+    all: ["GetPermissionRequests"],
+    list: () => [...queryKeys.permissionRequest.all, "list"],
+  },
 };

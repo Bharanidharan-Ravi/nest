@@ -963,6 +963,10 @@ export function useListState(config, rawData = [], userRole = null) {
     source: apiFilterConfig?.configKey,
     options: {
       enabled: apiFilterEntries.length > 0 && !!apiFilterConfig?.api,
+      // Dashboard lists (My Tickets, Timesheet, Checked Tickets): refetch
+      // silently each time the screen is shown, so they never sit on a
+      // cached copy from before a change made elsewhere
+      staleTime: 0,
     },
   });
 

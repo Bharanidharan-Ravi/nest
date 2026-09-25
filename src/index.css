@@ -136,6 +136,15 @@ html {
     @apply text-slate-800;
   }
 
+  /* Leave Type select — slightly smaller text in the field and the dropdown list */
+  .wg-leave-type-select .MuiOutlinedInput-root {
+    @apply text-[13px];
+  }
+
+  .wg-leave-type-listbox .MuiAutocomplete-option {
+    @apply text-[13px];
+  }
+
   /* Custom Scrollbar Utilities */
   /* Firefox: keep 'thin' (and the space it reserves) constant so hover never reflows the layout —
      only the thumb color toggles, via scrollbar-color. */

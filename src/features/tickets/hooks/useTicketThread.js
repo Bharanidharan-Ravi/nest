@@ -4,7 +4,7 @@ import { executeApi } from "../../../core/api/executor";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
 
-export const fetchThreadList = (issueId, config) => {
+export const fetchThreadList = (issueId, config, { _silent } = {}) => {
   return executeApi({
     url: "/sync/v2",
     method: "POST",
@@ -13,13 +13,15 @@ export const fetchThreadList = (issueId, config) => {
       idKey: "IssuesId",
       idValue: issueId,
     }),
+    config: { _silent },
   });
 };
 export const useThreadMaster = (ticketId) => {
   const config = ["ThreadsList", "TicketHistory"];
   return useApiQuery({
     queryKey: queryKeys.ticket.thread(ticketId),
-    queryFn: () => fetchThreadList(ticketId,config),
+    // Realtime refetches run with cached data → silent, no page loader
+    queryFn: ({ _silent }) => fetchThreadList(ticketId, config, { _silent }),
     source: ["ThreadsList", "TicketHistory"],
     options: {
       staleTime: 5 * 60 * 1000,

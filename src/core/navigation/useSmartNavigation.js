@@ -29,7 +29,7 @@ export const useSmartNavigation = () => {
 // const getPath = (key, extraParams = {}, queryParams = {}) =>
 //     buildPath(key, { ...routeParams, ...extraParams }, queryParams);
 
-const getPath = (key, extraParams = {}) => {
+const getPath = (key, extraParams = {}, queryParams = {}) => {
     // 1. Build the base path normally (e.g., "/tickets/123")
     let path = buildPath(key, { ...routeParams, ...extraParams });
 
@@ -37,10 +37,16 @@ const getPath = (key, extraParams = {}) => {
     // Check if the current URL has an environment flag (like ?env=test)
     const currentParams = new URLSearchParams(location.search);
     const envFlag = currentParams.get('env');
-    
+    const finalQuery = new URLSearchParams(queryParams);
+
     // If we are in test/demo, automatically append it to the new path
     if (envFlag) {
-        path = `${path}?env=${envFlag}`;
+        finalQuery.set('env', envFlag);
+    }
+
+    const queryString = finalQuery.toString();
+    if (queryString) {
+        path = `${path}?${queryString}`;
     }
 
     return path;
@@ -48,8 +54,8 @@ const getPath = (key, extraParams = {}) => {
 
   // ─── Navigation ───────────────────────────────────────────────────────
 
-const goTo = (key, extraParams = {}, options = {}) => {
-    navigate(getPath(key, extraParams), options);
+const goTo = (key, extraParams = {}, options = {}, queryParams = {}) => {
+    navigate(getPath(key, extraParams, queryParams), options);
   };
 
   const goBack = () => {

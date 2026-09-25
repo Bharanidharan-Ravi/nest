@@ -149,7 +149,7 @@ export const Sidebar = ({ isOpen, onClose, onToggle }) => {
                       rowClass,
                       "text-sm font-medium transition-colors",
                       isActive
-                        ? "bg-brand-yellow text-black shadow-sm"
+                        ? "bg-brand-yellow text-white shadow-sm hover:text-white"
                         : "text-gray-600 hover:bg-white hover:shadow-sm",
                     ].join(" ")
                   }

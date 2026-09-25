@@ -13,6 +13,7 @@ const MuiSelectInput = ({
   required,
   theme = {},
   multiple = false,
+  listboxClassName = "",
 }) => {
   const [hasInteracted, setHasInteracted] = useState(false);
 
@@ -157,6 +158,7 @@ const MuiSelectInput = ({
 
       // 🔥 Force a max-height so the long list scrolls instead of bleeding off screen
       ListboxProps={{
+        className: listboxClassName || undefined,
         style: {
           maxHeight: "200px", // 👈 Adjust this value as needed for your UI
         },

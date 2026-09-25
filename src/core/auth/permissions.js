@@ -7,10 +7,14 @@
  * ║  your API returns, then update ROLES below to match.                ║
  * ╚══════════════════════════════════════════════════════════════════════╝
  *
- * Role definitions (update numbers to match your API):
- *   1 = Master Admin  → full access to everything
- *   2 = Manager       → all pages + actions EXCEPT label/employee create & edit
- *   3 = Viewer        → only dashboard, projects, tickets — no repo list
+ * Role definitions (ROLESMASTER table is the source of truth):
+ *   1 = Admin     → full access to everything
+ *   2 = Employee  → internal staff (labelled "Manager" below for historical
+ *                   reasons) — all pages + actions EXCEPT label/employee
+ *                   create & edit. Can submit leave requests (Admin can too).
+ *   3 = Client    → external client login (labelled "Viewer" below) — repo/
+ *                   project/ticket access only, scoped to their repos. NOT
+ *                   an employee — never grant leave-request access to it.
  */
 
 export const ROLES = {
@@ -23,6 +27,8 @@ export const ROLES = {
 const ALL = [1, 2, 3];
 const ADMIN_MANAGER = [1, 2];
 const ADMIN_ONLY = [1];
+const EMPLOYEE_ONLY = [2]; // Employee (role 2) only — role 3 is an external Client login, not an employee
+const LEAVE_CREATE_ROLES = ADMIN_MANAGER; // Admin + Employee can submit leave requests — Client (3) cannot
 
 // ─── Route-level access ───────────────────────────────────────────────────────
 // These are used as `allowedRoles` in every feature's route definition.
@@ -73,7 +79,11 @@ export const ROUTE_ROLES = {
   NOTIFICATIONS: ADMIN_MANAGER,
   MESSENGER: ADMIN_MANAGER,
 
-  LEAVE_LIST: ALL,
+  // Leave management is Admin + Employee only — a Client login (role 3)
+  // must never see this feature at all. Both Admin and Employee can submit.
+  LEAVE_LIST: ADMIN_MANAGER,
+  LEAVE_CREATE: LEAVE_CREATE_ROLES,
+  LEAVE_EDIT: LEAVE_CREATE_ROLES,
 };
 
 // ─── UI-level permissions ─────────────────────────────────────────────────────
@@ -120,4 +130,6 @@ export const PERMISSIONS = {
 
   MEETING_LIST: ADMIN_MANAGER,
   MEETING_CREATE_WITH_TICKET: ADMIN_MANAGER,
+
+  LEAVE_CREATE: LEAVE_CREATE_ROLES,
 };

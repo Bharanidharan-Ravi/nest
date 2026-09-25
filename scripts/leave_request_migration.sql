@@ -21,7 +21,7 @@ BEGIN
         EMPLOYEE_ID      UNIQUEIDENTIFIER NOT NULL,
         LEAVE_FROM       DATE             NOT NULL,
         LEAVE_TO         DATE             NOT NULL,
-        LEAVE_TYPE_ID    INT              NOT NULL,
+        LEAVE_TYPE_ID    VARCHAR(20)      NOT NULL,
         NO_OF_LEAVE_DAYS INT              NOT NULL,
         COMMENTS         NVARCHAR(500)    NULL,
         STATUS           NVARCHAR(20)     NOT NULL CONSTRAINT DF_LEAVE_REQUEST_STATUS DEFAULT ('REQUESTED'),
@@ -43,6 +43,33 @@ BEGIN
 
     CREATE INDEX IX_LEAVE_REQUEST_EMPLOYEE_ID ON [dbo].[LEAVE_REQUEST] (EMPLOYEE_ID)
     CREATE INDEX IX_LEAVE_REQUEST_STATUS      ON [dbo].[LEAVE_REQUEST] (STATUS)
+END
+GO
+
+/* LEAVE_TYPE_ID was originally INT (a small static list). It now stores the
+   SAP leave type code (e.g. "CL", "EL") from the LEAVETYPE /sync/v2 master,
+   so widen it on any install that still has the old INT column. */
+IF EXISTS (
+    SELECT 1 FROM sys.columns c
+    JOIN sys.types t ON c.user_type_id = t.user_type_id
+    WHERE c.object_id = OBJECT_ID(N'dbo.LEAVE_REQUEST') AND c.name = 'LEAVE_TYPE_ID' AND t.name = 'int'
+)
+BEGIN
+    ALTER TABLE [dbo].[LEAVE_REQUEST] ALTER COLUMN LEAVE_TYPE_ID VARCHAR(20) NOT NULL
+END
+GO
+
+/* Post-approval "not taken" flag: an admin can mark an APPROVED leave as not
+   actually taken, without changing STATUS (still reads as APPROVED). */
+IF NOT EXISTS (
+    SELECT 1 FROM sys.columns
+    WHERE object_id = OBJECT_ID(N'dbo.LEAVE_REQUEST') AND name = 'NOT_TAKEN'
+)
+BEGIN
+    ALTER TABLE [dbo].[LEAVE_REQUEST] ADD
+        NOT_TAKEN      BIT          NOT NULL CONSTRAINT DF_LEAVE_REQUEST_NOT_TAKEN DEFAULT (0),
+        NOT_TAKEN_BY   UNIQUEIDENTIFIER NULL,
+        NOT_TAKEN_DATE DATETIME2(7) NULL
 END
 GO
 
@@ -79,7 +106,10 @@ BEGIN
         LR.CREATED_BY,
         LR.CREATED_DATE,
         LR.UPDATED_BY,
-        LR.UPDATED_DATE
+        LR.UPDATED_DATE,
+        LR.NOT_TAKEN,
+        LR.NOT_TAKEN_BY,
+        LR.NOT_TAKEN_DATE
     FROM [dbo].[LEAVE_REQUEST] LR
     LEFT JOIN [dbo].[EMPLOYEEMASTER] EM ON EM.EmployeeID = LR.EMPLOYEE_ID
     WHERE @IsAdmin = 1 OR LR.EMPLOYEE_ID = @UserId

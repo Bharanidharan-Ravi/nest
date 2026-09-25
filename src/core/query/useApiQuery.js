@@ -55,7 +55,7 @@ export const useApiQuery = ({
   params,
   source,
   queryFn,
-  silent = false,
+  silent,
   options = {},
 }) => {
   

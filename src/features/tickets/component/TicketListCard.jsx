@@ -548,61 +548,26 @@ useEffect(()=>{
             )}
           </div>
 
-          <div className="grid-col">
-            <div className="grid-row">
+          <div className="metrics-grid">
+            {/* Row 1 */}
+            <div className="metrics-cell metrics-cell-progress">
               {!isViewer && (
-                <>
-                  <BatteryCompletionIndicator
-                    value={item.overallPercentage ?? 0}
-                  />
-                  {item.estimateHours &&
-                    <div className="estimate-row">
-                      <span className="estimate-time">
-                        <FaRegClock size={12} />
-                        {item.estimateHours}hr
-                      </span>
-                    </div>
-                  }
-
-                </>
+                <BatteryCompletionIndicator
+                  value={item.overallPercentage ?? 0}
+                />
               )}
-
-              <div className="edit-icon">
-                {renderEdit && renderEdit()}
-              </div>
             </div>
-
-            <div className="grid-row updated-row">
-              {!isViewer && (
-                <>
-                  <div className="updated-user">
-                    <Tooltip key={updated?.id} >
-                      {/* <div className="avatar">
-                        {getInitials(updated?.name)}
-                      </div> */}
-                      <span>
-                        <SmartAvatar
-                          userId={updated?.id}
-                          name={updated?.name}
-                          className="w-6 h-6 text-[10px]"
-                        />
-                      </span>
-                    </Tooltip>
-
-                    <p className="text-xs text-gray-500 updated-text">
-                      Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
-                    </p>
-                  </div>
-                  {item.EntireWorkingTime &&
-                    <div className="estimate-row">
-                      <span className={`estimate-time ${isOverEstimate ? 'over-estimate' : ''}`}>
-                        <FaStopwatch size={12} />
-                        {item.EntireWorkingTime}hr
-                      </span>
-                    </div>
-                  }
-                </>
+            <div className="metrics-cell metrics-cell-time">
+              {!isViewer && item.estimateHours && (
+                <div className="estimate-row">
+                  <span className="estimate-time">
+                    <FaRegClock size={12} />
+                    {item.estimateHours}hr
+                  </span>
+                </div>
               )}
+            </div>
+            <div className="metrics-cell metrics-cell-assignee">
               {item.move_toJson && (
                 <div className="flex items-center last-assignees">
                   {JSON.parse(item.move_toJson).map((user, index) => (
@@ -610,18 +575,47 @@ useEffect(()=>{
                       <div className="avatar-assignee">
                         {user.Title?.charAt(0).toUpperCase()}
                       </div>
-                      {/* <span className="assignee-avatar-wrapper">
-                        <SmartAvatar
-                          name={user.Title}
-                          className="w-6 h-6 text-[10px]"
-                        />
-                      </span> */}
                     </Tooltip>
                   ))}
                 </div>
               )}
             </div>
 
+            {/* Row 2 */}
+            <div className="metrics-cell metrics-cell-progress">
+              {!isViewer && (
+                <div className="updated-user">
+                  <Tooltip key={updated?.id} >
+                    <span>
+                      <SmartAvatar
+                        userId={updated?.id}
+                        name={updated?.name}
+                        className="w-6 h-6 text-[10px]"
+                      />
+                    </span>
+                  </Tooltip>
+
+                  <p className="text-xs text-gray-500 updated-text">
+                    Updated <span>{dayjs(item.updatedAt).fromNow()}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+            <div className="metrics-cell metrics-cell-time">
+              {!isViewer && item.EntireWorkingTime && (
+                <div className="estimate-row">
+                  <span className={`estimate-time ${isOverEstimate ? 'over-estimate' : ''}`}>
+                    <FaStopwatch size={12} />
+                    {item.EntireWorkingTime}hr
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="metrics-cell metrics-cell-edit">
+              <div className="edit-icon">
+                {renderEdit && renderEdit()}
+              </div>
+            </div>
           </div>
         </div>
       </Tooltip >

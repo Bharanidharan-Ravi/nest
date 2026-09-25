@@ -159,11 +159,40 @@ export const normalizeLeaveRequest = (raw) => ({
   rejectReason: raw.REJECT_REASON,
   rejectedBy: raw.REJECTED_BY,
   rejectedDate: raw.REJECTED_DATE,
+  notTaken: raw.NOT_TAKEN ?? false,
+  notTakenBy: raw.NOT_TAKEN_BY,
+  notTakenDate: raw.NOT_TAKEN_DATE,
 });
 
 export const normalizeLeaveRequestList = (list) => {
   if (!Array.isArray(list)) return [];
   return list.map(normalizeLeaveRequest);
+};
+
+// Maps usp_GetPermissionRequests output (GetPermissionRequest DTO, ALL_CAPS
+// columns) to the camelCase shape LeaveRequestPage / LeaveRequestFormPage work with.
+export const normalizePermissionRequest = (raw) => ({
+  id: raw.ID,
+  employeeId: raw.EMPLOYEE_ID,
+  requestedBy: raw.EmployeeName,
+  permissionDate: raw.PERMISSION_DATE,
+  durationMinutes: raw.DURATION_MINUTES,
+  remarks: raw.REMARKS,
+  status: raw.STATUS,
+  requestedDate: raw.REQUESTED_DATE,
+  approvedBy: raw.APPROVED_BY,
+  approvedDate: raw.APPROVED_DATE,
+  rejectReason: raw.REJECT_REASON,
+  rejectedBy: raw.REJECTED_BY,
+  rejectedDate: raw.REJECTED_DATE,
+  actualDurationMinutes: raw.ACTUAL_DURATION_MINUTES,
+  actualDurationBy: raw.ACTUAL_DURATION_BY,
+  actualDurationDate: raw.ACTUAL_DURATION_DATE,
+});
+
+export const normalizePermissionRequestList = (list) => {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizePermissionRequest);
 };
 
 // Helper to normalize an entire array

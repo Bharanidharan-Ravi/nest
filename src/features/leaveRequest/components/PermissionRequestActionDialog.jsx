@@ -1,61 +1,84 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// LeaveRequestActionDialog.jsx
-// Admin-only Approve / Reject modal for a single REQUESTED leave request.
-// Rejecting requires a reason (PATCH /LeaveRequest/{id}/status).
+// PermissionRequestActionDialog.jsx
+// Admin-only Approve / Reject modal for a single REQUESTED permission request.
+// Rejecting requires a reason (PATCH /PermissionRequest/{id}/status).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from "react"
 import { executeApi } from "../../../core/api/executor"
-import { useLeaveTypeLabel } from "../../../core/master/selectors/selectors"
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "")
 
-const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
+const formatDuration = (minutes) => {
+  if (!minutes) return ""
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return h > 0 ? `${h}h${m ? ` ${m}m` : ""}` : `${m}m`
+}
+
+const PermissionRequestActionDialog = ({ request, onClose, onDone }) => {
   const [mode, setMode] = useState("view") // "view" | "reject"
   const [rejectReason, setRejectReason] = useState("")
+  const [actualMinutes, setActualMinutes] = useState(
+    request.actualDurationMinutes ?? request.durationMinutes ?? ""
+  )
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
 
   const isDecided = request.status !== "REQUESTED"
   const isApproved = request.status === "APPROVED"
-  const canMarkNotTaken = isApproved && !request.notTaken
-  const leaveTypeLabel = useLeaveTypeLabel(request.leaveTypeId)
+
+  const actualDurationOptions = (() => {
+    const MAX_MINUTES = 180 // 3 hrs
+    const requested = request.durationMinutes || 0
+    const max = Math.max(MAX_MINUTES, requested)
+    const options = []
+    for (let m = 30; m <= max; m += 30) options.push(m)
+    if (requested > 0 && !options.includes(requested)) options.push(requested)
+    return options.sort((a, b) => a - b)
+  })()
 
   const submitStatus = async (status, reason) => {
     setSubmitting(true)
     setError("")
     try {
       const result = await executeApi({
-        url: `/LeaveRequest/${request.id}/status`,
+        url: `/PermissionRequest/${request.id}/status`,
         method: "PATCH",
         payload: { Status: status, RejectReason: reason },
       })
       if (result?.Ok === false) {
-        throw new Error(result?.Err?.M || "Failed to update leave request.")
+        throw new Error(result?.Err?.M || "Failed to update permission request.")
       }
       onDone()
       onClose()
     } catch (err) {
-      setError(err?.message || "Failed to update leave request.")
+      setError(err?.message || "Failed to update permission request.")
     } finally {
       setSubmitting(false)
     }
   }
 
-  const submitNotTaken = async () => {
+  const submitActualDuration = async () => {
+    const minutes = Number(actualMinutes)
+    if (!minutes || minutes <= 0) {
+      setError("Enter the actual minutes taken.")
+      return
+    }
     setSubmitting(true)
     setError("")
     try {
       const result = await executeApi({
-        url: `/LeaveRequest/${request.id}/not-taken`,
+        url: `/PermissionRequest/${request.id}/actual-duration`,
         method: "PATCH",
+        payload: { ActualDurationMinutes: minutes },
       })
       if (result?.Ok === false) {
-        throw new Error(result?.Err?.M || "Failed to mark leave as not taken.")
+        throw new Error(result?.Err?.M || "Failed to save actual duration.")
       }
       onDone()
       onClose()
     } catch (err) {
-      setError(err?.message || "Failed to mark leave as not taken.")
+      setError(err?.message || "Failed to save actual duration.")
     } finally {
       setSubmitting(false)
     }
@@ -73,36 +96,34 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
         <div className="h-1 w-full bg-amber-400" />
 
         <div className="px-6 pt-6 pb-5">
-          <h3 className="text-[15px] font-semibold text-gray-800 mb-4">Leave Request</h3>
+          <h3 className="text-[15px] font-semibold text-gray-800 mb-4">Permission Request</h3>
 
           <div className="grid grid-cols-2 gap-y-2 text-[13px] mb-4">
             <span className="text-gray-400">Requested By</span>
             <span className="text-gray-700 font-medium">{request.requestedBy}</span>
 
-            <span className="text-gray-400">From</span>
-            <span className="text-gray-700">{formatDate(request.fromDate)}</span>
+            <span className="text-gray-400">Date</span>
+            <span className="text-gray-700">{formatDate(request.permissionDate)}</span>
 
-            <span className="text-gray-400">To</span>
-            <span className="text-gray-700">{formatDate(request.toDate)}</span>
+            <span className="text-gray-400">Duration</span>
+            <span className="text-gray-700">{formatDuration(request.durationMinutes)}</span>
 
-            <span className="text-gray-400">Leave Type</span>
-            <span className="text-gray-700">{leaveTypeLabel}</span>
-
-            <span className="text-gray-400">No. of Days</span>
-            <span className="text-gray-700">{request.noOfDays}</span>
-
-            {request.comments && (
+            {request.actualDurationMinutes != null && (
               <>
-                <span className="text-gray-400">Comments</span>
-                <span className="text-gray-700">{request.comments}</span>
+                <span className="text-gray-400">Actual Taken</span>
+                <span className="text-gray-700">{formatDuration(request.actualDurationMinutes)}</span>
+              </>
+            )}
+
+            {request.remarks && (
+              <>
+                <span className="text-gray-400">Remarks</span>
+                <span className="text-gray-700">{request.remarks}</span>
               </>
             )}
 
             <span className="text-gray-400">Status</span>
-            <span className="text-gray-700 font-medium">
-              {request.status}
-              {request.notTaken && " (Not Taken)"}
-            </span>
+            <span className="text-gray-700 font-medium">{request.status}</span>
 
             {request.status === "REJECTED" && request.rejectReason && (
               <>
@@ -112,8 +133,31 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
             )}
           </div>
 
-          {isDecided && !canMarkNotTaken && (
+          {isDecided && !isApproved && (
             <p className="text-[12px] text-gray-400 mb-2">This request has already been decided.</p>
+          )}
+
+          {isApproved && (
+            <div className="mb-4">
+              <label className="block mb-1.5 text-sm font-semibold text-gray-700" htmlFor="actualMinutes">
+                Actual minutes taken
+              </label>
+              <select
+                id="actualMinutes"
+                value={actualMinutes}
+                onChange={(e) => setActualMinutes(e.target.value)}
+                className="wg-input"
+              >
+                <option value="" disabled>
+                  Select duration
+                </option>
+                {actualDurationOptions.map((mins) => (
+                  <option key={mins} value={mins}>
+                    {formatDuration(mins)}
+                  </option>
+                ))}
+              </select>
+            </div>
           )}
 
           {!isDecided && mode === "reject" && (
@@ -139,17 +183,17 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
             </div>
           )}
 
-          {isDecided && canMarkNotTaken ? (
+          {isApproved ? (
             <div className="flex gap-2.5">
               <button onClick={onClose} className="flex-1 px-4 py-2 rounded-xl border border-gray-200 text-gray-500 text-[13px] font-medium hover:bg-gray-50 hover:border-gray-300 transition-colors">
                 Close
               </button>
               <button
-                onClick={submitNotTaken}
+                onClick={submitActualDuration}
                 disabled={submitting}
                 className="flex-1 px-4 py-2 rounded-xl text-[13px] bg-gray-700 hover:bg-gray-800 text-white font-semibold transition-colors disabled:opacity-60"
               >
-                {submitting ? "Saving..." : "Mark as Not Taken"}
+                {submitting ? "Saving..." : "Save Actual Duration"}
               </button>
             </div>
           ) : isDecided ? (
@@ -195,4 +239,4 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
   )
 }
 
-export default LeaveRequestActionDialog
+export default PermissionRequestActionDialog

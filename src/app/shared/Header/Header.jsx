@@ -15,7 +15,7 @@ import {
   getNotification,
   useNotificationCount,
 } from "../../Hooks/useNotificationCount";
-import { useNotificationStore } from "../../../core/state/useNotificationStore";
+import { requestNotificationPermission } from "../../../core/notifications/browserNotification";
 import { useBannerMessage } from "../../../features/BannerMessage/hooks/useBannerdata";
 import { banner } from "../../../features/BannerMessage/elements";
 import {
@@ -139,9 +139,6 @@ const Header = () => {
   //   markSeen();
   //   // useNotificationStore.getState().reset();
   // }, [showNotifications, meetingShowNotifications]);
-  const setCount = useNotificationStore((s) => s.setCount);
-  const count = useNotificationStore((s) => s.count);
-
 
   const handleIconClick = () => {
     setDropdownVisible((prev) => !prev);
@@ -302,21 +299,24 @@ const Header = () => {
     repeatedBanners.length > 0 ? repeatedBanners : filteredBanners;
   return (
     <>
-      <header className="header relative py-4 px-8 flex justify-between items-center w-full bg-white shadow-sm">
-        {/* Pinned to the true center of the header, independent of the right side's width */}
+      <header className="header relative py-4 px-8 grid grid-cols-[1fr_auto_1fr] items-center w-full bg-white shadow-sm">
+        {/* Left spacer keeps the center column truly centered */}
+        <div />
+
+        {/* Center column: reserves its own grid track, so it never overlaps the right side */}
         {!isViewer && (
-          <div className="absolute left-1/2 -translate-x-1/2">
+          <div className="flex justify-center">
             <div style={{ display: "flex", gap: "10px" }}>
               <button
                 onClick={handleTicket}
-                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
+                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive whitespace-nowrap"
               >
                 Tickets
               </button>
 
               <button
                 onClick={handleProject}
-                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive"
+                className="px-3 py-1 text-sm font-semibold text-ghText bg-ghBorder rounded-md transition-all hover:bg-ghBorderDark active:bg-ghBorderActive whitespace-nowrap"
               >
                 Projects
               </button>
@@ -324,7 +324,7 @@ const Header = () => {
           </div>
         )}
         {/* Right Side: Breadcrumbs & User Profile */}
-        <div className="flex items-center gap-4 ml-auto">
+        <div className="flex items-center gap-4 justify-self-end min-w-0">
           <Breadcrumbs />
           {/* {!isViewer && ( */}
           {!isViewer && (
@@ -336,6 +336,7 @@ const Header = () => {
                     setMeetinShowNotifications(prev => !prev);
                     setShowNotifications(false); // close ticket dropdown if open
                     markSeen("MEETING");
+                    requestNotificationPermission({ explicit: true });
                   }}
                 />
 
@@ -580,6 +581,7 @@ const Header = () => {
                     setShowNotifications(prev => !prev);
                     setMeetinShowNotifications(false);
                     markSeen("TICKET");
+                    requestNotificationPermission({ explicit: true });
                   }}
 
                 />

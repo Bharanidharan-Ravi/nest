@@ -19,7 +19,7 @@ import {
 } from "../../adapters/masterAdapter";
 import { queryKeys } from "../../query/queryKeys";
 import { buildSyncPayload } from "../../sync/buildSyncPayload";
-import { normalizeTicket, normalizeLeaveRequest } from "../../../app/shared/utils/normalizer";
+import { normalizeTicket, normalizeLeaveRequest, normalizePermissionRequest } from "../../../app/shared/utils/normalizer";
 
 export const MASTER_REGISTRY = {
   // ── Masters from the bulk /sync/v2 preload ────────────────────────────────
@@ -122,6 +122,17 @@ export const MASTER_REGISTRY = {
     staleTime: Infinity,
     adapter: (raw) => ({ id: raw.DeptCode, name: raw.DeptName }),
   },
+  // SAP-backed leave type master, served through the shared /sync/v2 engine
+  // (ConfigKey "LEAVETYPE") instead of a dedicated REST endpoint.
+  leavetype: {
+    source: "LEAVETYPE",
+    queryKey: () => ["master", "leavetype"],
+    url: "/sync/v2",
+    method: "POST",
+    staleTime: Infinity,
+    payload: () => buildSyncPayload({ configKey: "LEAVETYPE" }),
+    adapter: (raw) => ({ id: raw.code, name: raw.Name }),
+  },
   // Role-aware (employee sees own rows, admin sees all — resolved server-side
   // from the JWT by /sync/v2), so it goes through "api" not the bulk preload.
   leaveRequest: {
@@ -132,5 +143,16 @@ export const MASTER_REGISTRY = {
     staleTime: 0,
     payload: () => buildSyncPayload({ configKey: "GetLeaveRequests" }),
     adapter: normalizeLeaveRequest,
+  },
+  // Role-aware, same shape as leaveRequest above but backed by
+  // usp_GetPermissionRequests / ConfigKey "GetPermissionRequests".
+  permissionRequest: {
+    queryKey: () => queryKeys.permissionRequest.list(),
+    url: "/sync/v2",
+    method: "POST",
+    source: "GetPermissionRequests",
+    staleTime: 0,
+    payload: () => buildSyncPayload({ configKey: "GetPermissionRequests" }),
+    adapter: normalizePermissionRequest,
   },
 };

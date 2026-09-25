@@ -438,20 +438,6 @@
   align-items: center;
 }
 
-.edit-icon {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-  color: #9ca3af;
-}
-
-.edit-icon:hover {
-  color: #4f46e5;
-}
-
-.ticket-row:hover .edit-icon {
-  opacity: 1;
-}
-
 .update-info {
   font-size: 11px;
   color: #9ca3af;
@@ -558,17 +544,44 @@
   font-size: 13px;
 }
 
-
-
-.grid-row {
-  display: flex;
+/* Right-hand metrics block: a fixed 3-column x 2-row grid.
+   Column 1 (progress/updated) and column 2 (estimate/consumed time)
+   each keep their own column across every ticket row in the list.
+   Column 3 stacks the assignee avatar above the edit icon so they
+   share ONE column instead of sitting side by side and eating into
+   the width column 1 needs for the "Updated ... ago" text. */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: minmax(100px, 1fr) 66px 24px;
+  column-gap: 8px;
+  row-gap: 8px;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   width: 100%;
 }
 
+.metrics-cell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
 
+.metrics-cell-progress {
+  justify-content: flex-start;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.metrics-cell-time {
+  justify-content: flex-start;
+}
+
+.metrics-cell-assignee {
+  justify-content: center;
+}
+
+.metrics-cell-edit {
+  justify-content: center;
+}
 
 .estimate-time {
   display: flex;
@@ -580,20 +593,40 @@
 .edit-icon {
   display: flex;
   align-items: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: #9ca3af;
+}
+
+.edit-icon:hover {
+  color: #4f46e5;
+}
+
+.ticket-row:hover .edit-icon {
+  opacity: 1;
+}
+
+.updated-user {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.updated-user .updated-text {
+  flex-shrink: 1;
 }
 
 .updated-text {
   margin: 0;
   white-space: nowrap;
-}
-.updated-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .last-assignees {
   display: flex;
+  align-items: center;
 }
 
 

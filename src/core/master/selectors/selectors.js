@@ -31,6 +31,14 @@ export const useTicketMaster = (Id) => {
 };
 export const useTeamMaster = () => useMasterList("team");
 export const useLeaveRequestMaster = () => useMasterList("leaveRequest");
+export const usePermissionRequestMaster = () => useMasterList("permissionRequest");
+export const useLeaveTypeMaster = () => useMasterList("leavetype");
+// Plain (non-hook) lookup for use inside .map() renders — call useLeaveTypeMaster()
+// once at the top of the component and pass its result in here per row.
+export const findLeaveTypeLabel = (leaveTypes, code) =>
+  leaveTypes.find((t) => t.id === code)?.name || "—";
+export const useLeaveTypeLabel = (code) =>
+  findLeaveTypeLabel(useLeaveTypeMaster(), code);
 // ─── Filter helpers ───────────────────────────────────────────────────────────
 export const useActiveEmployees = () => useMasterFilter("employee", (e) => e.isActive);
 export const useProjectsByRepoId = (rid) => useMasterFilter("project", (p) => p.repoId === rid);
@@ -200,4 +208,10 @@ export const useDepartmentOptions = (includeAll = false) =>
     masterKey: "department",
     valueShape: "simple",
     prependOption: includeAll ? { label: "Departments", value: "" } : null,
+  });
+
+export const useLeaveTypeOptions = (includeAll = false) =>
+  useMasterOptions({
+    masterKey: "leavetype",
+    prependOption: includeAll ? { label: "Leave Types", value: { id: "", name: "Leave Types" } } : null,
   });

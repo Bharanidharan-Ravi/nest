@@ -1,11 +1,17 @@
-import { useNotificationCount } from "../../../app/Hooks/useNotificationCount";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { useLeaveRequestMaster } from "../../../core/master/selectors/selectors";
 
-/** Unread "New Leave Request" count next to "Leave Requests" in the sidebar (admin only). */
+// Count of requests still awaiting a decision (admin only) — not an
+// unread-notification count, so it only drops when a request is actually
+// approved/rejected, never just from opening the list. Reuses the same
+// master list the page renders, kept fresh by realtimeDispatcher's
+// "LeaveRequest" invalidate entry.
 export default function LeaveRequestNavBadge() {
   const { isAdmin } = useCurrentUser();
-  const { data } = useNotificationCount();
-  const count = data?.LEAVE_REQUEST || 0;
+  const leaveRequests = useLeaveRequestMaster();
+  const count = isAdmin
+    ? leaveRequests.filter((request) => request.status?.toUpperCase() === "REQUESTED").length
+    : 0;
 
   if (!isAdmin || !count) return null;
 

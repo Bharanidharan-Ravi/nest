@@ -31,6 +31,7 @@ export const LeaveRequestFeature = {
     {
       path:    "/create",
       element: El.LeaveRequestFormPage,
+      allowedRoles: ROUTE_ROLES.LEAVE_CREATE,
       nav: {
         key:    ROUTE_KEYS.LEAVE_CREATE,
         title:  "Create Leave Request",
@@ -42,6 +43,7 @@ export const LeaveRequestFeature = {
     {
       path:    "/:leaveId/edit",
       element: El.LeaveRequestFormPage,
+      allowedRoles: ROUTE_ROLES.LEAVE_EDIT,
       nav: {
         key:    ROUTE_KEYS.LEAVE_EDIT,
         title:  "Edit Leave Request",

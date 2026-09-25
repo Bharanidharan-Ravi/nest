@@ -9,6 +9,7 @@ import { encryptMediaMessage, encryptTextMessage, sameId, withDecrypted } from "
 import { encryptFileBytes, generateFileKey, MAX_MEDIA_BYTES } from "../e2ee/mediaCrypto";
 import { toBase64 } from "../e2ee/userKeyManager";
 import { useChatUiStore } from "../state/useChatUiStore";
+import { isAppInForeground, showBrowserNotification } from "../../../core/notifications/browserNotification";
 
 export { sameId };
 export { MAX_MESSAGE_LENGTH } from "../e2ee/messageCrypto";
@@ -452,19 +453,17 @@ export function useToggleReaction(conversationId) {
 
 // ─── Realtime ────────────────────────────────────────────────────────────────
 
-function showDesktopNotification({ title, body, conversationId }) {
-  try {
-    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
-    if (document.visibilityState === "visible") return;
-    const n = new Notification(title, { body, tag: `wg-chat-${lower(conversationId)}` });
-    n.onclick = () => {
-      window.focus();
-      useChatUiStore.getState().openWindow(conversationId);
-      n.close();
-    };
-  } catch {
-    // Some browsers only allow notifications from a service worker — the in-app pop-up still shows
-  }
+// Same rules as the other app notifications: only when the tab is hidden or another
+// window has focus. Tagged per message, so every message pops up (a per-conversation
+// tag made Chrome silently replace the previous one) and two open tabs still show it once.
+function showDesktopNotification({ id, title, body, conversationId }) {
+  if (isAppInForeground()) return;
+  showBrowserNotification({
+    id: `chat-${lower(id)}`,
+    title,
+    body,
+    onClick: () => useChatUiStore.getState().openWindow(conversationId),
+  });
 }
 
 /**
@@ -510,25 +509,18 @@ export function useChatRealtime({ nameOf }) {
 
       const sender = nameOf(message.SenderUserId);
       const text = messagePreview(message);
-           console.log("charquerykey.Convesation",chatQueryKeys.Conversations);
-      console.log("charquerykey.convesation",chatQueryKeys.conversations);
-      const cachedConvos=queryClient.getQueryData(chatQueryKeys.conversations)
-    console.log("chaed canvos",cachedConvos);
-    console.log("conversation to find",conversationId);
-      const conversation=cachedConvos
-      ?.find(c=>sameId(c.ConversationId,conversationId))
-      console.log("found convertion",conversation);
-      console.log("isGroup",isGroupConversation(conversation));
-      const isGroup=isGroupConversation(conversation)
-      const notifTitle=isGroup
-      ?`${conversationTitle(conversation,userId,nameOf)} : ${sender}`
-      :sender;
-      // ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text });
-      // showDesktopNotification({ title: sender, body: text, conversationId });
-      console.log("ui.notify hit",conversationId);
-      
-      ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text ,title:notifTitle});
-      showDesktopNotification({title:notifTitle,body:text,conversationId})
+      const conversation = queryClient
+        .getQueryData(chatQueryKeys.conversations)
+        ?.find((c) => sameId(c.ConversationId, conversationId));
+      const notifTitle = isGroupConversation(conversation)
+        ? `${conversationTitle(conversation, userId, nameOf)} : ${sender}`
+        : sender;
+      // Chat is locked in this browser, so the text can't be shown — say who it's from instead
+      const desktopBody =
+        message.decrypted?.status === "locked" ? `🔒 Encrypted message from ${sender}` : text;
+
+      ui.notify({ messageId: message.MessageId, conversationId, senderUserId: message.SenderUserId, text, title: notifTitle });
+      showDesktopNotification({ id: message.MessageId, title: notifTitle, body: desktopBody, conversationId });
     });
 
     const offReaction = subscribeChatReaction((evt) => applyReactionDelta(queryClient, evt));
@@ -542,14 +534,14 @@ export function useChatRealtime({ nameOf }) {
       ui.notify({ messageId: evt.MessageId, conversationId: evt.ConversationId, senderUserId: evt.TaggedByUserId, text });
      
       // showDesktopNotification({ title: "You were mentioned", body: text, conversationId: evt.ConversationId });
-      const mentionCachedConvs=queryClient.getQueryData(chatQueryKeys.Conversations)
+      const mentionCachedConvs=queryClient.getQueryData(chatQueryKeys.conversations)
       const mentionConv=mentionCachedConvs
       ?.find(c=>sameId(c.ConversationId,evt.ConversationId))
       const mentionIsGroup=isGroupConversation(mentionConv)
       const mentionTitle=mentionIsGroup
       ? `${conversationTitle(mentionConv,userId,nameOf)}: You were mentioned`
       : "You were mentioned"
-      showDesktopNotification({title:mentionTitle,body:text,conversationId:evt.ConversationId})
+      showDesktopNotification({ id: `mention-${evt.MessageId}`, title: mentionTitle, body: text, conversationId: evt.ConversationId });
 
     });
 

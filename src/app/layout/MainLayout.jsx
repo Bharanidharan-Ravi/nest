@@ -4,6 +4,7 @@ import Footer from "../shared/Footer/Footer";
 import Header from "../shared/Header/Header";
 import { useState } from "react";
 import MessageDock from "../../features/messenger/components/MessageDock";
+import NotificationManager from "../../core/notifications/NotificationManager";
 
 export default function MainLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
@@ -14,6 +15,9 @@ export default function MainLayout() {
   };
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-brand-gray-light">
+      {/* Unread count → tab title, notification permission/sound priming */}
+      <NotificationManager />
+
       {/* 1. Sidebar is a full-height column of its own, so the header/banner
              to its right never runs behind it */}
       <Sidebar
