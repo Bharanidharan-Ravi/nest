@@ -5,6 +5,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useRef, useState } from "react"
 import dayjs from "dayjs"
+import { ArrowLeft } from "lucide-react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSearchParams } from "react-router-dom"
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation"
@@ -18,6 +19,7 @@ import { WeekRangeFilter } from "../../../packages/ui-List/components/weeklyFilt
 import LeaveRequestActionDialog from "../components/LeaveRequestActionDialog"
 import PermissionRequestActionDialog from "../components/PermissionRequestActionDialog"
 import CountFilterDropdown from "../components/CountFilterDropdown"
+import { describeHalfDays } from "../leaveSessions"
 
 const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "")
 
@@ -157,7 +159,16 @@ const LeaveRequestPage = () => {
   return (
     <div className="flex flex-col h-full w-full max-w-7xl mx-auto px-3 sm:px-6 py-4 gap-4">
       <div className="flex flex-wrap justify-between items-center gap-3 flex-none">
-        <div className="flex gap-5 border-b border-gray-200">
+        <div className="flex items-center gap-5 border-b border-gray-200">
+          <button
+            type="button"
+            onClick={() => goTo(ROUTE_KEYS.DASHBOARD)}
+            className="pb-2 text-gray-400 hover:text-gray-700"
+            aria-label="Back to Dashboard"
+          >
+            <ArrowLeft size={20} />
+          </button>
+
           {TABS.map((tab) => (
             <button
               key={tab.key}
@@ -241,7 +252,12 @@ const LeaveRequestPage = () => {
                   <td className={TD}>{formatDate(request.fromDate)}</td>
                   <td className={TD}>{formatDate(request.toDate)}</td>
                   <td className={TD}>{findLeaveTypeLabel(leaveTypes, request.leaveTypeId)}</td>
-                  <td className={TD}>{request.noOfDays}</td>
+                  <td className={TD}>
+                    {request.noOfDays}
+                    {describeHalfDays(request.days) && (
+                      <div className="text-[11px] text-gray-400">{describeHalfDays(request.days)}</div>
+                    )}
+                  </td>
                   <td className={`${TD} max-w-xs truncate`} title={request.comments}>{request.comments}</td>
                   <td className={TD}>
                     <span

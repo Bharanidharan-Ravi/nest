@@ -14,7 +14,8 @@ import dayjs from "dayjs"
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 const fmt = (d) => d.format("YYYY-MM-DD")
 
-export default function LeaveDateRangePicker({ fromDate, toDate, onChange, blockedDates }) {
+// allowPast: admins re-adjusting an existing request may pick past dates.
+export default function LeaveDateRangePicker({ fromDate, toDate, onChange, blockedDates, allowPast = false }) {
   const [showCal, setShowCal] = useState(false)
   const [activeField, setActiveField] = useState(null) // "from" | "to" | null
   const [month, setMonth] = useState(() => (fromDate ? dayjs(fromDate) : dayjs()))
@@ -36,11 +37,11 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
   }
 
   const blockedSet = useMemo(() => blockedDates || new Set(), [blockedDates])
-  const isPast = (d) => d.isBefore(dayjs().startOf("day"), "day")
+  const isPast = (d) => !allowPast && d.isBefore(dayjs().startOf("day"), "day")
   const isRequested = (d) => blockedSet.has(fmt(d))
   const isDisabled = useCallback(
-    (d) => d.isBefore(dayjs().startOf("day"), "day") || blockedSet.has(fmt(d)),
-    [blockedSet],
+    (d) => (!allowPast && d.isBefore(dayjs().startOf("day"), "day")) || blockedSet.has(fmt(d)),
+    [blockedSet, allowPast],
   )
 
   const start = fromDate ? dayjs(fromDate) : null

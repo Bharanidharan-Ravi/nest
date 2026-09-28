@@ -1,6 +1,10 @@
 /* =============================================================================
    Leave Request Management — migration (run once against WG_APP)
    -----------------------------------------------------------------------------
+   SUPERSEDED by leave_management_full_migration.sql — do not re-run this file:
+   its usp_GetLeaveRequests lacks DAYS_JSON (half-day support) and would break
+   the /sync/v2 GetLeaveRequests read.
+
    Creates LEAVE_REQUEST. All timestamp defaults use Indian Standard Time
    (not UTC) to match the API, which writes IST for REQUESTED_DATE / APPROVED_DATE
    / REJECTED_DATE / CREATED_DATE / UPDATED_DATE.

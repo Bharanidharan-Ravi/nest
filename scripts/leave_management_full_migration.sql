@@ -134,9 +134,58 @@ BEGIN
 END
 GO
 
+/* Half-day leave: NO_OF_LEAVE_DAYS becomes DECIMAL so it can hold .5 days. */
+IF EXISTS (
+    SELECT 1 FROM sys.columns c
+    JOIN sys.types t ON c.user_type_id = t.user_type_id
+    WHERE c.object_id = OBJECT_ID(N'dbo.LEAVE_REQUEST') AND c.name = 'NO_OF_LEAVE_DAYS' AND t.name = 'int'
+)
+BEGIN
+    ALTER TABLE [dbo].[LEAVE_REQUEST] ALTER COLUMN NO_OF_LEAVE_DAYS DECIMAL(5,1) NOT NULL
+END
+GO
+
+/* One row per date of a leave request, with the session taken that day:
+     FULL        — whole day
+     FIRST_HALF  — 9:00 AM – 1:00 PM
+     SECOND_HALF — 2:00 PM – 6:30 PM */
+IF OBJECT_ID(N'dbo.LEAVE_REQUEST_DAY', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[LEAVE_REQUEST_DAY] (
+        ID               UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_LEAVE_REQUEST_DAY_ID DEFAULT NEWID(),
+        LEAVE_REQUEST_ID UNIQUEIDENTIFIER NOT NULL,
+        LEAVE_DATE       DATE             NOT NULL,
+        DAY_SESSION      VARCHAR(20)      NOT NULL CONSTRAINT DF_LEAVE_REQUEST_DAY_SESSION DEFAULT ('FULL'),
+
+        CONSTRAINT PK_LEAVE_REQUEST_DAY PRIMARY KEY CLUSTERED (ID),
+        CONSTRAINT FK_LEAVE_REQUEST_DAY_REQUEST FOREIGN KEY (LEAVE_REQUEST_ID)
+            REFERENCES [dbo].[LEAVE_REQUEST] (ID) ON DELETE CASCADE,
+        CONSTRAINT UQ_LEAVE_REQUEST_DAY UNIQUE (LEAVE_REQUEST_ID, LEAVE_DATE),
+        CONSTRAINT CK_LEAVE_REQUEST_DAY_SESSION CHECK (DAY_SESSION IN ('FULL', 'FIRST_HALF', 'SECOND_HALF'))
+    )
+
+    CREATE INDEX IX_LEAVE_REQUEST_DAY_LEAVE_DATE ON [dbo].[LEAVE_REQUEST_DAY] (LEAVE_DATE)
+END
+GO
+
+/* Backfill: requests created before half-day support get one FULL row per date. */
+;WITH N AS (
+    SELECT TOP (1000) ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) - 1 AS n
+    FROM sys.all_objects
+)
+INSERT INTO [dbo].[LEAVE_REQUEST_DAY] (LEAVE_REQUEST_ID, LEAVE_DATE, DAY_SESSION)
+SELECT LR.ID, DATEADD(DAY, N.n, LR.LEAVE_FROM), 'FULL'
+FROM [dbo].[LEAVE_REQUEST] LR
+JOIN N ON N.n <= DATEDIFF(DAY, LR.LEAVE_FROM, LR.LEAVE_TO)
+WHERE NOT EXISTS (
+    SELECT 1 FROM [dbo].[LEAVE_REQUEST_DAY] D WHERE D.LEAVE_REQUEST_ID = LR.ID
+);
+GO
+
 /* Role-aware read: @IsAdmin = 0 returns only the caller's own rows;
    @IsAdmin = 1 returns every row, with EmployeeName joined in from
-   EMPLOYEEMASTER. */
+   EMPLOYEEMASTER. DAYS_JSON is the day-wise breakdown:
+   [{"date":"2026-09-30","session":"FIRST_HALF"}, ...] */
 CREATE OR ALTER PROCEDURE [dbo].[usp_GetLeaveRequests]
     @DbName  NVARCHAR(128) = NULL, -- unused; every SyncExecutionService.ExecuteLocalAsync call sends this
     @UserId  UNIQUEIDENTIFIER,
@@ -167,7 +216,14 @@ BEGIN
         LR.UPDATED_DATE,
         LR.NOT_TAKEN,
         LR.NOT_TAKEN_BY,
-        LR.NOT_TAKEN_DATE
+        LR.NOT_TAKEN_DATE,
+        (
+            SELECT D.LEAVE_DATE AS [date], D.DAY_SESSION AS [session]
+            FROM [dbo].[LEAVE_REQUEST_DAY] D
+            WHERE D.LEAVE_REQUEST_ID = LR.ID
+            ORDER BY D.LEAVE_DATE
+            FOR JSON PATH
+        ) AS DAYS_JSON
     FROM [dbo].[LEAVE_REQUEST] LR
     LEFT JOIN [dbo].[EMPLOYEEMASTER] EM ON EM.EmployeeID = LR.EMPLOYEE_ID
     WHERE @IsAdmin = 1 OR LR.EMPLOYEE_ID = @UserId

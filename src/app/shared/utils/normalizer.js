@@ -143,6 +143,15 @@ export const normalizeNotification = (notif) => ({
 
 // Maps usp_GetLeaveRequests output (GetLeaveRequest DTO, ALL_CAPS columns) to the
 // camelCase shape LeaveRequestPage / LeaveRequestFormPage work with.
+const parseLeaveDays = (json) => {
+  if (!json) return [];
+  try {
+    return JSON.parse(json);
+  } catch {
+    return [];
+  }
+};
+
 export const normalizeLeaveRequest = (raw) => ({
   id: raw.ID,
   employeeId: raw.EMPLOYEE_ID,
@@ -162,6 +171,8 @@ export const normalizeLeaveRequest = (raw) => ({
   notTaken: raw.NOT_TAKEN ?? false,
   notTakenBy: raw.NOT_TAKEN_BY,
   notTakenDate: raw.NOT_TAKEN_DATE,
+  // [{ date: "2026-09-30", session: "FULL" | "FIRST_HALF" | "SECOND_HALF" }]
+  days: parseLeaveDays(raw.DAYS_JSON),
 });
 
 export const normalizeLeaveRequestList = (list) => {

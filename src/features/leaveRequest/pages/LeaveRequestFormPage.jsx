@@ -6,6 +6,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useEffect, useMemo, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { ArrowLeft } from "lucide-react"
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation"
 import { ROUTE_KEYS } from "../../../core/routing/paths"
 import { useApiMutation } from "../../../core/query/useApiMutation"
@@ -14,16 +15,11 @@ import { useLeaveRequestMaster, useLeaveTypeOptions } from "../../../core/master
 import { readUserFromSession } from "../../../core/auth/useCurrentUser"
 import LeaveDateRangePicker from "../components/LeaveDateRangePicker"
 import LeaveSingleDatePicker from "../components/LeaveSingleDatePicker"
+import LeaveDaySessionPicker from "../components/LeaveDaySessionPicker"
+import { buildTakenSessions, getDayAvailability, sessionDays } from "../leaveSessions"
+import { PERMISSION_MAX_HOURS, getMaxPermissionHours } from "../permissionLimits"
 import MuiSelectInput from "../../../packages/react-input-engine/adapters/mui/MuiSelectInput"
 import dayjs from "dayjs"
-
-const calcLeaveDays = (fromDate, toDate) => {
-  if (!fromDate || !toDate) return ""
-  const from = new Date(fromDate)
-  const to = new Date(toDate)
-  const diff = Math.round((to - from) / (1000 * 60 * 60 * 24)) + 1
-  return diff > 0 ? diff : ""
-}
 
 // Master data returns leave type names in ALL CAPS (e.g. "CASUAL LEAVE") —
 // title-case them for display without touching the underlying value/id.
@@ -38,17 +34,7 @@ const PERMISSION_HOUR_OPTIONS = [
   { key: "1", label: "1 Hour" },
   { key: "2", label: "2 Hours" },
   { key: "3", label: "3 Hours" },
-  { key: "custom", label: "Custom" },
 ]
-
-// 30-minute increments up to 3 hours, for the Custom permission duration.
-const CUSTOM_DURATION_OPTIONS = Array.from({ length: 6 }, (_, i) => {
-  const minutes = (i + 1) * 30
-  const h = Math.floor(minutes / 60)
-  const m = minutes % 60
-  const label = h > 0 ? `${h}h${m ? ` ${m}m` : ""}` : `${m}m`
-  return { label, value: { id: minutes, name: label } }
-})
 
 const LeaveRequestFormPage = () => {
   const { goTo } = useSmartNavigation()
@@ -78,14 +64,17 @@ const LeaveRequestFormPage = () => {
 
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
+  const [sessionOverrides, setSessionOverrides] = useState({})
+  const [halfDayEnabled, setHalfDayEnabled] = useState(false)
   const [leaveType, setLeaveType] = useState(null)
   const [comments, setComments] = useState("")
   const [error, setError] = useState("")
   const [warning, setWarning] = useState("")
 
-  const [permissionDate, setPermissionDate] = useState("")
+  // Permission defaults to today while there's still time left before 6:30 PM.
+  const today = dayjs().format("YYYY-MM-DD")
+  const [permissionDate, setPermissionDate] = useState(() => (getMaxPermissionHours(today) > 0 ? today : ""))
   const [permissionHours, setPermissionHours] = useState("")
-  const [customDuration, setCustomDuration] = useState(null)
   const [permissionRemarks, setPermissionRemarks] = useState("")
   const [permissionError, setPermissionError] = useState("")
 
@@ -97,29 +86,46 @@ const LeaveRequestFormPage = () => {
     }
   }, [leaveType, leaveTypeOptions])
 
-  const noOfDays = useMemo(() => calcLeaveDays(fromDate, toDate), [fromDate, toDate])
+  const takenSessions = useMemo(
+    () => buildTakenSessions(leaveRequests, currentUser?.userId),
+    [leaveRequests, currentUser?.userId],
+  )
 
-  // Days already covered by this user's own REQUESTED/APPROVED leave — a
-  // rejected request frees the dates back up. Used to block the calendar and
-  // to truncate a drag-selection that crosses one of these dates.
+  // Dates with no session left to pick (fully requested, or today with no
+  // time left) — blocked in the calendar and used to truncate drag-selections.
+  // A date with only one half requested stays pickable for the other half.
   const blockedDates = useMemo(() => {
     const set = new Set()
-    leaveRequests
-      .filter(
-        (r) =>
-          String(r.employeeId) === String(currentUser?.userId) &&
-          (r.status?.toUpperCase() === "REQUESTED" || r.status?.toUpperCase() === "APPROVED"),
-      )
-      .forEach((r) => {
-        let d = dayjs(r.fromDate)
-        const to = dayjs(r.toDate)
-        while (!d.isAfter(to, "day")) {
-          set.add(d.format("YYYY-MM-DD"))
-          d = d.add(1, "day")
-        }
-      })
+    const today = dayjs().format("YYYY-MM-DD")
+    ;[...takenSessions.keys(), today].forEach((date) => {
+      if (getDayAvailability(date, takenSessions).allowed.length === 0) set.add(date)
+    })
     return set
-  }, [leaveRequests, currentUser?.userId])
+  }, [takenSessions])
+
+  // One row per selected date. Defaults to the first allowed session (Full Day,
+  // or the only half left); the user's picks apply only while Half Day is on.
+  const leaveDays = useMemo(() => {
+    if (!fromDate || !toDate) return []
+    const rows = []
+    for (let d = dayjs(fromDate); !d.isAfter(dayjs(toDate), "day"); d = d.add(1, "day")) {
+      const date = d.format("YYYY-MM-DD")
+      const { allowed, note } = getDayAvailability(date, takenSessions)
+      const picked = halfDayEnabled ? sessionOverrides[date] : undefined
+      rows.push({ date, allowed, note, session: allowed.includes(picked) ? picked : allowed[0] })
+    }
+    return rows
+  }, [fromDate, toDate, takenSessions, sessionOverrides, halfDayEnabled])
+
+  const noOfDays = useMemo(
+    () => (leaveDays.length ? leaveDays.reduce((sum, d) => sum + (d.session ? sessionDays(d.session) : 0), 0) : ""),
+    [leaveDays],
+  )
+
+  const handleSessionChange = (date, session) => {
+    setSessionOverrides((prev) => ({ ...prev, [date]: session }))
+    if (error) setError("")
+  }
 
   const handleRangeChange = (from, to, rangeWarning) => {
     setFromDate(from)
@@ -147,6 +153,11 @@ const LeaveRequestFormPage = () => {
       setError("To Date cannot be before From Date.")
       return
     }
+    const unavailable = leaveDays.find((d) => !d.session)
+    if (unavailable) {
+      setError(`${dayjs(unavailable.date).format("DD MMM")} is not available — please change the dates.`)
+      return
+    }
     if (!leaveType?.value?.id) {
       setError("Please select a Leave Type.")
       return
@@ -158,6 +169,7 @@ const LeaveRequestFormPage = () => {
       leaveTo: toDate,
       leaveTypeId: leaveType.value.id,
       comments,
+      days: leaveDays.map(({ date, session }) => ({ date, session })),
     })
   }
 
@@ -168,6 +180,16 @@ const LeaveRequestFormPage = () => {
     onSuccess: () => goTo(ROUTE_KEYS.LEAVE_LIST, {}, {}, { tab: "permission" }),
     onError: (err) => setPermissionError(err?.message || "Failed to submit permission request."),
   })
+
+  // Today only allows what still fits before 6:30 PM.
+  const maxPermissionHours = getMaxPermissionHours(permissionDate)
+  const permissionBlockedDates = getMaxPermissionHours(today) === 0 ? new Set([today]) : undefined
+
+  const handlePermissionDateChange = (value) => {
+    setPermissionDate(value)
+    if (permissionError) setPermissionError("")
+    if (Number(permissionHours) > getMaxPermissionHours(value)) setPermissionHours("")
+  }
 
   const handlePermissionSubmit = (e) => {
     e.preventDefault()
@@ -180,14 +202,17 @@ const LeaveRequestFormPage = () => {
       setPermissionError("Please select permission hours.")
       return
     }
-    if (permissionHours === "custom" && !customDuration?.value?.id) {
-      setPermissionError("Please select a custom duration.")
+    if (Number(permissionHours) > maxPermissionHours) {
+      setPermissionError(
+        maxPermissionHours === 0
+          ? "No time left for a permission today (office ends at 6:30 PM)."
+          : `Only ${maxPermissionHours} hour${maxPermissionHours > 1 ? "s" : ""} can be taken today.`,
+      )
       return
     }
     setPermissionError("")
 
-    const durationMinutes =
-      permissionHours === "custom" ? customDuration.value.id : Number(permissionHours) * 60
+    const durationMinutes = Number(permissionHours) * 60
 
     mutatePermission({
       permissionDate,
@@ -197,8 +222,17 @@ const LeaveRequestFormPage = () => {
   }
 
   return (
-    <div className="flex-1 min-h-0 max-w-3xl mx-auto w-full">
-      <div className="flex gap-6 border-b border-gray-200 mb-5">
+    <div className="flex-1 min-h-0 max-w-3xl mx-auto w-full pt-4 sm:pt-6">
+      <div className="flex items-center gap-6 border-b border-gray-200 mb-0">
+        <button
+          type="button"
+          onClick={() => goTo(ROUTE_KEYS.LEAVE_LIST)}
+          className="flex items-center gap-1 pb-2.5 text-gray-500 hover:text-gray-900"
+          aria-label="Back to Leave Requests"
+        >
+          <ArrowLeft size={18} />
+        </button>
+
         {TABS.map((tab) => (
           <button
             key={tab.key}
@@ -231,6 +265,13 @@ const LeaveRequestFormPage = () => {
                 {warning}
               </div>
             )}
+
+            <LeaveDaySessionPicker
+              days={leaveDays}
+              onChange={handleSessionChange}
+              enabled={halfDayEnabled}
+              onToggle={setHalfDayEnabled}
+            />
 
             <div>
               <label className="block mb-1.5 text-sm font-semibold text-gray-700" htmlFor="leaveType">
@@ -308,10 +349,8 @@ const LeaveRequestFormPage = () => {
               </label>
               <LeaveSingleDatePicker
                 value={permissionDate}
-                onChange={(value) => {
-                  setPermissionDate(value)
-                  if (permissionError) setPermissionError("")
-                }}
+                onChange={handlePermissionDateChange}
+                blockedDates={permissionBlockedDates}
               />
             </div>
 
@@ -320,40 +359,36 @@ const LeaveRequestFormPage = () => {
                 Permission Hours <span className="text-red-500">*</span>
               </label>
               <div className="flex flex-wrap gap-2">
-                {PERMISSION_HOUR_OPTIONS.map((opt) => (
-                  <button
-                    key={opt.key}
-                    type="button"
-                    onClick={() => {
-                      setPermissionHours(opt.key)
-                      if (permissionError) setPermissionError("")
-                    }}
-                    className={`px-4 py-1.5 rounded-md border text-sm font-medium transition-colors ${
-                      permissionHours === opt.key
-                        ? "bg-brand-yellow border-brand-yellow text-white"
-                        : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+                {PERMISSION_HOUR_OPTIONS.map((opt) => {
+                  const disabled = Number(opt.key) > maxPermissionHours
+                  return (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => {
+                        setPermissionHours(opt.key)
+                        if (permissionError) setPermissionError("")
+                      }}
+                      className={`px-4 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+                        permissionHours === opt.key
+                          ? "bg-brand-yellow border-brand-yellow text-white"
+                          : disabled
+                            ? "bg-gray-50 border-gray-200 text-gray-300 cursor-not-allowed"
+                            : "bg-white border-gray-300 text-gray-600 hover:bg-gray-50"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  )
+                })}
               </div>
+              {maxPermissionHours < PERMISSION_MAX_HOURS && (
+                <p className="mt-1 text-xs text-amber-700">
+                  Only {maxPermissionHours} hour{maxPermissionHours > 1 ? "s" : ""} can be taken today (office ends at 6:30 PM).
+                </p>
+              )}
             </div>
-
-            {permissionHours === "custom" && (
-              <div>
-                <label className="block mb-1.5 text-sm font-semibold text-gray-700" htmlFor="customDuration">
-                  Duration <span className="text-red-500">*</span>
-                </label>
-                <MuiSelectInput
-                  name="customDuration"
-                  value={customDuration}
-                  options={CUSTOM_DURATION_OPTIONS}
-                  onChange={(_, selected) => setCustomDuration(selected)}
-                  clearable={false}
-                />
-              </div>
-            )}
 
             <div className="md:col-span-2">
               <label className="block mb-1.5 text-sm font-semibold text-gray-700" htmlFor="permissionRemarks">
