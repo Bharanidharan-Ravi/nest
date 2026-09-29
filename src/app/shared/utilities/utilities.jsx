@@ -4,9 +4,13 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { FiAlertTriangle, FiCheckCircle, FiClock } from "react-icons/fi";
 import { useMemo, useState } from "react";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
+import { TICKET_MENTION_TYPE } from "../../../core/mentions/mentionSources";
 dayjs.extend(relativeTime);
 export function HtmlRenderer({ html }) {
   console.log("html", html);
+  const { goTo, getPath } = useSmartNavigation();
 
   const highlightFiles = (htmlString) => {
     const cleanHtml = DOMPurify.sanitize(htmlString, {
@@ -88,6 +92,33 @@ export function HtmlRenderer({ html }) {
   };
 
   const handleContainerClick = async (event) => {
+    // =====================================
+    // #TICKET MENTION -> OPEN TICKET
+    // =====================================
+    const ticketMention = event.target.closest(
+      `[data-type="${TICKET_MENTION_TYPE}"]`
+    );
+
+    if (ticketMention) {
+      const ticketId = ticketMention.getAttribute("data-id");
+      if (!ticketId) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Ctrl/Cmd/middle-click → new tab, like a normal link
+      if (event.ctrlKey || event.metaKey || event.button === 1) {
+        window.open(
+          getPath(ROUTE_KEYS.TICKET_DETAIL, { ticketId }),
+          "_blank",
+          "noopener,noreferrer"
+        );
+      } else {
+        goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId });
+      }
+      return;
+    }
+
     // =====================================
     // IMAGE CLICK -> OPEN NEW TAB
     // =====================================

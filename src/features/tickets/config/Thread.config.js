@@ -6,6 +6,7 @@ import {
   formatTimeHHMM,
 } from "../../../app/shared/utilities/utilities";
 import TicketProgressHistory from "../pages/TicketProgressHistory";
+import { ticketMentionSourcesResolver } from "../../../core/mentions/mentionSources";
 
 const isTimeLocked = (context) => {
   if (!context?.isEdit) return false;
@@ -39,6 +40,8 @@ export const ThreadFieldConfig = (ticketId) => [
     ui: "editor",
     dataType: "string",
     apiKey: "CommentText",
+    // @users, #tickets (current ticket's repo), ~labels
+    mentionSourcesResolver: ticketMentionSourcesResolver,
     customValidator: (value, formData, context) => {
       if (!context?.isEdit) return true;
       const descriptionText = (value || formData?.description || "")

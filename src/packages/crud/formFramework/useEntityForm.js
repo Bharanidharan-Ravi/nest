@@ -77,6 +77,15 @@ console.log("resolvedInitialData",resolvedInitialData);
         });
       }
 
+      // 1b. Resolve editor mention sources (e.g. @users, #tickets, ~labels)
+      if (newField.mentionSourcesResolver) {
+        newField.mentionSources = newField.mentionSourcesResolver({
+          masterData,
+          context,
+          formData: mergedFormData,
+        });
+      }
+
       // 2. Resolve disables
       if (newField.disableWhen) {
         newField.disabled = newField.disableWhen(context, mergedFormData);

@@ -6,7 +6,7 @@ import { PanelLeftOpen, PanelLeftClose } from "lucide-react";
 import { WGLogoLoader } from "../shared/GlobalUI/WGLogoLoader";
 import workglowlogo from "../../assets/WORKGLOWLOGO.png";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useMasterData } from "../../core/master/masterCall/useMasterData";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import MessengerNavBadge from "../../features/messenger/components/MessengerNavBadge";
@@ -26,12 +26,25 @@ export const Sidebar = ({ isOpen, onClose, onToggle }) => {
   const { pathname } = useLocation();
 
   // Logo (eyes when collapsed, full logo when expanded) goes home:
-  // dashboard, or tickets for viewers who have no dashboard
+  // dashboard, or tickets for viewers who have no dashboard.
+  // Closing plays no animation here — navigating away makes the 300ms
+  // collapse play over the new page and read as a jittery flash, so this
+  // close snaps shut instantly instead.
+  const [instantClose, setInstantClose] = useState(false);
   const handleLogoClick = () => {
     const home = isViewer ? "/tickets" : "/dashboard";
+    setInstantClose(true);
     if (pathname !== home) navigate(home);
     onClose?.();
   };
+
+  // Re-enable the animation once the instant close has painted, so the
+  // next open/close (via the toggle button) is smooth again.
+  useEffect(() => {
+    if (!instantClose) return;
+    const id = requestAnimationFrame(() => setInstantClose(false));
+    return () => cancelAnimationFrame(id);
+  }, [instantClose]);
 
   // State for Search and Sort
   const [searchQuery, setSearchQuery] = useState("");
@@ -82,7 +95,8 @@ export const Sidebar = ({ isOpen, onClose, onToggle }) => {
       <div
         onClick={onClose}
         className={[
-          "fixed inset-0 bg-black/30 z-[9998] transition-opacity duration-300",
+          "fixed inset-0 bg-black/30 z-[9998] transition-opacity",
+          instantClose ? "duration-0" : "duration-300",
           isOpen ? "opacity-100 visible" : "opacity-0 invisible",
         ].join(" ")}
       />
@@ -93,38 +107,54 @@ export const Sidebar = ({ isOpen, onClose, onToggle }) => {
         <nav
           className={[
             "absolute inset-y-0 left-0 flex flex-col gap-1 py-3 overflow-hidden border-r border-gray-200",
-            "transition-[width,background-color,box-shadow] duration-300 ease-in-out",
+            "transition-[width,background-color,box-shadow] ease-in-out",
+            instantClose ? "duration-0" : "duration-300",
             isOpen ? "w-[260px] bg-white shadow-2xl" : "w-16 bg-brand-gray-light",
           ].join(" ")}
         >
-          {/* Logo — eyes when collapsed, cross-fading to the full logo when expanded */}
-          <button
-            onClick={handleLogoClick}
-            title="WorkGlow"
-            className="relative h-10 mx-3 mb-1 shrink-0 flex items-center"
-          >
-            <WGLogoLoader
-              animate={false}
-              className={`absolute left-1 w-8 h-auto transition-opacity duration-200 ${isOpen ? "opacity-0" : "opacity-100"}`}
-            />
-            <img
-              src={workglowlogo}
-              alt="WorkGlow"
-              className={`absolute left-1 w-[100px] max-w-none h-auto transition-opacity duration-200 ${isOpen ? "opacity-100 delay-100" : "opacity-0"}`}
-            />
-          </button>
+          {/* Logo / toggle. Collapsed: single button, logo swaps to an "open"
+              icon on hover (cursor-pointer signals it's clickable). Expanded:
+              logo and close button sit side by side on the same line — logo
+              goes home, the button collapses the sidebar. */}
+          {isOpen ? (
+            <div className="h-10 mx-3 mb-1 shrink-0 flex items-center justify-between">
+              <button
+                onClick={handleLogoClick}
+                title="Go to dashboard"
+                className="flex items-center cursor-pointer"
+              >
+                <img
+                  src={workglowlogo}
+                  alt="WorkGlow"
+                  className="w-[100px] max-w-none h-auto"
+                />
+              </button>
+              <button
+                onClick={onToggle}
+                title="Collapse menu"
+                className="p-1.5 rounded-md text-gray-600 hover:bg-white hover:text-gray-800 cursor-pointer shrink-0"
+              >
+                <PanelLeftClose size={20} className="shrink-0" />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={onToggle}
+              title="Expand menu"
+              className="group relative h-10 mx-3 mb-1 shrink-0 flex items-center cursor-pointer"
+            >
+              <WGLogoLoader
+                animate={false}
+                className="absolute left-1 w-8 h-auto opacity-100 group-hover:opacity-0 transition-opacity duration-150"
+              />
+              <PanelLeftOpen
+                size={20}
+                className="absolute left-2 text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+              />
+            </button>
+          )}
 
           <div className="mx-3 border-t border-gray-200 mb-2 shrink-0" />
-
-          {/* Toggle — same spot in both states, only the icon swaps */}
-          <button
-            onClick={onToggle}
-            title={isOpen ? "Collapse menu" : "Expand menu"}
-            className={`${rowClass} mx-3 mb-2 text-gray-600 hover:bg-white hover:text-gray-800 font-semibold text-sm`}
-          >
-            {isOpen ? <PanelLeftClose size={20} className="shrink-0" /> : <PanelLeftOpen size={20} className="shrink-0" />}
-            <span className={labelClass}>Menu</span>
-          </button>
 
           {/* Scrollable body: routes + (expanded only) repositories */}
           {/* Collapsed: scrollbar hidden (still scrollable) so it doesn't eat into the

@@ -136,6 +136,24 @@
   font-weight: 500;
 }
 
+/* Default chip for any mention source without its own className */
+.mention-chip {
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #374151;
+  font-weight: 500;
+}
+
+.mention-ticket {
+  background-color: #e6f4ea;
+  border-radius: 4px;
+  padding: 2px 4px;
+  color: #137333;
+  font-weight: 500;
+  cursor: pointer;
+}
+
 /* File Attachment Styles */
 .file-wrapper {
   display: inline-block;
@@ -180,29 +198,59 @@
   border-radius: 0.5rem;
   box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   border: 1px solid #e5e7eb;
-  padding: 0.2rem;
+  padding: 0.25rem;
   display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  overflow: hidden;
-  font-size: 0.9rem;
-  min-width: 150px;
+  overflow-y: auto;
+  max-height: 280px;
+  font-size: 0.875rem;
+  min-width: 200px;
+  max-width: min(420px, 90vw);
 }
 
 .mention-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 0.4rem;
-  padding: 0.2rem 0.4rem;
+  padding: 0.35rem 0.5rem;
   text-align: left;
   cursor: pointer;
   color: #374151;
+  transition: background-color 80ms ease;
 }
 
-.mention-item:hover,
 .mention-item.is-selected {
   background-color: #f3f4f6;
   color: #111827;
+}
+
+.mention-item-badge {
+  flex-shrink: 0;
+  padding: 0.05rem 0.4rem;
+  border-radius: 0.3rem;
+  background-color: #e6f4ea;
+  color: #137333;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.mention-item-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mention-match {
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
 }
 
 .mention-item.no-result {

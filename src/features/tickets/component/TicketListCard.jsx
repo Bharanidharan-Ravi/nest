@@ -716,6 +716,8 @@ useEffect(()=>{
                       }),
                   }}
                   module="Thread"
+                  // Scopes the editor's #ticket mentions to this ticket's repo
+                  context={{ repoId: (quickFormTicket || quickTicketStatus)?.repoId }}
                   onCancel={closeQuickForm}
                   onSuccessCallback={() => {
                     closeQuickForm();

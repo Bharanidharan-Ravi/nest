@@ -656,6 +656,7 @@ import { useApiQuery } from "../../../core/query/useApiQuery";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 import { useEffect } from "react";
 import { getDateRangeApiParams } from "../components/getDateRangeApiParams";
+import { applyListFilters } from "../core/filterEngine";
 
 export function useListState(config, rawData = [], userRole = null) {
   const [searchParams] = useSearchParams();
@@ -983,97 +984,14 @@ export function useListState(config, rawData = [], userRole = null) {
       const activeNormalizer = config.normalizer;
       data = activeNormalizer ? rawData.map(activeNormalizer) : [...rawData];
     }
-    if(typeof config.itemVisibilityFilter==="function"){
-      data=data.filter((item)=>config.itemVisibilityFilter(item))
-    }
-    const combinedFilters = { ...filters, ...queryFilters };
-
-    // 🔥 1. Initialize a Score Tracker for multi-select matches
-    const matchScores = new Map();
-
-    Object.entries(combinedFilters).forEach(([key, value]) => {
-      if (!value) return;
-
-      // 🚀 THE FIX: Check if this filter key actually exists in the current config
-      const filterConfig = config?.filters?.find((f) => f.key === key);
-      if (!filterConfig && key !== "is" && key !== "text") {
-        return;
-      }
-      if (key === "is") {
-        // 🚀 THE FIX: If tabs are disabled in config, completely ignore the "is" filter!
-        if (config.enableTabs === false) return;
-        if (config.tabConfig) {
-          const mapping = config.tabConfig.find((t) => t.key === value);
-          if (mapping) {
-            data = data.filter((item) => {
-              const itemValue = item[mapping.field];
-              if (mapping.excludeValues)
-                return !mapping.excludeValues.includes(itemValue);
-              if (Array.isArray(mapping.filterValue))
-                return mapping.filterValue.includes(itemValue);
-              return itemValue === mapping.filterValue;
-            });
-          }
-        }
-        return; // ALWAYS return here so 'is' queries never accidentally wipe out data!
-      }
-      // const filterConfig = config.filters?.find((f) => f.key === key);
-
-      if (filterConfig?.filterType === "api") return;
-
-      if (
-        filterConfig?.filterType === "custom" &&
-        typeof filterConfig.customFilter === "function"
-      ) {
-        data = data.filter((item) => filterConfig.customFilter(item, value));
-      } else if (filterConfig?.filterType === "array") {
-        // 🔥 2. Handle Multi-Select Comma Strings (e.g. "11,13")
-        const targetValues = String(value).split(",");
-
-        data = data.filter((item) => {
-          if (!Array.isArray(item[key])) return false;
-
-          // Count how many of the selected tags this ticket actually has
-          const matchCount = targetValues.filter((tv) =>
-            item[key].some(
-              (entry) => String(entry[filterConfig.filterKey]) === String(tv),
-            ),
-          ).length;
-
-          if (matchCount > 0) {
-            // Add the score to the Map so we can use it during sorting!
-            matchScores.set(item, (matchScores.get(item) || 0) + matchCount);
-            return true; // Keep partial matches
-          }
-          return false;
-        });
-      } else {
-        // 🔥 3. Standard Filter (Updated to also support multi-select commas!)
-        const targetValues = String(value).split(",");
-        data = data.filter((item) => {
-          if (targetValues.includes(String(item[key]))) {
-            // Add a score of 1 for standard matches
-            matchScores.set(item, (matchScores.get(item) || 0) + 1);
-            return true;
-          }
-          return false;
-        });
-      }
+    // 🔥 Local filtering is delegated to the shared, hook-free filter engine
+    const { data: filteredData, matchScores } = applyListFilters(data, {
+      config,
+      filters: { ...filters, ...queryFilters },
+      text,
     });
+    data = filteredData;
 
-    if (text) {
-      const searchText = text.toLowerCase().replace(/^#/, "").trim();
-
-      data = data.filter((item) =>
-        config.searchFields?.some((field) => {
-          const value = item[field];
-
-          if (value === null || value === undefined) return false;
-
-          return String(value).toLowerCase().includes(searchText);
-        }),
-      );
-    }
     const sortConfig = config?.sortFields?.find((x) => x.key === sortField) || {};
     // 🔥 4. Sort: Prioritize Match Score, then fallback to user's selection
     data.sort((a, b) => {

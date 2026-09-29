@@ -16,7 +16,7 @@ import { queryClient } from "../api/queryClient";
 //   return section;
 // };
 
-const extractSourceData = (res, source) => {
+export const extractSourceData = (res, source) => {
   // MULTIPLE SOURCES SUPPORT
   if (Array.isArray(source)) {
     const result = {};

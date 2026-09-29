@@ -93,47 +93,145 @@ const FileAttachment = Node.create({
 });
 
 /* ===================================================
-   UPDATED MENTION EXTENSION FACTORY (Unchanged)
+   GENERIC MENTION EXTENSION FACTORY
+   ---------------------------------------------------
+   A mention source describes one trigger. The editor knows nothing about
+   what the items are — the app builds sources and passes them in.
+
+   {
+     char:       "#",                     // trigger character
+     name:       "ticketMention",         // node name → saved as data-type
+     items:      (query) => Item[] | Promise<Item[]>,
+     getId:      (item) => id,            // saved as data-id
+     getLabel:   (item) => string,        // saved as data-label
+     renderItem: (item) => string,        // dropdown row text (optional)
+     getBadge:   (item) => string,        // small tag before the row text (optional)
+     renderText: ({ id, label, char }) => string, // chip text (optional)
+     className:  "mention-ticket",        // chip class (optional)
+     limit:      5,                       // max rows (optional)
+     allowSpaces: false,                  // query may contain spaces (optional)
+   }
+
+   With allowSpaces the query runs to the end of the line, so the popup is
+   hidden once a multi-word query stops matching and typing continues normally.
+
+   Sources are read through a ref, so their data (e.g. `items`) may change
+   between renders. The set of chars/names is fixed when the editor mounts.
 =================================================== */
-// ... (Keep existing createMentionExtension code) ...
-const createMentionExtension = (
-  listsRef,
-  trigger,
-  listKey,
-  displayKey,
-  idKey,
-) => {
-  return Mention.extend({
-    name: trigger === "@" ? "userMention" : "labelMention",
-  }).configure({
+const defaultRenderText = ({ label, id, char }) => `${char}${label ?? id}`;
+
+// Own trigger matcher for allowSpaces sources, so multi-word queries don't
+// depend on Tiptap's built-in regex. Looks back from the cursor (same
+// paragraph) for the nearest trigger char at line start / after whitespace.
+// The query may contain single spaces; it ends on a double space, a newline,
+// another trigger char, or once it grows past MAX_SPACED_QUERY.
+const MAX_SPACED_QUERY = 60;
+
+const findSpacedSuggestionMatch = ({ char, $position }) => {
+  if (!$position.parent.isTextblock) return null;
+
+  // Leaf nodes (chips, hard breaks) count as one char, keeping offsets aligned
+  const textBefore = $position.parent.textBetween(
+    0,
+    $position.parentOffset,
+    undefined,
+    "￼",
+  );
+
+  const index = textBefore.lastIndexOf(char);
+  if (index === -1) return null;
+
+  const prefix = textBefore.charAt(index - 1);
+  if (index > 0 && !/\s/.test(prefix)) return null; // e.g. "abc#1"
+
+  const query = textBefore.slice(index + char.length);
+  if (
+    query.length > MAX_SPACED_QUERY ||
+    /^\s/.test(query) || // "# " is not a mention
+    /\s{2,}|\n|￼/.test(query)
+  ) {
+    return null;
+  }
+
+  const from = $position.start() + index;
+  return {
+    range: { from, to: $position.pos },
+    query,
+    text: char + query,
+  };
+};
+
+const createMentionExtension = (sourcesRef, initialSource) => {
+  const { char, name } = initialSource;
+  // Always read the latest version of this source (data may have refreshed)
+  const getSource = () =>
+    sourcesRef.current.find((s) => s.name === name) || initialSource;
+
+  const chipText = (node) =>
+    (getSource().renderText || defaultRenderText)({
+      id: node.attrs.id,
+      label: node.attrs.label,
+      char,
+    });
+
+  return Mention.extend({ name }).configure({
     HTMLAttributes: {
-      class: trigger === "@" ? "mention-user" : "mention-label",
+      class: initialSource.className || "mention-chip",
     },
+    renderText: ({ node }) => chipText(node),
+    renderHTML: ({ options, node }) => [
+      "span",
+      options.HTMLAttributes,
+      chipText(node),
+    ],
     suggestion: {
-      char: trigger,
-      // 1. Filter logic using dynamic displayKey
-      items: ({ query }) => {
-        const currentList = listsRef.current[listKey] || [];
-        return currentList
-          .filter(
-            (item) =>
-              item.Status=== "Active" &&
-              item[displayKey]
-                ?.toLowerCase()
-                .includes(query.toLowerCase())
-          )
-          .slice(0, 5);
+      char,
+      allowSpaces: Boolean(initialSource.allowSpaces),
+      ...(initialSource.allowSpaces && {
+        findSuggestionMatch: findSpacedSuggestionMatch,
+      }),
+      // 1. Items come from the source (sync or async)
+      items: async ({ query }) => {
+        const source = getSource();
+        const result = await source.items?.(query ?? "");
+        return (Array.isArray(result) ? result : []).slice(
+          0,
+          source.limit ?? 5,
+        );
       },
       // 2. Render logic to draw the dropdown using Tippy
       render: () => {
         let component;
         let popup;
+        const listProps = () => {
+          const source = getSource();
+          return {
+            getId: source.getId,
+            getLabel: source.getLabel,
+            renderItem: source.renderItem,
+            getBadge: source.getBadge,
+          };
+        };
+
+        // A multi-word query with no match means the user is just typing
+        // text after a "#", so get out of the way instead of showing "No result"
+        const shouldHide = (props) =>
+          props.items.length === 0 && /\s/.test(props.query ?? "");
+
+        let dismissed = false; // Escape keeps it closed until the next "#"
+
+        const syncVisibility = (props) => {
+          const instance = popup?.[0];
+          if (!instance) return;
+          if (dismissed || shouldHide(props)) instance.hide();
+          else instance.show();
+        };
 
         return {
           onStart: (props) => {
+            dismissed = false;
             component = new ReactRenderer(MentionList, {
-              // Pass the keys so MentionList knows what to display
-              props: { ...props, displayKey, idKey },
+              props: { ...props, ...listProps() },
               editor: props.editor,
             });
 
@@ -145,38 +243,75 @@ const createMentionExtension = (
               getReferenceClientRect: props.clientRect,
               appendTo: () => document.body,
               content: component.element,
-              showOnCreate: true,
+              showOnCreate: !shouldHide(props),
               interactive: true,
               trigger: "manual",
               placement: "bottom-start",
+              maxWidth: "none",
+              duration: [120, 80],
+              offset: [0, 6],
             });
           },
           onUpdate(props) {
-            component.updateProps({ ...props, displayKey, idKey });
+            component.updateProps({ ...props, ...listProps() });
 
             if (!props.clientRect) {
               return;
             }
 
-            popup[0].setProps({
+            popup?.[0]?.setProps({
               getReferenceClientRect: props.clientRect,
             });
+            syncVisibility(props);
           },
           onKeyDown(props) {
+            const instance = popup?.[0];
             if (props.event.key === "Escape") {
-              popup[0].hide();
+              dismissed = true;
+              instance?.hide();
               return true;
             }
+            // Hidden popup must not swallow Enter / arrows
+            if (!instance?.state.isVisible) return false;
             return component.ref?.onKeyDown(props);
           },
           onExit() {
-            popup[0].destroy();
-            component.destroy();
+            popup?.[0]?.destroy();
+            component?.destroy();
           },
         };
       },
     },
   });
+};
+
+// Back-compat sources for callers that still pass userList / labelList.
+const buildFallbackSources = (userList = [], labelList = []) => {
+  const activeByName = (list, key) => (query) =>
+    list.filter(
+      (item) =>
+        item.Status === "Active" &&
+        item[key]?.toLowerCase().includes(query.toLowerCase()),
+    );
+
+  return [
+    {
+      char: "@",
+      name: "userMention",
+      className: "mention-user",
+      items: activeByName(userList, "UserName"),
+      getId: (item) => item.UserID,
+      getLabel: (item) => item.UserName,
+    },
+    {
+      char: "~",
+      name: "labelMention",
+      className: "mention-label",
+      items: activeByName(labelList, "LabelName"),
+      getId: (item) => item.LabelID,
+      getLabel: (item) => item.LabelName,
+    },
+  ];
 };
 
 /* ===================================================
@@ -191,6 +326,7 @@ const AdvancedEditor = ({
   onFileDelete,
   userList = [],
   labelList = [],
+  mentionSources,
   resetKey,
   error,
   theme = {},
@@ -203,11 +339,15 @@ const AdvancedEditor = ({
   const [modalImage, setModalImage] = useState(null);
 
   const previousMediaRef = useRef([]);
-  const listsRef = useRef({ users: userList, labels: labelList });
+  // Explicit mentionSources win; otherwise fall back to userList / labelList
+  const resolvedSources = mentionSources || buildFallbackSources(userList, labelList);
+  // Trigger set is fixed at mount; data is kept fresh through the ref
+  const [initialSources] = useState(resolvedSources);
+  const sourcesRef = useRef(resolvedSources);
 
   useEffect(() => {
-    listsRef.current = { users: userList, labels: labelList };
-  }, [userList, labelList]);
+    sourcesRef.current = resolvedSources;
+  }, [resolvedSources]);
 
   const extractMediaUrls = (editorInstance) => {
     const urls = [];
@@ -283,8 +423,9 @@ const AdvancedEditor = ({
       TableCell,
       TableHeader,
       FileAttachment,
-      createMentionExtension(listsRef, "@", "users", "UserName", "UserID"),
-      createMentionExtension(listsRef, "#", "labels", "LabelName", "LabelID"),
+      ...initialSources.map((source) =>
+        createMentionExtension(sourcesRef, source),
+      ),
     ],
     onCreate: ({ editor }) => {
       previousMediaRef.current = extractMediaUrls(editor);

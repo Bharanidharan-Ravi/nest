@@ -116,6 +116,7 @@ console.log("fields",fields);
             disabled={field.disabled}
             userList={master?.EmployeeList}
             labelList={master?.LabelMaster}
+            mentionSources={field.mentionSources}
             uploadFile={uploadFile}
             onFileDelete={onFileDelete}
             theme={fieldTheme}

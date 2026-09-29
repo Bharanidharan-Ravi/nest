@@ -108,3 +108,27 @@
 .html-renderer table col {
   width: auto;
 }
+/* Mentions inside rendered comments (thread view) */
+.html-renderer [data-type="userMention"],
+.html-renderer [data-type="labelMention"],
+.html-renderer [data-type="ticketMention"] {
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-weight: 500;
+}
+.html-renderer [data-type="userMention"] {
+  background-color: #e8f0fe;
+  color: #1a73e8;
+}
+.html-renderer [data-type="labelMention"] {
+  background-color: #fce8e6;
+  color: #c5221f;
+}
+.html-renderer [data-type="ticketMention"] {
+  background-color: #e6f4ea;
+  color: #137333;
+  cursor: pointer;
+}
+.html-renderer [data-type="ticketMention"]:hover {
+  text-decoration: underline;
+}
