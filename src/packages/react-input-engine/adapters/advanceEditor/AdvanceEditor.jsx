@@ -19,7 +19,7 @@ import TableCell from "@tiptap/extension-table-cell";
 import TableHeader from "@tiptap/extension-table-header";
 import Link from "@tiptap/extension-link";
 
-import { Node, mergeAttributes } from "@tiptap/core";
+import { Node, Extension, mergeAttributes } from "@tiptap/core";
 import {
   FaBold,
   FaItalic,
@@ -219,6 +219,9 @@ const createMentionExtension = (sourcesRef, initialSource) => {
           props.items.length === 0 && /\s/.test(props.query ?? "");
 
         let dismissed = false; // Escape keeps it closed until the next "#"
+        // onKeyDown only receives { view, event, range }, so keep the last
+        // items/query from onStart/onUpdate for it to use.
+        let lastProps = null;
 
         const syncVisibility = (props) => {
           const instance = popup?.[0];
@@ -230,6 +233,7 @@ const createMentionExtension = (sourcesRef, initialSource) => {
         return {
           onStart: (props) => {
             dismissed = false;
+            lastProps = props;
             component = new ReactRenderer(MentionList, {
               props: { ...props, ...listProps() },
               editor: props.editor,
@@ -253,6 +257,7 @@ const createMentionExtension = (sourcesRef, initialSource) => {
             });
           },
           onUpdate(props) {
+            lastProps = props;
             component.updateProps({ ...props, ...listProps() });
 
             if (!props.clientRect) {
@@ -269,6 +274,19 @@ const createMentionExtension = (sourcesRef, initialSource) => {
             if (props.event.key === "Escape") {
               dismissed = true;
               instance?.hide();
+              return true;
+            }
+            // Ctrl+Space reopens a dropdown dismissed via Escape, without
+            // retyping the trigger char — same query, same results.
+            if (props.event.ctrlKey && props.event.code === "Space") {
+              props.event.preventDefault();
+              dismissed = false;
+              if (lastProps?.clientRect) {
+                instance?.setProps({
+                  getReferenceClientRect: lastProps.clientRect,
+                });
+              }
+              instance?.show();
               return true;
             }
             // Hidden popup must not swallow Enter / arrows
@@ -307,12 +325,48 @@ const buildFallbackSources = (userList = [], labelList = []) => {
       char: "~",
       name: "labelMention",
       className: "mention-label",
-      items: activeByName(labelList, "LabelName"),
-      getId: (item) => item.LabelID,
-      getLabel: (item) => item.LabelName,
+      items: activeByName(labelList, "Title"),
+      getId: (item) => item.Id,
+      getLabel: (item) => item.Title,
     },
   ];
 };
+
+/* ===================================================
+   TAB / SHIFT-TAB
+   ---------------------------------------------------
+   Plain Tab behaves like a word processor (inserts an indent) instead of
+   jumping focus to the next form field; Shift-Tab does the field jump.
+   Only takes over once the mention dropdown (if any) has already had its
+   turn — see createMentionExtension's onKeyDown, which still uses Tab to
+   pick a highlighted suggestion while the popup is open.
+=================================================== */
+const focusNextElement = (fromEl) => {
+  const selector =
+    'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
+  const focusable = Array.from(document.querySelectorAll(selector)).filter(
+    (el) => el === fromEl || el.offsetParent !== null,
+  );
+  const index = focusable.indexOf(fromEl);
+  if (index === -1) return;
+  focusable[index + 1]?.focus();
+};
+
+const TabNavigation = Extension.create({
+  name: "tabNavigation",
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => {
+        this.editor.commands.insertContent("    ");
+        return true;
+      },
+      "Shift-Tab": () => {
+        focusNextElement(this.editor.view.dom);
+        return true;
+      },
+    };
+  },
+});
 
 /* ===================================================
    MAIN EDITOR
@@ -426,6 +480,7 @@ const AdvancedEditor = ({
       ...initialSources.map((source) =>
         createMentionExtension(sourcesRef, source),
       ),
+      TabNavigation,
     ],
     onCreate: ({ editor }) => {
       previousMediaRef.current = extractMediaUrls(editor);

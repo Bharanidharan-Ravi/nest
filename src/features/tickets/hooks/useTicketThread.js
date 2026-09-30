@@ -17,12 +17,12 @@ export const fetchThreadList = (issueId, config, { _silent } = {}) => {
   });
 };
 export const useThreadMaster = (ticketId) => {
-  const config = ["ThreadsList", "TicketHistory"];
+  const config = ["ThreadsList", "TicketHistory","TicketIssueLog"];
   return useApiQuery({
     queryKey: queryKeys.ticket.thread(ticketId),
     // Realtime refetches run with cached data → silent, no page loader
     queryFn: ({ _silent }) => fetchThreadList(ticketId, config, { _silent }),
-    source: ["ThreadsList", "TicketHistory"],
+    source: ["ThreadsList", "TicketHistory","TicketIssueLog"],
     options: {
       staleTime: 5 * 60 * 1000,
       enabled: true,

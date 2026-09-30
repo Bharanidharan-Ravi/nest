@@ -13,18 +13,15 @@ import AssigneesWidget from "../component/AssigneesWidget";
 // Import your new split components
 import ParentTicketHeader from "../component/ThreadParent/ParentTicketHeader";
 import TicketThreads from "../component/ThreadListCard/TicketThreads";
+import IssueLogger from "../component/IssueLogger/IssueLogger";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import {
-  useProjectMaster,
-  useRepoById,
   useTeamMaster,
   useTicketMaster,
   useTicketProgress,
 } from "../../../core/master/selectors/selectors";
 const TicketDetailPage = () => {
   const { ticketId } = useParams();
-
-  // const { data } = useMasterData();
   const user = readUserFromSession();
   const { goTo } = useSmartNavigation();
   const editRouteKey = ROUTE_KEYS.TICKET_EDIT;
@@ -35,6 +32,19 @@ const TicketDetailPage = () => {
 
   const [selectedWorkStream, setSelectedWorkStream] = useState(null);
   const [selectedHandoffId, setSelectedHandoffId] = useState(null);
+  const [activeDetailTab, setActiveDetailTab] = useState("threads");
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  // Track sticky header height so the tab bar can stick right below it
+  useEffect(() => {
+    const headerEl = sentinelRef.current?.nextElementSibling;
+    if (!headerEl) return;
+    const observer = new ResizeObserver(() =>
+      setHeaderHeight(headerEl.offsetHeight),
+    );
+    observer.observe(headerEl);
+    return () => observer.disconnect();
+  });
 
   //DDD
   const [supportModalOpen, setSupportMOdalOpen] = useState(false);
@@ -42,6 +52,8 @@ const TicketDetailPage = () => {
 
   // 🔥 FETCH DATA
   const { data: ThreadsList } = useThreadMaster(ticketId, editingItem?.Id);
+  console.log("ThreadsList",ThreadsList);
+  
   const [shareFormData, setShareFormData] = useState();
   const ticketMasterData = useTicketMaster(ticketId);
   useEffect(() => {
@@ -238,8 +250,8 @@ const TicketDetailPage = () => {
 
   const timeStats = React.useMemo(() => {
     let totalMinutes = 0,
-      myMinutes = 0;
-
+      myMinutes = 0,
+       clientMinutes=0;
     const threads = Array.isArray(ThreadsList?.ThreadsList)
       ? ThreadsList?.ThreadsList
       : [];
@@ -256,6 +268,9 @@ const TicketDetailPage = () => {
         if (thread.UpdatedBy === user?.userId) {
           myMinutes += mins;
         }
+        if(thread.team===null || thread.team===undefined){
+          clientMinutes += mins
+        }
       }
     });
 
@@ -268,8 +283,13 @@ const TicketDetailPage = () => {
     return {
       total: formatTime(totalMinutes),
       mine: formatTime(myMinutes),
+        client:formatTime(clientMinutes)
     };
   }, [ThreadsList, user]);
+
+  const openIssueCount = (ThreadsList?.TicketIssueLog || []).filter(
+    (issue) => (issue.Status || "").toLowerCase() === "open",
+  ).length;
 
   if (!parentTicket) return null;
   return (
@@ -294,41 +314,81 @@ const TicketDetailPage = () => {
           {/* LEFT COLUMN: Timeline & History           */}
           {/* ========================================= */}
           <div className="w-full flex flex-col gap-6">
-            {!isViewer && shouldBlockThreads ? (
-              <div
-                className="flex flex-col items-center justify-center gap-4 py-12 px-6
+            <div
+              className="sticky z-20 flex gap-5 border-b border-gray-200 bg-white pt-2"
+              style={{ top: headerHeight }}
+            >
+              {[
+                { key: "threads", label: "Threads" },
+                !isViewer && { key: "issueLogger", label: "Issue Logger", count: openIssueCount },
+              ]
+                .filter(Boolean)
+                .map(({ key, label, count }) => (
+                  <button
+                    key={key}
+                    onClick={() => setActiveDetailTab(key)}
+                    className={[
+                      "pb-2 text-sm font-medium border-b-2 transition-colors inline-flex items-center gap-1.5",
+                      activeDetailTab === key
+                        ? "border-brand-yellow text-brand-yellow"
+                        : "border-transparent text-gray-500 hover:text-gray-900",
+                    ].join(" ")}
+                  >
+                    {label}
+                    {!!count && (
+                      <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-red-100 text-red-600 text-[10px] font-semibold">
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+            </div>
+
+            {activeDetailTab === "threads" ? (
+              !isViewer && shouldBlockThreads ? (
+                <div
+                  className="flex flex-col items-center justify-center gap-4 py-12 px-6
               border-2 border-dashed border-gray-200 rounded-xl bg-gray-50"
-              >
-                <button
-                  onClick={() => goTo(editRouteKey, { ticketId })}
-                  className="bg-brand-yellow text-white px-4 py-2 rounded-md
-              font-medium hover:opacity-90 transition-colors"
                 >
-                  Complete Ticket Details
-                </button>
-              </div>
+                  <button
+                    onClick={() => goTo(editRouteKey, { ticketId })}
+                    className="bg-brand-yellow text-white px-4 py-2 rounded-md
+              font-medium hover:opacity-90 transition-colors"
+                  >
+                    Complete Ticket Details
+                  </button>
+                </div>
+              ) : (
+                <TicketThreads
+                  ticketId={ticketId}
+                  threadsData={ThreadsList?.ThreadsList || []}
+                  historyData={
+                    ThreadsList?.TicketHistory || ThreadsList?.ticketHistory || []
+                  }
+                  assigneesJsonString={assigneesJsonString}
+                  selectedWorkStream={selectedWorkStream}
+                  selectedHandoffId={selectedHandoffId}
+                  parentTicket={parentTicket}
+                  formContext={formContext}
+                  editingItem={editingItem}
+                  setEditingItem={setEditingItem}
+                  currentUser={user}
+                  issueLogs={ThreadsList?.TicketIssueLog || []}
+                />
+              )
             ) : (
-              <TicketThreads
+              <IssueLogger
                 ticketId={ticketId}
-                threadsData={ThreadsList?.ThreadsList || []}
-                historyData={
-                  ThreadsList?.TicketHistory || ThreadsList?.ticketHistory || []
-                }
-                assigneesJsonString={assigneesJsonString}
-                selectedWorkStream={selectedWorkStream}
-                selectedHandoffId={selectedHandoffId}
-                parentTicket={parentTicket}
                 formContext={formContext}
-                editingItem={editingItem}
-                setEditingItem={setEditingItem}
-                currentUser={user}
+                parentTicket={parentTicket}
+                issueLogs={ThreadsList?.TicketIssueLog || []}
               />
             )}
           </div>
           {/* ========================================= */}
-          {/* RIGHT COLUMN: Sticky Sidebar              */}
+          {/* RIGHT COLUMN: Sticky Sidebar (Threads only) */}
           {/* ========================================= */}
-          {/* {!isViewer && ( */}
+          {activeDetailTab === "threads" && (
             <div className="w-full lg:w-1/4">
               <div className="sticky top-28 h-[calc(100vh-8rem)] flex flex-col gap-6">
                 <AssigneesWidget
@@ -343,7 +403,7 @@ const TicketDetailPage = () => {
                 />
               </div>
             </div>
-          {/* )} */}
+          )}
         </div>
       </div>
 
@@ -402,3 +462,4 @@ const TicketDetailPage = () => {
 };
 
 export default TicketDetailPage;
+

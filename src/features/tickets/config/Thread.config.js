@@ -218,7 +218,7 @@ export const ThreadFieldConfig = (ticketId) => [
       return formData.hours || null;
     },
     visibleWhen: (formData, context) => {
-      return  ![15, 16].includes(context?.parentTicket?.statusId);
+      return !context?.isViewer &&  ![15, 16].includes(context?.parentTicket?.statusId);
     },
     disableWhen: (context, formData) => {
       if (isTimeLocked(context)) return true;
@@ -242,6 +242,10 @@ export const ThreadFieldConfig = (ticketId) => [
           const [h, m] = str.split(":").map(Number);
           return (Number.isNaN(h) ? 0 : h * 60) + (Number.isNaN(m) ? 0 : m);
         }
+        // if(context.isViewer){
+        //   const mins=parseInt(str,10)
+        //   return Number.isNaN(mins) ? 0 : mins;
+        // }
 
         const parsedFloat = parseFloat(str);
         return Number.isNaN(parsedFloat) ? 0 : Math.round(parsedFloat * 60);
@@ -250,6 +254,9 @@ export const ThreadFieldConfig = (ticketId) => [
       const manualMinutes = getMinutes(value);
 
       // Auto-calculate range duration if From/To times are present
+      // if(context.isViewer && manualMinutes >=60){
+      //   return "Please enter minutes only (e.g. 34)."
+      // }
       let autoMinutes = 0;
       if (formData.fromTime && formData.toTime) {
         autoMinutes = getMinutes(formData.toTime) - getMinutes(formData.fromTime);
@@ -272,6 +279,54 @@ export const ThreadFieldConfig = (ticketId) => [
       return true;
     }
   },
+  {
+    name: "hoursViewer",
+    // apiKey: "Hours",
+    type: "text",
+    ui: "mui",
+    label: "Minutes",
+    dataType: "string",
+    required: false,
+    colSpan: 3,
+    initValueResolver: ({ context }) => {
+      const val=context?.editingItem?.Hours
+      if(!val) return ""
+      const[h,m]=String(val).split(":").map(Number)
+      return String((h*60)+(isNaN(m)?0:m))
+    },
+    visibleWhen:(formData, context) =>context?.isViewer ===true,
+    disableWhen:(context)=>isTimeLocked(context),
+    forceSubmit:(context)=>context?.isViewer ===true,
+    customValidator:(value,formData,context)=>{
+      if(!value)return true
+      const mins=parseInt(value,10)
+    
+      if(Number.isNaN(mins))return "Please enter a valid number.";
+      if(mins<5)return "Logged time must be at least 5 minutes."
+      if(mins>=60)return "please enter minutes only (e.g. 34)."
+      return true;
+    }
+
+  },
+  // {
+  //   name:"hoursViewerFormatted",
+  //   apiKey:"Hours",
+  //   type:"hiden",
+  //   label:"",
+  //   colSpan:0,
+  //   visibleWhen:(formData, context) =>context?.isViewer ===true,
+  //   effectDependencies:["hoursViewer"],
+  //   effectResolver:(formData)=>{
+  //     const val=formData?.hoursViewer
+  //     if(!val)return null
+  //     const mins=parseInt(val,10)
+  //     if(Number.isNaN(mins))return null
+  //     const h=Math.floor(mins/60).toString().padStart(2,"0")
+  //     const m=(mins % 60).toString().padStart(2,"0")
+  //     return `${h}:${m}`;
+  //   },
+  //   forceSubmit:(context)=>context?.isViewer ===true,
+  // },
 
   {
     name: "CompletionPercentage",

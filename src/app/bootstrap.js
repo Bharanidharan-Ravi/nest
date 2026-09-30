@@ -15,9 +15,9 @@ import { LeaveRequestFeature } from "../features/leaveRequest"
 
 export const bootstrapApp = () => {
   registerFeature(DashboardFeature)
-  registerFeature(RepositoryFeature)
   registerFeature(TicketsFeature)
   registerFeature(ProjectFeature)
+  registerFeature(RepositoryFeature)
   registerFeature(LabelFeature)
   registerFeature(EmployeeFeature)
   registerFeature(BannerFeature)

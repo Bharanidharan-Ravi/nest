@@ -29,7 +29,8 @@ export const Breadcrumbs = () => {
         // return master?.find((r) => r.Repo_Id === repoId)?.Title ?? null;
         return master;
       }
-      case ROUTE_KEYS.TICKET_DETAIL: {
+      case ROUTE_KEYS.TICKET_DETAIL:
+      case ROUTE_KEYS.REPO_TICKET_DETAIL: {
         if (!ticketId) return null;
         const tickets = queryClient.getQueryData(queryKeys.ticket.list());
 

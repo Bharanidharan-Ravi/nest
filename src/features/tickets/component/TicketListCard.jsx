@@ -43,6 +43,7 @@ export default function TicketListCard({
   focused,
   config,
   quickCommentButton,
+  hourdata
 }) {
   const { goTo } = useSmartNavigation();
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
@@ -168,27 +169,31 @@ useEffect(()=>{
     item.estimateHours &&
     parseToMinutes(item.EntireWorkingTime) > parseToMinutes(item.estimateHours)
 
-  const AssigneeAvatar = ({ Assignee_Id, Assignee_Name }) => {
-    const { data: empData } = getEmployeeList()
-    const employee = empData?.find(
-      (e) => e.UserID?.toLowerCase() === Assignee_Id.toLowerCase()
-    )
-    const avatarPath = employee?.PreviewUrl
-    return (
-      <Tooltip title={Assignee_Name} arrow>
-        <div className="assignee-avatar-wrapper">
-          {avatarPath ? (
-            <img
-              className="h-6 w-6 rounded-full object-cover border-2 border-white"
-              src={avatarPath}
-              alt={Assignee_Name}
-            />
-          ) : (<div className="avatar">{getInitials(Assignee_Name)}</div>
-          )}
-        </div>
-      </Tooltip>
-    )
-  }
+
+
+    const breakdown=(()=>{
+      if(!hourdata?.LoggedBreakdown){
+        console.log("HOUR DEBUG",item.issueId,{hourdata});
+        return null
+        
+      }
+      if(typeof hourdata.LoggedBreakdown==='object')return hourdata.LoggedBreakdown
+      try{
+        return JSON.parse(hourdata.LoggedBreakdown)
+      }catch{
+        return null
+      }
+    })()
+    console.log("hourdata for",item.issueId,hourdata);
+    console.log("hourdatattttttttt",hourdata);
+    
+    
+const teamMinutes=parseToMinutes(breakdown?.Web)
++parseToMinutes(breakdown?.Technical)
++parseToMinutes(breakdown?.Functional)
+const totalLogged=teamMinutes>0
+?`${Math.floor(teamMinutes/60)}:${String(teamMinutes %60).padStart(2,'0')}`
+:null
   // console.log("itemmmm",item);
   return (
     <>
@@ -602,14 +607,22 @@ useEffect(()=>{
               )}
             </div>
             <div className="metrics-cell metrics-cell-time">
-              {!isViewer && item.EntireWorkingTime && (
+              {!isViewer && totalLogged && (
                 <div className="estimate-row">
                   <span className={`estimate-time ${isOverEstimate ? 'over-estimate' : ''}`}>
                     <FaStopwatch size={12} />
-                    {item.EntireWorkingTime}hr
+                    {totalLogged}hr
                   </span>
                 </div>
               )}
+               {/* {!isViewer && totalLogged &&
+                    <div className="estimate-row">
+                      <span className={`estimate-time ${isOverEstimate ? 'over-estimate' : ''}`}>
+                        <FaStopwatch size={12} />
+                        {totalLogged}hr
+                      </span>
+                    </div>
+                  } */}
             </div>
             <div className="metrics-cell metrics-cell-edit">
               <div className="edit-icon">
@@ -716,8 +729,6 @@ useEffect(()=>{
                       }),
                   }}
                   module="Thread"
-                  // Scopes the editor's #ticket mentions to this ticket's repo
-                  context={{ repoId: (quickFormTicket || quickTicketStatus)?.repoId }}
                   onCancel={closeQuickForm}
                   onSuccessCallback={() => {
                     closeQuickForm();

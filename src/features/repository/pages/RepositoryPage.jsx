@@ -10,14 +10,12 @@ import { repoListConfig } from "../config/RepoUI.config";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
-import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 export default function RepositoryPage() {
   const { data } = useMasterData();
   const { goTo } = useSmartNavigation();
-  const user = readUserFromSession();
-  const allowedUsers = ["bharanidharan", "dinesh", "poovannan"];
-  const userName = user?.name?.toLowerCase() || "";
+  const { isAdmin } = useCurrentUser();
   const normalizeRepo = (repo) => ({
     id: repo.Repo_Id,
     title: repo.Title,
@@ -42,7 +40,7 @@ export default function RepositoryPage() {
     <div className="flex flex-col h-full pb-2">
       <div className="flex justify-between items-center mb-3 flex-none">
         <h2 className="text-2xl font-semibold m-0">Repository</h2>
-        {allowedUsers.includes(userName) && (
+        {isAdmin && (
           <button
             onClick={() => goTo(ROUTE_KEYS.REPO_CREATE)}
             className="bg-brand-yellow text-white px-4 py-2 rounded-md font-medium hover:bg-yellow-500 transition-colors"

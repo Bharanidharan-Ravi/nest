@@ -20,6 +20,7 @@ export const queryKeys = {
 
     // Ticket thread/comments
     thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId],
+    issueLog: (ticketId) => [...queryKeys.ticket.all, "issueLog", ticketId],
     byEmployee: (employeeId) => [
       ...queryKeys.ticket.all,
       "TicketsList",
@@ -97,5 +98,9 @@ export const queryKeys = {
   permissionRequest: {
     all: ["GetPermissionRequests"],
     list: () => [...queryKeys.permissionRequest.all, "list"],
+  },
+  AllHour: {
+    all: ["AllHour"],
+    list: () => [...queryKeys.AllHour.all, "list"],
   },
 };

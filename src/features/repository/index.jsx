@@ -132,7 +132,7 @@ export const RepositoryFeature = {
           element: TicketEl.TicketDetailPage,
           allowedRoles: ROUTE_ROLES.TICKET_DETAIL,
           nav: {
-            key: ROUTE_KEYS.TICKET_DETAIL,
+            key: ROUTE_KEYS.REPO_TICKET_DETAIL,
             title: "Ticket",
             parent: ROUTE_KEYS.REPO_TICKET_LIST,
           },

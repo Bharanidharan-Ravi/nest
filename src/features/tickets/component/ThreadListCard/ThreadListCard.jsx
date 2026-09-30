@@ -5,7 +5,7 @@ import relativeTime from "dayjs/plugin/relativeTime";
 import {
   FaEdit, FaRegHandshake, FaReply, FaRegSmile,
   FaCalendarCheck, FaClock, FaUsers, FaTimes,
-  FaCalendarAlt, FaHourglassHalf, FaCalendar
+  FaCalendarAlt, FaHourglassHalf, FaCalendar, FaStar
 } from "react-icons/fa";
 import { readUserFromSession } from "../../../../core/auth/useCurrentUser";
 import MuiSwitch from "../../../../packages/react-input-engine/adapters/mui/MuiSwitch";
@@ -176,9 +176,10 @@ const ThreadListCard = ({
   onReply,
   referencedThread,
   ticketId,
+  onFeedbackClick
 }) => {
   dayjs.extend(relativeTime);
-  const isMe = formContext?.isViewer ?item.CreatedId  ===currentUser.userId: item.CreatedBy === currentUser.name;
+  const isMe = formContext?.isViewer ? item.CreatedId  === currentUser.userId: item.CreatedBy === currentUser.name;
   const user = readUserFromSession();
 
   // --- STATE ---
@@ -195,6 +196,11 @@ const ThreadListCard = ({
   });
 
   const pickerRef = useRef(null);
+
+  const isAdmin = user?.role === 1;
+  const hasFeedback = !!item.AdminFeedback;
+  const canGiveFeedback = isAdmin && !hasFeedback;
+  const canViewFeedback = hasFeedback && (isAdmin || isMe);
 
   useEffect(() => {
     if (isMeetingModalOpen && item.CoContributors) {
@@ -545,6 +551,15 @@ const ThreadListCard = ({
                   <FaEdit size={12} />
                 </button>
               )} */}
+              {!formContext?.isViewer && (canGiveFeedback || canViewFeedback) && !isMeeting && (
+                <button
+                 onClick={() => onFeedbackClick(item)}
+                 className={`flex items-center justify-center w-7 h-7 rounded-full transition-colors ${hasFeedback ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50'}`}
+                 title={hasFeedback ? "View Feedback" : "Give Feedback"}
+                 >
+                  <FaStar size={12}/>
+                 </button>
+              )}
               {!formContext?.isViewer && (
                 <button onClick={() => onReply(item)}
                   className="flex items-center justify-center w-7 h-7 rounded-full transition-colors text-gray-400 hover:text-amber-500 hover:bg-black/5"
@@ -731,6 +746,15 @@ const ThreadListCard = ({
                 </div>
               ))}
 
+              {!formContext?.isViewer && (canGiveFeedback || canViewFeedback) && !isMeeting && (
+                <button
+                 onClick={() => onFeedbackClick(item)}
+                 className={`flex items-center justify-center p-0.5 rounded-full transition-colors ${hasFeedback ? 'text-amber-500 bg-amber-50' : 'text-gray-400 hover:text-amber-500 hover:bg-black/5'}`}
+                 >
+                  <FaStar size={12}/>
+                 </button>
+              )}
+
               {!isMeeting &&  (
                 <button onClick={onEdit} disabled={!canEdit}
                   className={`flex items-center justify-center p-0.5 rounded-full transition-colors ${canEdit ? "text-gray-400 hover:text-blue-600 hover:bg-black/5" : "invisible"}`}
@@ -752,6 +776,22 @@ const ThreadListCard = ({
             {renderReplyTag()}
 
             <HtmlRenderer html={item.description} />
+
+            {!formContext?.isViewer && item.AdminFeedback && (
+              <div className="mt-4 pl-3 border-l-4 border-amber-500 bg-amber-50/40 py-2.5 pr-3 rounded-r-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <strong className="text-[10px] text-amber-700 uppercase tracking-widest font-bold flex items-center gap-1.5">
+                    <FaStar size={10}/> Feedback
+                  </strong>
+                  <div className="flex items-center gap-0.5 text-amber-500">
+                    {[...Array(item.AdminRating || 5)].map((_, i) => (
+                      <FaStar key={i} size={10}/>
+                    ))}
+                </div>
+            </div>
+            <p className="text-[12px] text-slate-700 italic leading-relaxed m-0 font-medium">"{item.AdminFeedback}"</p>
+            </div>
+            )}
 
           </div>
 

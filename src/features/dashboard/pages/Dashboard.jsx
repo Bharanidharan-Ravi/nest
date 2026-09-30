@@ -33,6 +33,7 @@ import { useGetStaleTicketData } from "../../../app/shared/Header/hook/GetStaleT
 import { Tooltip } from "@mui/material";
 import { TimesheetSummary } from "../component/summery/TreeTableSummary";
 import { isAllowedToView } from "../../../app/shared/utils/ticketVisibility";
+import { useHours } from "../../tickets/hooks/useHours";
 
 
 
@@ -168,7 +169,6 @@ export default function Dashboard() {
 
   // ── Dropdown options ──────────────────────────────────────────────────────
   const employeeFilterOptions = useEmployeeOptions(true);
-  console.log("employeeFilterOptions",employeeFilterOptions)
   const projectFilterOptions = useProjectOptions(true);
 
   const LabelFilterOptions = useLabelOptions(true);
@@ -184,7 +184,15 @@ export default function Dashboard() {
       return (rawItem)=>normalizeTicket(rawItem)
   
   },[])
-
+ const {data:hourdata}=useHours()
+  const hourMap=useMemo(()=>{
+    const map={}
+    hourdata?.forEach(h=>{
+     const key=h.Issue_Id?.toLowerCase()
+     if(key)map[key]=h
+      })
+    return map
+  },[hourdata])
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
     ...TicketListConfig(isViewer),
@@ -493,6 +501,15 @@ export default function Dashboard() {
         },
       },
     ],
+     cardRenderer:(item,controls,config)=>{   
+          const key=item.issueId?.toLowerCase()
+          return(
+          <TicketListCard
+          item={item}
+          controls={controls}
+          config={config}
+          hourdata={hourMap[key]}/>)
+      },
     tabsExtra: () => (
       <button
         onClick={handleCommitTickets}

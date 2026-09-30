@@ -40,9 +40,9 @@ export const buildLabelMentionSource = (labels = []) => ({
   char: "~",
   name: "labelMention",
   className: "mention-label",
-  items: matchActiveByName(labels, "LabelName"),
-  getId: (l) => l.LabelID,
-  getLabel: (l) => l.LabelName,
+  items: matchActiveByName(labels, "Title"),
+  getId: (l) => l.Id,
+  getLabel: (l) => l.Title,
 });
 
 // All tickets of the given repo, searched by code + title.

@@ -383,6 +383,11 @@ export function HtmlRenderer({ html }) {
 //     />
 //   );
 // }
+export const stripHtml = (str = "") =>
+  str.replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&zwnj;/gi, "")
+    .trim();
+
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleDateString("en-US", {

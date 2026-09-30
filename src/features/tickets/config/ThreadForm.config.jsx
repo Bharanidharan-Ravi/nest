@@ -149,6 +149,7 @@ export const validateThreadForm = (formData, context) => {
 
   const hasTime =
     !!formData.hours ||
+    !!formData.hoursViewer ||
     (!!formData.fromTime && !!formData.toTime);
 
   const hasProgress = !!formData.TicketOverallPercentage;
@@ -161,7 +162,9 @@ export const validateThreadForm = (formData, context) => {
       errors.hours =
         "Hours are mandatory when description is entered.";
     }
-
+    if (hasDescription && !hasTime) {
+      errors.hoursViewer = "Please enter minutes."
+    }
     return errors;
   }
 
@@ -264,7 +267,7 @@ const validateTicketDetailsBeforeCommit = (context, openDialog) => {
       description:
         "Please update the required ticket details and status before committing this thread.",
       confirmText: "OK",
-      onConfirm: () => {},
+      onConfirm: () => { },
     });
 
     return false;
@@ -331,314 +334,319 @@ export const ThreadFormConfig = {
       ];
     }
 
+    //Assignee check
+    let actionsList = [];
+    const myUserId = context?.currentUser?.userId.toLowerCase();
+    const isAssignee = context?.parentTicket?.multiAssignees?.some(
+      (a) => a.Assignee_Id?.toLowerCase() === myUserId
+    );
+    const canCommitToClient = !context?.isViewer && (context?.isOwner || isAssignee);
+
+    if (canCommitToClient) {
+      actionsList.push({
+        type: "button",
+        label: "Commit to Client",
+        subtext: "Commit status to client",
+        intent: "clientCommit",
+        className:
+          "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
+        icon: <FaTelegramPlane className="text-black-600" />,
+        onClick: ({ formData, setErrors, context, submitForm }) => {
+          const validationErrors = validateThreadForm(formData, context);
+          if (Object.keys(validationErrors).length > 0) {
+            setErrors((prev) => ({
+              ...prev,
+              ...validationErrors,
+            }));
+            return; // 🚨 STOP HERE
+          }
+          openDialog({
+            variant: "warning",
+            title: "Commit this thread to the client?",
+            description: "This will update the thread for all participants",
+            confirmText: "Yes, Commit",
+            cancelText: "Cancel",
+            onConfirm: () =>
+              submitForm({
+                Comment: formData.description,
+                toClient: true,
+              }),
+            onCancel: () => { },
+          });
+        },
+      });
+    }
+
     // ── 1. TESTER BUTTONS ─────────────────────────────────────────
     if (role === "Tester") {
-      return [
-        {
-          type: "split-button",
-          options: [
-            {
-              label: "Update Progress",
-              subtext: "Log hours without finishing testing",
-              colorClass: "bg-gray-700",
-              onClick: ({ submitForm }) => {
-                const overrides = { StreamStatus: currentStreamStatus };
-                // if (isProgressOnlyUpdate(formData)) {
-                //   overrides.IsTicketProgressOnly = true;
-                // }
-                submitForm(overrides);
-              }
+      actionsList.push({
+        type: "split-button",
+        options: [
+          {
+            label: "Update Progress",
+            subtext: "Log hours without finishing testing",
+            colorClass: "bg-gray-700",
+            onClick: ({ submitForm }) => {
+              const overrides = { StreamStatus: currentStreamStatus };
+              // if (isProgressOnlyUpdate(formData)) {
+              //   overrides.IsTicketProgressOnly = true;
+              // }
+              submitForm(overrides);
+            }
+          },
+          {
+            label: "Pass & Complete",
+            subtext: "Marks testing as 100% successful",
+            colorClass: "bg-green-600",
+            onClick: ({ submitForm }) => {
+              submitForm({
+                StreamStatus: currentStreamStatus,
+                CompletionPercentage: 100,
+                ClearTestFailure: true,
+              });
             },
-            {
-              label: "Pass & Complete",
-              subtext: "Marks testing as 100% successful",
-              colorClass: "bg-green-600",
-              onClick: ({ submitForm }) => {
-                submitForm({
-                  StreamStatus: currentStreamStatus,
-                  CompletionPercentage: 100,
-                  ClearTestFailure: true,
-                });
-              },
-            },
-            {
-              label: "Report Bug",
-              subtext: "Rejects code and blocks developer",
-              colorClass: "bg-red-600",
-              onClick: ({ submitForm }) =>
-                submitForm({
-                  StreamStatus: currentStreamStatus,
-                  ReportTestFailure: true,
-                  TestFailureComment: formData.description,
-                }),
-            },
-          ],
-        },
-      ];
+          },
+          {
+            label: "Report Bug",
+            subtext: "Rejects code and blocks developer",
+            colorClass: "bg-red-600",
+            onClick: ({ submitForm }) =>
+              submitForm({
+                StreamStatus: currentStreamStatus,
+                ReportTestFailure: true,
+                TestFailureComment: formData.description,
+              }),
+          },
+        ],
+      });
+      return actionsList;
     }
     // ── 2. DEVELOPER BUTTONS ──────────────────────────────────────
     if (role === "Dev") {
-      return [
-        {
-          type: "split-button",
-          options: [
-            {
-              label: "Commit Progress",
-              subtext: "Save your current work",
-              intent: "neutral",
-              onClick: ({ formData, submitForm, context }) => {
-                if (Number(formData.CompletionPercentage) === 100) {
-                  alert(
-                    "Please use the 'Commit & Complete Task' button since your work is 100% finished.",
-                  );
+      actionsList.push({
+        type: "split-button",
+        options: [
+          {
+            label: "Commit Progress",
+            subtext: "Save your current work",
+            intent: "neutral",
+            onClick: ({ formData, submitForm, context }) => {
+              if (Number(formData.CompletionPercentage) === 100) {
+                alert(
+                  "Please use the 'Commit & Complete Task' button since your work is 100% finished.",
+                );
+                return;
+              }
+
+              const overrides = { StreamStatus: 5 };
+              // if (isProgressOnlyUpdate(formData)) {
+              //   overrides.IsTicketProgressOnly = true;
+              // }
+              if (formData.assignees && formData.assignees.length > 0) {
+                const myUserId = context?.currentUser?.userId?.toLowerCase();
+                const isAssigningSelf = formData.assignees.some(
+                  (a) => a.value.id.toLowerCase() === myUserId,
+                );
+
+                if (isAssigningSelf) {
+                  alert("You cannot assign the ticket to yourself.");
                   return;
                 }
 
-                const overrides = { StreamStatus: 5 };
-                // if (isProgressOnlyUpdate(formData)) {
-                //   overrides.IsTicketProgressOnly = true;
-                // }
-                if (formData.assignees && formData.assignees.length > 0) {
-                  const myUserId = context?.currentUser?.userId?.toLowerCase();
-                  const isAssigningSelf = formData.assignees.some(
-                    (a) => a.value.id.toLowerCase() === myUserId,
-                  );
-
-                  if (isAssigningSelf) {
-                    alert("You cannot assign the ticket to yourself.");
-                    return;
-                  }
-
-                  overrides.NextAssignees = formData.assignees.map((a) => ({
-                    Id: a.value.id,
-                    StreamId: 5,
-                  }));
-                } else {
-                  overrides.NextAssignees = null;
-                }
-
-                submitForm(overrides);
-              },
-            },
-            {
-              label: "Commit & Complete Task",
-              subtext: "Mark your work as 100% finished",
-              intent: "primary",
-              onClick: ({ formData, submitForm, context }) => {
-                const overrides = {
-                  StreamStatus: 6,
-                  CompletionPct: 100,
-                };
-
-                if (formData.assignees && formData.assignees.length > 0) {
-                  const myUserId = context?.currentUser?.userId?.toLowerCase();
-                  const isAssigningSelf = formData.assignees.some(
-                    (a) => a.value.id.toLowerCase() === myUserId,
-                  );
-
-                  if (isAssigningSelf) {
-                    alert("You cannot assign the ticket to yourself.");
-                    return;
-                  }
-
-                  overrides.NextAssignees = formData.assignees.map((a) => ({
-                    Id: a.value.id,
-                    StreamId: 5,
-                  }));
-                } else {
-                  overrides.NextAssignees = null;
-                }
-
-                submitForm(overrides);
-              },
-            },
-            {
-              label: "Move to Unit Testing",
-              subtext: "Internal testing (Assignee Optional)",
-              intent: "warning",
-              onClick: ({ formData, submitForm }) => {
-                const overrides = {};
-
-                if (Number(formData.CompletionPercentage) === 100) {
-                  overrides.StreamStatus = 6;
-                } else {
-                  overrides.StreamStatus = 5;
-                }
-
-                if (formData.assignees && formData.assignees.length > 0) {
-                  overrides.NextAssignees = formData.assignees.map((a) => ({
-                    Id: a.value.id,
-                    StreamId: 7,
-                  }));
-                } else {
-                  const myUserId = context?.currentUser?.userId;
-                  if (myUserId) {
-                    overrides.NextAssignees = [
-                      {
-                        Id: myUserId,
-                        StreamId: 7,
-                      },
-                    ];
-                  }
-                }
-                submitForm(overrides);
-              },
-            },
-            {
-              label: "Move to Functional QA",
-              subtext: "Handoff to QA (Requires Assignee)",
-              intent: "warning",
-              onClick: ({ formData, submitForm }) => {
-                if (!formData.assignees || formData.assignees.length === 0) {
-                  alert(
-                    "Please select a tester in the 'Assignees' dropdown before moving to Functional QA.",
-                  );
-                  return;
-                }
-
-                const overrides = {};
                 overrides.NextAssignees = formData.assignees.map((a) => ({
                   Id: a.value.id,
-                  StreamId: 8,
+                  StreamId: 5,
                 }));
-                if (Number(formData.CompletionPercentage) === 100) {
-                  overrides.StreamStatus = 6;
-                } else {
-                  overrides.StreamStatus = 5;
-                }
+              } else {
+                overrides.NextAssignees = null;
+              }
 
-                submitForm(overrides);
-              },
+              submitForm(overrides);
             },
-          ],
-        },
-      ];
-    }
-
-
-    if (role === "Owner" && !context.isViewer) {
-
-      return [
-        // ── SEPARATE BUTTON (LEFT SIDE) ──
-        {
-          type: "button",
-          label: "Commit to Client",
-          subtext: "Commit status to client",
-          intent: "clientCommit",
-          className:
-            "bg-amber-400 hover:bg-amber-500 text-gray-900 font-semibold border-transparent",
-          icon: <FaTelegramPlane className="text-black-600" />,
-          onClick: ({ formData, setErrors, context, submitForm }) => {
-            const validationErrors = validateThreadForm(formData, context);
-            if (Object.keys(validationErrors).length > 0) {
-              setErrors((prev) => ({
-                ...prev,
-                ...validationErrors,
-              }));
-              return; // 🚨 STOP HERE
-            }
-            openDialog({
-              variant: "warning",
-              title: "Commit this thread to the client?",
-              description: "This will update the thread for all participants",
-              confirmText: "Yes, Commit",
-              cancelText: "Cancel",
-              onConfirm: () =>
-                submitForm({
-                  Comment: formData.description,
-                  toClient: true,
-                }),
-              onCancel: () => { },
-            });
           },
-        },
-        // ── SPLIT BUTTON ──
-        {
-          type: "split-button",
-          options: [
-            {
-              label: "Commit Update",
-              subtext: "Save changes",
-              intent: "neutral",
-              icon: <FaSave className="text-gray-500" />,
-              onClick: ({ formData, setErrors, context, submitForm }) => {
-                const validationErrors = validateThreadForm(formData, context);
+          {
+            label: "Commit & Complete Task",
+            subtext: "Mark your work as 100% finished",
+            intent: "primary",
+            onClick: ({ formData, submitForm, context }) => {
+              const overrides = {
+                StreamStatus: 6,
+                CompletionPct: 100,
+              };
 
-                if (Object.keys(validationErrors).length > 0) {
-                  setErrors((prev) => ({
-                    ...prev,
-                    ...validationErrors,
-                  }));
+              if (formData.assignees && formData.assignees.length > 0) {
+                const myUserId = context?.currentUser?.userId?.toLowerCase();
+                const isAssigningSelf = formData.assignees.some(
+                  (a) => a.value.id.toLowerCase() === myUserId,
+                );
 
-                  return; // 🚨 STOP HERE
-
-                }
-                if (!validateTicketDetailsBeforeCommit(context,openDialog)) {
+                if (isAssigningSelf) {
+                  alert("You cannot assign the ticket to yourself.");
                   return;
                 }
-                let overrides = {
 
-                };
-                // // if (isProgressOnlyUpdate(formData)) {
-                // //   overrides.IsTicketProgressOnly = true;
-                // // }
-                if (context?.onCommitIntercept) {
-                  context.onCommitIntercept((isSupport) => {
-                    submitForm({ ...overrides, IsSupport: isSupport })
-                  })
-                } else {
-                  submitForm(overrides);
-                }
-              },
+                overrides.NextAssignees = formData.assignees.map((a) => ({
+                  Id: a.value.id,
+                  StreamId: 5,
+                }));
+              } else {
+                overrides.NextAssignees = null;
+              }
+
+              submitForm(overrides);
             },
-            {
-              label: "Complete & Close",
-              subtext: "Complete this ticket successfully",
-              intent: "success",
-              icon: <FaCheckCircle className="text-green-600" />,
-              onClick: ({ submitForm, formData, setErrors }) => {
-                const errors = {};
-                const percentage = formData?.TicketOverallPercentage
-                const summary = stripHtml(formData?.TicketStatusSummary)
-                if (!percentage || Number(percentage) < 100) {
-                  errors.TicketOverallPercentage = "Overall progress must be 100% before closing"
+          },
+          {
+            label: "Move to Unit Testing",
+            subtext: "Internal testing (Assignee Optional)",
+            intent: "warning",
+            onClick: ({ formData, submitForm }) => {
+              const overrides = {};
+
+              if (Number(formData.CompletionPercentage) === 100) {
+                overrides.StreamStatus = 6;
+              } else {
+                overrides.StreamStatus = 5;
+              }
+
+              if (formData.assignees && formData.assignees.length > 0) {
+                overrides.NextAssignees = formData.assignees.map((a) => ({
+                  Id: a.value.id,
+                  StreamId: 7,
+                }));
+              } else {
+                const myUserId = context?.currentUser?.userId;
+                if (myUserId) {
+                  overrides.NextAssignees = [
+                    {
+                      Id: myUserId,
+                      StreamId: 7,
+                    },
+                  ];
                 }
-                if (!summary) {
-                  errors.TicketStatusSummary = "Status Summary mandatory before closing"
-                }
-                if (Object.keys(errors).length > 0) {
-                  setErrors(prev => ({ ...prev, ...errors }))
-                  return
-                }
-                submitForm(
-                  {
-                    StreamStatus: 15,
-                    CompletionPercentage: 100,
-                    Comment:
-                      formData.description || "Ticket closed by owner.",
-                  },
-                  true
-                )
-              },
+              }
+              submitForm(overrides);
             },
-            {
-              label: "Cancel & Close",
-              subtext: "Mark this ticket as cancelled",
-              intent: "danger",
-              icon: <FaTimesCircle className="text-red-600" />,
-              onClick: ({ submitForm, formData }) =>
-                submitForm(
-                  {
-                    StreamStatus: 16,
-                    Comment:
-                      formData.description || "Ticket cancelled by owner.",
-                  },
-                  true
-                ),
+          },
+          {
+            label: "Move to Functional QA",
+            subtext: "Handoff to QA (Requires Assignee)",
+            intent: "warning",
+            onClick: ({ formData, submitForm }) => {
+              if (!formData.assignees || formData.assignees.length === 0) {
+                alert(
+                  "Please select a tester in the 'Assignees' dropdown before moving to Functional QA.",
+                );
+                return;
+              }
+
+              const overrides = {};
+              overrides.NextAssignees = formData.assignees.map((a) => ({
+                Id: a.value.id,
+                StreamId: 8,
+              }));
+              if (Number(formData.CompletionPercentage) === 100) {
+                overrides.StreamStatus = 6;
+              } else {
+                overrides.StreamStatus = 5;
+              }
+
+              submitForm(overrides);
             },
-          ],
-        },
-      ];
+          },
+        ],
+      });
+      return actionsList;
+    }
+
+    if (role === "Owner" && !context.isViewer) {
+      // ── SPLIT BUTTON ──
+      actionsList.push({
+        type: "split-button",
+        options: [
+          {
+            label: "Commit Update",
+            subtext: "Save changes",
+            intent: "neutral",
+            icon: <FaSave className="text-gray-500" />,
+            onClick: ({ formData, setErrors, context, submitForm }) => {
+              const validationErrors = validateThreadForm(formData, context);
+
+              if (Object.keys(validationErrors).length > 0) {
+                setErrors((prev) => ({
+                  ...prev,
+                  ...validationErrors,
+                }));
+
+                return; // 🚨 STOP HERE
+
+              }
+              if (!validateTicketDetailsBeforeCommit(context, openDialog)) {
+                return;
+              }
+              let overrides = {
+
+              };
+              // // if (isProgressOnlyUpdate(formData)) {
+              // //   overrides.IsTicketProgressOnly = true;
+              // // }
+              if (context?.onCommitIntercept) {
+                context.onCommitIntercept((isSupport) => {
+                  submitForm({ ...overrides, IsSupport: isSupport })
+                })
+              } else {
+                submitForm(overrides);
+              }
+            },
+          },
+          {
+            label: "Complete & Close",
+            subtext: "Complete this ticket successfully",
+            intent: "success",
+            icon: <FaCheckCircle className="text-green-600" />,
+            onClick: ({ submitForm, formData, setErrors }) => {
+              const errors = {};
+              const percentage = formData?.TicketOverallPercentage
+              const summary = stripHtml(formData?.TicketStatusSummary)
+              if (!percentage || Number(percentage) < 100) {
+                errors.TicketOverallPercentage = "Overall progress must be 100% before closing"
+              }
+              if (!summary) {
+                errors.TicketStatusSummary = "Status Summary mandatory before closing"
+              }
+              if (Object.keys(errors).length > 0) {
+                setErrors(prev => ({ ...prev, ...errors }))
+                return
+              }
+              submitForm(
+                {
+                  StreamStatus: 15,
+                  CompletionPercentage: 100,
+                  Comment:
+                    formData.description || "Ticket closed by owner.",
+                },
+                true
+              )
+            },
+          },
+          {
+            label: "Cancel & Close",
+            subtext: "Mark this ticket as cancelled",
+            intent: "danger",
+            icon: <FaTimesCircle className="text-red-600" />,
+            onClick: ({ submitForm, formData }) =>
+              submitForm(
+                {
+                  StreamStatus: 16,
+                  Comment:
+                    formData.description || "Ticket cancelled by owner.",
+                },
+                true
+              ),
+          },
+        ],
+      });
+      return actionsList;
     }
 
     const isClosed = Boolean(context?.isClosed);
@@ -660,16 +668,25 @@ export const ThreadFormConfig = {
           }));
           return;
         }
-        if (!validateTicketDetailsBeforeCommit(context,openDialog)) {
+        if (!validateTicketDetailsBeforeCommit(context, openDialog)) {
           return;
-        } 
+        }
         const overrides = {
           Comment: formData.description,
           toClient: isViewer,
         };
 
         if (context?.isViewer) {
-          submitForm(overrides);
+          const rawMins = formData.hoursViewer
+          if (rawMins) {
+            const mins = parseInt(rawMins, 10)
+            if (!isNaN(mins)) {
+              const h = Math.floor(mins / 60).toString().padStart(2, "0")
+              const m = (mins % 60).toString().padStart(2, "0")
+              overrides.Hours = `${h}:${m}`
+            }
+          }
+          submitForm(overrides)
           return;
         }
 
@@ -704,27 +721,26 @@ export const ThreadFormConfig = {
 
     // ✅ ONLY when BOTH owner + viewer → split button
     if (isViewer) {
-      return [
-        {
-          type: "split-button",
-          options: [commitAction, closeAction],
-        },
-      ];
+      actionsList.push({
+        type: "split-button",
+        options: [commitAction, closeAction],
+      });
+      return actionsList;
     }
-    return [
-      {
-        type: "button",
-        ...commitAction,
-      },
-    ];
+    actionsList.push({
+      type: "button",
+      ...commitAction,
+    });
+    return actionsList;
   },
 
 
-  theme: {
-    editorContainer:
-      "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
+
+theme: {
+  editorContainer:
+  "border border-gray-300 rounded-md overflow-hidden bg-white focus-within:border-gray-500 focus-within:ring-0 transition-all",
     editorToolbar:
-      "flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-gray-50",
+  "flex flex-wrap items-center gap-1 px-3 py-2 border-b border-gray-200 bg-gray-50",
   },
 };
 

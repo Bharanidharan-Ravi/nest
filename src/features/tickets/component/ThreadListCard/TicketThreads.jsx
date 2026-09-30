@@ -16,6 +16,7 @@ import { queryClient } from "../../../../core/api/queryClient";
 import { GitCommitIcon } from "lucide-react";
 import ConfirmDialog, { useConfirmDialog } from "../../../../app/shared/confirmation/confirmationModel";
 import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingFormModal";
+import TicketFeedbackDialog from "../TicketFeedbackDialog";
 
 
 dayjs.extend(relativeTime);
@@ -67,6 +68,14 @@ const TicketThreads = ({
   const [overrides, setOverRide, getItem] = useThreadOverRides();
   const [replyingToThread, setReplyingToThread] = useState(null)
   const [isMeetingModalOpen, setIsMeetingModalOpen] = useState(false);
+
+  const [threadFeedbackItem, setThreadFeedbackItem] = useState(null);
+  const [showThreadFeedbackModal, setShowThreadFeedbackModal] = useState(false);
+
+  const handleOpenThreadFeedback = (thread) =>{
+    setThreadFeedbackItem(thread);
+    setShowThreadFeedbackModal(true);
+  };
 
   const { dialogProps, openDialog } = useConfirmDialog();
   
@@ -173,6 +182,8 @@ let parsedReactionsJSON = []
         ThreadType: thread.ThreadType || "Comment",
         MeetingId: thread.MeetingId,
         MeetingDetails_JSON: thread.MeetingDetails_JSON,
+        AdminFeedback: thread.AdminFeedback || thread.adminFeedback,
+        AdminRating: thread.AdminRating || thread.adminRating,
       };
     });
   }, [threadsData, assigneesJsonString]);
@@ -483,15 +494,15 @@ let parsedReactionsJSON = []
         return (
           <div
             key={item.id}
-            className="flex items-start gap-3 w-full mb-3 relative group hover:bg-gray-50/50 py-1 -ml-1 rounded transition-colors"
+            className="flex items-start gap-3 w-full mb-1 relative group hover:bg-gray-50/50 py-0 -ml-1 rounded transition-colors"
           >
-            <div className="flex-shrink-0 relative z-10 flex justify-center w-10 mt-[2px] ml-1">
-              <div className="w-5 h-5 rounded-full bg-gray-100/80 flex items-center justify-center text-gray-500">
-                <EventIcon className="text-[10px]" />
+            <div className="flex-shrink-0 relative z-10 flex justify-center w-8 mt-[2px] ml-1">
+              <div className="w-4 h-4 rounded-full bg-gray-100/80 flex items-center justify-center text-gray-500">
+                <EventIcon className="text-[8px]" />
               </div>
             </div>
       
-            <div className="flex-1 text-[12px] text-gray-600 leading-tight pt-[3px]">
+            <div className="flex-1 text-[10px] text-gray-600 leading-tight pt-[3px]">
               {item.summary.startsWith(item.actorName) ? (
                 <span>
                   <span className="font-semibold text-gray-800 mr-1">
@@ -566,6 +577,8 @@ let parsedReactionsJSON = []
             }, 50)
           }}
           referencedThread={referencedThread}
+          ticketId={ticketId}
+          onFeedbackClick={handleOpenThreadFeedback}
         />
       );
     },
@@ -592,7 +605,8 @@ let parsedReactionsJSON = []
         {!formContext?.isViewer && (
           <button
             onClick={() => setIsMeetingModalOpen(true)}
-            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-slate-200 shadow-sm transition-all duration-150 flex items-center justify-center cursor-pointer"
+            className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded-lg border border-slate-200 shadow-sm transition-all duration-150 
+            flex items-center justify-center cursor-pointer"
             title="Schedule Meeting"
           >
             <FaVideo size={14} />
@@ -671,6 +685,15 @@ let parsedReactionsJSON = []
           </div>
         </div>
       )}
+
+      <TicketFeedbackDialog
+       open={showThreadFeedbackModal}
+       onClose={()=> setShowThreadFeedbackModal(false)}
+       ticket={parentTicket}
+       threadItem={threadFeedbackItem}
+       mode="thread"
+       involvedUsers={[]}
+       />
 
       {/* Meeting Form Modal */}
       <MeetingFormModal

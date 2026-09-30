@@ -461,6 +461,18 @@ console.log("multiassigneeraw", parentTicket?.multiAssignees);;
                   </div>
                 </div>
 
+                <div className="w-px h-5 bg-gray-200 flex-shrink-0"></div>
+                <div className="flex items-center gap-1.5 px-1.5 py-0.5 rounded hover:bg-white transition-all duration-200">
+                  <div className="flex flex-col items-center">
+                    <span className="text-[7.5px] text-gray-400 uppercase tracking-widest font-black leading-none mb-0.5">
+                      CLIENT
+                    </span>
+                    <span className="text-[#ffb300] font-bold leading-none">
+                      {timeStats.client}
+                    </span>
+                  </div>
+                </div>
+
                 {Object.entries(teamTimeStats).map(
                   ([teamName, logged], index) => (
                     <React.Fragment key={`frag-${index}`}>
@@ -912,6 +924,7 @@ console.log("multiassigneeraw", parentTicket?.multiAssignees);;
         open={showFeedbackModal}
         onClose={()=> setShowFeedbackModal(false)}
         ticket={parentTicket}
+        mode="ticket"
         involvedUsers={involvedUsers}
         />
       )}

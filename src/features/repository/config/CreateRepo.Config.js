@@ -53,9 +53,11 @@ export const RepoFieldConfig = () => [
         name: "password",
         apiKey: "Password",
         dataType: "string",
-        required: false,
-        customValidator: (value) =>
-          value?.length >= 4 || "Password must be minimum 4 characters",
+        requiredWhen:(context, data) => !!data?.userName?.trim(),
+        customValidator: (value) => {
+          if (!value) return true;
+          value?.length >= 4 || "Password must be minimum 4 characters";
+        },
       },
       {
         label: "Phone Number",

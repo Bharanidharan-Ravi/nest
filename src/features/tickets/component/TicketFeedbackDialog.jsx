@@ -6,26 +6,33 @@ import { useTicketFeedbacks } from "../hooks/useTicketFeedbacks";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 
 export default function TicketFeedbackDialog({
   open,
   onClose,
   ticket,
   involvedUsers = [],
+  mode = "ticket",
+  threadItem = null
 }) {
     console.log("feedbackmodalinvolvedusers", involvedUsers);
+  const {isAdmin} = useCurrentUser();
   const queryClient = useQueryClient();
   const ticketId = ticket?.issueId || ticket?.navId || ticket?.id || ticket?.Issue_Id || ticket?.Id;
   const repoId = ticket?.repoId || ticket?.RepoId || ticket?.Repo_Id;
 
-  const [activeTab, setActiveTab] = useState("give");
+  const isThreadMode = mode === "thread";
+  const hasExistingFeedback = isThreadMode && !!threadItem?.AdminFeedback;
+
+  const [activeTab, setActiveTab] = useState(isAdmin ? "give" : "history");
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { data: feedbacks = [], isLoading, refetch } = useTicketFeedbacks(ticketId, true);
+  const { data: feedbacks = [], isLoading, refetch } = useTicketFeedbacks(ticketId, !isThreadMode);
 
   const toggleUser = (userId) => {
     setSelectedUsers((prev) =>
@@ -43,13 +50,23 @@ export default function TicketFeedbackDialog({
 
   useEffect(()=> {
     if (open){
-        setActiveTab("give");
+        setActiveTab(isAdmin ? "give" : "history");
+        if(isThreadMode){
+          setSelectedUsers([threadItem.CreatedId]);
+          if (hasExistingFeedback){
+            setComment(threadItem.AdminRating || 5);
+          } else {
+            setComment("");
+            setRating(3);
+          }
+        } else {
         setSelectedUsers([]);
         setComment("");
         setRating(3);
+        }
         setHoverRating(0);
     }
-  }, [open]);
+  }, [open, isThreadMode, threadItem, hasExistingFeedback]);
 
   const handleSubmit = async () => {
     if (selectedUsers.length === 0) {
@@ -68,6 +85,7 @@ export default function TicketFeedbackDialog({
           userIds: selectedUsers,
           rating,
           comment: comment.trim() || null,
+          ...(isThreadMode ? { threadId: threadItem.id, feedbackType: "Thread"} : {feedbackType:"Ticket"})
         },
       });
 
@@ -79,9 +97,9 @@ export default function TicketFeedbackDialog({
       toast.success("Feedback submitted successfully!");
 
       await Promise.all([
-      refetch(),
+     !isThreadMode && refetch(),
       queryClient.invalidateQueries({
-        queryKey: queryKeys.ticket.feedbacks(ticketId),
+        queryKey: isThreadMode ? queryKeys.ticket.thread(ticketId) : queryKeys.ticket.feedbacks(ticketId),
         refetchType:"all",
       }),
       queryClient.invalidateQueries({ 
@@ -100,13 +118,18 @@ export default function TicketFeedbackDialog({
 
   const formatDate = (dateString) => {
     if (!dateString) return "";
-    return new Date(dateString).toLocaleDateString("en-US", {
+
+    const normalizedDate = dateString.endsWith("Z") || dateString.includes("+")
+    ? dateString
+    : dateString + "Z";
+
+    return new Date(normalizedDate).toLocaleDateString("en-US", {
       month: "short",
       day: "numeric",
       year: "numeric",
       hour: "numeric",
       minute: "2-digit",
-      hour12: true,
+      hour12: false,
     });
   };
 
@@ -116,7 +139,9 @@ export default function TicketFeedbackDialog({
         <div className="flex items-center justify-between px-5 pt-4 pb-3">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-amber-500" />
-            <span className="font-semibold text-slate-800 text-base">Ticket Feedback</span>
+            <span className="font-semibold text-slate-800 text-base">
+              {isThreadMode ? (hasExistingFeedback ? "Feedback Received" : "Thread Feedback") : "Ticket Feedback"}
+            </span>
           </div>
           <button
             type="button"
@@ -126,20 +151,21 @@ export default function TicketFeedbackDialog({
             <X className="w-4 h-4" />
           </button>
         </div>
-
+   
+      {!isThreadMode && (
         <div className="flex border-t border-slate-100 px-5 gap-6">
+          {isAdmin && (
           <button
-            type="button"
-            onClick={() => setActiveTab("give")}
-            className={`py-2.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition-colors ${
-              activeTab === "give"
-                ? "border-amber-500 text-amber-600"
-                : "border-transparent text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <Star className="w-3.5 h-3.5" />
+           type="button"
+           onClick={() => setActiveTab("give")}
+           className={`py-2.5 text-xs font-semibold border-b-2 flex items-center gap-1.5 transition-colors ${
+            activeTab === "give" ? "border-amber-500 text-amber-600" : "border-transparent text-slate-500 hover:text-slate-700"
+           }`}
+           >
+            <Star className="w-3.5 h-3.5"/>
             <span>Give Feedback</span>
-          </button>
+           </button>
+          )}
 
           <button
             type="button"
@@ -154,11 +180,13 @@ export default function TicketFeedbackDialog({
             <span>History ({feedbacks.length})</span>
           </button>
         </div>
+      )}
       </DialogTitle>
 
       <DialogContent className="p-5 flex flex-col gap-4">
         {activeTab === "give" ? (
           <>
+          {!isThreadMode && (
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -195,24 +223,25 @@ export default function TicketFeedbackDialog({
                 })}
               </div>
             </div>
-
+          )}
             <div>
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                Rating
+                Rating {isThreadMode && `for ${threadItem?.CreatedBy}`}
               </label>
               <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <button
                     type="button"
                     key={star}
-                    onMouseEnter={() => setHoverRating(star)}
-                    onMouseLeave={() => setHoverRating(0)}
-                    onClick={() => setRating(star)}
-                    className="p-1 focus:outline-none transition-transform hover:scale-110"
+                    disabled={hasExistingFeedback}
+                    onMouseEnter={() => !hasExistingFeedback && setHoverRating(star)}
+                    onMouseLeave={() => !hasExistingFeedback && setHoverRating(0)}
+                    onClick={() => !hasExistingFeedback && setRating(star)}
+                    className={`p-1 focus:outline-none transition-transform ${hasExistingFeedback ? 'cursor-default' : 'hover:scale-110'}`}
                   >
                     <Star
                       className={`w-6 h-6 ${
-                        (hoverRating || rating) >= star
+                       (hasExistingFeedback ? threadItem.AdminRating : (hoverRating || rating)) >= star
                           ? "text-amber-400 fill-amber-400"
                           : "text-gray-200"
                       }`}
@@ -220,7 +249,7 @@ export default function TicketFeedbackDialog({
                   </button>
                 ))}
                 <span className="ml-2 text-xs font-bold text-slate-600">
-                  {hoverRating || rating} / 5 Stars
+                  {hasExistingFeedback ? threadItem.AdminRating : (hoverRating || rating)} / 5 Stars
                 </span>
               </div>
             </div>
@@ -229,6 +258,11 @@ export default function TicketFeedbackDialog({
               <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                 Feedback Note
               </label>
+              {hasExistingFeedback ? (
+                <div className="w-full text-xs bg-gray-50 border border-slate-200 rounded-lg p-3 text-slate-700 whitespace-pre-wrap">
+                  {comment}
+                  </div>
+              ) : (
               <textarea
                 rows={3}
                 className="w-full text-xs border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-1 focus:ring-amber-500 resize-none"
@@ -236,6 +270,7 @@ export default function TicketFeedbackDialog({
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
+              )}
             </div>
           </>
         ) : (
@@ -277,24 +312,31 @@ export default function TicketFeedbackDialog({
         )}
       </DialogContent>
 
-      {activeTab === "give" && (
+      {activeTab === "give" && isAdmin && (
         <DialogActions className="px-5 py-3 border-t border-slate-100 bg-slate-50 flex justify-end gap-2">
-          <button
-            type="button"
-            className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-white transition-colors"
+          {hasExistingFeedback ? (
+          <button type="button" className="px-3 py-1.5 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-medium transition-colors"
             onClick={onClose}
-            disabled={isSubmitting}
           >
-            Cancel
+            Close
           </button>
-          <button
+          ):(
+            <>
+            <button type="button" className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-medium text-slate-600 hover:bg-white transition-colors" 
+            onClick={onClose}
+            disabled={isSubmitting}>
+              Cancel
+            </button>
+            <button
             type="button"
             className="px-4 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium transition-colors shadow-sm disabled:opacity-50"
             onClick={handleSubmit}
-            disabled={isSubmitting || selectedUsers.length === 0}
+            disabled={isSubmitting || (isThreadMode ? !comment.trim() :  selectedUsers.length === 0)}
           >
             {isSubmitting ? "Submitting..." : "Submit Feedback"}
           </button>
+            </>
+          )}
         </DialogActions>
       )}
     </Dialog>

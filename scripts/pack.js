@@ -13,7 +13,7 @@ const backupDir = 'D:/live work/WGNestPack/backup/codemanual';
 const config = {
     ui: {
         source: 'D:/live work/WGNestPack/WG-Nest-pack/src',
-        ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**', '**/.git/**']
+        ignore: ['**/node_modules/**', '**/bin/**', '**/obj/**', '**/.git/**', '**/scripts/**']
     },
     api: {
         source: 'D:\\live work\\Github\\API\\WGNestAPIGateway',
