@@ -67,6 +67,7 @@ export const useRegistryQuery = (
     method: config.method,
     payload,
     source: config.source, // key to unwrap from sync/v2 envelope
+    silent: overrides.silent, // true → never the global loader
     options: {
       staleTime,
       enabled,

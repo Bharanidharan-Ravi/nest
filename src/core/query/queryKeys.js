@@ -67,6 +67,9 @@ export const queryKeys = {
     all: ["notification"],
 
     unreadCount: () => [...queryKeys.notification.all, "unread-count"],
+    // Filled by the same GET /notification/counts call as unreadCount (badgeCounts.js)
+    leaveRequestCount: () => [...queryKeys.notification.all, "leave-request-count"],
+    staleTickets: () => [...queryKeys.notification.all, "stale-tickets"],
 
     list: () => [...queryKeys.notification.all, "list"],
     timeline: () => [...queryKeys.notification.all, "timeline"],
@@ -102,9 +105,5 @@ export const queryKeys = {
   permissionRequest: {
     all: ["GetPermissionRequests"],
     list: () => [...queryKeys.permissionRequest.all, "list"],
-  },
-  AllHour: {
-    all: ["AllHour"],
-    list: () => [...queryKeys.AllHour.all, "list"],
   },
 };

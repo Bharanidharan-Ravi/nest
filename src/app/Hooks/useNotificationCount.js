@@ -5,6 +5,7 @@ import { queryKeys } from "../../core/query/queryKeys";
 import { executeApi } from "../../core/api/executor";
 import { normalizeNotificationList, normalizeTimelineList } from "../shared/utils/normalizer";
 import { trackUnreadCountRequest } from "../../core/notifications/unreadCountSync";
+import { fetchCount, useBadgeCount } from "../../core/notifications/badgeCounts";
 
 // Shared with handleIncomingNotification so the realtime refresh fills the
 // same cache entry (queryKeys.notification.list()) with the same raw shape.
@@ -15,31 +16,16 @@ export const fetchNotificationList = ({ _silent = true } = {}) =>
     config: { _silent },
   });
 
-// Tracked so a response that started before a realtime event can't drop that
-// event's +1 (see unreadCountSync).
-const fetchUnreadCount = ({ _silent = true } = {}) =>
-  trackUnreadCountRequest(() =>
-    executeApi({
-      url: "/notification/unread-count",
-      method: "GET",
-      config: { _silent },
-    }),
-  );
-
-export const useNotificationCount = () => {
-  return useApiQuery({
-    queryKey: queryKeys.notification.unreadCount(),
-
-    queryFn: fetchUnreadCount,
-    silent: true,
-    options: {
-      refetchInterval: 30000,
-      staleTime: 10000,
-      // unreadCountSync keys request metadata by the exact data object
-      structuralSharing: false,
-    },
+// Part of GET /notification/counts. No polling: realtime events bump it, and it
+// only drops when the user opens / marks notifications seen. Tracked so a
+// response that started before a realtime event can't drop that event's +1
+// (see unreadCountSync).
+export const useNotificationCount = () =>
+  useBadgeCount("UnreadCount", {
+    queryFn: () => trackUnreadCountRequest(() => fetchCount("UnreadCount")),
+    // unreadCountSync keys request metadata by the exact data object
+    structuralSharing: false,
   });
-};
 
 export const getNotification = (showNotifications) => {
   return useApiQuery({
@@ -54,7 +40,7 @@ export const getNotification = (showNotifications) => {
   });
 };
 
-export const getTimeline = (showTimeline) => {  
+export const getTimeline = (showTimeline) => {
   return useApiQuery({
     queryKey: queryKeys.notification.timeline(),
     url: "/sync/v2",

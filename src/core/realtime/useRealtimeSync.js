@@ -77,7 +77,9 @@ export const useRealtimeSync = (getToken) => {
 
   const handleReconnected = useCallback(async () => {
     console.info("[RealtimeSync] Reconnected");
-    queryClient.invalidateQueries();
+    // Events may have been missed while offline. Data marked keepUntilReload
+    // (banner, stale tickets) is only refreshed by a page reload.
+    queryClient.invalidateQueries({ predicate: (q) => !q.meta?.keepUntilReload });
     // await versionChecker();
   }, [queryClient]);
 

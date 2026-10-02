@@ -25,8 +25,11 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
              
           }
       },
+      // Loaded once per page load
       options:{
-          staleTime:10*60*1000,
+          staleTime:Infinity,
+          gcTime:Infinity,
+          meta:{ keepUntilReload:true },
           enable:!!BannerMessageId,
       }
   })

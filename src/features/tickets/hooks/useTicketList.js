@@ -5,20 +5,40 @@
 //   is:<tab> → f.status              (tab statuses; excludeValues resolved
 //                                     against the status master)
 //   text    → f.search
+//   serverScope.f → fixed filters, e.g. { issue: [ids] } (Checked Tickets);
+//             an empty array there matches nothing, so no request is sent
 //   sort    → sortFields[].serverKey / orders[].serverSort,
 //             plus config.serverDefaultSort on the default sort
 // Rows are mapped to names with the masters (normalizeTicketListRow).
 // Tab and dropdown counts come from TicketListCountsV2: each facet is counted
 // without its own filter, so the status facet gives every tab's count.
+//
+// No loader on filter / tab / sort changes (stale-while-revalidate):
+//   1. a cached page for the exact request is shown as is;
+//   2. otherwise the already-loaded rows are filtered/sorted locally
+//      (ticketListPreview) and shown at once, or the previous list stays;
+//   3. the request runs silently and replaces the rows when it lands.
+// The global loader shows only when there is nothing at all to show.
+// Server load: the preview follows every click / keystroke, but the list and
+// counts requests wait until the request stops changing (REQUEST_DEBOUNCE_MS),
+// so picking 5 filter options quickly costs one list + one counts call.
+// Other tabs are not prefetched (one SP call per tab on every filter change);
+// a tab switch shows the preview and the tab counts at once instead.
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { keepPreviousData, useInfiniteQuery } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { executeApi } from "../../../core/api/executor";
 import { extractSourceData, useApiQuery } from "../../../core/query/useApiQuery";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 import { useMasterLookup } from "../../../core/master/useMasterLookup";
 import { normalizeTicketListRow } from "../../../app/shared/utils/normalizer";
+import { readUserFromSession } from "../../../core/auth/useCurrentUser";
+import { buildTicketListPreview } from "./ticketListPreview";
 
 const LIST_KEY = "TicketListV2";
 const COUNTS_KEY = "TicketListCountsV2";
@@ -26,8 +46,9 @@ const TAB_SERVER_KEY = "status";
 // Realtime refetches these caches when a ticket changes, so a cached page is
 // reused when going back to a tab/filter or returning to the screen.
 const STALE_TIME = 5 * 60 * 1000;
-// Search box: one request once typing pauses, not one per keystroke
-const SEARCH_DEBOUNCE_MS = 400;
+// Filters / tab / sort / search: one request once the changes pause,
+// not one per click or keystroke (the preview shows meanwhile)
+const REQUEST_DEBOUNCE_MS = 400;
 
 const toArray = (value) =>
   (Array.isArray(value) ? value : String(value ?? "").split(","))
@@ -78,13 +99,20 @@ const fetchSync = async (configKey, repoId, filters, silent) => {
   return extractSourceData(res, configKey) ?? [];
 };
 
+const pageQueryOptions = ({ repoId, f, sort, size }, isSilent) => ({
+  queryKey: queryKeys.ticket.page({ repoId, f, sort, size }),
+  queryFn: ({ pageParam }) =>
+    fetchSync(LIST_KEY, repoId, { f, sort, page: pageParam, size }, isSilent(pageParam)),
+  initialPageParam: 1,
+  getNextPageParam: (lastPage, pages) =>
+    lastPage.length === size ? pages.length + 1 : undefined,
+  staleTime: STALE_TIME,
+});
+
 export function useTicketList({ filters, text, sortField, sortOrder }, config) {
   const lookup = useMasterLookup();
-  const search = useDebounced(
-    String(text ?? "").replace(/^#/, "").trim(),
-    SEARCH_DEBOUNCE_MS,
-  );
-  const { repoId = null, projectId = null } = config.serverScope ?? {};
+  const search = String(text ?? "").replace(/^#/, "").trim();
+  const { repoId = null, projectId = null, f: scopeF } = config.serverScope ?? {};
   const size = config.pageSize ?? 20;
 
   const statusIds = useMemo(
@@ -115,24 +143,46 @@ export function useTicketList({ filters, text, sortField, sortOrder }, config) {
 
     if (search) result.search = [search];
 
-    return { f: result, noMatch: projectOutOfScope };
-  }, [config.filters, filters, projectId, activeTab, statusIds, search]);
+    // The SP ignores an empty filter, so an empty fixed one can't be sent
+    const scopeEmpty = Object.values(scopeF ?? {}).some((v) => v.length === 0);
+    Object.assign(result, scopeF);
+
+    return { f: result, noMatch: projectOutOfScope || scopeEmpty };
+  }, [config.filters, filters, projectId, scopeF, activeTab, statusIds, search]);
 
   const sort = buildSort(config, sortField, sortOrder);
   // Exclude-style tabs need the status master before the first call
   const enabled = lookup.ready && !noMatch;
 
+  const queryClient = useQueryClient();
+  const request = { repoId, f, sort, size };
+  const requestHash = JSON.stringify(request);
+  // A cached page still shows at once (disabled queries keep their data)
+  const settled = useDebounced(requestHash, REQUEST_DEBOUNCE_MS) === requestHash;
+  const fetchEnabled = enabled && settled;
+
+  // Local preview for a request with no cache yet (computed once per request)
+  const preview = useMemo(
+    () =>
+      enabled && !queryClient.getQueryData(queryKeys.ticket.page(request))
+        ? buildTicketListPreview(queryClient, request, {
+            lookup,
+            userId: readUserFromSession()?.userId,
+          })
+        : undefined,
+    // request is described by requestHash
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [requestHash, enabled, queryClient, lookup],
+  );
+
+  // Rows on screen → fetch silently; nothing to show → global loader
+  const hasRowsRef = useRef(false);
   const list = useInfiniteQuery({
-    queryKey: queryKeys.ticket.page({ repoId, f, sort, size }),
-    queryFn: ({ pageParam }) =>
-      fetchSync(LIST_KEY, repoId, { f, sort, page: pageParam, size }, pageParam > 1),
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, pages) =>
-      lastPage.length === size ? pages.length + 1 : undefined,
-    placeholderData: keepPreviousData,
-    staleTime: STALE_TIME,
-    enabled,
+    ...pageQueryOptions(request, (page) => page > 1 || hasRowsRef.current),
+    placeholderData: (previous) => preview ?? keepPreviousData(previous),
+    enabled: fetchEnabled,
   });
+  hasRowsRef.current = (list.data?.pages?.[0]?.length ?? 0) > 0;
 
   const { data: countRows } = useApiQuery({
     queryKey: queryKeys.ticket.pageCounts({ repoId, f }),
@@ -148,7 +198,7 @@ export function useTicketList({ filters, text, sortField, sortOrder }, config) {
     options: {
       placeholderData: keepPreviousData,
       staleTime: STALE_TIME,
-      enabled,
+      enabled: fetchEnabled,
     },
   });
 
@@ -202,15 +252,16 @@ export function useTicketList({ filters, text, sortField, sortOrder }, config) {
     [list.data, lookup, enabled],
   );
 
-  const { hasNextPage, isFetchingNextPage, fetchNextPage } = list;
+  // A preview / previous list isn't this request's data: no paging from it
+  const { hasNextPage, isFetchingNextPage, fetchNextPage, isPlaceholderData } = list;
   const loadMore = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) fetchNextPage();
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+    if (hasNextPage && !isFetchingNextPage && !isPlaceholderData) fetchNextPage();
+  }, [hasNextPage, isFetchingNextPage, isPlaceholderData, fetchNextPage]);
 
   return {
     data,
     total,
-    hasMore: enabled && !!hasNextPage,
+    hasMore: enabled && !!hasNextPage && !isPlaceholderData,
     loadMore,
     tabCounts,
     filterCounts,

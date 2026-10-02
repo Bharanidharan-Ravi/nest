@@ -67,7 +67,7 @@ const Header = () => {
   const meetingCount = data?.MEETING;
   const ticketCount = (data?.TICKET || 0)
 
-  const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
+  const { data: statleTicketsData } = useGetStaleTicketData();
 
   const staleTickets = statleTicketsData || [];
 

@@ -37,6 +37,7 @@ const row = {
   Assignee_Id: "AAAA",
   CreatedBy: "bbbb",
   TotalConsumeMinutes: 245,
+  TeamConsumeMinutes: 185,
   Label_Ids: "10",
   Assignee_Ids: "bbbb,aaaa",
   Handler_Ids: "rrrr,00000000-0000-0000-0000-000000000000",
@@ -56,6 +57,7 @@ describe("normalizeTicketListRow", () => {
     expect(t.teamName).toBe("Functional");
     expect(t.ticketCreater).toBe("Helper Two");
     expect(t.EntireWorkingTime).toBe("4:05");
+    expect(t.teamWorkingTime).toBe("3:05");
     expect(t.label).toEqual([
       { LABEL_ID: 10, LABEL_TITLE: "Development", LABEL_COLOR: "#048a35" },
     ]);
@@ -76,15 +78,21 @@ describe("normalizeTicketListRow", () => {
     expect(t.multiAssignees[1].Assignee_TeamName).toBe("Technical");
   });
 
+  it("falls back to all logged hours when the API has no TeamConsumeMinutes", () => {
+    const { TeamConsumeMinutes, ...oldRow } = row;
+    expect(normalizeTicketListRow(oldRow, lookup).teamWorkingTime).toBe("4:05");
+  });
+
   it("does not crash on empty ids or ids missing from the masters", () => {
     const t = normalizeTicketListRow(
-      { Issue_Id: "t2", Assignee_Id: null, Label_Ids: "99", TotalConsumeMinutes: null },
+      { Issue_Id: "t2", Assignee_Id: null, Label_Ids: "99", TotalConsumeMinutes: null, TeamConsumeMinutes: 0 },
       lookup,
     );
 
     expect(t.multiAssignees).toEqual([]);
     expect(t.assginedName).toBeUndefined();
     expect(t.EntireWorkingTime).toBeNull();
+    expect(t.teamWorkingTime).toBeNull();
     expect(t.label).toEqual([{ LABEL_ID: 99, LABEL_TITLE: undefined, LABEL_COLOR: undefined }]);
     expect(t.handlers).toEqual([]);
   });

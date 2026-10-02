@@ -8,7 +8,6 @@ import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import { createTimesheetNormalizer } from "../../../app/shared/utils/normalizer";
-import { normalizeCheckedTickets } from "../../../app/shared/utils/normalizer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useEmployeeOptions,
@@ -33,8 +32,8 @@ import { useGetStaleTicketData } from "../../../app/shared/Header/hook/GetStaleT
 import { Tooltip } from "@mui/material";
 import { TimesheetSummary } from "../component/summery/TreeTableSummary";
 import { isAllowedToView } from "../../../app/shared/utils/ticketVisibility";
-import { useHours } from "../../tickets/hooks/useHours";
 import { useTicketList } from "../../tickets/hooks/useTicketList";
+import { useCheckedTicketList } from "../hooks/useCheckedTicketList";
 
 
 
@@ -52,7 +51,7 @@ export default function Dashboard() {
   const { isViewer } = useCurrentUser();
   const today = dayjs().startOf("day").format("YYYY-MM-DD");
   const [showStaleTicketsModal, setshowStaleTicketsModal] = useState(false)
-  const { data: staleTicketsData } = useGetStaleTicketData(currentUserId)
+  const { data: staleTicketsData } = useGetStaleTicketData()
   const staleTickets = staleTicketsData || []
   const staleCount = staleTickets.length
   useEffect(() => {
@@ -145,13 +144,16 @@ export default function Dashboard() {
     if (selectedUncheckTickets.length === 0) return;
 
     try {
-      // 1. Fire all uncheck mutations in parallel
+      // 1. Fire all uncheck mutations in parallel (a ticket checked by
+      //    several people in this view has one plan row each)
       await Promise.all(
-        selectedUncheckTickets.map((ticket) =>
-          uncheckTicket({
-            urlParams: { planId: ticket.id },
-            body: { UncheckComment: "Comment" },
-          }),
+        selectedUncheckTickets.flatMap((ticket) =>
+          ticket.planIds.map((planId) =>
+            uncheckTicket({
+              urlParams: { planId },
+              body: { UncheckComment: "Comment" },
+            }),
+          ),
         ),
       );
 
@@ -185,15 +187,6 @@ export default function Dashboard() {
       return (rawItem)=>normalizeTicket(rawItem)
   
   },[])
- const {data:hourdata}=useHours()
-  const hourMap=useMemo(()=>{
-    const map={}
-    hourdata?.forEach(h=>{
-     const key=h.Issue_Id?.toLowerCase()
-     if(key)map[key]=h
-      })
-    return map
-  },[hourdata])
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
     ...TicketListConfig(isViewer),
@@ -508,15 +501,9 @@ export default function Dashboard() {
         },
       },
     ],
-     cardRenderer:(item,controls,config)=>{   
-          const key=item.issueId?.toLowerCase()
-          return(
-          <TicketListCard
-          item={item}
-          controls={controls}
-          config={config}
-          hourdata={hourMap[key]}/>)
-      },
+    cardRenderer: (item, controls, config) => (
+      <TicketListCard item={item} controls={controls} config={config} />
+    ),
     tabsExtra: () => (
       <button
         onClick={handleCommitTickets}
@@ -819,10 +806,13 @@ const dashboardTimesheetGraph = (parsedFilters) => {
 
   const dashboardPickedList = {
     ...TicketListConfig(isViewer),
+    // Plan rows from CheckedTickets, tickets from TicketListV2 (visibility
+    // applied on the server)
+    useServerData: useCheckedTicketList,
+    serverScope: { repoId: null, projectId: null },
     theme: {
       stickyTop: 50,
     },
-    itemVisibilityFilter:(item)=>isAllowedToView(item,currentUserId),
     syncUrl: true,
     moduleId: "checkedTickets",
     enableSearch: false,
@@ -874,26 +864,22 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     ),
     filters: [
       {
+        // Who checked it ("" = everyone); read by useCheckedTicketList
         key: "assignedTo",
-        apiKey: "userId",
         view: "Assignee",
-        // showCounts: true,
-        filterType: "api",
-        api: "/sync/v2",
-        configKey: "CheckedTickets",
-        source: "CheckedTickets",
         options: employeeFilterOptions,
-        normalizer: normalizeCheckedTickets,
         defaultValue: currentUserId,
       },
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        serverKey: "project",
         view: "Project",
         showCounts: true,
         options: projectFilterOptions,
       },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        serverKey: "label",
         view: "Label",
         showCounts: true,
         options: LabelFilterOptions,
@@ -902,16 +888,11 @@ const dashboardTimesheetGraph = (parsedFilters) => {
         filterKey: "LABEL_ID", // Because label is an array of objects, we need to specify which key to filter on
       },
       {
+        // Plan day; read by useCheckedTicketList
         key: "planDate",
-        apiKey: "planDate",
         view: "Plan Date",
         type: "date",
-        filterType: "api",
-        api: "/sync/v2",
-        configKey: "CheckedTickets",
-        source: "CheckedTickets",
-        normalizer: normalizeCheckedTickets,
-        defaultValue: dayjs().startOf("day").format("MM-DD-YYYY"),
+        defaultValue: today,
       },
     ],
   };

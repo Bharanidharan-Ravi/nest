@@ -22,9 +22,7 @@ import {
   useCurrentUser,
 } from "../../../core/auth/useCurrentUser";
 import { TicketsHeader } from "./TicketsHeader";
-// import { useHours } from "../hooks/useHours";
 import TicketListCard from "../component/TicketListCard";
-import { useHours } from "../hooks/useHours";
 
 // true: paged TicketListV2 / TicketListCountsV2 (filters, sort, counts and
 // visibility on the server). false: old full TicketsList, filtered here.
@@ -78,9 +76,6 @@ export default function TicketsPage() {
   );
   console.log("data",data);
   
-  // const {data:allhours}=useHours()
-  // console.log("allhours",allhours);
-  
   // const data  = useTicketMaster(activeProjectId);
 
   const projectFilterOptions = useProjectOptions(true);
@@ -110,27 +105,6 @@ export default function TicketsPage() {
     return rawList.filter((item) => isAllowedToView(item, currentUserId));
   }, [data, currentUserId]);
   console.log("ticketList",ticketList);
-  
-
-  const {data:hourdata}=useHours()
-  console.log("hourdata=======================",hourdata);
-  
-  console.log("ticketlist issueids (normalized)",ticketList.map(t=>t.issueId).slice(0,5));
-
-  const hourMap=useMemo(()=>{
-    const map={}
-    hourdata?.forEach(h=>{
-     const key=h.Issue_Id?.toLowerCase()
-     if(key)map[key]=h
-      })
-   console.log("hourmap keys",Object.keys(map).slice(0.5));
-   const hourIds=new Set(Object.keys(map))
-   const ticketIds=ticketList.map(t=>t.issueId?.toLowerCase())
-   const matchCount=ticketIds.filter(id=>hourIds.has(id)).length
-   console.log(`MATCH CHECK:${matchCount} of ${ticketIds.length} tickets have hour data`);
-   
-    return map
-  },[hourdata,ticketList])
 
   const listConfigWithNav = {
     ...TicketListConfig(isViewer),
@@ -486,24 +460,9 @@ export default function TicketsPage() {
     onEditClick: (item) => {
       goTo(editRouteKey, { ticketId: item.id, repoId, projId });
     },
-    cardRenderer:(item,controls,config)=>{   
-      const key=item.issueId?.toLowerCase()
-      const matched=hourMap[key]
-      console.log("cardrender lookup",{
-        issueId:item.issueId,
-        key,
-        hourMapSize:Object.keys(hourMap).length,
-        hourMapHasKey:key in hourMap,
-        matched
-      });
-      
-      return(
-      <TicketListCard
-      item={item}
-      controls={controls}
-      config={config}
-      hourdata={matched}/>)
-  }
+    cardRenderer: (item, controls, config) => (
+      <TicketListCard item={item} controls={controls} config={config} />
+    ),
   };
 
   return (

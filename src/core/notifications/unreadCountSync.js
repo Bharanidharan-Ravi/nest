@@ -1,8 +1,8 @@
 // unreadCountSync.js
 //
 // Keeps the cached unread count (queryKeys.notification.unreadCount()) correct
-// while SignalR bumps and server count requests (30s poll, mark-seen
-// invalidation, reconnect) race each other.
+// while SignalR bumps and server count requests (GET /notification/counts on
+// mark-seen invalidation, reconnect, reconciliation) race each other.
 //
 // The backend saves a notification before it publishes the SignalR ping, so a
 // count request that *started* after the ping arrived always includes it. One

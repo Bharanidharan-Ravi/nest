@@ -68,7 +68,9 @@ export const DASHBOARD_REGISTRY = {
       },
     }),
     source:    "CheckedTickets",
-    staleTime: 0,
+    // Loaded once per Dashboard visit; commit/uncheck and realtime ticket
+    // changes refresh it explicitly
+    staleTime: Infinity,
     enabled:   ({ employeeId, planDate }) => !!employeeId && !!planDate,
     adapter:   (item) => item,
   },

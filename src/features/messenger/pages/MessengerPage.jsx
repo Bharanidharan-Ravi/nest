@@ -21,8 +21,7 @@ import {
   useOpenGroup,
 } from "../hooks/useChat";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
-import { fetUserStatus } from "../hooks/useUserStatus";
-import { formateDateTime, formatLastSeen } from "../../../app/shared/utils/chattime";
+import { presenceDotClass, usePresence } from "../hooks/useUserStatus";
 
 export default function MessengerPage() {
  
@@ -56,21 +55,9 @@ export default function MessengerPage() {
     }
   };
 const user=readUserFromSession()
-const {data:statusList=[]}=fetUserStatus()
-  const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
-
-  const selectedIsGroup=isGroupConversation(selected)
-
-  const selectedOtherMemberId=selectedIsGroup
-  ?null
-  :selected?.MemberUserIds?.find(id=>!sameId(id,userId))
-
-  const selectedStatus=selectedOtherMemberId
-  ?statusMap[selectedOtherMemberId?.toLowerCase()]
-  :null
-
-  const selectedOnline=selectedStatus?.LastHeartbeat &&
-  (Date.now()-new Date(selectedStatus.LastHeartbeat).getTime())<=30*1000
+  const selectedPresence = usePresence(
+    isGroupConversation(selected) ? null : selected?.MemberUserIds?.find((id) => !sameId(id, userId)),
+  );
   return (
     <div className="absolute inset-0 p-2">
       <div className="flex h-full bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -136,47 +123,31 @@ const {data:statusList=[]}=fetUserStatus()
                     onClick={() => setInfoOpen(true)}
                     className="flex items-center gap-3 min-w-0 flex-1 text-left hover:bg-gray-50 rounded-lg -mx-1.5 px-1.5 py-1"
                   >
-                    <div className="relative shrink-0"
-                    title={!selectedIsGroup && selectedStatus
-                      ?(selectedOnline
-                        ? "Online"
-                        : selectedStatus?.LastHeartbeat
-                        ?`Last seen ${formateDateTime(selectedStatus.LastHeartbeat)}`
-                        :"Offline"
-                      )
-                      :""
-                    }>
+                    <div className="relative shrink-0" title={selectedPresence?.label}>
                     <ChatAvatar
                       name={conversationTitle(selected, userId, nameOf)}
                       seed={conversationAvatarSeed(selected, userId)}
                       photoUrl={conversationAvatarPhoto(selected, userId, photoOf)}
                     />
-                    {!selectedIsGroup && selectedStatus &&(
+                    {selectedPresence && (
               <span className={[
                 "absolute bottom-0 right-0",
                 "w-3.5 h-3.5 rounded-full",
                 "border-2 border-white",
-                selectedOnline ?"bg-green-500":"bg-red-400"
+                presenceDotClass(selectedPresence)
               ].join(" ")}/>
              )}
                     </div>
                    
                     <div className="min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{conversationTitle(selected, userId, nameOf)}</h3>
-                      {!selectedIsGroup && selectedStatus &&(
+                      {selectedPresence && (
                         <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
                           <span className={[
-                            "w-1,5 h-1.5 rounded-full inline-block shrink-0",
-                            selectedOnline? "bg-green-500":"bg-gray-400"
+                            "w-1.5 h-1.5 rounded-full inline-block shrink-0",
+                            presenceDotClass(selectedPresence)
                           ].join(" ")}/>
-
-                        {
-                          selectedOnline
-                          ?"Online"
-                          :selectedStatus.LogoutAt
-                          ?`Last seen ${formatLastSeen(selectedStatus.LogoutAt)}`
-                          :"Offline"
-                        }
+                          {selectedPresence.label}
                         </p>
                       )}
                       <p className="text-xs text-gray-400 flex items-center gap-1">

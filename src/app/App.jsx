@@ -17,8 +17,8 @@ import { useChatIdentitySession } from "../features/messenger/hooks/useChatIdent
 import ChatIdentityModals from "../features/messenger/components/ChatIdentityModals";
 
 function App() {
-  useHeartbeat();
   const token = useAppStore((s) => s.token);
+  useHeartbeat(token);
 
   useRealtimeSync(token);
   useChatIdentitySession(token);

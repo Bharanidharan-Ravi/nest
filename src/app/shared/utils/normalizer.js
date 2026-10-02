@@ -105,6 +105,11 @@ export const normalizeTicketListRow = (row, lookup) => {
     teamName: owner?.Assignee_TeamName,
     ticketCreater: lookup.get("employee", row.CreatedBy)?.name,
     EntireWorkingTime: formatMinutes(row.TotalConsumeMinutes),
+    // Staff-logged hours only (client hours excluded); null when nothing logged.
+    // An API without TeamConsumeMinutes yet → fall back to all logged hours.
+    teamWorkingTime: formatMinutes(
+      (row.TeamConsumeMinutes === undefined ? row.TotalConsumeMinutes : row.TeamConsumeMinutes) || null,
+    ),
     multiAssignees: [
       ...(owner ? [owner] : []),
       ...splitIds(row.Assignee_Ids).map((id) => toAssignee(id, "Assignee")),
@@ -137,28 +142,6 @@ export const normalizeProject = (proj) => ({
   repoKey: proj.RepoKey,
   UpdatedAt: proj.UpdatedAt,
   UpdatedBy: proj.UpdatedBy,
-});
-
-export const normalizeCheckedTickets = (item) => ({
-  id: item.Id,
-  ticketId: item.TicketId,
-  ProjKey: item.ProjKey,
-  RepoKey: item.RepoKey,
-  Status: item.Status,
-  navId: item.TicketId,
-  UncheckComment: item.UncheckComment ?? "-",
-  project: item.Project_ID,
-  title: item.Title,
-  privateTicket :item.IsPrivate ?? false,
-  label: item.Labels_JSON ? JSON.parse(item.Labels_JSON) : [],
-  multiAssignees: item.All_Assignees ? JSON.parse(item.All_Assignees) : [],
-  CompletionPct: item.CompletionPct,
-  overallPercentage: item.OverallPercentage,
-  estimateHours: item.hours || item.Hours,
-  dueDate: item.Due_Date,
-  createdAt: item.CreatedAt,
-  ticketKey: item.Issue_Code,
-  updatedBy: item.UpdatedBy,
 });
 
 // 🔥 Pass the queryClient into the factory function instead of the raw data

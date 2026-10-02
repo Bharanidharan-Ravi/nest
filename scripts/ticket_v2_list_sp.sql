@@ -333,15 +333,21 @@ BEGIN
         -- Thread stats for this ticket only, one pass over
         -- IX_ISSUETHREADS_IssueId_UpdatedAt (covers Hours, toClient).
         -- Unused columns are dropped by the optimizer.
+        -- TeamConsumeMinutes: hours logged by staff only (client hours excluded).
         OUTER APPLY (
             SELECT
                 COUNT(CASE WHEN @Role <> 3 OR IT.toClient = 1 THEN 1 END) AS ThreadCount,
-                SUM(CASE WHEN IT.Hours LIKE ''%:%'' THEN
-                        TRY_CAST(LEFT(IT.Hours, CHARINDEX('':'', IT.Hours) - 1) AS INT) * 60
-                      + TRY_CAST(SUBSTRING(IT.Hours, CHARINDEX('':'', IT.Hours) + 1, 50) AS INT)
-                    END) AS TotalConsumeMinutes,
+                SUM(H.Minutes) AS TotalConsumeMinutes,
+                SUM(CASE WHEN EM.EmployeeID IS NOT NULL THEN H.Minutes END) AS TeamConsumeMinutes,
                 MAX(IT.UpdatedAt) AS LastThreadAt
             FROM ISSUETHREADS IT
+            CROSS APPLY (
+                SELECT CASE WHEN IT.Hours LIKE ''%:%'' THEN
+                           TRY_CAST(LEFT(IT.Hours, CHARINDEX('':'', IT.Hours) - 1) AS INT) * 60
+                         + TRY_CAST(SUBSTRING(IT.Hours, CHARINDEX('':'', IT.Hours) + 1, 50) AS INT)
+                       END AS Minutes
+            ) H
+            LEFT JOIN EMPLOYEEMASTER EM ON EM.EmployeeID = IT.CreatedBy
             WHERE IT.Issue_Id = T0.Issue_Id
         ) TS
 
@@ -503,6 +509,7 @@ BEGIN
             T0.ReopenedBy,
             ISNULL(TS.ThreadCount, 0) AS ThreadCount,
             TS.TotalConsumeMinutes,
+            TS.TeamConsumeMinutes,
             LEFT(LT.CommentText, 300) AS commenttext,
             (
                 SELECT STRING_AGG(CAST(IL.Label_Id AS VARCHAR(12)), '','')

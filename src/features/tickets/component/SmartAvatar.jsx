@@ -37,8 +37,7 @@ import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { Tooltip, Modal, Box, IconButton } from "@mui/material";
 import { FiX } from "react-icons/fi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
-import { fetUserStatus } from "../../messenger/hooks/useUserStatus";
-import { formateDateTime } from "../../../app/shared/utils/chattime";
+import { presenceDotClass, usePresence } from "../../messenger/hooks/useUserStatus";
 import { useQueryClient } from "@tanstack/react-query";
 
 const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" }) => {
@@ -49,7 +48,6 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
     // so avatars don't each start their own EmployeeList request
     const { data: masterData } = useMasterData();
     const empData = isViewer ? undefined : masterData?.EmployeeList;
-    const {data:statusList=[]}=fetUserStatus()
 
     const employee = empData?.find((e) => {
         if (userId && e.UserID)
@@ -130,20 +128,8 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
 
     // const avatarPath = employee?.PreviewUrl;
 
-    const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
-const lookupId=userId||employee?.EmployeeID||employee?.UserID
+    const presence = usePresence(userId || employee?.EmployeeID || employee?.UserID);
 
-
-    const status=lookupId?statusMap[lookupId?.toLowerCase()]:null
-    const isOnline=status?.LastHeartbeat && 
-    (Date.now()-new Date(status.LastHeartbeat).getTime())<=60*1000;
-
-    const statusTitle=isOnline
-    ?`Online since ${formateDateTime(status?.LastHeartbeat)}`
-    :status?.LastHeartbeat
-    ?`Last seen ${formateDateTime(status?.LastHeartbeat)}`
-    :"Offline"
-   
     return (
         <>
             {/* Avatar with zoom + click */}
@@ -159,7 +145,7 @@ const lookupId=userId||employee?.EmployeeID||employee?.UserID
                     onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.3)")}
                     onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
                 >
-                    <div className="relative inline-block" title={[displayName,statusTitle].filter(Boolean).join("\n")}>
+                    <div className="relative inline-block" title={[displayName, presence?.label].filter(Boolean).join("\n")}>
                     {avatarPath ? (
                         <img
                             className={`${className} rounded-full object-cover border-2 border-white shadow-xs`}
@@ -173,12 +159,12 @@ const lookupId=userId||employee?.EmployeeID||employee?.UserID
                             {getInitials(name || "?")}
                         </div>
                     )}
-                    {status && (
+                    {presence && (
                         <span className={[
                             "absolute bottom-0 right-0",
                             "w-3 h-3 rounded-full",
                             "border-2 border-white",
-                            isOnline?"bg-green-500":"bg-red-400"
+                            presenceDotClass(presence)
                         ].join(" ")}/>
                     )}
                     </div>

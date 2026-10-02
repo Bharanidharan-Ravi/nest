@@ -53,7 +53,8 @@ const MASTER_KEYS = Object.values(MASTER_ENTITY_MAP); // keeps it DRY
 //    sort        : "asc" | "desc"
 //
 //  type: "invalidate"
-//    queryKey    : Array | (message) => queryKey[]  – key to invalidateQueries on
+//    queryKeys   : (message) => queryKey[][]  – keys to invalidateQueries on; only
+//                  caches on screen refetch now, the rest on their next mount
 // ─────────────────────────────────────────────────────────────────────────────
 const REALTIME_ENTITY_CONFIG = {
   // ── Ticket lists ────────────────────────────────────────────────────────────
@@ -181,10 +182,12 @@ const REALTIME_ENTITY_CONFIG = {
   // Backend only broadcasts a partial payload ({ID, EMPLOYEE_ID, STATUS}) —
   // not enough to merge a full row (fromDate/toDate/EmployeeName/etc. missing
   // on "Created"), so this just invalidates and lets useLeaveRequestMaster
-  // refetch the real list instead of patching the cache in place.
+  // refetch the real list instead of patching the cache in place. The list only
+  // refetches while the Leave Requests page shows it; the sidebar badge count
+  // (from /notification/counts) refreshes either way.
   LeaveRequest: {
     type: "invalidate",
-    queryKey: () => queryKeys.leaveRequest.list(),
+    queryKeys: () => [queryKeys.leaveRequest.list(), queryKeys.notification.leaveRequestCount()],
   },
 
   MeetingData: {
@@ -281,13 +284,13 @@ function isTicketRowCache([root, sub]) {
   );
 }
 
-// Screens built from ticket data in another shape (logged time, daily plan,
-// stale tickets). They can't take a TicketsList row, so they refetch.
+// Screens built from ticket data in another shape (logged time, daily plan).
+// They can't take a TicketsList row, so they refetch. Stale tickets are
+// deliberately left out: they're loaded once per page load.
 const TICKET_DERIVED_ROOTS = new Set([
   "TimeSheet",
   "DashBoardTimesheetData",
   "CheckedTickets",
-  "GetStaleTicketsForAssignee",
 ]);
 const TICKET_DERIVED_DASHBOARD_SUBS = new Set(["timesheet", "checkedTickets"]);
 // Paged ticket lists / counts (["ticket","page",…], ["ticket","pageCounts",…])
@@ -541,12 +544,9 @@ function applyEntityConfig(
   // Simplest mode: no cache merging — just invalidate so the query refetches.
   // Use this when the broadcast payload is too partial to patch a full row.
   if (config.type === "invalidate") {
-    const key =
-      typeof config.queryKey === "function"
-        ? config.queryKey(message)
-        : config.queryKey;
-    if (key)
-      queryClient.invalidateQueries({ queryKey: key, refetchType: "all" });
+    for (const queryKey of config.queryKeys(message)) {
+      queryClient.invalidateQueries({ queryKey });
+    }
     return;
   }
 

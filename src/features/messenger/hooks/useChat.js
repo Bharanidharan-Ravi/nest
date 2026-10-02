@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { subscribeChatMention, subscribeChatMessages, subscribeChatReaction, subscribeChatRead } from "../../../core/realtime/chatChannel";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
@@ -184,40 +184,42 @@ export function useConversations() {
     queryKey: chatQueryKeys.conversations,
     enabled: !!userId,
     staleTime: 60_000,
-    queryFn: async () => decryptLastMessages((await chatApi.listConversations()) ?? [], userId),
+    // Raw list: the message bar only needs unread counts. Previews are decrypted
+    // by useConversationPreviews when a conversation list is actually on screen.
+    queryFn: async () => (await chatApi.listConversations()) ?? [],
   });
 }
 
-async function decryptLastMessages(conversations, userId) {
-  await prefetchSenderKeys(conversations.map((c) => c.LastMessage));
-  return Promise.all(
-    conversations.map(async (c) =>
-      c.LastMessage ? { ...c, LastMessage: await withDecrypted(c.LastMessage, userId) } : c,
-    ),
+/**
+ * The conversations with their last message decrypted, for the list views (open
+ * dock, messenger page). Fetches every sender's key in one request.
+ */
+export function useConversationPreviews(conversations) {
+  const userId = useChatUserId();
+  const pending = useMemo(
+    () => (conversations ?? []).map((c) => c.LastMessage).filter((m) => m && m.decrypted?.status !== "ok"),
+    [conversations],
   );
-}
 
-// After an unlock, decrypt the previews already in the cache instead of fetching
-// the conversation list again
-async function redecryptConversations(queryClient, userId) {
-  const key = chatQueryKeys.conversations;
-  if (queryClient.isFetching({ queryKey: key })) {
-    queryClient.invalidateQueries({ queryKey: key });
-    return;
-  }
-  const cached = queryClient.getQueryData(key);
-  if (!cached) return;
+  const { data: decrypted } = useQuery({
+    queryKey: [...chatQueryKeys.all, "previews", pending.map((m) => lower(m.MessageId))],
+    enabled: !!userId && pending.length > 0,
+    staleTime: Infinity,
+    placeholderData: keepPreviousData,
+    queryFn: async () => {
+      await prefetchSenderKeys(pending);
+      const list = await Promise.all(pending.map((m) => withDecrypted(m, userId)));
+      return Object.fromEntries(list.map((m) => [lower(m.MessageId), m]));
+    },
+  });
 
-  const byMessageId = new Map(
-    (await decryptLastMessages(cached, userId))
-      .filter((c) => c.LastMessage)
-      .map((c) => [lower(c.LastMessage.MessageId), c.LastMessage]),
-  );
-  queryClient.setQueryData(key, (old) =>
-    old?.map((c) => {
-      const message = c.LastMessage && byMessageId.get(lower(c.LastMessage.MessageId));
-      return message ? { ...c, LastMessage: message } : c;
-    }),
+  return useMemo(
+    () =>
+      (conversations ?? []).map((c) => {
+        const message = c.LastMessage && decrypted?.[lower(c.LastMessage.MessageId)];
+        return message ? { ...c, LastMessage: message } : c;
+      }),
+    [conversations, decrypted],
   );
 }
 
@@ -585,9 +587,8 @@ export function useChatRealtime({ nameOf }) {
     // Unlocking (or re-initializing) chat: decrypt everything again with the key now available
     const offIdentity = useChatIdentityStore.subscribe((state, previous) => {
       if (state.status === CHAT_IDENTITY_STATUS.READY && previous.status !== CHAT_IDENTITY_STATUS.READY) {
-        redecryptConversations(queryClient, userId).catch(() =>
-          queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations }),
-        );
+        // Previews and timelines decrypted while locked; the conversation list itself is unchanged
+        queryClient.invalidateQueries({ queryKey: [...chatQueryKeys.all, "previews"] });
         queryClient.invalidateQueries({ queryKey: [...chatQueryKeys.all, "messages"] });
       }
     });

@@ -1,22 +1,5 @@
-import { useApiQuery } from "../../../../core/query/useApiQuery";
+import { useBadgeCount } from "../../../../core/notifications/badgeCounts";
 
-export const useGetStaleTicketData = (Assignee_Id = null) => {
-  return useApiQuery({
-    queryKey: ["GetStaleTicketsForAssignee", "list", Assignee_Id ?? "none"],
-    url: "/sync/v2",
-    method: "POST",
-    payload: {
-      ConfigKeys: ["GetStaleTicketsForAssignee"],
-      Params: {
-        GetStaleTicketsForAssignee: {
-            Assignee_Id:Assignee_Id
-        }
-      }
-    },
-    source: "GetStaleTicketsForAssignee",
-    options: {
-      staleTime: 10 * 60 * 1000, // 10 minutes
-      enabled:!!Assignee_Id ,
-    },
-  });
-};
+// The signed-in user's stale tickets — part of GET /notification/counts (the
+// server resolves the assignee from the token). Header and Dashboard share it.
+export const useGetStaleTicketData = () => useBadgeCount("GetStaleTicketsForAssignee");

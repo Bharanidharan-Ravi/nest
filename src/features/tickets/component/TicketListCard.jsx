@@ -43,7 +43,6 @@ export default function TicketListCard({
   focused,
   config,
   quickCommentButton,
-  hourdata
 }) {
   const { goTo } = useSmartNavigation();
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
@@ -164,36 +163,12 @@ useEffect(()=>{
     const [h, m] = timeStr.toString().split(':').map(Number)
     return (h || 0) * 60 + (m || 0)
   }
+  // Staff-logged hours from TicketListV2 (client hours excluded)
+  const totalLogged = item.teamWorkingTime
   const isOverEstimate =
-    item.EntireWorkingTime &&
+    totalLogged &&
     item.estimateHours &&
-    parseToMinutes(item.EntireWorkingTime) > parseToMinutes(item.estimateHours)
-
-
-
-    const breakdown=(()=>{
-      if(!hourdata?.LoggedBreakdown){
-        console.log("HOUR DEBUG",item.issueId,{hourdata});
-        return null
-        
-      }
-      if(typeof hourdata.LoggedBreakdown==='object')return hourdata.LoggedBreakdown
-      try{
-        return JSON.parse(hourdata.LoggedBreakdown)
-      }catch{
-        return null
-      }
-    })()
-    console.log("hourdata for",item.issueId,hourdata);
-    console.log("hourdatattttttttt",hourdata);
-    
-    
-const teamMinutes=parseToMinutes(breakdown?.Web)
-+parseToMinutes(breakdown?.Technical)
-+parseToMinutes(breakdown?.Functional)
-const totalLogged=teamMinutes>0
-?`${Math.floor(teamMinutes/60)}:${String(teamMinutes %60).padStart(2,'0')}`
-:null
+    parseToMinutes(totalLogged) > parseToMinutes(item.estimateHours)
   // console.log("itemmmm",item);
   return (
     <>

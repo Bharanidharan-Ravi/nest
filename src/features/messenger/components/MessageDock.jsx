@@ -26,8 +26,7 @@ import {
 } from "../hooks/useChat";
 import { useChatUiStore } from "../state/useChatUiStore";
 import { useScrollReveal } from "../hooks/useScrollReveal";
-import { formatLastSeen } from "../../../app/shared/utils/chattime";
-import { fetUserStatus } from "../hooks/useUserStatus";
+import { presenceDotClass, usePresence } from "../hooks/useUserStatus";
 
 const NOTIFICATION_MS = 6000;
 
@@ -267,22 +266,8 @@ function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, p
     else if (minimized) toggleMinimized(id);
     else openInfo();
   };
-  const {data:statusList=[]}=fetUserStatus()
-  const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
   const isGroup = isGroupConversation(conversation);
-  const otherMemberId=isGroup
-  ?null
-  :conversation.MemberUserIds?.find(id=>!sameId(id,userId))
-  const chatStatus=otherMemberId
-  ?statusMap[otherMemberId?.toLowerCase()]
-  :null
-  const chatOnline=chatStatus?.LastHeartbeat &&
-  (Date.now()-new Date(chatStatus.LastHeartbeat).getTime())<=30*1000
-  const lastSeenText=chatOnline
-  ?"Online"
-  :chatStatus?.LastHeartbeat
-  ?`Last seen ${formatLastSeen(chatStatus.LastHeartbeat)}`
-  :"Offline"
+  const presence = usePresence(isGroup ? null : conversation.MemberUserIds?.find((id) => !sameId(id, userId)));
   return (
     <section
       ref={sectionRef}
@@ -300,14 +285,14 @@ function ChatWindow({ conversation, minimized, hiddenOnMobile, userId, nameOf, p
                 headerMode === "info" ? "opacity-0 -translate-x-1.5" : "opacity-100 translate-x-0"
               } ${heroFlying ? "invisible" : ""}`}
             >
-              <div className="relative" title={!isGroup && chatStatus ? lastSeenText :""}>
+              <div className="relative" title={presence?.label}>
               <ChatAvatar name={title} seed={avatarSeed} photoUrl={avatarPhoto} size="sm" />
               {
-                !isGroup && chatStatus && (
+                presence && (
                   <span className={[
                     "absolute bottom-0 right-0",
                     "w-3 h-3 rounded-full border border-white",
-                    chatOnline ? "bg-green-500":"bg-red-400"
+                    presenceDotClass(presence)
                   ].join(" ")}/>
                 )
               }

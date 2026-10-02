@@ -6,19 +6,19 @@ import {
   isGroupConversation,
   messagePreview,
   sameId,
+  useConversationPreviews,
 } from "../hooks/useChat";
 import { formatListTime } from "../utils/chatTime";
-import { fetUserStatus } from "../hooks/useUserStatus";
-import { formateDateTime, formatLastSeen } from "../../../app/shared/utils/chattime";
+import { presenceDotClass, usePresenceLookup } from "../hooks/useUserStatus";
 
-export default function ConversationList({ conversations, isLoading, isError, selectedId, onSelect, userId, nameOf, photoOf = () => null }) {
+export default function ConversationList({ conversations: rawConversations, isLoading, isError, selectedId, onSelect, userId, nameOf, photoOf = () => null }) {
+  const conversations = useConversationPreviews(rawConversations);
+  const presenceOf = usePresenceLookup();
   if (isLoading) return <p className="p-4 text-sm text-gray-400">Loading…</p>;
   if (isError) return <p className="p-4 text-sm text-red-600">Couldn't load conversations.</p>;
   if (!conversations?.length) {
     return <p className="p-4 text-sm text-gray-400">No conversations yet. Search for someone above to start one.</p>;
   }
-  const {data:statusList=[]}=fetUserStatus()
-  const statusMap=Object.fromEntries(statusList.map(s=>[s.EmployeeID?.toLowerCase(),s]))
   return (
     <ul>
       {conversations.map((c) => {
@@ -26,22 +26,12 @@ export default function ConversationList({ conversations, isLoading, isError, se
         const unread = c.UnreadCount ?? 0;
         const last = c.LastMessage;
         const isGroup = isGroupConversation(c);
-        const otherMemberId=isGroup
-        ?null
-        :c.MemberUserIds?.find(id=>!sameId(id,userId))
-        const status=otherMemberId
-        ?statusMap[otherMemberId?.toLowerCase()]
-        :null
-        const online=status?.LastHeartbeat && 
-        (Date.now()-new Date(status.LastHeartbeat).getTime())<=30*1000
+        const presence = isGroup ? null : presenceOf(c.MemberUserIds?.find((id) => !sameId(id, userId)));
         const preview = last
           ? `${sameId(last.SenderUserId, userId) ? "You: " : ""}${messagePreview(last)}`
           : isGroup
             ? `${c.MemberUserIds?.length ?? 0} members`
             : "No messages yet";
-        // console.log("otherMemberId",otherMemberId);
-        console.log("status map keys",Object.keys(statusMap).slice(0.3));
-        // console.log("status",status);
         return (
           <li key={c.ConversationId}>
             <button
@@ -51,36 +41,17 @@ export default function ConversationList({ conversations, isLoading, isError, se
                 sameId(c.ConversationId, selectedId) ? "bg-brand-yellow/30" : "",
               ].join(" ")}
             >
-              <div className="relative shrink-0"
-              title={!isGroup && status
-                ?(status.LastHeartbeat && (Date.now() - new Date(status.LastHeartbeat).getTime())
-                  ?"Online"
-                  :status.LastHeartbeat
-                  ?`Last seen ${formatLastSeen(status.LastHeartbeat)}`
-                  :"Offline"
-                )
-                
-                // ?[
-                //   status.IsActive===true?"Online":"Offline",
-                //   c.LastReadAt
-                //   ?`\nLast Read: ${formateDateTime(c.LastReadAt)}`
-                //   :"",
-                //   status.LogoutAt
-                //   ?`\nLast Seen: ${formateDateTime(status.LogoutAt)}`
-                //   :"",
-                // ].join("")
-                :undefined
-              }>
-              <ChatAvatar 
-              name={title} 
-              seed={conversationAvatarSeed(c, userId)} 
+              <div className="relative shrink-0" title={presence?.label}>
+              <ChatAvatar
+              name={title}
+              seed={conversationAvatarSeed(c, userId)}
               photoUrl={conversationAvatarPhoto(c, userId, photoOf)} />
-             {!isGroup && status &&(
+             {presence && (
               <span className={[
                 "absolute bottom-0 right-0",
                 "w-3.5 h-3.5 rounded-full",
                 "border-2 border-white",
-                online ?"bg-green-500":"bg-red-400"
+                presenceDotClass(presence)
               ].join(" ")}/>
              )}
               </div>
