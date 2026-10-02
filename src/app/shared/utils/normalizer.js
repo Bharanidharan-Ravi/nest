@@ -1,5 +1,33 @@
 import { queryKeys } from "../../../core/query/queryKeys";
 
+export const MAIN_ASSIGNEE_TYPE = "Main Assignee";
+// Old list SP: ISNULL(repo title, 'WorkGlow Solutions') for a handler with no
+// repo; TicketListV2 sends that case as the empty guid.
+const DEFAULT_HANDLER_NAME = "WorkGlow Solutions";
+
+const parseJsonList = (json) => {
+  if (!json) return [];
+  try {
+    return JSON.parse(json);
+  } catch {
+    return [];
+  }
+};
+
+const splitIds = (csv) =>
+  csv
+    ? String(csv)
+        .split(",")
+        .map((id) => id.trim())
+        .filter(Boolean)
+    : [];
+
+// 125 → "2:05" (same format as the old TotalConsumeTime)
+const formatMinutes = (minutes) =>
+  minutes === null || minutes === undefined
+    ? null
+    : `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
+
 export const normalizeTicket = (ticket) => ({
   id: ticket.Issue_Id,
   issueId: ticket.Issue_Id,
@@ -24,6 +52,10 @@ export const normalizeTicket = (ticket) => ({
   reopenedBy: ticket.ReopenedBy,
   priority: ticket.Priority,
   move_toJson :ticket.Move_toJson,
+  handlers: parseJsonList(ticket.Move_toJson).map((h) => ({
+    id: h.Move_to,
+    name: h.Title,
+  })),
   multiAssignees: ticket.All_Assignees ? JSON.parse(ticket.All_Assignees) : [],
   label: ticket.Labels_JSON ? JSON.parse(ticket.Labels_JSON) : [],
   completionPct: ticket.CompletionPct,
@@ -47,6 +79,50 @@ export const normalizeTicket = (ticket) => ({
   ticketCreater: ticket.TicketCreater,
   createdBy: ticket.CreatedBy,
 });
+
+// TicketListV2 row → the same shape as normalizeTicket. The row carries ids
+// only; names / colours come from the masters (lookup = useMasterLookup()).
+export const normalizeTicketListRow = (row, lookup) => {
+  const toAssignee = (id, type) => {
+    const employee = lookup.get("employee", id);
+    return {
+      Assignee_Id: id,
+      Assignee_Name: employee?.name ?? null,
+      Assignee_Type: type,
+      Assignee_TeamId: employee?.Team ?? null,
+      Assignee_TeamName: lookup.get("team", employee?.Team)?.name ?? null,
+    };
+  };
+  const owner = row.Assignee_Id
+    ? toAssignee(row.Assignee_Id, MAIN_ASSIGNEE_TYPE)
+    : null;
+
+  return {
+    ...normalizeTicket(row),
+    status: lookup.get("status", row.StatusId)?.name,
+    assginedName: owner?.Assignee_Name,
+    teamId: owner?.Assignee_TeamId,
+    teamName: owner?.Assignee_TeamName,
+    ticketCreater: lookup.get("employee", row.CreatedBy)?.name,
+    EntireWorkingTime: formatMinutes(row.TotalConsumeMinutes),
+    multiAssignees: [
+      ...(owner ? [owner] : []),
+      ...splitIds(row.Assignee_Ids).map((id) => toAssignee(id, "Assignee")),
+    ],
+    label: splitIds(row.Label_Ids).map((id) => {
+      const label = lookup.get("label", id);
+      return {
+        LABEL_ID: Number(id),
+        LABEL_TITLE: label?.name,
+        LABEL_COLOR: label?.color,
+      };
+    }),
+    handlers: splitIds(row.Handler_Ids).map((id) => ({
+      id,
+      name: lookup.get("repo", id)?.name ?? DEFAULT_HANDLER_NAME,
+    })),
+  };
+};
 
 export const normalizeProject = (proj) => ({
   id: proj.Id,

@@ -84,14 +84,16 @@ describe("handleIncomingNotification", () => {
 
   it("shows an OS notification only when the app is in the background", async () => {
     isAppInForeground.mockReturnValue(false);
-    listResponse.mockResolvedValue([item("n1")]);
+    // Own id: the previous test still holds the cross-tab alert lock for "n1"
+    listResponse.mockResolvedValue([item("n-bg")]);
 
-    await handleIncomingNotification(queryClient, { notificationId: "n1", alertsEnabled: true });
+    await handleIncomingNotification(queryClient, { notificationId: "n-bg", alertsEnabled: true });
 
     expect(showBrowserNotification).toHaveBeenCalledWith({
-      id: "n1",
-      title: "Title n1",
-      body: "Message n1 by Func",
+      id: "n-bg",
+      title: "Title n-bg",
+      body: "Message n-bg by Func",
+      onClick: expect.any(Function),
     });
   });
 

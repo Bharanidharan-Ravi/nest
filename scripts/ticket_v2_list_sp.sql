@@ -201,6 +201,22 @@ USING (VALUES
     ('S', N'battery',    N'ISNULL(LP.Percentage, 0)',    N'Overall %'),
     ('S', N'consumed',   N'TS.TotalConsumeMinutes',      N'Logged time'),
     ('S', N'threads',    N'TS.ThreadCount',              N'Thread count'),
+    -- Due buckets (sort "asc", then "dueDate" asc); no due date always last
+    ('S', N'dueOverdueFirst',  N'CASE WHEN T0.Due_Date IS NULL THEN 9
+                                     WHEN CAST(T0.Due_Date AS DATE) < CAST(GETDATE() AS DATE) THEN 1
+                                     WHEN CAST(T0.Due_Date AS DATE) = CAST(GETDATE() AS DATE) THEN 2
+                                     ELSE 3 END',
+                               N'Due: overdue, today, upcoming'),
+    ('S', N'dueTodayFirst',    N'CASE WHEN T0.Due_Date IS NULL THEN 9
+                                     WHEN CAST(T0.Due_Date AS DATE) = CAST(GETDATE() AS DATE) THEN 1
+                                     WHEN CAST(T0.Due_Date AS DATE) < CAST(GETDATE() AS DATE) THEN 2
+                                     ELSE 3 END',
+                               N'Due: today, overdue, upcoming'),
+    ('S', N'dueUpcomingFirst', N'CASE WHEN T0.Due_Date IS NULL THEN 9
+                                     WHEN CAST(T0.Due_Date AS DATE) > CAST(GETDATE() AS DATE) THEN 1
+                                     WHEN CAST(T0.Due_Date AS DATE) = CAST(GETDATE() AS DATE) THEN 2
+                                     ELSE 3 END',
+                               N'Due: upcoming, today, overdue'),
 
     -- ── Count facets: SELECT ... AS v  (value format = filter value format) ─
     ('C', N'repo',     N'SELECT LOWER(CAST(T0.RepoId AS CHAR(36))) AS v',

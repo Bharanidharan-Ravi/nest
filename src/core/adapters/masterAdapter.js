@@ -62,8 +62,18 @@ export const formatLabel = (raw) => {
   return {
     id: raw.Id,
     name: raw.Title,
+    color: raw.Color,
     // status:raw.Status
     isActive: raw.Status === "Active",
+  };
+};
+
+export const formatStatus = (raw) => {
+  if (!raw) return null;
+  return {
+    id: raw.Status_Id,
+    name: raw.Status_Name,
+    isActive: raw.Is_Active,
   };
 };
 

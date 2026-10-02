@@ -658,6 +658,8 @@ import { useEffect } from "react";
 import { getDateRangeApiParams } from "../components/getDateRangeApiParams";
 import { applyListFilters } from "../core/filterEngine";
 
+const noServerData = () => null;
+
 export function useListState(config, rawData = [], userRole = null) {
   const [searchParams] = useSearchParams();
   const isUrlSyncEnabled = config.syncUrl !== false;
@@ -971,8 +973,22 @@ export function useListState(config, rawData = [], userRole = null) {
     },
   });
 
+  /* --- SERVER MODE ---
+     config.useServerData(params, config) is a hook that filters, sorts, pages
+     and counts on the server. It returns { data, total, hasMore, loadMore,
+     tabCounts, filterCounts, dataUpdatedAt }, and all local work below is
+     skipped. A list config always has it or never has it, so the hook order
+     is stable. */
+  const useServerData = config.useServerData ?? noServerData;
+  const server = useServerData(
+    { filters: combinedFiltersForApi, text, sortField, sortOrder },
+    config,
+  );
+  const isServerMode = server !== null;
+
   /* --- PROCESS DATA (Local Filtering & Sorting) --- */
   const processed = useMemo(() => {
+    if (isServerMode) return [];
     let data = [];
 
     // Use API data if available, otherwise fallback to rawData
@@ -1103,6 +1119,7 @@ export function useListState(config, rawData = [], userRole = null) {
     apiFilterEntries,
     apiFilteredData,
     config?.customSortFn,
+    isServerMode,
     // dataUpdatedAt // (Make sure this is here if we added it earlier!)
   ]);
 
@@ -1158,7 +1175,7 @@ export function useListState(config, rawData = [], userRole = null) {
   );
 
   const tabCounts = useMemo(() => {
-    if (!config.tabConfig) return {};
+    if (!config.tabConfig || isServerMode) return {};
 
     const counts = {};
 
@@ -1233,13 +1250,18 @@ export function useListState(config, rawData = [], userRole = null) {
     filters,
     queryFilters,
     config.normalizer,
+    isServerMode,
   ]);
 
   /* --- FILTER COUNTS (NEW) --- */
   const filterCounts = useMemo(() => {
     const counts = {};
     // Only calculate if at least one filter has showCounts: true
-    if (!config.filters || !config.filters.some((f) => f.showCounts))
+    if (
+      isServerMode ||
+      !config.filters ||
+      !config.filters.some((f) => f.showCounts)
+    )
       return counts;
 
     const baseFilters = { ...filters, ...queryFilters };
@@ -1294,6 +1316,7 @@ export function useListState(config, rawData = [], userRole = null) {
     queryFilters,
     config.normalizer,
     checkItemMatchesFilters,
+    isServerMode,
   ]);
 
   const visibleData = switchingView
@@ -1329,6 +1352,15 @@ export function useListState(config, rawData = [], userRole = null) {
     dataUpdatedAt,
     selectedOptions,
     setSelectedOptions,
+    ...(isServerMode && {
+      data: switchingView ? [] : server.data,
+      total: switchingView ? 0 : server.total,
+      hasMore: !switchingView && server.hasMore,
+      loadMore: server.loadMore,
+      tabCounts: server.tabCounts,
+      filterCounts: server.filterCounts,
+      dataUpdatedAt: server.dataUpdatedAt,
+    }),
   };
 }
 

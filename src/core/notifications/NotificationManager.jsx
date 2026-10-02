@@ -7,7 +7,7 @@
 // SignalR events themselves are handled in useRealtimeSync →
 // handleIncomingNotification, so nothing here subscribes to SignalR.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNotificationCount } from "../../app/Hooks/useNotificationCount";
 import { useCurrentUser } from "../auth/useCurrentUser";
 import { useNotificationStore } from "../state/useNotificationStore";
@@ -15,10 +15,23 @@ import { useDocumentTitle } from "./useDocumentTitle";
 import { getUnreadTotal } from "./unreadCount";
 import { requestNotificationPermission } from "./browserNotification";
 import { preloadNotificationSound } from "./notificationSound";
+import { setNotificationNavigator } from "./notificationNavigation";
+import { useSmartNavigation } from "../navigation/useSmartNavigation";
 
 export default function NotificationManager() {
   const { isViewer } = useCurrentUser();
   const { data } = useNotificationCount();
+
+  // OS notification clicks navigate through the router (see notificationNavigation).
+  // goTo is recreated every render; keep the latest one so the current env flag
+  // and location are used at click time.
+  const { goTo } = useSmartNavigation();
+  const goToRef = useRef(goTo);
+  goToRef.current = goTo;
+  useEffect(
+    () => setNotificationNavigator((key, params) => goToRef.current(key, params)),
+    [],
+  );
 
   // Viewers have no bell to clear notifications from (see Header), so they
   // get no count in the title either.

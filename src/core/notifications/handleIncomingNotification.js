@@ -19,6 +19,7 @@ import { normalizeNotificationList } from "../../app/shared/utils/normalizer";
 import { playNotificationSound } from "./notificationSound";
 import { isAppInForeground, showBrowserNotification } from "./browserNotification";
 import { applyRealtimeNotification, markRealtimeEvent } from "./unreadCountSync";
+import { openNotificationTarget } from "./notificationNavigation";
 
 // How long a tab keeps the per-notification alert lock, so a second open tab
 // receiving the same event doesn't chime / notify a second time.
@@ -121,6 +122,7 @@ export const handleIncomingNotification = async (
       id: notificationId,
       title: notification.title || "New notification",
       body: withActorName(notification.message, notification.actorName),
+      onClick: () => openNotificationTarget(notification),
     });
   }
 };

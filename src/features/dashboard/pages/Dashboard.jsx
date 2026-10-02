@@ -34,6 +34,7 @@ import { Tooltip } from "@mui/material";
 import { TimesheetSummary } from "../component/summery/TreeTableSummary";
 import { isAllowedToView } from "../../../app/shared/utils/ticketVisibility";
 import { useHours } from "../../tickets/hooks/useHours";
+import { useTicketList } from "../../tickets/hooks/useTicketList";
 
 
 
@@ -196,7 +197,9 @@ export default function Dashboard() {
   // ── Module configs ────────────────────────────────────────────────────────
   const dashboardTickets = {
     ...TicketListConfig(isViewer),
-    itemVisibilityFilter:(item)=>isAllowedToView(item,currentUserId),
+    // Paged TicketListV2 / TicketListCountsV2; visibility is applied on the server
+    useServerData: useTicketList,
+    serverScope: { repoId: null, projectId: null },
     theme: {
       stickyTop: 50,
     },
@@ -220,6 +223,7 @@ export default function Dashboard() {
 
       {
         key: "repoId",
+        serverKey: "repo",
         view: "Repo",
         options: repoFilterOptions,
         showCounts: true,
@@ -227,6 +231,7 @@ export default function Dashboard() {
       },
       {
         key: "project", // 👈 MUST match the 'owner' key in normalizeProj
+        serverKey: "project",
         view: "Project",
         showCounts: true,
         allowMultiple: true,
@@ -234,6 +239,7 @@ export default function Dashboard() {
       },
       {
         key: "label", // 👈 MUST match the 'owner' key in normalizeProj
+        serverKey: "label",
         view: "Label",
         showCounts: true,
         options: LabelFilterOptions,
@@ -243,19 +249,16 @@ export default function Dashboard() {
       },
       {
         key: "assignedTo",
+        // member: owner, creator or assignee (the old TicketsList EmployeeId)
+        serverKey: "member",
         view: "owner",
         options: employeeFilterOptions.filter((option) => option.value !== ""),
         defaultValue: currentUserId,
         persistOnClear: true,
-        filterType: "api",
-        api: "/sync/v2",
-        apiKey: "EmployeeId",
-        configKey: "TicketsList",
-        // showCounts: true,
-        normalizer: normalizeTicket,
       },
       {
         key: "multiAssignees",
+        serverKey: "assignee",
         view: "Assignee",
         allowedRoles: [1, 2, 3],
         options: isViewer
@@ -332,6 +335,7 @@ export default function Dashboard() {
 
       {
         key: "customBoolean",
+        serverKey: "flag",
         view: "Special Flags",
         showCounts: true,
         options: [
@@ -339,8 +343,8 @@ export default function Dashboard() {
           { label: "Close Requested", value: "isCloseRequested" },
           { label: "Priority Request", value: "priorityRequest" },
           { label: "Func Response", value: "funcResponse" },
-          { label: "Technical Response", value: "webResponse" },
-          { label: "Web Response", value: "technicalResponse" },
+          { label: "Technical Response", value: "technicalResponse" },
+          { label: "Web Response", value: "webResponse" },
           { label: "Admin Response", value: "adminResponse" },
             {label:"Client Tickets",value:"raiseToClient"},
         ],
@@ -368,6 +372,7 @@ export default function Dashboard() {
 
       {
         key: "teamId",
+        serverKey: "team",
         view: "Team",
         showCounts: true,
         options: teamFilterOptions,
@@ -391,6 +396,7 @@ export default function Dashboard() {
 
       {
         key: "move_toJson",
+        serverKey: "handler",
         view: "Handler",
         options: [
           { label: "Handler", value: "" },
@@ -435,6 +441,7 @@ export default function Dashboard() {
       },
       {
         key: "overallPercentage",
+        serverKey: "battery",
         view: "Battery",
         allowMultiple: true,
         showCounts: true,

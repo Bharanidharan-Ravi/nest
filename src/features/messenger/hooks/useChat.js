@@ -5,7 +5,7 @@ import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { chatApi } from "../api/chat.api";
 import { CHAT_IDENTITY_STATUS, useChatIdentityStore } from "../e2ee/chatIdentityStore";
-import { encryptMediaMessage, encryptTextMessage, sameId, withDecrypted } from "../e2ee/chatCryptoSession";
+import { encryptMediaMessage, encryptTextMessage, prefetchSenderKeys, sameId, withDecrypted } from "../e2ee/chatCryptoSession";
 import { encryptFileBytes, generateFileKey, MAX_MEDIA_BYTES } from "../e2ee/mediaCrypto";
 import { toBase64 } from "../e2ee/userKeyManager";
 import { useChatUiStore } from "../state/useChatUiStore";
@@ -184,15 +184,41 @@ export function useConversations() {
     queryKey: chatQueryKeys.conversations,
     enabled: !!userId,
     staleTime: 60_000,
-    queryFn: async () => {
-      const list = (await chatApi.listConversations()) ?? [];
-      return Promise.all(
-        list.map(async (c) =>
-          c.LastMessage ? { ...c, LastMessage: await withDecrypted(c.LastMessage, userId) } : c,
-        ),
-      );
-    },
+    queryFn: async () => decryptLastMessages((await chatApi.listConversations()) ?? [], userId),
   });
+}
+
+async function decryptLastMessages(conversations, userId) {
+  await prefetchSenderKeys(conversations.map((c) => c.LastMessage));
+  return Promise.all(
+    conversations.map(async (c) =>
+      c.LastMessage ? { ...c, LastMessage: await withDecrypted(c.LastMessage, userId) } : c,
+    ),
+  );
+}
+
+// After an unlock, decrypt the previews already in the cache instead of fetching
+// the conversation list again
+async function redecryptConversations(queryClient, userId) {
+  const key = chatQueryKeys.conversations;
+  if (queryClient.isFetching({ queryKey: key })) {
+    queryClient.invalidateQueries({ queryKey: key });
+    return;
+  }
+  const cached = queryClient.getQueryData(key);
+  if (!cached) return;
+
+  const byMessageId = new Map(
+    (await decryptLastMessages(cached, userId))
+      .filter((c) => c.LastMessage)
+      .map((c) => [lower(c.LastMessage.MessageId), c.LastMessage]),
+  );
+  queryClient.setQueryData(key, (old) =>
+    old?.map((c) => {
+      const message = c.LastMessage && byMessageId.get(lower(c.LastMessage.MessageId));
+      return message ? { ...c, LastMessage: message } : c;
+    }),
+  );
 }
 
 export function useUnreadTotal() {
@@ -255,6 +281,7 @@ export function useMessages(conversationId) {
     initialPageParam: null,
     queryFn: async ({ pageParam }) => {
       const page = (await chatApi.getMessages(conversationId, { before: pageParam, take: PAGE_SIZE })) ?? [];
+      await prefetchSenderKeys(page);
       return Promise.all(page.map((m) => withDecrypted(m, userId)));
     },
     getNextPageParam: (lastPage) => (lastPage.length === PAGE_SIZE ? lastPage[0].CreatedAt : undefined),
@@ -558,7 +585,10 @@ export function useChatRealtime({ nameOf }) {
     // Unlocking (or re-initializing) chat: decrypt everything again with the key now available
     const offIdentity = useChatIdentityStore.subscribe((state, previous) => {
       if (state.status === CHAT_IDENTITY_STATUS.READY && previous.status !== CHAT_IDENTITY_STATUS.READY) {
-        queryClient.invalidateQueries({ queryKey: chatQueryKeys.all });
+        redecryptConversations(queryClient, userId).catch(() =>
+          queryClient.invalidateQueries({ queryKey: chatQueryKeys.conversations }),
+        );
+        queryClient.invalidateQueries({ queryKey: [...chatQueryKeys.all, "messages"] });
       }
     });
 

@@ -75,17 +75,33 @@ export const TicketListConfig = (isViewer = false) => ({
     },
   ],
   defaultSort: { field: "updatedAt", order: "desc" },
+  // Server mode (TicketListV2): serverKey / serverSort are sort keys of
+  // dbo.TicketListQueryDef. serverDefaultSort is added on the default sort,
+  // as customSortFn is in local mode.
+  serverDefaultSort: isViewer ? [] : [{ key: "flagsFirst", dir: "desc" }],
   sortFields: [
-    { key: "createdAt", label: "Created on", type: "date" },
-    { key: "updatedAt", label: "Last updated", type: "date" },
+    { key: "createdAt", label: "Created on", type: "date", serverKey: "createdAt" },
+    { key: "updatedAt", label: "Last updated", type: "date", serverKey: "updatedAt" },
     {
       key: "dueDate",
       label: "Due Priority",
       type: "custom",
       orders: [
-        { key: "today_first", label: "Due Today First" },
-        { key: "overdue_first", label: "Overdue First" },
-        { key: "upcoming_first", label: "Upcoming First" },
+        {
+          key: "today_first",
+          label: "Due Today First",
+          serverSort: [{ key: "dueTodayFirst", dir: "asc" }, { key: "dueDate", dir: "asc" }],
+        },
+        {
+          key: "overdue_first",
+          label: "Overdue First",
+          serverSort: [{ key: "dueOverdueFirst", dir: "asc" }, { key: "dueDate", dir: "asc" }],
+        },
+        {
+          key: "upcoming_first",
+          label: "Upcoming First",
+          serverSort: [{ key: "dueUpcomingFirst", dir: "asc" }, { key: "dueDate", dir: "asc" }],
+        },
       ],
     },
   ],

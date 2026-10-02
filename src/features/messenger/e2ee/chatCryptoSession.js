@@ -41,11 +41,13 @@ export class RecipientNotReadyError extends Error {
 
 let privateKeyPromise = null; // { userId, promise }
 const publicKeys = new Map(); // userId -> { publicKey: base64, cryptoKey: Promise<CryptoKey> }
+const keyRequests = new Map(); // userId -> in-flight directory request that covers them
 const decrypted = new Map(); // messageId -> { status: "ok", body }
 
 export function clearChatCryptoCaches() {
   privateKeyPromise = null;
   publicKeys.clear();
+  keyRequests.clear();
   decrypted.clear();
 }
 
@@ -76,12 +78,9 @@ async function getMyPrivateKey(userId) {
  * @param {{ refresh?: boolean }} [options]  refresh: re-query the directory even for cached users
  * @returns {Promise<Map<string, CryptoKey>>} keyed by lower-cased userId; users without a key are absent
  */
-async function getPublicKeys(userIds, { refresh = false } = {}) {
-  const wanted = [...new Set(userIds.map(idKey))];
-  const missing = refresh ? wanted : wanted.filter((id) => !publicKeys.has(id));
-
-  if (missing.length) {
-    const directory = (await chatKeysApi.getParticipantKeys(missing)) ?? [];
+async function fetchPublicKeys(ids, refresh) {
+  const request = (async () => {
+    const directory = (await chatKeysApi.getParticipantKeys(ids)) ?? [];
     for (const entry of directory) {
       const id = idKey(entry.UserId);
       if (publicKeys.get(id)?.publicKey === entry.PublicKey) continue;
@@ -90,9 +89,28 @@ async function getPublicKeys(userIds, { refresh = false } = {}) {
     // Someone who still has no key (or lost it) must not keep a stale cached one
     if (refresh) {
       const found = new Set(directory.map((e) => idKey(e.UserId)));
-      missing.filter((id) => !found.has(id)).forEach((id) => publicKeys.delete(id));
+      ids.filter((id) => !found.has(id)).forEach((id) => publicKeys.delete(id));
     }
+  })();
+
+  ids.forEach((id) => keyRequests.set(id, request));
+  try {
+    await request;
+  } finally {
+    ids.forEach((id) => {
+      if (keyRequests.get(id) === request) keyRequests.delete(id);
+    });
   }
+}
+
+async function getPublicKeys(userIds, { refresh = false } = {}) {
+  const wanted = [...new Set(userIds.map(idKey))];
+  const missing = refresh ? wanted : wanted.filter((id) => !publicKeys.has(id));
+  // Messages decrypted side by side share one lookup per user instead of each asking
+  const toFetch = refresh ? missing : missing.filter((id) => !keyRequests.has(id));
+  const waits = missing.filter((id) => !toFetch.includes(id)).map((id) => keyRequests.get(id));
+  if (toFetch.length) waits.push(fetchPublicKeys(toFetch, refresh));
+  await Promise.all(waits);
 
   const result = new Map();
   for (const id of wanted) {
@@ -100,6 +118,16 @@ async function getPublicKeys(userIds, { refresh = false } = {}) {
     if (entry) result.set(id, await entry.cryptoKey);
   }
   return result;
+}
+
+/**
+ * Loads every sender's public key in one directory request, so decrypting a list
+ * of messages afterwards doesn't send one request per sender. Never throws.
+ */
+export async function prefetchSenderKeys(messages) {
+  if (!isChatReady()) return;
+  const senderIds = messages.map((m) => m?.SenderUserId).filter(Boolean);
+  if (senderIds.length) await getPublicKeys(senderIds).catch(() => {});
 }
 
 /**

@@ -15,13 +15,15 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
       payload: payload,
       source: "GetUserOnlineStatus",
       silent: true,
+      // One poll every 30 s for the whole app. Every avatar uses this query, so
+      // with staleTime 0 each avatar that mounted (list page, scroll) refetched it.
       options: {
-        staleTime: 0,
+        staleTime: 25_000,
         refetchInterval:30_000,
         refetchOnWindowFocus:true,
         refetchOnMount:true,
-        enabled: true, 
-        
+        enabled: true,
+
       },
     });
   };

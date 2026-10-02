@@ -573,12 +573,12 @@ const totalLogged=teamMinutes>0
               )}
             </div>
             <div className="metrics-cell metrics-cell-assignee">
-              {item.move_toJson && (
+              {item.handlers?.length > 0 && (
                 <div className="flex items-center last-assignees">
-                  {JSON.parse(item.move_toJson).map((user, index) => (
-                    <Tooltip key={index} title={user.Title} arrow>
+                  {item.handlers.map((handler, index) => (
+                    <Tooltip key={index} title={handler.name} arrow>
                       <div className="avatar-assignee">
-                        {user.Title?.charAt(0).toUpperCase()}
+                        {handler.name?.charAt(0).toUpperCase()}
                       </div>
                     </Tooltip>
                   ))}

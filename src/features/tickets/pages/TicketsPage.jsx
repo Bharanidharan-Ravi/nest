@@ -1,6 +1,7 @@
 import { useParams } from "react-router-dom";
 import React, { useMemo } from "react";
 import { useTicketMaster } from "../hooks/useTicketMaster";
+import { useTicketList } from "../hooks/useTicketList";
 import "../css/ViewTickets.css";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
@@ -24,6 +25,11 @@ import { TicketsHeader } from "./TicketsHeader";
 // import { useHours } from "../hooks/useHours";
 import TicketListCard from "../component/TicketListCard";
 import { useHours } from "../hooks/useHours";
+
+// true: paged TicketListV2 / TicketListCountsV2 (filters, sort, counts and
+// visibility on the server). false: old full TicketsList, filtered here.
+const USE_TICKET_LIST_V2 = true;
+
 export const isAllowedToView = (item, userId) => {
   const normalizedUserId = String(userId ?? "").toLowerCase().trim();
   if (!item?.privateTicket && Number(item?.statusId) !== 19) {
@@ -63,10 +69,13 @@ export default function TicketsPage() {
   const { goTo } = useSmartNavigation();
   const { isViewer } = useCurrentUser();
 
-  const { data } = useTicketMaster({
-    repoId: repoId ?? null,
-    projectId: activeProjectId ?? null,
-  });
+  const { data } = useTicketMaster(
+    {
+      repoId: repoId ?? null,
+      projectId: activeProjectId ?? null,
+    },
+    { enabled: !USE_TICKET_LIST_V2 },
+  );
   console.log("data",data);
   
   // const {data:allhours}=useHours()
@@ -127,11 +136,18 @@ export default function TicketsPage() {
     ...TicketListConfig(isViewer),
     enablequickComment: isViewer ? false : true,
     enablequickStatus: isViewer ? false : true,
+    ...(USE_TICKET_LIST_V2 && {
+      useServerData: useTicketList,
+      serverScope: { repoId: repoId ?? null, projectId: activeProjectId ?? null },
+    }),
+    // serverKey: TicketListV2 filter key (dbo.TicketListQueryDef) used in
+    // server mode; customFilter is the local-mode equivalent.
     filters: [
       ...(!repoId
         ? [
           {
             key: "repoId",
+            serverKey: "repo",
             view: "Repo",
             allowMultiple: true,
             showCounts: true,
@@ -144,6 +160,7 @@ export default function TicketsPage() {
 
       {
         key: "project",
+        serverKey: "project",
         view: "Project",
         allowedRoles: [1, 2, 3],
         allowMultiple: true,
@@ -152,6 +169,7 @@ export default function TicketsPage() {
       },
       {
         key: "label",
+        serverKey: "label",
         view: "Label",
         allowedRoles: [1, 2, 3],
         showCounts: true,
@@ -162,6 +180,7 @@ export default function TicketsPage() {
       },
       {
         key: "assginedTo",
+        serverKey: "owner",
         view: "owner",
         allowedRoles: [1, 2],
         options: [
@@ -201,6 +220,7 @@ export default function TicketsPage() {
       },
       {
         key: "multiAssignees",
+        serverKey: "assignee",
         view: "Assignee",
         allowedRoles: [1, 2, 3],
         options: isViewer
@@ -276,6 +296,7 @@ export default function TicketsPage() {
       },
       {
         key: "customBoolean",
+        serverKey: "flag",
         view: "Special Flags",
         showCounts: true,
         options: [
@@ -321,6 +342,7 @@ export default function TicketsPage() {
       },
       {
         key: "teamId",
+        serverKey: "team",
         view: "Team",
         allowedRoles: [1, 2],
         showCounts: true,
@@ -339,6 +361,7 @@ export default function TicketsPage() {
       },
       {
         key: "move_toJson",
+        serverKey: "handler",
         view: "Handler",
         allowedRoles: [1, 2],
         options: [
@@ -384,6 +407,7 @@ export default function TicketsPage() {
       },
       {
         key: "overallPercentage",
+        serverKey: "battery",
         view: "Battery",
         allowedRoles: [1, 2],
         allowMultiple: true,

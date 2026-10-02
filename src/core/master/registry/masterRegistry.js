@@ -16,6 +16,7 @@ import {
   formatProject,
   formatLabel,
   formatTeam,
+  formatStatus,
 } from "../../adapters/masterAdapter";
 import { queryKeys } from "../../query/queryKeys";
 import { buildSyncPayload } from "../../sync/buildSyncPayload";
@@ -47,6 +48,11 @@ export const MASTER_REGISTRY = {
     source: "masterData",
     masterKey: "TeamMaster",
     adapter: formatTeam,
+  },
+  status: {
+    source: "masterData",
+    masterKey: "StatusMaster",
+    adapter: formatStatus,
   },
   ticketProgress: {
     // Make sure this matches the key your sync API returns (e.g., "TicketProgressList")

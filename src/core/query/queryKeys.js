@@ -15,6 +15,10 @@ export const queryKeys = {
       projectId,
     ],
 
+    // Paged ticket list (TicketListV2) and its counts (TicketListCountsV2)
+    page: (request) => [...queryKeys.ticket.all, "page", request],
+    pageCounts: (request) => [...queryKeys.ticket.all, "pageCounts", request],
+
     // Single ticket
     detail: (ticketId) => [...queryKeys.ticket.all, "detail", ticketId],
 

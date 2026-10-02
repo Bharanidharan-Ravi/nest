@@ -290,9 +290,17 @@ const TICKET_DERIVED_ROOTS = new Set([
   "GetStaleTicketsForAssignee",
 ]);
 const TICKET_DERIVED_DASHBOARD_SUBS = new Set(["timesheet", "checkedTickets"]);
+// Paged ticket lists / counts (["ticket","page",…], ["ticket","pageCounts",…])
+// hold slim TicketListV2 rows, and a change can move a ticket between pages or
+// tabs, so they refetch too.
+const TICKET_PAGED_SUBS = new Set([
+  queryKeys.ticket.page()[1],
+  queryKeys.ticket.pageCounts()[1],
+]);
 
 function isTicketDerivedCache([root, sub]) {
   if (TICKET_DERIVED_ROOTS.has(root)) return true;
+  if (root === queryKeys.ticket.all[0] && TICKET_PAGED_SUBS.has(sub)) return true;
   return (
     root === queryKeys.dashboard.all[0] &&
     TICKET_DERIVED_DASHBOARD_SUBS.has(sub)
@@ -375,6 +383,14 @@ function scheduleDerivedRefresh(queryClient) {
   if (pendingDerivedRefresh) return;
   pendingDerivedRefresh = setTimeout(() => {
     pendingDerivedRefresh = null;
+    // A hidden paged list would refetch every page it had loaded when shown
+    // again; drop it instead so it starts over from page 1.
+    queryClient.removeQueries({
+      predicate: (q) =>
+        q.queryKey[0] === queryKeys.ticket.all[0] &&
+        q.queryKey[1] === queryKeys.ticket.page()[1] &&
+        !q.isActive(),
+    });
     queryClient.invalidateQueries({
       predicate: (q) => isTicketDerivedCache(q.queryKey),
     });

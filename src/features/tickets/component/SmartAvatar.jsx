@@ -33,11 +33,11 @@
 
 import { useState, useMemo } from "react";
 import { getInitials } from "../../../app/shared/utilities/utilities";
-import { getEmployeeList } from "../../employee/hooks/useEmployeeList";
+import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { Tooltip, Modal, Box, IconButton } from "@mui/material";
 import { FiX } from "react-icons/fi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
-import { fetUserStatus } from "../../Messenger/hooks/useUserStatus";
+import { fetUserStatus } from "../../messenger/hooks/useUserStatus";
 import { formateDateTime } from "../../../app/shared/utils/chattime";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -45,7 +45,10 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
     const [open, setOpen] = useState(false);
     const { isViewer } = useCurrentUser();
     const queryClient = useQueryClient();
-    const { data: empData } = getEmployeeList(null,{enabled:!isViewer});
+    // Same EmployeeList rows as the preloaded master data (kept current by realtime),
+    // so avatars don't each start their own EmployeeList request
+    const { data: masterData } = useMasterData();
+    const empData = isViewer ? undefined : masterData?.EmployeeList;
     const {data:statusList=[]}=fetUserStatus()
 
     const employee = empData?.find((e) => {

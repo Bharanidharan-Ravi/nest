@@ -64,7 +64,8 @@ apiClient.interceptors.request.use(
 
     const parsedUserData = userData ? JSON.parse(userData) : null;
 
-    if (parsedUserData) {
+    // _anonymous: login must not carry a stale token — the API routes the DB from its DbName claim.
+    if (parsedUserData && !config._anonymous) {
       // config.headers["wg_token"] = parsedUserData;
        config.headers.Authorization = `Bearer ${parsedUserData}`;
     }
