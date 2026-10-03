@@ -12,9 +12,9 @@ export function useInfiniteScroll(callback, hasMore, enabled = true) {
       // Ensure the target actually has scroll properties
       if (!target || !target.scrollHeight) return;
 
-      // Check if the scroll has reached the bottom (with a 100px buffer)
+      // Within one screen of the bottom: load the next page before it's reached
       if (
-        target.clientHeight + target.scrollTop + 100 >=
+        target.clientHeight * 2 + target.scrollTop >=
         target.scrollHeight &&
         hasMore
       ) {

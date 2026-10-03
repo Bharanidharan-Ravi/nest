@@ -12,7 +12,10 @@
  * belonged to the retired per-device design and can't read anything anymore.
  */
 
-const DB_NAME = "wg-e2ee";
+import { isTestEnv } from "../../../core/env/environment";
+
+// /Test has the same users (its DB is a copy of live): keep its keys apart so they never replace live ones.
+const DB_NAME = isTestEnv() ? "wg-e2ee-test" : "wg-e2ee";
 const DB_VERSION = 2;
 const STORE = "userKeys";
 const LEGACY_STORE = "deviceKeys";

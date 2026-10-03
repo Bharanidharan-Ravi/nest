@@ -8,7 +8,9 @@
  * request) are kept here and merged into NotificationsPage's list.
  */
 
-const STORAGE_KEY = "localNotifications";
+import { isTestEnv } from "../../core/env/environment";
+
+const STORAGE_KEY = isTestEnv() ? "localNotifications-test" : "localNotifications";
 
 const readAll = () => {
   try {

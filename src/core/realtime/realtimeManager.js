@@ -1,6 +1,7 @@
 import * as signalR from "@microsoft/signalr";
 import { useAppStore } from "../state/useAppStore";
 import { APP_VERSION } from "../../app/shared/Version";
+import { getEnvironmentName } from "../env/environment";
 import { emitChatMention, emitChatMessage, emitChatReaction, emitChatRead } from "./chatChannel";
 
 let connection = null;
@@ -38,14 +39,11 @@ export const connectSignalR = async (
 
   onStateChange?.(ConnectionState.Connecting);
 
-  const isTestEnv = window.location.pathname.startsWith("/test");
-  const envQueryParam = isTestEnv ? "Test" : "Live";
-
-  // Safely append to the URL whether it already has query parameters or not
+  // WebSockets can't send headers, so the API reads the environment from ?env=
   const separator = realtimeUrl.includes("?") ? "&" : "?";
-  const finalRealtimeUrl = `${realtimeUrl}${separator}env=${envQueryParam}`;
+  const finalRealtimeUrl = `${realtimeUrl}${separator}env=${getEnvironmentName()}`;
   const newConnection = new signalR.HubConnectionBuilder()
-    .withUrl(realtimeUrl, {
+    .withUrl(finalRealtimeUrl, {
       accessTokenFactory: () => token,
     })
     .withAutomaticReconnect([0, 2000, 5000, 10000, 30000, 60000, 120000])

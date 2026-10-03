@@ -28,6 +28,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   keepPreviousData,
+  replaceEqualDeep,
   useInfiniteQuery,
   useQueryClient,
 } from "@tanstack/react-query";
@@ -244,13 +245,25 @@ export function useTicketList({ filters, text, sortField, sortOrder }, config) {
     return counts;
   }, [config.filters, facets, total]);
 
-  const data = useMemo(
-    () =>
-      enabled
-        ? (list.data?.pages ?? []).flat().map((row) => normalizeTicketListRow(row, lookup))
-        : [],
-    [list.data, lookup, enabled],
-  );
+  // A ticket whose raw row didn't change keeps its row object (preview →
+  // server rows, refetch, next page), so its memoised card doesn't re-render.
+  // A ticket on two pages (moved while paging) is shown once.
+  const rowCache = useRef({ lookup: null, byId: new Map() });
+  const data = useMemo(() => {
+    if (!enabled) return [];
+    const cache = rowCache.current;
+    if (cache.lookup !== lookup) cache.byId = new Map();
+    const byId = new Map();
+    (list.data?.pages ?? []).flat().forEach((raw) => {
+      const id = String(raw.Issue_Id ?? "").toLowerCase();
+      if (byId.has(id)) return;
+      const prev = cache.byId.get(id);
+      const same = prev && (prev.raw === raw || replaceEqualDeep(prev.raw, raw) === prev.raw);
+      byId.set(id, same ? prev : { raw, row: normalizeTicketListRow(raw, lookup) });
+    });
+    rowCache.current = { lookup, byId };
+    return [...byId.values()].map((entry) => entry.row);
+  }, [list.data, lookup, enabled]);
 
   // A preview / previous list isn't this request's data: no paging from it
   const { hasNextPage, isFetchingNextPage, fetchNextPage, isPlaceholderData } = list;

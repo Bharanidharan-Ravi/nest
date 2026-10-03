@@ -31,3 +31,6 @@ src/chat.md
 .vs/VSWorkspaceState.json
 .vs/UI/v17/.wsuo
 .vs/UI/v17/DocumentLayout.json
+
+dist-test
+.env.testenv

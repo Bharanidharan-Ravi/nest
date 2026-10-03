@@ -6,6 +6,7 @@ import { useList } from "../context/ListContext";
 import { parseQuery } from "../hooks/useQueryParser";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
+import { withBasePath } from "../../../core/env/environment";
 import { User } from "lucide-react";
 import { formatDate } from "../../../app/shared/utilities/utilities";
 
@@ -1242,7 +1243,7 @@ const ChartTooltip = ({
     if (!ticketId) return;
 
     const url = tryBuildPath(ROUTE_KEYS.TICKET_DETAIL, { ticketId });
-    const newTab = window.open(url, "_blank");
+    const newTab = window.open(withBasePath(url), "_blank");
 
     if (newTab) newTab.opener = null;
   };

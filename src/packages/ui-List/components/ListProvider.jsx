@@ -1,4 +1,4 @@
-import { ListContext } from "../context/ListContext";
+import { ListContext, ListQueryContext } from "../context/ListContext";
 import { useListState } from "../hooks/useListState";
 import { useInfiniteScroll } from "../hooks/useInfiniteScroll";
 import { useUrlSync } from "../hooks/useUrlSync";
@@ -12,7 +12,9 @@ export function ListProvider({ config, data, children, userRole }) {
 
   return (
     <ListContext.Provider value={{ ...state, userRole }}>
-      {children}
+      <ListQueryContext.Provider value={state.query}>
+        {children}
+      </ListQueryContext.Provider>
     </ListContext.Provider>
   );
 }

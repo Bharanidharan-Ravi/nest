@@ -9,6 +9,7 @@ import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCom
 import { FiCalendar, FiClock, FiMessageCircle, FiMessageSquare, FiX } from "react-icons/fi";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
+import { withBasePath } from "../../../core/env/environment";
 import { useState } from "react";
 import {
   getDueStatus,
@@ -20,7 +21,7 @@ import {
   useEmployeeById,
   useProjectById,
 } from "../../../core/master/selectors/selectors";
-import { useList } from "../../../packages/ui-List/context/ListContext";
+import { useListQuery } from "../../../packages/ui-List/context/ListContext";
 import { parseQuery } from "../../../packages/ui-List/hooks/useQueryParser";
 import { useCallback } from "react";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
@@ -53,7 +54,7 @@ export default function TicketListCard({
   const isQuickStatusOpen = quickTicketStatus?.navId === item.navId;
   const { isViewer } = useCurrentUser();
   const updated = useEmployeeById(item.updatedBy);
-  const { query } = useList();
+  const query = useListQuery();
   const { text } = parseQuery(query);
   const mainAssignee = item.multiAssignees?.find(
     (a) => a.Assignee_Type === "Main Assignee",
@@ -137,7 +138,7 @@ export default function TicketListCard({
   const department = item.department || "Development"; // Replace with your logic
   const priority = item.priority || "Medium"; // Replace with your logic
   const openInNewTab = (url) => {
-    const newTab = window.open(url, "_blank");
+    const newTab = window.open(withBasePath(url), "_blank");
     if (newTab) {
       newTab.opener = null;
     }

@@ -15,6 +15,7 @@ import { useAppStore } from "../core/state/useAppStore";
 import VersionUpdateDialog from "./shared/GlobalUI/VersionUpdateDialog";
 import { useChatIdentitySession } from "../features/messenger/hooks/useChatIdentity";
 import ChatIdentityModals from "../features/messenger/components/ChatIdentityModals";
+import { getBasePath } from "../core/env/environment";
 
 function App() {
   const token = useAppStore((s) => s.token);
@@ -23,9 +24,8 @@ function App() {
   useRealtimeSync(token);
   useChatIdentitySession(token);
 
-  const isTestEnv = window.location.pathname.startsWith("/test");
   return (
-    <BrowserRouter basename={isTestEnv ? "/test" : "/"}>
+    <BrowserRouter basename={getBasePath() || "/"}>
       <GlobalUI />
       <VersionUpdateDialog />
       <ChatIdentityModals />

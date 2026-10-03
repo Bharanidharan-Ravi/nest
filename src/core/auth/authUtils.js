@@ -1,3 +1,5 @@
+import { withBasePath } from "../env/environment";
+
 export const isTokenExpired = (token) => {
   if (!token) return true;
   
@@ -23,5 +25,5 @@ export const isTokenExpired = (token) => {
 export const logoutUser = () => {
   sessionStorage.removeItem("user");
   // If you have local storage or other state, clear it here
-  window.location.href = "/login"; // Hard redirect ensures memory/state is wiped
+  window.location.href = withBasePath("/login"); // Hard redirect ensures memory/state is wiped; stays in /Test
 };
