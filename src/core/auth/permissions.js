@@ -15,12 +15,20 @@
  *   3 = Client    → external client login (labelled "Viewer" below) — repo/
  *                   project/ticket access only, scoped to their repos. NOT
  *                   an employee — never grant leave-request access to it.
+ *   4 = Ticket Admin → child of Employee (ParentRoleID = 2). Stored only in
+ *                   EMPLOYEEMASTER.Role and toggled by Admin on the employee
+ *                   form. The JWT "Roles" claim carries the user's role plus
+ *                   all ROLESMASTER parents (e.g. [2, 4]), and every check
+ *                   (can(), RoleGuard, sidebar) passes if ANY of them is
+ *                   allowed — so a Ticket Admin keeps all Employee access.
+ *                   Add 4 to an array below to grant Ticket-Admin-only access.
  */
 
 export const ROLES = {
   ADMIN: 1,
   MANAGER: 2,
   VIEWER: 3,
+  TICKET_ADMIN: 4,
 };
 
 // Shorthand — used in the arrays below
@@ -102,6 +110,8 @@ export const PERMISSIONS = {
   TICKET_CREATE: ALL,
   TICKET_EDIT: ALL,
   TICKET_DELETE: ADMIN_MANAGER,
+  // Ticket status dropdown / making a ticket Active — plain Employees (2) cannot.
+  TICKET_STATUS_CHANGE: [1, 4],
 
   // Projects
   PROJECT_CREATE: ALL,

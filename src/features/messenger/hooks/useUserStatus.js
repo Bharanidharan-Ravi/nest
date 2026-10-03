@@ -34,11 +34,33 @@ export const presenceDotClass = (presence) => (presence?.isOnline ? "bg-green-50
  * (userId) => { isOnline, since, label } | null (null = no status row for that user).
  * One lookup for a whole list; use usePresence for a single user.
  */
+// One lookup per status list, shared by every caller: a page of cards has
+// hundreds of avatars, each calling usePresence. Presences are built on first
+// use, so only the users actually shown pay for the date formatting.
+const lookupCache = new WeakMap();
+const buildLookup = (list) => {
+  const rows = new Map(list.map((s) => [lower(s.EmployeeID), s]));
+  const built = new Map();
+  return (userId) => {
+    if (!userId) return null;
+    const id = lower(userId);
+    if (!built.has(id)) {
+      const row = rows.get(id);
+      built.set(id, row ? toPresence(row) : null);
+    }
+    return built.get(id);
+  };
+};
+
 export const usePresenceLookup = () => {
   const list = useUserStatusList();
   return useMemo(() => {
-    const byId = new Map(list.map((s) => [lower(s.EmployeeID), toPresence(s)]));
-    return (userId) => (userId ? byId.get(lower(userId)) ?? null : null);
+    let lookup = lookupCache.get(list);
+    if (!lookup) {
+      lookup = buildLookup(list);
+      lookupCache.set(list, lookup);
+    }
+    return lookup;
   }, [list]);
 };
 

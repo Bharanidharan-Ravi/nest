@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import dayjs from "dayjs";
 import { readUserFromSession, useCurrentUser } from "../../../core/auth/useCurrentUser";
 import "./Dashboard.css";
@@ -37,6 +37,8 @@ import { useCheckedTicketList } from "../hooks/useCheckedTicketList";
 
 
 
+const NO_TICKETS = [];
+
 // dashboard edited
 export default function Dashboard() {
   const user = readUserFromSession();
@@ -72,7 +74,7 @@ export default function Dashboard() {
   }, [staleCount, currentUserId, today])
 
   // ── Query — feeds committedIds only ───────────────────────────────────────
-  const { data: checkedTicketsData = [] } = useCheckedTickets({
+  const { data: checkedTicketsData = NO_TICKETS } = useCheckedTickets({
     employeeId: currentUserId,
     planDate: today,
   });
@@ -84,7 +86,10 @@ export default function Dashboard() {
   const { mutateAsync: uncheckTicket } = useUncheckCheckedTicket();
 
   // ── Derived state ─────────────────────────────────────────────────────────
-  const committedIds = checkedTicketsData.map((t) => t?.TicketId);
+  const committedIds = useMemo(
+    () => checkedTicketsData.map((t) => t?.TicketId),
+    [checkedTicketsData],
+  );
 
   const allCheckedIds = useMemo(
     () => [...committedIds, ...selectedTickets.map((t) => t.id || t.issueId)],
@@ -188,7 +193,13 @@ export default function Dashboard() {
   
   },[])
   // ── Module configs ────────────────────────────────────────────────────────
-  const dashboardTickets = {
+  // The dashboard re-renders on every URL change (router hooks). My Tickets'
+  // config is memoised so those renders don't hand every ticket card a new
+  // config and re-render the whole list; goTo is read through a ref.
+  const goToRef = useRef(goTo);
+  goToRef.current = goTo;
+
+  const dashboardTickets = useMemo(() => ({
     ...TicketListConfig(isViewer),
     // Paged TicketListV2 / TicketListCountsV2; visibility is applied on the server
     useServerData: useTicketList,
@@ -204,14 +215,14 @@ export default function Dashboard() {
     disabledIds: committedIds,
     selectedIds: allCheckedIds,
     onEditClick: (item) => {
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
+      goToRef.current(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.navId || item.issueId });
     },
     onSelectionChange: (item, isChecked) => {
       if (committedIds.includes(item.id || item.issueId)) return;
       handleSelectionChange(item, isChecked);
     },
     onItemClick: (item) =>
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
+      goToRef.current(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.id }),
     filters: [
 
       {
@@ -516,7 +527,21 @@ export default function Dashboard() {
         {isCommitting ? "Saving…" : "Commit"}
       </button>
     ),
-  };
+    // handleSelectionChange / handleCommitTickets only read the state listed here
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [
+    isViewer,
+    currentUserId,
+    committedIds,
+    allCheckedIds,
+    selectedTickets,
+    isCommitting,
+    repoFilterOptions,
+    projectFilterOptions,
+    LabelFilterOptions,
+    employeeFilterOptions,
+    teamFilterOptions,
+  ]);
 
 
 

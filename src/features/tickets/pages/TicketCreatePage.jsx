@@ -6,6 +6,7 @@ import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useMemo } from "react";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { PERMISSIONS } from "../../../core/auth/permissions";
 import ConfirmDialog from "../../../app/shared/confirmation/confirmationModel";
 import { useConfirmDialog } from "../../../app/shared/confirmation/confirmationModel";
 const TicketCreatePage = () => {
@@ -15,7 +16,8 @@ const TicketCreatePage = () => {
   });
   console.log("TicketWrapper",TicketWrapper);
   
-  const { isViewer ,isAdmin} = useCurrentUser();
+  const { isViewer, isAdmin, can } = useCurrentUser();
+  const canSetStatus = can(PERMISSIONS.TICKET_STATUS_CHANGE);
   const isEdit = !!params.ticketId;
   const { dialogProps, openDialog } = useConfirmDialog();
   const entityData = useMemo(() => {
@@ -43,7 +45,7 @@ const TicketCreatePage = () => {
         mode={isEdit ? "Update" : "Create"}
         config={dynamicConfig}
         module="Ticket"
-        context={{ params, isEdit, entityData, isViewer,openDialog,isAdmin }}
+        context={{ params, isEdit, entityData, isViewer, openDialog, isAdmin, canSetStatus }}
 
       />
          <ConfirmDialog {...dialogProps} />

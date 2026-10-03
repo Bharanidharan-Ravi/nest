@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
+import { getInitialListParams } from "../../../packages/ui-List/core/listDefaults";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { useEffect } from "react";
 
@@ -20,9 +21,16 @@ export default function ModuleSwitcher({ modules, hideCreateAction = false }) {
   // ?? FIX 2: The Enforcer
   // If there is no module in the URL, instantly append the first module's ID
   // (which is "tickets") and replace the history state so the back button still works.
+  // Writes the module together with the list's own params (view / query) in a
+  // single navigation, so the URL never passes through a bare ?module=x.
+  const moduleParams = (module) => ({
+    module: module.id,
+    ...getInitialListParams(module.config),
+  });
+
   useEffect(() => {
     if (!currentModule && modules.length > 0) {
-      setSearchParams({ module: modules[0].id }, { replace: true });
+      setSearchParams(moduleParams(modules[0]), { replace: true });
     }
   }, [currentModule, modules, setSearchParams]);
 
@@ -31,8 +39,9 @@ export default function ModuleSwitcher({ modules, hideCreateAction = false }) {
   const activeModule =
     modules.find((mod) => mod.id === activeModuleId) || modules[0];
 
-  const handleTabSwitch = (moduleId) => {
-    setSearchParams({ module: moduleId }, { replace: true });
+  const handleTabSwitch = (module) => {
+    if (module.id === activeModuleId) return;
+    setSearchParams(moduleParams(module), { replace: true });
   };
 
   return (
@@ -60,7 +69,7 @@ export default function ModuleSwitcher({ modules, hideCreateAction = false }) {
         {modules.map((module) => (
           <button
             key={module.id}
-            onClick={() => handleTabSwitch(module.id)}
+            onClick={() => handleTabSwitch(module)}
             style={{
               padding: "6px 16px",
               borderRadius: "6px",

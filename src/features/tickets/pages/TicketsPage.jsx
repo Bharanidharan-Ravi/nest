@@ -1,5 +1,5 @@
 import { useParams } from "react-router-dom";
-import React, { useMemo } from "react";
+import React, { useMemo, useRef } from "react";
 import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useTicketList } from "../hooks/useTicketList";
 import "../css/ViewTickets.css";
@@ -74,8 +74,6 @@ export default function TicketsPage() {
     },
     { enabled: !USE_TICKET_LIST_V2 },
   );
-  console.log("data",data);
-  
   // const data  = useTicketMaster(activeProjectId);
 
   const projectFilterOptions = useProjectOptions(true);
@@ -104,9 +102,15 @@ export default function TicketsPage() {
     const rawList = (data ?? []).map(normalizeTicket);
     return rawList.filter((item) => isAllowedToView(item, currentUserId));
   }, [data, currentUserId]);
-  console.log("ticketList",ticketList);
+  const ownerFilterOptions = useEmployeeOptions(true, "Owner");
 
-  const listConfigWithNav = {
+  // This page re-renders on every URL change (router hooks). The config is
+  // memoised so those renders don't hand every card a new config and
+  // re-render the whole list; goTo is read through a ref.
+  const goToRef = useRef(goTo);
+  goToRef.current = goTo;
+
+  const listConfigWithNav = useMemo(() => ({
     ...TicketListConfig(isViewer),
     enablequickComment: isViewer ? false : true,
     enablequickStatus: isViewer ? false : true,
@@ -158,7 +162,7 @@ export default function TicketsPage() {
         view: "owner",
         allowedRoles: [1, 2],
         options: [
-          ...useEmployeeOptions(true, "Owner"),
+          ...ownerFilterOptions,
           { label: "No Owner", value: "__no_owner__" },
         ],
         filterType: "custom",
@@ -455,15 +459,27 @@ export default function TicketsPage() {
 
     ],
     onItemClick: (item) => {
-      goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.id });
+      goToRef.current(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.id });
     },
     onEditClick: (item) => {
-      goTo(editRouteKey, { ticketId: item.id, repoId, projId });
+      goToRef.current(editRouteKey, { ticketId: item.id, repoId, projId });
     },
     cardRenderer: (item, controls, config) => (
       <TicketListCard item={item} controls={controls} config={config} />
     ),
-  };
+  }), [
+    isViewer,
+    repoId,
+    activeProjectId,
+    projId,
+    editRouteKey,
+    repoFilterOptions,
+    projectFilterOptions,
+    labelFilterOptions,
+    ownerFilterOptions,
+    employeeFilterOptions,
+    teamFilterOptions,
+  ]);
 
   return (
     <>

@@ -65,9 +65,9 @@ const Header = () => {
   const { data } = useNotificationCount();
   const { data: notificationList } = getNotification(meetingShowNotifications || showNotifications);
   const meetingCount = data?.MEETING;
-  const ticketCount = (data?.TICKET || 0)
+  const ticketCount = (data?.TICKET || 0) + (data?.COMPANY_POLICY || 0);
 
-  const { data: statleTicketsData } = useGetStaleTicketData();
+  const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
 
   const staleTickets = statleTicketsData || [];
 
@@ -86,7 +86,6 @@ const Header = () => {
 
 
   const markSeen = async (type) => {
-    console.log("type", type)
     try {
       await executeApi({
         url: "/Notification/mark-seen",
@@ -183,7 +182,7 @@ const Header = () => {
 
   const activeBanners = useMemo(() => {
     return Array.isArray(bannerListWrapper)
-      ? bannerListWrapper.filter((b) => b.Status === "Active" && (b.ToClient ? isViewer :!isViewer))
+      ? bannerListWrapper.filter((b) => b.Status === "Active" && (b.ToClient ? isViewer : !isViewer))
       : [];
   }, [bannerListWrapper]);
   // Add this function inside your component
@@ -581,6 +580,7 @@ const Header = () => {
                     setShowNotifications(prev => !prev);
                     setMeetinShowNotifications(false);
                     markSeen("TICKET");
+                    markSeen("COMPANY_POLICY");
                     requestNotificationPermission({ explicit: true });
                   }}
 
@@ -645,7 +645,12 @@ const Header = () => {
                     <div className="max-h-[300px] overflow-y-auto">
                       {notificationList?.length > 0 ? (
                         notificationList
-                          ?.filter((item) => item.entityType === "TICKET").map((item) => (
+                          ?.filter(
+                            (item) =>
+                              item.entityType === "TICKET" ||
+                              item.entityType === "COMPANY_POLICY"
+                          )
+                          .map((item) => (
                             <div
                               key={item.id}
                               className="
@@ -657,9 +662,13 @@ const Header = () => {
                           transition
                         "
                               onClick={() => {
-                                goTo(ROUTE_KEYS.TICKET_DETAIL, {
-                                  ticketId: item.entityId,
-                                });
+                                if (item.entityType === "COMPANY_POLICY") {
+                                  goTo(ROUTE_KEYS.EMPLOYEE_AREA)
+                                } else {
+                                  goTo(ROUTE_KEYS.TICKET_DETAIL, {
+                                    ticketId: item.entityId,
+                                  });
+                                }
                                 setShowNotifications(false); // Close the dropdown after navigating
                               }}
                             >
@@ -750,7 +759,7 @@ const Header = () => {
           </div>
         </div>
       </header>
-      { filteredBanners.length > 0 && (
+      {filteredBanners.length > 0 && (
         <div className="running-banner" ref={bannerContainerRef}>
           <div
             className="running-banner-content"

@@ -181,7 +181,7 @@ const MuiSwitch = ({
           }
         }}
         className={`
-          w-[150px]
+          min-w-[150px] w-fit
           flex items-center justify-center
           gap-2 px-3 py-1
           rounded-full

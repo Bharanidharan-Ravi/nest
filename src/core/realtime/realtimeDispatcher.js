@@ -32,6 +32,64 @@ const MASTER_ENTITY_MAP = {
 const MASTER_KEYS = Object.values(MASTER_ENTITY_MAP); // keeps it DRY
 
 // ─────────────────────────────────────────────────────────────────────────────
+//  MEETING SCHEDULER REFRESH  (used by the MeetingData entry below)
+//  Refetches the meeting lists a meeting message concerns: lists loaded for
+//  its host or a participant, or that already show the meeting. Only the list
+//  on screen is refetched now; other cached date ranges reload when shown.
+// ─────────────────────────────────────────────────────────────────────────────
+function refreshMeetingLists(payload) {
+  // A save in this tab is still running; its own invalidation refreshes the
+  // lists, so refetching here too would make a second call.
+  if (queryClient.isMutating() > 0) return;
+
+  const parseList = (val) => {
+    if (Array.isArray(val)) return val;
+    try {
+      const parsed = JSON.parse(val || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  };
+
+  const meetingId = normalize(getCI(payload, "Meeting_Id"));
+  const people = new Set(
+    [
+      getCI(payload, "Host_Id"),
+      ...parseList(getCI(payload, "InternalParticipants")).map((p) => getCI(p, "Participant_Id")),
+      ...parseList(getCI(payload, "ClientParticipants")).map((p) => getCI(p, "Participant_Id")),
+    ]
+      .map(normalize)
+      .filter(Boolean),
+  );
+  const holdsMeeting = (data) =>
+    !!meetingId &&
+    Array.isArray(data) &&
+    data.some((row) => normalize(getCI(row, "Meeting_Id")) === meetingId);
+
+  // { cancelRefetch: false }: a list that is already loading is not loaded twice.
+  queryClient.invalidateQueries(
+    {
+      queryKey: queryKeys.MeetingData.all,
+      predicate: (query) => {
+        const host = normalize(query.queryKey[1]?.EmployeeID);
+        return !host || people.has(host) || holdsMeeting(query.state.data);
+      },
+    },
+    { cancelRefetch: false },
+  );
+
+  const me = normalize(readUserFromSession()?.userId);
+  queryClient.invalidateQueries(
+    {
+      queryKey: ["UpcomingMeeting"],
+      predicate: (query) => people.has(me) || holdsMeeting(query.state.data),
+    },
+    { cancelRefetch: false },
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 //  2.  ENTITY CONFIG REGISTRY
 //
 //  Each entry describes WHAT to update and HOW to extract/wrap the list.
@@ -194,6 +252,8 @@ const REALTIME_ENTITY_CONFIG = {
     type: "query",
   
     queryKeys: (msg) => {
+      refreshMeetingLists(msg.Payload ?? msg.payload ?? {});
+     
       const payload = msg.Payload ?? {};
   const parseParticipants =(val)=>{
     if(!val) return [];

@@ -3,14 +3,43 @@
 
 
 import { buildOptionsResolver, calcHHMM } from "../../../app/shared/utilities/utilities";
-const recurrenceOptions =
+import { useUIStore } from "../../../core/state/useUIStore";
+import { MEETING_METHODS, idKey, isOnlineMethod, safeParseList, validateMeetingLink } from "../Helpers/common";
+import { datePart, nowTime, todayKey } from "../Helpers/dateTime";
+import {
+  describeConflict,
+  findConflict,
+  validateDateNotPast,
+  validateDaysOfWeek,
+  validateEndTime,
+  validateNotHost,
+  // validateSecondStartTime, // Times per day is disabled for now
+  validateStartTime,
+  validateTitle,
+  validateValidTo,
+} from "../Helpers/meetingValidation";
+export const recurrenceOptions =
   [
     { label: "One Time", value: { id: "ONETIME", name: "onetime" } },
     { label: "Daily", value: { id: "DAILY", name: "daily" } },
     { label: "Weekly", value: { id: "WEEKLY", name: "weekly" } },
   ]
 
-const bookingTypeOptions = [
+// Times per day (weekly meetings, 1 or 2 slots a day) is disabled for now.
+// const timesPerDayOptions = [
+//   { label: "1 Time", description: "One time slot each selected day", value: { id: 1, name: "1" } },
+//   { label: "2 Times", description: "Two time slots each selected day", value: { id: 2, name: "2" } },
+// ];
+
+// const isWeekly = (formData) => formData?.recurrence_type?.value?.id === "WEEKLY";
+// const hasSecondSlot = (formData) =>
+//   isWeekly(formData) && formData?.times_Per_Day?.value?.id === 2;
+
+const meetingMethodOptions = MEETING_METHODS.map((m) => ({ label: m.label, value: { id: m.id, name: m.label } }));
+const meetingMethodId = (formData) => formData?.meet_Method?.value?.id;
+const isInPerson = (formData) => meetingMethodId(formData) === "IN_PERSON";
+
+export const bookingTypeOptions = [
   { label: "Meeting", value: { id: "meeting", name: "meeting" } },
   { label: "Interview", value: { id: "interview", name: "interview" } },
   { label: "Demo", value: { id: "demo", name: "demo" } },
@@ -22,9 +51,17 @@ const hostTypeOptions = [
   { label: "Employee", value: { id: "Employee", name: "Employee" } },
   { label: "Client", value: { id: "Client", name: "Client" } },
 ];
+
+/** A meeting's saved participants (JSON from the API) -> selected options for the edit form. */
+const toParticipantOptions = (participants) =>
+  safeParseList(participants).map((p) => ({
+    label: p.Participant_Name,
+    value: { id: p.Participant_Id, name: p.Participant_Name },
+  }));
 export const MeetinglFieldConfig = () => [
   {
     name: "host_Type",
+    colSpan: 4,
     label: "Host Type",
     type: "select",
     ui: "mui",
@@ -50,7 +87,7 @@ export const MeetinglFieldConfig = () => [
     type: "select",
     ui: "mui",
     required: true,
-    colSpan: 6,
+    colSpan: 8,
     dataType: "string",
     apiKey: "host_id",
     optionsResolver: ({ masterData, context, formData }) => {
@@ -83,8 +120,6 @@ export const MeetinglFieldConfig = () => [
     initValueResolver: ({ context, masterData, formData }) => {
       const currentUserId = context.isEditMode ? context.entityData.host_id : context?.currentUserId;
       if (!currentUserId) return null;
-      const selectedType =
-        formData?.host_Type?.value?.id || formData?.host_Type?.id;
       const currentUser = (masterData?.EmployeeList || []).find(
         (user) => user.UserID === currentUserId
       );
@@ -109,12 +144,14 @@ export const MeetinglFieldConfig = () => [
     dataType: "string",
     colSpan: 12,
     apiKey: "title",
+    customValidator: validateTitle,
     initValueResolver: ({ context }) => {
       return context.isEditMode ? context.entityData.title : ""
     }
   },
   {
     name: "recurrence_type",
+    colSpan: 4,
     label: "Recurrence type",
     type: "select",
     ui: "mui",
@@ -135,6 +172,7 @@ export const MeetinglFieldConfig = () => [
   {
     label: "Meeting Date",
     name: "meeting_Date",
+    colSpan: 4,
     type: "date",
     ui: "mui",
     required: true,
@@ -143,96 +181,81 @@ export const MeetinglFieldConfig = () => [
     visibleWhen: (formData) => {
       return formData?.recurrence_type?.value?.id === "ONETIME";
     },
+    customValidator: validateDateNotPast("Meeting Date"),
     initValueResolver: ({ context,formData }) => {
       const isEditMode = context?.isEditMode;
       if (isEditMode) {
-        return context?.entityData?.meeting_date
-          ? context.entityData.meeting_date.split("T")[0]
-          : "";
+        return datePart(context?.entityData?.meeting_date);
       }
-      return  new Date().toISOString().split("T")[0]
+      // context.prefill: the day / time slot clicked on the calendar.
+      return context?.prefill?.date ?? todayKey();
     },
   },
 
   {
     label: "Validate From",
     name: "validate_From",
+    colSpan: 4,
     type: "date",
     ui: "mui",
-    required: false,
+    // Only visible (and so only checked) for daily / weekly meetings.
+    required: true,
     dataType: "string",
     visibleWhen: (formData, context) => {
       return formData?.recurrence_type?.value?.id !== "ONETIME";
     },
     apiKey: "valid_from_date",
+    customValidator: validateDateNotPast("Validate From"),
     initValueResolver: ({ context, formData }) => {
       if (context.isEditMode) {
-        return context.entityData?.valid_from_date?.split("T")[0] || "";
+        return datePart(context.entityData?.valid_from_date);
       }
-      return  new Date().toISOString().split("T")[0] ;
+      return context?.prefill?.date ?? todayKey();
     }
   },
   {
     label: "Validate To",
     name: "validate_To",
+    colSpan: 4,
     type: "date",
     ui: "mui",
-    required: false,
+    required: true,
     dataType: "string",
     visibleWhen: (formData, context) => {
       return formData?.recurrence_type?.value?.id !== "ONETIME";
     },
     apiKey: "valid_to_date",
+    customValidator: validateValidTo,
     initValueResolver: ({ context, formData }) => {
       if (context.isEditMode) {
-        return context.entityData?.valid_to_date?.split("T")[0] || "";
+        return datePart(context.entityData?.valid_to_date);
       }
-      const isVisible = formData?.recurrence_type?.value?.id !== "ONETIME";
-      return new Date().toISOString().split("T")[0];
+      return context?.prefill?.date ?? todayKey();
     }
   },
   {
     label: "Start Time",
     name: "start_time",
+    colSpan: 4,
     type: "flexHours",
     ui: "mui",
     required: true,
     dataType: "string",
     apiKey: "start_time",
-    customValidator: (value, data, context) => {
-      if (!value) return true;
-      const [hours, minutes] = value.split(":").map(Number);
-      const selectedTime = hours * 60 + minutes;
-      // Office starts at 10:00 AM
-      if (selectedTime < 600) {
-        return "Start Time cannot be before 10:00 AM";
-      }
-      if (context.isEditMode) return true;
-      const currentDate = new Date().toISOString().split("T")[0];
-    if (value.recurrence_type?.value?.id === "ONETIME") {
-      const currentDate = new Date().toISOString().split("T")[0];
-      if (value.meeting_Date === currentDate) {
-        const now = new Date();
-        const currentTime = now.getHours() * 60 + now.getMinutes();
-
-        return selectedTime >= currentTime
-          ? true
-          : "Start Time cannot be before the current time";
-      }
-    }
-
-    return true;
-  },
+    // Time format, office hours, not earlier than now (today's one-time
+    // meetings), and double-booking of the host / participants.
+    customValidator: validateStartTime,
     initValueResolver: ({ context }) => {
       if (context.isEditMode) {
         return context.entityData?.start_time?.slice(0, 5) ?? "";
       }
-      return new Date().toTimeString().slice(0, 5);
+      return context?.prefill?.start_time ?? nowTime();
     }
   },
   {
     label: "End Time",
     name: "end_time",
+    colSpan: 4,
     type: "flexHours",
     ui: "mui",
     required: true,
@@ -240,21 +263,13 @@ export const MeetinglFieldConfig = () => [
     apiKey: "end_time",
     initValueResolver: ({ context }) =>
       context.isEditMode
-        ? context.entityData?.end_time?.slice(0, 5) :"",
-    customValidator: (value, data) => {
-      if (!value || !data.start_time) return true;
-
-      const [endHour, endMinute] = value.split(":").map(Number);
-      const [startHour, startMinute] = data.start_time.split(":").map(Number);
-
-      return endHour * 60 + endMinute >= startHour * 60 + startMinute
-        ? true
-        : "End Time cannot be earlier than Start Time";
-    },
+        ? context.entityData?.end_time?.slice(0, 5) : context?.prefill?.end_time ?? "",
+    customValidator: validateEndTime("start_time", "End Time must be after Start Time"),
   },
   {
     label: "Slot Duration",
     name: "slot_Duration",
+    colSpan: 4,
     type: "flexHours",
     ui: "mui",
     required: true,
@@ -273,6 +288,9 @@ export const MeetinglFieldConfig = () => [
       if (start && end) {
         return calcHHMM(start, end);
       }
+      if (!context.isEditMode && context?.prefill?.start_time && context?.prefill?.end_time) {
+        return calcHHMM(context.prefill.start_time, context.prefill.end_time);
+      }
       return context.isEditMode
         ? context.entityData?.slot_duration ?? ""
         : "";
@@ -286,7 +304,7 @@ export const MeetinglFieldConfig = () => [
     ui: "mui",
     apiKey: "days_of_week",
     dataType: "string",
-    fullWidth: true,
+    colSpan: 12,
     required: true,
     options: [
       { label: "Sun", value: { id: 0, name: "Sunday" } },
@@ -301,10 +319,102 @@ export const MeetinglFieldConfig = () => [
       const type = formData?.recurrence_type?.value?.id;
       return type && type !== "ONETIME" && type !== "DAILY";
     },
+    customValidator: validateDaysOfWeek,
     initValueResolver: ({ context }) => {
       return context.isEditMode ? (context.entityData?.days_of_week ?? "") : "";
     },
 
+  },
+  // Times per day is disabled for now. Restore these three fields together with
+  // timesPerDayOptions / isWeekly / hasSecondSlot above.
+  // {
+  //   name: "times_Per_Day",
+  //   label: "Times per day",
+  //   type: "radio",
+  //   ui: "mui",
+  //   apiKey: "times_per_day",
+  //   dataType: "number",
+  //   colSpan: 4,
+  //   required: true,
+  //   options: timesPerDayOptions,
+  //   visibleWhen: (formData) => isWeekly(formData),
+  //   // Only weekly meetings can run twice a day; everything else is once.
+  //   transform: (value, formData) => (isWeekly(formData) ? value : 1),
+  //   initValueResolver: ({ context }) => {
+  //     const current = Number(context.isEditMode ? context.entityData?.times_per_day : 1);
+  //     return timesPerDayOptions.find((opt) => opt.value.id === current) || timesPerDayOptions[0];
+  //   },
+  // },
+  // {
+  //   label: "Second Start Time",
+  //   name: "second_Start_Time",
+  //   type: "flexHours",
+  //   colSpan: 6,
+  //   ui: "mui",
+  //   required: true,
+  //   dataType: "string",
+  //   apiKey: "second_start_time",
+  //   visibleWhen: (formData) => hasSecondSlot(formData),
+  //   transform: (value, formData) => (hasSecondSlot(formData) ? value : null),
+  //   customValidator: validateSecondStartTime,
+  //   initValueResolver: ({ context }) =>
+  //     context.isEditMode ? context.entityData?.second_start_time?.slice(0, 5) ?? "" : "",
+  // },
+  // {
+  //   label: "Second End Time",
+  //   name: "second_End_Time",
+  //   type: "flexHours",
+  //   colSpan: 6,
+  //   ui: "mui",
+  //   required: true,
+  //   dataType: "string",
+  //   apiKey: "second_end_time",
+  //   visibleWhen: (formData) => hasSecondSlot(formData),
+  //   transform: (value, formData) => (hasSecondSlot(formData) ? value : null),
+  //   customValidator: validateEndTime("second_Start_Time", "Second End Time must be after Second Start Time"),
+  //   initValueResolver: ({ context }) =>
+  //     context.isEditMode ? context.entityData?.second_end_time?.slice(0, 5) ?? "" : "",
+  // },
+  {
+    label: "Meeting Method",
+    name: "meet_Method",
+    type: "select",
+    ui: "mui",
+    colSpan: 3,
+    apiKey: "meet_method",
+    dataType: "string",
+    options: meetingMethodOptions,
+    initValueResolver: ({ context }) =>
+      context.isEditMode
+        ? meetingMethodOptions.find((opt) => opt.value.id === context.entityData?.meet_method) ?? null
+        : null,
+  },
+  {
+    label: "Meeting Link",
+    name: "meet_Link",
+    type: "text",
+    ui: "mui",
+    colSpan: 6,
+    apiKey: "meet_link",
+    dataType: "string",
+    visibleWhen: (formData) => !isInPerson(formData),
+    // Online methods need a link; with no method picked it stays optional.
+    requiredWhen: (context, data) => isOnlineMethod(meetingMethodId(data)),
+    transform: (value, formData) => (isInPerson(formData) ? null : value?.trim() || null),
+    customValidator: (value, data) => validateMeetingLink(value, meetingMethodId(data)),
+    initValueResolver: ({ context }) => (context.isEditMode ? context.entityData?.meet_link ?? "" : ""),
+  },
+  {
+    label: "Password (optional)",
+    name: "meet_Password",
+    type: "text",
+    ui: "mui",
+    colSpan: 3,
+    apiKey: "meet_password",
+    dataType: "string",
+    visibleWhen: (formData) => !isInPerson(formData),
+    transform: (value, formData) => (isInPerson(formData) ? null : value?.trim() || null),
+    initValueResolver: ({ context }) => (context.isEditMode ? context.entityData?.meet_password ?? "" : ""),
   },
   {
     label: "Internal Participants",
@@ -313,24 +423,15 @@ export const MeetinglFieldConfig = () => [
     multiple: true,
     apiKey: "internalParticipants",
     ui: "mui",
+    customValidator: validateNotHost,
     optionsResolver: buildOptionsResolver(
       "EmployeeList",
       "UserID",
       "UserName",
       (user) => user.Status === "Active", // 👈 Simple 1-condition filter
     ),
-    initValueResolver: ({ context }) => {
-      if (!context.isEditMode) return [];
-      const raw = context.entityData?.InternalParticipants;
-      const parsed = typeof raw === "string" ? JSON.parse(raw || "[]") : (raw || []);
-      return parsed.map((p) => ({
-        label: p.Participant_Name,
-        value: {
-          id: p.Participant_Id,
-          name: p.Participant_Name,
-        },
-      }));
-    },
+    initValueResolver: ({ context }) =>
+      context.isEditMode ? toParticipantOptions(context.entityData?.InternalParticipants) : [],
   },
   {
     label: "Client Participants",
@@ -339,12 +440,10 @@ export const MeetinglFieldConfig = () => [
     multiple: true,
     apiKey: "clientParticipants",
     ui: "mui",
-    optionsResolver: ({ masterData, context }) => {
-      console.log("context", context);
-
-      const options = masterData?.RepoList.flatMap((repo) => {
-        const users = JSON.parse(repo.RepoUserList || "[]");
-        return users
+    customValidator: validateNotHost,
+    optionsResolver: ({ masterData }) => {
+      const options = (masterData?.RepoList || []).flatMap((repo) => {
+        return safeParseList(repo.RepoUserList)
           .filter((user) => user.Status === "Active")
           .map((user) => ({
             label: user.UserName,
@@ -355,24 +454,21 @@ export const MeetinglFieldConfig = () => [
           }));
       });
 
-      return options;
+      // A client on several repos would otherwise be listed once per repo.
+      const seen = new Set();
+      return options.filter(({ value }) => {
+        const key = idKey(value.id);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     },
-    initValueResolver: ({ context }) => {
-      if (!context.isEditMode) return [];
-      const raw = context.entityData?.ClientParticipants;
-      const parsed =
-        typeof raw === "string" ? JSON.parse(raw || "[]") : (raw || []);
-      return parsed.map((p) => ({
-        label: p.Participant_Name,
-        value: {
-          id: p.Participant_Id,
-          name: p.Participant_Name,
-        },
-      }));
-    },
+    initValueResolver: ({ context }) =>
+      context.isEditMode ? toParticipantOptions(context.entityData?.ClientParticipants) : [],
   },
   {
     name: "booking_Type",
+    colSpan: 4,
     label: "Meeting Type",
     type: "select",
     ui: "mui",
@@ -387,23 +483,10 @@ export const MeetinglFieldConfig = () => [
         ) || null
         : null,
   },
-  // {
-  //   label: "Meeting Summary",
-  //   name: "meeting_Summary",
-  //   type: "text",
-  //   ui: "mui",
-  //   required: false,
-  //   dataType: "string",
-  //   // customComponent:FileAttachmentInput,
-  //   apiKey: "meeting_summary",
-  //   // fullWidth: true,
-  //   initValueResolver: ({ context }) =>
-  //     context.isEditMode ? context.entityData?.meeting_summary ?? "" : "",
-  // },
-
   {
     label: "Project",
     name: "project",
+    colSpan: 4,
     type: "select",
     ui: "mui",
     required: true,
@@ -441,23 +524,29 @@ export const MeetinglFieldConfig = () => [
         value: { id: project.Id, name: project.Project_Name },
       };
     },
-    // customFilter: (item, selectedValue) => {
-    //   if (!selectedValue) return true;
-    //   const safeSelected = String(selectedValue).toLowerCase();
-    //   if (
-    //     item.assignedTo &&
-    //     String(item.assignedTo).toLowerCase() === safeSelected
-    //   ) {
-    //     return true;
-    //   }
-    //   if (selectedValue === "__no_owner__") {
-    //     return !item.assignedTo || item.assignedTo === "" || item.assignedTo === null
-    //   }
-    //   return false;
-    // },
   },
-
-
-
-
 ]
+
+export const meetingFormConfig = {
+  key: "MeetingData",
+  title: "MeetingData",
+  api: "/MeetingSchedulerControler/CreateMeeting",
+
+  fields: MeetinglFieldConfig(),
+
+  actions: ({ formData, context }) => [
+    {
+      label: "Create Meeting",
+
+      onClick: ({ submitForm }) => {
+        // Double-booking is a Start Time validation rule (so it also runs on
+        // edit); the pop-up just makes it visible when the field is scrolled away.
+        const conflict = findConflict(formData, context);
+        if (conflict) {
+          useUIStore.getState().setError(describeConflict(conflict));
+        }
+        submitForm();
+      },
+    },
+  ],
+};

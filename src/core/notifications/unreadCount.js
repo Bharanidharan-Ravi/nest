@@ -9,7 +9,7 @@
 //   TICKET        → Header bell
 //   MEETING       → Header calendar
 //   LEAVE_REQUEST → opening the Leave Requests page
-export const COUNTED_NOTIFICATION_TYPES = ["TICKET", "MEETING", "LEAVE_REQUEST"];
+export const COUNTED_NOTIFICATION_TYPES = ["TICKET", "MEETING", "LEAVE_REQUEST", "COMPANY_POLICY"];
 
 export const getUnreadTotal = (countData) => {
   if (!countData || typeof countData !== "object") return 0;

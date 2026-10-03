@@ -1,9 +1,10 @@
 
-import React, { useEffect } from "react";
+import React from "react";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { GoIssueOpened, GoIssueClosed, GoIssueReopened } from "react-icons/go";
-import { Tooltip } from "@mui/material";
+// Mounts the MUI Tooltip on first hover: a page of cards had hundreds
+import Tooltip from "../../../app/shared/Component/LazyTooltip/LazyTooltip";
 import "../css/TicketListCard.css";
 import BatteryCompletionIndicator from "../../../app/shared/Component/BatteryCompletionIndicator/BatteryCompletionIndicator";
 import { FiCalendar, FiClock, FiMessageCircle, FiMessageSquare, FiX } from "react-icons/fi";
@@ -37,6 +38,24 @@ import { getEmployeeList } from "../../employee/hooks/useEmployeeList";
 import SmartAvatar from "./SmartAvatar";
 dayjs.extend(relativeTime);
 
+// Own component: useSmartNavigation subscribes to the URL, so only this
+// button (not the whole card) re-renders on every URL change.
+function MeetingButton({ ticketId }) {
+  const { goTo } = useSmartNavigation();
+  return (
+    <button
+      className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
+      title="Meeting Scheduler"
+      onClick={(e) => {
+        e.stopPropagation();
+        goTo(ROUTE_KEYS.MEETING_CREATE_WITH_TICKET, { ticketId });
+      }}
+    >
+      <FiCalendar className="text-base" />
+    </button>
+  );
+}
+
 
 export default function TicketListCard({
   item,
@@ -45,7 +64,6 @@ export default function TicketListCard({
   config,
   quickCommentButton,
 }) {
-  const { goTo } = useSmartNavigation();
   const [isCommentExpanded, setIsCommentExpanded] = useState(false);
   const ProjectDetails = useProjectById(item?.project);
   const [quickFormTicket, setQuickFormTicket] = useState(null);
@@ -155,10 +173,6 @@ export default function TicketListCard({
     
     setQuickFormTicket(item);
   };
-useEffect(()=>{
-  console.log('qick formticket changed',quickFormTicket);
-  
-},[quickFormTicket])
   const parseToMinutes = (timeStr) => {
     if (!timeStr) return 0
     const [h, m] = timeStr.toString().split(':').map(Number)
@@ -459,20 +473,7 @@ useEffect(()=>{
           </div>
           <div className="ticket-right-grid">
             <div className="grid-col">
-              {!isViewer && (
-                <button
-                  className="p-1 rounded-md text-gray-500 hover:text-purple-600 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 transition-all duration-150 flex items-center justify-center"
-                  title="Meeting Scheduler"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    goTo(ROUTE_KEYS.MEETING_CREATE_WITH_TICKET, {
-                      ticketId: item.navId,
-                    });
-                  }}
-                >
-                  <FiCalendar className="text-base" />
-                </button>
-              )}
+              {!isViewer && <MeetingButton ticketId={item.navId} />}
               {item.threadCount &&
                 <Tooltip title={`${item.threadCount} Thread`} arrow>
                   <div className="inline-flex items-center gap-1 px-2  rounded-full bg-gray-200 text-gray-700 text-sm">

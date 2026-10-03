@@ -555,6 +555,27 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     transform: (value) => value === true ? true : false
   },
+  {
+    label:"Thread For",
+    name:"ThreadFor",
+    apiKey:"ThreadFor",
+    type:"select",
+    ui:"mui",
+    dataType:"string",
+    required:true,
+    colSpan:3,
+    optionsResolver:buildOptionsResolver(
+      "ThreadWorkType",
+      "TypeName","TypeName"
+    ),
+    initValueResolver:({context})=>{
+      const saved=context?.editingItem?.ThreadFor
+      if(!saved) return null
+      return {label:saved,value:{id:saved,name:saved}}
+    },
+    visibleWhen:(formData,context)=>
+      !context?.isViewer && ![15,16].includes(context?.parentTicket?.statusId)
+  },
 
   {
     name: "TicketProgressHistoryWidget",

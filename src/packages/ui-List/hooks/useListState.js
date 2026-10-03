@@ -657,6 +657,7 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 import { useEffect } from "react";
 import { getDateRangeApiParams } from "../components/getDateRangeApiParams";
 import { applyListFilters } from "../core/filterEngine";
+import { buildDefaultQuery } from "../core/listDefaults";
 
 const noServerData = () => null;
 
@@ -673,20 +674,11 @@ export function useListState(config, rawData = [], userRole = null) {
 
   // 👇 HOISTED out of the useState initializer so changeView can reuse it
   const buildDefaultString = useCallback(
-    (tabKey) => {
-      let q = config.enableTabs !== false && tabKey ? `is:${tabKey}` : "";
-      if (config.filters) {
-        config.filters.forEach((f) => {
-          if (f.defaultValue && f.defaultValue !== "") {
-            const safeValue = f.defaultValue.includes(" ")
-              ? `"${f.defaultValue}"`
-              : f.defaultValue;
-            q += ` ${f.key}:${safeValue}`;
-          }
-        });
-      }
-      return q.trim();
-    },
+    (tabKey) =>
+      buildDefaultQuery(
+        { enableTabs: config.enableTabs, filters: config.filters },
+        tabKey,
+      ),
     [config.enableTabs, config.filters],
   );
 

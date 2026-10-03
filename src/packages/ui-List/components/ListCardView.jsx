@@ -11,7 +11,14 @@
 // The next page is requested as soon as the last chunk comes on screen, so it
 // is usually loaded before the user reaches the end of the list.
 
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  startTransition,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useList } from "../context/ListContext";
 import { FiEdit } from "react-icons/fi";
 
@@ -150,6 +157,27 @@ function CardChunk({ index, items, config, rendered, observer, height, onHeight 
   );
 }
 
+/**
+ * false on mount, true once the browser has painted that first frame.
+ * Opening a list (a tab or menu click) then paints the page around it at
+ * once, and the cards render in the next task, outside the click's frame.
+ */
+function useAfterFirstPaint() {
+  const [painted, setPainted] = useState(false);
+  useEffect(() => {
+    let timer;
+    // rAF runs just before the paint, the timeout just after it
+    const frame = requestAnimationFrame(() => {
+      timer = setTimeout(() => setPainted(true));
+    });
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, []);
+  return painted;
+}
+
 const sameSet = (a, b) => a.size === b.size && [...a].every((v) => b.has(v));
 
 function WindowedCards({ data, config, hasMore, loadMore }) {
@@ -187,9 +215,22 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
   }
   const lastChunk = chunks.length - 1;
 
+  // Opening the list: first frame without cards (empty blocks of the
+  // estimated height), then only the chunks on screen, then the buffer
+  // chunks at low priority.
+  const painted = useAfterFirstPaint();
+  const [buffered, setBuffered] = useState(false);
+  useEffect(() => {
+    if (!painted) return undefined;
+    const id = setTimeout(() => startTransition(() => setBuffered(true)));
+    return () => clearTimeout(id);
+  }, [painted]);
+  const buffer = buffered ? CHUNK_BUFFER : 0;
+
   const isRendered = (index) => {
+    if (!painted) return false;
     if (!observer) return true;
-    for (let i = index - CHUNK_BUFFER; i <= index + CHUNK_BUFFER; i++) {
+    for (let i = index - buffer; i <= index + buffer; i++) {
       if (visible.has(i)) return true;
     }
     return false;
@@ -225,6 +266,11 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
   );
 }
 
+function PlainCards({ data, config }) {
+  const painted = useAfterFirstPaint();
+  return <div>{painted && renderCards(data, config)}</div>;
+}
+
 export function ListCardView() {
   const { data, config, hasMore, loadMore } = useList();
 
@@ -239,5 +285,5 @@ export function ListCardView() {
     );
   }
 
-  return <div>{renderCards(data, config)}</div>;
+  return <PlainCards data={data} config={config} />;
 }

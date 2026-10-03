@@ -19,6 +19,7 @@ import FileAttachmentInput from "../adapters/mui/Attachment";
 import MuiCheckbox from "../adapters/mui/MuiCheckbox";
 import MuiSwitch from "../adapters/mui/MuiSwitch";
 import DaysOfWeekPicker from "../adapters/mui/DaysOfWeek";
+import MuiRadioGroup from "../adapters/mui/MuiRadioGroup";
 
 import ListCheckBox from "../adapters/mui/CheckBoxList";
 
@@ -38,6 +39,7 @@ export const inputRegistry = {
     adAttach: FileAttachmentInput,
     checkbox: MuiCheckbox,
     weeks :DaysOfWeekPicker,
+    radio: MuiRadioGroup,
     ListCheckBox:ListCheckBox
   },
   html: {

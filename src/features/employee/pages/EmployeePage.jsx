@@ -11,7 +11,6 @@ const EmployeePage = () => {
   const { goTo } = useSmartNavigation();
   const { data } = getEmployeeList();
   const {isAdmin} = useCurrentUser();
-  console.log("user",user);
   
   const normalizeLabel = (Emp) => {
     // Parse the Attachment_JSON string into an array of objects

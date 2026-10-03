@@ -33,7 +33,7 @@ import AttachmentPreviewModal from "./AttachmentPreviewModal";
 import { parseActivities, toHoursText } from "./issueLog.utils";
 import EntityFormPage from "../../../../packages/crud/pages/EntityFormPage";
 import { ThreadFieldConfig } from "../../config/Thread.config";
-import { ThreadFormConfig } from "../../config/ThreadForm.config";
+import { ThreadFormConfig, completeAndCloseAction } from "../../config/ThreadForm.config";
 import { stripHtml, HtmlRenderer } from "../../../../app/shared/utilities/utilities";
 
 
@@ -832,18 +832,41 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
   // assignees, notify flags and progress: new drafts as IssueLogs (a new
   // IssueLog row each) and edited rows as IssueLogUpdates (a new ISSUEACTIVITY
   // row each; the IssueLog row itself is left as it is).
-  const handleSubmitAll = (submitForm, formData) => {
-    if (!canSubmitWith(formData)) return;
+  const submitWithIssues = (submitForm, overrides = {}, skipValidation) => {
     // Rows opened for edit but left unchanged are just closed, not sent.
     editList.filter((d) => !isEditChanged(d)).forEach((d) => cancelEdit(d.IssueLogId));
     submittedRef.current = {
       draftIds: new Set(draftIssues.map((d) => d.id)),
       editIds: new Set(changedEdits.map((d) => d.IssueLogId)),
     };
-    submitForm({
-      IssueLogs: draftIssues.map(buildDraftItem),
-      IssueLogUpdates: changedEdits.map(buildEditItem),
-    });
+    submitForm(
+      {
+        ...overrides,
+        IssueLogs: draftIssues.map(buildDraftItem),
+        IssueLogUpdates: changedEdits.map(buildEditItem),
+      },
+      skipValidation,
+    );
+  };
+
+  const handleSubmitAll = (submitForm, formData) => {
+    if (!canSubmitWith(formData)) return;
+    submitWithIssues(submitForm);
+  };
+
+  // The owner can close the ticket from here too, as on the Threads tab. Any
+  // pending issues go with that same submit, so they still need to be valid.
+  const isTerminalState = [15, 16, 17].includes(parentTicket?.statusId);
+  const canClose = formContext?.userRole === "Owner" && !formContext?.isViewer && !isTerminalState;
+  const closeAction = {
+    ...completeAndCloseAction,
+    onClick: ({ submitForm, ...rest }) => {
+      if (hasInvalidDraft || isUploading) return;
+      completeAndCloseAction.onClick({
+        ...rest,
+        submitForm: (overrides, skipValidation) => submitWithIssues(submitForm, overrides, skipValidation),
+      });
+    },
   };
 
   const handleThreadSubmitted = () => {
@@ -856,25 +879,55 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
   const threadFormConfig = {
     ...ThreadFormConfig,
     redirectTo: undefined,
-    invalidateKeys: [queryKeys.ticket.thread(ticketId), queryKeys.ticket.issueLog(ticketId)],
+    // The ticket itself is refetched too, so a close shows up in its status.
+    invalidateKeys: [
+      queryKeys.ticket.thread(ticketId),
+      queryKeys.ticket.issueLog(ticketId),
+      queryKeys.ticket.detail(ticketId),
+    ],
     // The comment is optional here (even with hours entered): the backend writes
     // the thread as a "New issues" table and an "Updated issues" table (#, issue,
     // status, priority, remarks, attachments; a changed field shows old → new),
     // then "General comments" (this field, when filled). With no issue pending,
     // this field alone is posted as a normal thread comment.
-    fields: ThreadFieldConfig(ticketId).map((f) =>
-      f.name === "description"
-        ? { ...f, label: "General Comments (optional)", requiredWhen: () => false }
-        : f,
-    ),
-    actions: ({ formData }) => [
-      {
+    // Total Hours, though, is mandatory on every submit from this tab, comment
+    // or not; "00:00" counts as empty, and the 5-minute minimum still applies.
+    fields: ThreadFieldConfig(ticketId).map((f) => {
+      if (f.name === "description") {
+        return { ...f, label: "General Comments (optional)", requiredWhen: () => false };
+      }
+      if (f.name === "hours") {
+        return {
+          ...f,
+          requiredWhen: () => true,
+          customValidator: (value, formData, context) => {
+            const result = f.customValidator(value, formData, context);
+            if (result !== true) return result;
+            return toHoursText(value) ? true : `${f.label} is required`;
+          },
+        };
+      }
+      return f;
+    }),
+    actions: ({ formData }) => {
+      const submitAction = {
         label: `${isUpdateOnly ? "Update" : "Submit"}${pendingCount > 0 ? ` (${pendingCount})` : ""}`,
-        className: canSubmitWith(formData) ? "" : "opacity-50 !cursor-not-allowed",
         icon: isUpdateOnly ? <FiRefreshCw size={13} /> : <FiSend size={13} />,
         onClick: ({ submitForm, formData: current }) => handleSubmitAll(submitForm, current),
-      },
-    ],
+      };
+      if (canClose) {
+        return [
+          {
+            type: "split-button",
+            options: [
+              { ...submitAction, subtext: "Save issues and comments", intent: "neutral" },
+              closeAction,
+            ],
+          },
+        ];
+      }
+      return [{ ...submitAction, className: canSubmitWith(formData) ? "" : "opacity-50 !cursor-not-allowed" }];
+    },
   };
 
 

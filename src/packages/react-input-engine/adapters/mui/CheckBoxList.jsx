@@ -1,163 +1,142 @@
-// const ListCheckBox = ({
-//   options = [],
-//   value = [],
-//   onChange,
-// }) => {
-//   const handleToggle = (item, checked) => {
-//     if (checked) {
-//       onChange?.([...value, item]);
-//     } else {
-//       onChange?.(value.filter((v) => v.id !== item.id));
-//     }
-//   };
+import { useEffect, useMemo, useRef } from "react";
 
-//   return (
-//     <div className="flex flex-col">
-//       {options.map((opt) => {
-//         const isChecked = Array.isArray(value) && value.some((v) => v.id === opt.value.id);
+const CHECKBOX_CLASS =
+  "h-4 w-4 shrink-0 cursor-pointer accent-emerald-600 disabled:cursor-not-allowed";
 
-//         return (
-//           <label
-//             key={opt.value.id}
-//             className="flex items-center gap-2"
-//           >
-//             <input
-//               type="checkbox"
-//               checked={isChecked}
-//               onChange={(e) =>
-//                 handleToggle(opt.value, e.target.checked)
-//               }
-//             />
-//             {opt.label}
-//           </label>
-//         );
-//       })}
-//     </div>
-//   );
-// };
+/** "Jordan Reeves" -> "JR" */
+const initialsOf = (name = "") =>
+  String(name)
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join("") || "?";
 
-// export default ListCheckBox;
-import { useEffect, useMemo, useRef, useState } from "react";
-
+/**
+ * Checklist of people (or any { label, value: { id } } options) with a
+ * "Select all" toggle. Value is the array of selected option values.
+ * An option may carry a `group` string (e.g. "Internal" / "Client"),
+ * shown beside its name.
+ */
 const ListCheckBox = ({
   name,
+  label,
   options = [],
   value = [],
+  error,
+  disabled,
   onChange,
 }) => {
-  const [selected, setSelected] = useState(
-    Array.isArray(value) ? value : []
-  );
-
-  const optionKey = useMemo(
-    () => options.map((o) => String(o.value.id)).join(","),
-    [options]
-  );
-
-  const prevOptionKey = useRef(optionKey);
-
-  useEffect(() => {
-    if (prevOptionKey.current !== optionKey) {
-      setSelected(Array.isArray(value) ? value : []);
-      prevOptionKey.current = optionKey;
-    }
-  }, [optionKey, value]);
+  const selected = useMemo(() => (Array.isArray(value) ? value : []), [value]);
 
   const selectedIds = useMemo(
     () => new Set(selected.map((v) => String(v.id))),
     [selected]
   );
 
-  const allSelected =
-    options.length > 0 &&
-    options.every((opt) => selectedIds.has(String(opt.value.id)));
+  const selectedCount = options.filter((opt) =>
+    selectedIds.has(String(opt.value.id))
+  ).length;
+  const allSelected = options.length > 0 && selectedCount === options.length;
+  const someSelected = selectedCount > 0 && !allSelected;
 
-  const someSelected =
-    selected.length > 0 && !allSelected;
+  // "indeterminate" has no HTML attribute; it can only be set on the element.
+  const selectAllRef = useRef(null);
+  useEffect(() => {
+    if (selectAllRef.current) selectAllRef.current.indeterminate = someSelected;
+  }, [someSelected]);
 
   const handleToggle = (item, checked) => {
-    setSelected((prev) => {
-      const current = Array.isArray(prev) ? prev : [];
-      let next;
-
-      if (checked) {
-        const exists = current.some(
-          (v) => String(v.id) === String(item.id)
-        );
-        next = exists ? current : [...current, item];
-      } else {
-        next = current.filter(
-          (v) => String(v.id) !== String(item.id)
-        );
-      }
-
-      onChange(name, next);
-      return next;
-    });
+    const rest = selected.filter((v) => String(v.id) !== String(item.id));
+    onChange?.(name, checked ? [...rest, item] : rest);
   };
 
   const handleToggleAll = (checked) => {
-    const next = checked ? options.map((opt) => opt.value) : [];
-    setSelected(next);
-    onChange(name, next);
+    onChange?.(name, checked ? options.map((opt) => opt.value) : []);
   };
 
   if (options.length === 0) {
     return (
-      <div className="text-sm text-gray-400 py-2">
-        No attendees to show
+      <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50/60 px-4 py-5 text-center text-sm text-slate-500">
+        No participants to show
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
-        <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Select All
+    <div role="group" aria-label={label} className="flex flex-col gap-2.5">
+      <div className="flex items-center justify-between gap-3">
+        <label className="inline-flex cursor-pointer select-none items-center gap-2 text-sm font-medium text-slate-700">
+          <input
+            ref={selectAllRef}
+            type="checkbox"
+            className={CHECKBOX_CLASS}
+            checked={allSelected}
+            disabled={disabled}
+            onChange={(e) => handleToggleAll(e.target.checked)}
+          />
+          Select all
         </label>
 
-        <span className="inline-flex items-center text-xs font-medium text-emerald-700 bg-emerald-50 rounded-full px-2 py-0.5">
-          {selected.length} / {options.length}
+        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold tabular-nums text-emerald-700 ring-1 ring-inset ring-emerald-100">
+          {selectedCount} of {options.length} present
         </span>
       </div>
 
-      <div className="flex flex-col gap-1">
+      <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         {options.map((opt) => {
-          const isChecked = selectedIds.has(
-            String(opt.value.id)
-          );
+          const isChecked = selectedIds.has(String(opt.value.id));
 
           return (
-            <label
-              key={opt.value.id}
-              className={`flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer transition ${
-                isChecked
-                  ? "bg-emerald-50"
-                  : "hover:bg-gray-50"
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={isChecked}
-                onChange={(e) =>
-                  handleToggle(opt.value, e.target.checked)
-                }
-              />
-
-              <span
-                className={`text-sm ${
+            <li key={opt.value.id}>
+              <label
+                className={`flex cursor-pointer items-center gap-2.5 rounded-xl border px-3 py-2 transition ${
                   isChecked
-                    ? "text-emerald-800 font-medium"
-                    : "text-gray-700"
+                    ? "border-emerald-200 bg-emerald-50/60"
+                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
                 }`}
               >
-                {opt.label}
-              </span>
-            </label>
+                <span
+                  aria-hidden="true"
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-semibold transition ${
+                    isChecked
+                      ? "bg-emerald-600 text-white"
+                      : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {initialsOf(opt.label)}
+                </span>
+
+                <span className="flex min-w-0 flex-1 items-center gap-2">
+                  <span
+                    className={`truncate text-sm font-medium ${
+                      isChecked ? "text-slate-900" : "text-slate-500"
+                    }`}
+                    title={opt.label}
+                  >
+                    {opt.label}
+                  </span>
+                  {opt.group && (
+                    <span className="shrink-0 rounded bg-slate-100 px-1.5 py-px text-[10px] font-medium text-slate-500">
+                      {opt.group}
+                    </span>
+                  )}
+                </span>
+
+                <input
+                  type="checkbox"
+                  className={CHECKBOX_CLASS}
+                  checked={isChecked}
+                  disabled={disabled}
+                  onChange={(e) => handleToggle(opt.value, e.target.checked)}
+                />
+              </label>
+            </li>
           );
         })}
-      </div>
+      </ul>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
     </div>
   );
 };

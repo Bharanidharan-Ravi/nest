@@ -25,7 +25,15 @@ function App() {
   useChatIdentitySession(token);
 
   return (
-    <BrowserRouter basename={getBasePath() || "/"}>
+    // unstable_useTransitions={false}: by default react-router (v7) commits
+    // every navigation inside React.startTransition, i.e. as low-priority
+    // work. The URL changes at once but the screen keeps showing the old page
+    // until the new one has fully rendered. Navigate at normal priority so the
+    // UI follows the URL immediately.
+    <BrowserRouter
+      basename={getBasePath() || "/"}
+      unstable_useTransitions={false}
+    >
       <GlobalUI />
       <VersionUpdateDialog />
       <ChatIdentityModals />

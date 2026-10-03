@@ -432,6 +432,7 @@ const ThreadListCard = ({
           ? "bg-gradient-to-r from-brand-yellow/30 to-transparent border-brand-yellow/20 text-gray-800"
           : "bg-white/70 border-2 border-gray-100 text-gray-700 "
         }/>
+       
       </div>
 
       {isMeeting && meetingInfo ? (
@@ -636,7 +637,12 @@ const ThreadListCard = ({
                 </div>
               </div>
             </div>
-
+            {item.ThreadFor && (
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600
+          border border border-blue-100 text-[9px] font-semibold leading-none whitespace-nowrap">
+            {item.ThreadFor}
+          </span>
+        )}
             {/* Attendees & Actions/Actual Details Footer */}
             {((item.CoContributors && item.CoContributors.length > 0) || isMeetingCompleted || (!isMeetingCompleted && !formContext.isViewer)) && (
               <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-50 mt-1">
@@ -832,7 +838,12 @@ const ThreadListCard = ({
                     </div>
                   </div>
                 </div>
-
+                {item.ThreadFor && (
+          <span className="px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-600
+          border border border-blue-100 text-[9px] font-semibold leading-none whitespace-nowrap">
+            {item.ThreadFor}
+          </span>
+        )}
                 {item.fromTime && item.toTime && (
                   <div className="flex items-center text-gray-400 border-l border-gray-300 pl-2">
                     {formatDateRange(item.fromTime, item.toTime)}

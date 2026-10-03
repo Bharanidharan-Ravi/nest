@@ -10,6 +10,26 @@ import { useMasterData } from "../masterCall/useMasterData";
 import { useApiQuery } from "../../query/useApiQuery";
 import { enrichData } from "../enrich/enrichData";
 
+// Adapted master lists, built once per cached raw list and adapter. Lookups
+// like useEmployeeById run several times per list row, and re-adapting the
+// whole master on every call made long lists slow to render.
+const EMPTY = [];
+const adaptedCache = new WeakMap(); // raw list → Map(adapter → adapted list)
+const adaptMasterList = (rawList, adapter) => {
+  if (!rawList) return EMPTY;
+  let byAdapter = adaptedCache.get(rawList);
+  if (!byAdapter) {
+    byAdapter = new Map();
+    adaptedCache.set(rawList, byAdapter);
+  }
+  let adapted = byAdapter.get(adapter);
+  if (!adapted) {
+    adapted = rawList.map(adapter).filter(Boolean);
+    byAdapter.set(adapter, adapted);
+  }
+  return adapted;
+};
+
 /**
  * @param {object} registry  - any registry object  (MASTER_REGISTRY | DASHBOARD_REGISTRY | …)
  * @param {string} key       - entry key inside that registry
@@ -34,10 +54,7 @@ export const useRegistryQuery = (
   // ── Path A: bulk pre-loaded master (no extra network call) ─────────────────
   if (config.source === "masterData") {
     const { data: masterData, isLoading, isError, error } = useMasterData();
-    const rawList = masterData?.[config.masterKey] ?? [];
-    const data = rawList.map(config.adapter).filter(Boolean);
-   
-    
+    const data = adaptMasterList(masterData?.[config.masterKey], config.adapter);
     return { data, isLoading, isError, error };
   }
 

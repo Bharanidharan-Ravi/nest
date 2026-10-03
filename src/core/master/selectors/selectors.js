@@ -71,17 +71,26 @@ export const useMasterOptions = ({
   valueKey      = "id",
 }) => {
   const list     = useMasterList(masterKey);
-  const filtered = filterFn ? list.filter(filterFn) : list;
+  const prependLabel = prependOption?.label;
+  const prependValue = prependOption?.value;
 
-  const options = filtered.map((item) => ({
-    label: item[labelKey],
-    value:
-      valueShape === "simple"
-        ? item[valueKey]
-        : { id: item[valueKey], name: item[labelKey] },
-  }));
+  // Same array until the master list changes, so pages that put options in
+  // their list config don't rebuild it (and re-render every row) per render.
+  // filterFn is left out of the deps: callers pass a fixed inline predicate.
+  return useMemo(() => {
+    const filtered = filterFn ? list.filter(filterFn) : list;
 
-  return prependOption ? [prependOption, ...options] : options;
+    const options = filtered.map((item) => ({
+      label: item[labelKey],
+      value:
+        valueShape === "simple"
+          ? item[valueKey]
+          : { id: item[valueKey], name: item[labelKey] },
+    }));
+
+    return prependOption ? [prependOption, ...options] : options;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list, valueShape, labelKey, valueKey, prependLabel, prependValue]);
 };
 // export const useMasterOptions = ({
 //   masterKey,

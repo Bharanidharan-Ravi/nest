@@ -12,7 +12,7 @@
  */
 
 import { Navigate } from "react-router-dom";
-import { readUserFromSession } from "./useCurrentUser";
+import { hasAnyRole, readUserFromSession } from "./useCurrentUser";
 
 export default function RoleGuard({ allowedRoles = [], children }) {
   // No restriction declared — pass through
@@ -29,7 +29,7 @@ export default function RoleGuard({ allowedRoles = [], children }) {
     return <Navigate to="/login" replace />;
   }
 
-  const hasAccess = allowedRoles.includes(user.role);
+  const hasAccess = hasAnyRole(user, allowedRoles);
 
   if (!hasAccess) {
     console.warn(

@@ -13,7 +13,7 @@ import {
   tryBuildPath,
   getAllNavRoutes,
 } from "../routing/routeRegistry";
-import { readUserFromSession } from "../auth/useCurrentUser";
+import { hasAnyRole, readUserFromSession } from "../auth/useCurrentUser";
 
 export const useSmartNavigation = () => {
   const navigate    = useNavigate();
@@ -126,7 +126,7 @@ const goTo = (key, extraParams = {}, options = {}, queryParams = {}) => {
       // No session = hide everything
       if (userRole == null) return false;
 
-      return route.allowedRoles.includes(userRole);
+      return hasAnyRole(user, route.allowedRoles);
     });
   };
 

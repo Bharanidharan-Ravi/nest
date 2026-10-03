@@ -1,5 +1,6 @@
 import { Button, TextField, Autocomplete } from "@mui/material"; // 🔥 Make sure Autocomplete is imported
 import MuiDateInput from "./MuiDateInput";
+import MuiSwitch from "./MuiSwitch";
 
 const createEmptyGroup = (fields) => {
   return fields.reduce((acc, field) => {
@@ -100,6 +101,21 @@ const MuiGroupInput = ({
                     handleChange(idx, subField.name, formattedApiDate);
                   }}
                 />
+              );
+            }
+            if (subField.type === "switch") {
+              return (
+                <div key={`${name}-${idx}-${subField.name}`} className="self-start">
+                  <MuiSwitch
+                    name={subField.name}
+                    label={subField.label}
+                    value={item[subField.name]}
+                    error={fieldError}
+                    switchColor={subField.switchColor}
+                    disabled={disabled || subField.disabled}
+                    onChange={(_, checked) => handleChange(idx, subField.name, checked)}
+                  />
+                </div>
               );
             }
             // 🔥 NEW: Check if the field is a select dropdown, and render Autocomplete

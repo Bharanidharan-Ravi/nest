@@ -1,6 +1,14 @@
 import { Autocomplete, TextField } from "@mui/material";
 import { useState } from "react";
 
+// A saved value's id (e.g. a meeting's Participant_Id) and the matching
+// option's id (from master data) can differ in type (5 vs "5") or GUID case,
+// so compare them as lower-case strings. Otherwise, in edit mode, already
+// selected items aren't recognised and show up again in the dropdown.
+const sameId = (a, b) =>
+  a === b ||
+  (a != null && b != null && String(a).toLowerCase() === String(b).toLowerCase());
+
 const MuiSelectInput = ({
   name,
   label,
@@ -76,8 +84,8 @@ const MuiSelectInput = ({
       if (multiple) {
         const currentValues = Array.isArray(value) ? value : [];
 
-        const alreadySelected = currentValues.some(
-          (v) => v.value === matchedOption.value
+        const alreadySelected = currentValues.some((v) =>
+          sameId(v?.value?.id, matchedOption.value?.id)
         );
 
         if (!alreadySelected) {
@@ -135,7 +143,7 @@ const MuiSelectInput = ({
       disabled={disabled}
       disableClearable={!clearable && !multiple}
       value={value || (multiple ? [] : null)}
-      isOptionEqualToValue={(o, v) => o.value.id === v.value.id}
+      isOptionEqualToValue={(o, v) => sameId(o?.value?.id, v?.value?.id)}
       getOptionLabel={(option) => option?.label || ""}
       onChange={handleChange}
       onInputChange={handleInputChange}

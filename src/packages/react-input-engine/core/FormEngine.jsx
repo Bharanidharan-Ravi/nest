@@ -87,9 +87,9 @@ console.log("fields",fields);
         renderElements.push(
           <div
             key={`header-${field.groupName}-${index}`}
-            className="col-span-12 mt-4 mb-2 pb-2 border-b border-gray-200"
+            className={globalTheme?.groupHeader || "col-span-12 mt-4 mb-2 pb-2 border-b border-gray-200"}
           >
-            <h3 className="text-lg font-semibold text-gray-800">
+            <h3 className={globalTheme?.groupTitle || "text-lg font-semibold text-gray-800"}>
               {field.groupName}
             </h3>
           </div>
@@ -128,7 +128,7 @@ console.log("fields",fields);
   }
 
   return (
-    <div className="grid grid-cols-12 gap-x-6 gap-y-5">
+    <div className={globalTheme?.grid || "grid grid-cols-12 gap-x-6 gap-y-5"}>
       {renderElements}
     </div>
   );

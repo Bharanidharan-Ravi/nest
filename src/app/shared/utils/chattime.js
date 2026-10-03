@@ -17,17 +17,22 @@ export function formatLastSeen(dateStr){
 
 }
 
+// One shared formatter: toLocaleDateString(locale, options) builds a new
+// Intl.DateTimeFormat on every call, which is slow when called per row.
+const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-IN",{
+   day:"numeric",
+   month:"short",
+   year:"numeric",
+   hour:"2-digit",
+   minute:"2-digit",
+   second:"2-digit"
+})
+
 export function formateDateTime(dateStr){
    if(!dateStr) return ""
    // const normalized=dateStr.endsWith("Z")||dateStr.includes("+")
    // ?dateStr:dateStr + "Z";
    const date=new Date(dateStr)
-   return date.toLocaleDateString("en-IN",{
-      day:"numeric",
-      month:"short",
-      year:"numeric",
-      hour:"2-digit",
-      minute:"2-digit",
-      second:"2-digit"
-   })
+   if(Number.isNaN(date.getTime())) return "Invalid Date"
+   return DATE_TIME_FORMAT.format(date)
 }

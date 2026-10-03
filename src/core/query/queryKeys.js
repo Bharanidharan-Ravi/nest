@@ -106,4 +106,20 @@ export const queryKeys = {
     all: ["GetPermissionRequests"],
     list: () => [...queryKeys.permissionRequest.all, "list"],
   },
+  AllHour: {
+    all: ["AllHour"],
+    list: () => [...queryKeys.AllHour.all, "list"],
+  },
+  ThreadWorkType: {
+    all: ["ThreadWorkType"],
+    list: () => [...queryKeys.ThreadWorkType.all, "list"],
+  },
+  holiday: {
+    all:["HolidayList"],
+    list: (id) => [...queryKeys.holiday.all, "list", id],
+  },
+  policy: {
+    all: ["policy"],
+    latest: () => [...queryKeys.policy.all, "latest"],
+  },
 };

@@ -146,8 +146,15 @@ export const TicketFormConfig = {
           return; // 🔥 Stop here; do NOT call submitForm
         }
 
-        // 1. Get the requested status (Default to 1: Active)
-        const requestedStatusId = formData?.Status?.value?.id || 1;
+        // 1. Get the requested status (Default to 1: Active).
+        // Plain Employees (role 2) have no status dropdown and cannot make a
+        // ticket Active: new tickets go to InQueue, edits keep the current status.
+        const canSetStatus = isViewer || context?.canSetStatus;
+        const requestedStatusId = canSetStatus
+          ? formData?.Status?.value?.id || 1
+          : context?.isEdit
+            ? Number(context?.entityData?.statusId) || 18
+            : 18;
 
         // 2. Identify if the requested status REQUIRES strict validation
         // 1 = Active, 10 = Need Confirmation

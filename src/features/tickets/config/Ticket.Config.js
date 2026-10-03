@@ -3,7 +3,8 @@ import {
   sumHHMM,
 } from "../../../app/shared/utilities/utilities";
 import { TrainFrontTunnelIcon } from "lucide-react";
-import { safeParseList } from "../../MeetingScheduler/hooks/participants";
+import { safeParseList } from "../../MeetingScheduler/Helpers/common";
+
 const isBypassStatus = (data) => {
   const statusId = data?.Status?.value?.id;
   const statusName = data?.Status?.value?.name;
@@ -703,8 +704,9 @@ export const TicketFieldConfig = () => [
 
       return matchedOption;
     },
+    // Admin + Ticket Admin only — plain Employees (role 2) cannot change status.
     visibleWhen: (formData, context) => {
-      return !context?.isViewer;
+      return !context?.isViewer && !!context?.canSetStatus;
     },
   },
  

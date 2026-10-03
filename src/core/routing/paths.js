@@ -76,6 +76,10 @@ export const ROUTE_KEYS = {
   LEAVE_CREATE: "leave.create",
   LEAVE_EDIT:   "leave.edit",
 
+  EMPLOYEE_AREA: "employee.area",
+  HOLIDAY_CREATE: "holiday.create",
+  HOLIDAY_EDIT: "holiday.edit"
+
 };
 
 export const PATHS = {
@@ -140,5 +144,9 @@ export const PATHS = {
   LEAVE_LIST:   "/leave",
   LEAVE_CREATE: "/leave/create",
   LEAVE_EDIT:   "/leave/:leaveId/edit",
+
+  EMPLOYEE_AREA: "/employee-area",
+  HOLIDAY_CREATE: "/employee-area/holiday/create",
+  HOLIDAY_EDIT: "/employee-area/holiday/:holidayId/edit",
 
 };

@@ -5,10 +5,21 @@ import Header from "../shared/Header/Header";
 import { useState } from "react";
 import MessageDock from "../../features/messenger/components/MessageDock";
 import NotificationManager from "../../core/notifications/NotificationManager";
+import { AvatarDataProvider } from "../../features/tickets/component/AvatarDataProvider";
+
+// Only this subscribes to the URL. MainLayout used to, so the sidebar,
+// header, footer and message dock all re-rendered on every URL change.
+function RouteMain() {
+  const { pathname } = useLocation();
+  return (
+    <main key={pathname} id="main-scroll-container" className="flex-1 overflow-y-auto bg-brand-gray-light wg-scrollbar relative">
+      <Outlet />
+    </main>
+  );
+}
 
 export default function MainLayout() {
   const [openSidebar, setOpenSidebar] = useState(false);
-  const {pathname} = useLocation();
 
   const toggleSidebar = () => {
     setOpenSidebar((prev) => !prev);
@@ -36,9 +47,10 @@ export default function MainLayout() {
         <div className="flex flex-1 overflow-hidden relative">
           <div className="container mx-auto bg-white flex flex-col h-full w-full shadow-lg overflow-hidden relative">
             {/* 4. The main content area is now a flex container that passes height down */}
-            <main key={pathname} id="main-scroll-container" className="flex-1 overflow-y-auto bg-brand-gray-light wg-scrollbar relative">
-              <Outlet />
-            </main>
+            {/* One master-data / presence subscription for every avatar on the page */}
+            <AvatarDataProvider>
+              <RouteMain />
+            </AvatarDataProvider>
           </div>
         </div>
 

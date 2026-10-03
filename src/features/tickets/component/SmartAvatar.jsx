@@ -33,29 +33,83 @@
 
 import { useState, useMemo } from "react";
 import { getInitials } from "../../../app/shared/utilities/utilities";
-import { useMasterData } from "../../../core/master/masterCall/useMasterData";
-import { Tooltip, Modal, Box, IconButton } from "@mui/material";
+import { Modal, Box, IconButton } from "@mui/material";
 import { FiX } from "react-icons/fi";
-import { useCurrentUser } from "../../../core/auth/useCurrentUser";
-import { presenceDotClass, usePresence } from "../../messenger/hooks/useUserStatus";
-import { useQueryClient } from "@tanstack/react-query";
+import { presenceDotClass } from "../../messenger/hooks/useUserStatus";
+import { useAvatarData, useAvatarDataSource } from "./avatarData";
 
-const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" }) => {
+// Id / name → row indexes, built once per list and shared by every avatar.
+// A card list renders hundreds of avatars, and scanning (and JSON-parsing the
+// repo user lists) per avatar made those lists slow to render.
+const lower = (v) => String(v).toLowerCase();
+const indexCache = new WeakMap();
+const getIndex = (list, build) => {
+    let index = indexCache.get(list);
+    if (!index) {
+        index = build(list);
+        indexCache.set(list, index);
+    }
+    return index;
+};
+const addFirst = (map, key, row) => {
+    if (key && !map.has(lower(key))) map.set(lower(key), row);
+};
+
+const buildEmployeeIndex = (employees) => {
+    const byId = new Map();
+    const byName = new Map();
+    employees.forEach((e) => {
+        addFirst(byId, e.UserID, e);
+        addFirst(byName, e.UserName, e);
+    });
+    return { byId, byName };
+};
+
+// Client users listed on the repos (RepoUserList: JSON string or array)
+const buildRepoUserIndex = (repos) => {
+    const byId = new Map();
+    const byName = new Map();
+    repos.forEach((repo) => {
+        if (!repo.RepoUserList) return;
+        let users = repo.RepoUserList;
+        if (typeof users === "string") {
+            try {
+                users = JSON.parse(users);
+            } catch {
+                return;
+            }
+        }
+        if (!Array.isArray(users)) return;
+        users.forEach((u) => {
+            addFirst(byId, u.UserId, u);
+            addFirst(byName, u.UserName, u);
+        });
+    });
+    return { byId, byName };
+};
+
+// Match by id, then by name
+const findIn = (index, userId, name) =>
+    (userId && index.byId.get(lower(userId))) ||
+    (name && index.byName.get(lower(name))) ||
+    null;
+
+// Shared data from AvatarDataProvider (MainLayout); outside it, the avatar
+// subscribes on its own.
+const SmartAvatar = (props) => {
+    const shared = useAvatarData();
+    return shared ? <AvatarView {...props} data={shared} /> : <StandaloneAvatar {...props} />;
+};
+
+const StandaloneAvatar = (props) => <AvatarView {...props} data={useAvatarDataSource()} />;
+
+const AvatarView = ({ userId, name, className = "w-8 h-8", extraClasses = "", data }) => {
     const [open, setOpen] = useState(false);
-    const { isViewer } = useCurrentUser();
-    const queryClient = useQueryClient();
     // Same EmployeeList rows as the preloaded master data (kept current by realtime),
     // so avatars don't each start their own EmployeeList request
-    const { data: masterData } = useMasterData();
-    const empData = isViewer ? undefined : masterData?.EmployeeList;
+    const empData = data.employees;
 
-    const employee = empData?.find((e) => {
-        if (userId && e.UserID)
-            return e.UserID.toLowerCase() === userId.toLowerCase();
-        if (name && e.UserName)
-            return e.UserName.toLowerCase() === name.toLowerCase();
-        return false;
-    });
+    const employee = empData ? findIn(getIndex(empData, buildEmployeeIndex), userId, name) : null;
 
     // const avatarPath = employee?.PreviewUrl;
     const displayName=name||employee?.Employeename
@@ -63,61 +117,20 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
     ||"Unknown"
 
     const {avatarPath, email} = useMemo(() =>{
-        const targetId = userId?.toLowerCase();
-        const targetName = name?.toLowerCase();
-
-        let resolvedPath = null;
-        let resolvedEmail = null;
-
-        if (empData && empData.length > 0){
-            const employee = empData.find((e) => {
-                if (targetId && e.UserId) return e.UserId.toLowerCase() === targetId;
-                if (targetName && e.UserName) return e.UserName.toLowerCase() === targetName;
-                return false;
-            });
-
-            if (employee) {
-                resolvedPath = employee.PreviewUrl;
-                resolvedEmail = employee.Email;
-                return {avatarPath: resolvedPath, email: resolvedEmail};
-            }
+        if (employee) {
+            return {avatarPath: employee.PreviewUrl, email: employee.Email};
         }
 
-        const masterQueries = queryClient.getQueriesData({queryKey:["master"]});
-        let repos = [];
-        for (const [key, data] of masterQueries){
-            if (data && data.RepoList){
-                repos = data.RepoList;
-                break;
-            }
-        }
-        
-        if (repos && repos.length > 0){
-            for(const repo of repos){
-                if (repo.RepoUserList){
-                    const users = typeof repo.RepoUserList === "string"
-                    ? JSON.parse(repo.RepoUserList)
-                    :repo.RepoUserList;
-
-                    const foundClient = users.find(u => {
-                        if (targetId && u.UserId) return u.UserId.toLowerCase() === targetId;
-                        if (targetName && u.UserName) return u.UserName.toLowerCase() === targetName;
-                        return false;
-                    });
-
-                    if (foundClient){
-                        resolvedEmail = foundClient.MailId;
-                        if (foundClient.avatarPath){
-                            resolvedPath = foundClient.avatarPath;
-                        }
-                        return {avatarPath: resolvedPath, email: resolvedEmail};
-                    }
-                }
+        const repos = data.getRepos();
+        if (Array.isArray(repos) && repos.length > 0) {
+            const client = findIn(getIndex(repos, buildRepoUserIndex), userId, name);
+            if (client) {
+                return {avatarPath: client.avatarPath || null, email: client.MailId};
             }
         }
 
         return {avatarPath:null, email:null};
-    }, [userId, name, empData, queryClient]);
+    }, [userId, name, employee, data]);
     // const employee = empData?.find((e) => {
     //     if (userId && e.UserID)
     //         return e.UserID.toLowerCase() === userId.toLowerCase();
@@ -128,7 +141,7 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
 
     // const avatarPath = employee?.PreviewUrl;
 
-    const presence = usePresence(userId || employee?.EmployeeID || employee?.UserID);
+    const presence = data.presenceLookup(userId || employee?.EmployeeID || employee?.UserID);
 
     return (
         <>
@@ -171,8 +184,9 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
                 </span>
             {/* Profile Popup */}
             {/* Profile Popup */}
-            <Modal 
-            open={open} 
+            {/* Mounted only while open: hundreds of avatars in a list */}
+            {open && <Modal
+            open={open}
             onClose={() => setOpen(false)}
             onClick={(e)=>e.stopPropagation()}
             sx={{zIndex:99999}}
@@ -247,7 +261,7 @@ const SmartAvatar = ({ userId, name, className = "w-8 h-8", extraClasses = "" })
                         </div>
                     </div>
                 </Box>
-            </Modal>
+            </Modal>}
         </>
     );
 };

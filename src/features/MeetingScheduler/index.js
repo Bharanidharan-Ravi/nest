@@ -1,7 +1,9 @@
-import { Calendar } from "lucide-react";
+import { lazy } from "react";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 import { ROUTE_KEYS } from "../../core/routing/paths";
-import * as El           from "./elements";
+
+const MeetingDashboard = lazy(() => import("./pages/MeetingDashboard"));
+// const MeetingCreate = lazy(() => import("./pages/MeetingCreate"));
 
 export const MeetingsFeature = {
     name:   "meeting",
@@ -10,7 +12,7 @@ export const MeetingsFeature = {
         // ── /projects ──────────────────────────────────────────────────────
         {
           path:    "",
-          element: El.MeetingDashboard,
+          element: MeetingDashboard,
           allowedRoles: ROUTE_ROLES.MEETING_LIST,
           nav: {
             key:       ROUTE_KEYS.MEETING_LIST,
@@ -18,13 +20,12 @@ export const MeetingsFeature = {
             parent:    ROUTE_KEYS.DASHBOARD,
             create:    ROUTE_KEYS.MEETING_LIST,
             inSidebar: true,
-            icon:      Calendar,
           },
         },
 
         {
           path: "create/:ticketId",
-          element: El.MeetingDashboard,
+          element: MeetingDashboard,
           nav: {
             key: ROUTE_KEYS.MEETING_CREATE_WITH_TICKET,
             title: "Create Meeting",
@@ -35,7 +36,7 @@ export const MeetingsFeature = {
 
     //    {
     //       path:    "/:meeting_id/edit",
-    //       element: El.MeetingCreate,
+    //       element: MeetingCreate,
     //       nav: {
     //         key:    ROUTE_KEYS.MEETING_EDIT,
     //         title:  "Edit Meeting",

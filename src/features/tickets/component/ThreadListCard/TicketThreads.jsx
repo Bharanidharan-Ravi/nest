@@ -17,6 +17,7 @@ import { GitCommitIcon } from "lucide-react";
 import ConfirmDialog, { useConfirmDialog } from "../../../../app/shared/confirmation/confirmationModel";
 import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingFormModal";
 import TicketFeedbackDialog from "../TicketFeedbackDialog";
+import { useThreadWorkType } from "../../hooks/useHours";
 
 
 dayjs.extend(relativeTime);
@@ -78,6 +79,11 @@ const TicketThreads = ({
   };
 
   const { dialogProps, openDialog } = useConfirmDialog();
+  const{data:threadworktype}=useThreadWorkType()
+const threadWorkTypeList=Array.isArray(threadworktype)
+?threadworktype
+:threadworktype?.Data ??[]
+  console.log("threadworktypehh",threadWorkTypeList);
   
   const rawThreads = React.useMemo(() => {
     const threadsArray = Array.isArray(threadsData) ? threadsData : [];
@@ -184,6 +190,7 @@ let parsedReactionsJSON = []
         MeetingDetails_JSON: thread.MeetingDetails_JSON,
         AdminFeedback: thread.AdminFeedback || thread.adminFeedback,
         AdminRating: thread.AdminRating || thread.adminRating,
+        ThreadFor:thread.ThreadFor,
       };
     });
   }, [threadsData, assigneesJsonString]);
@@ -551,6 +558,7 @@ let parsedReactionsJSON = []
               parentTicket,
               editingItem,
               ...formContext,
+              data:{...formContext?.data,ThreadWorkType:threadWorkTypeList}
             }}
             module="Thread"
             onCancel={() => setEditingItem(null)}
@@ -675,7 +683,8 @@ let parsedReactionsJSON = []
                 isQuickFormOpen: null,
                 isQuickStatusOpen: null,
                 openDialog,
-                replyingToId: replyingToThread ? String(replyingToThread.id) : null
+                replyingToId: replyingToThread ? String(replyingToThread.id) : null,
+                data:{...formContext?.data,ThreadWorkType:threadWorkTypeList}
               }}
               module="Ticket"
               onSuccessCallback={() => {

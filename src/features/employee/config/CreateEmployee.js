@@ -1,3 +1,5 @@
+import { ROLES } from "../../../core/auth/permissions";
+
 const canViewFields = (arg1, arg2)=> {
   const context = arg2?.isEdit !== undefined ? arg2 : arg1?.context || arg1 || {};
   if (!context?.isEdit) return true;
@@ -104,15 +106,20 @@ export const EmployeeConfig = () => [
         },
       },
       {
-        label: "Role",
-        name: "Role",
-        type: "text",
+        // Child role of Employee (ROLESMASTER.ParentRoleID = 2). On → EMPLOYEEMASTER.Role = 4,
+        // off → 2. Login role (credentials group) stays 2.
+        label: "Ticket Admin Access",
+        name: "TicketAdmin",
+        type: "switch",
         ui: "mui",
-        hidden: true,
-        defaultValue: 2,
+        colSpan: 2,
         required: false,
         dataType: "number",
         apiKey: "Role",
+        visibleWhen: (formData, context) => Boolean(context?.isAdmin),
+        initValueResolver: ({ context }) =>
+          context.isEdit && Number(context.entityData?.Role) === ROLES.TICKET_ADMIN ? true : null,
+        transform: (value) => (value === true ? ROLES.TICKET_ADMIN : ROLES.MANAGER),
       },
 
       {
@@ -197,7 +204,8 @@ export const EmployeeConfig = () => [
         type: "text",
         apiKey: "Password",
         dataType: "string",
-        required: ({context}) => !context?.isEdit,
+        // Required on create only; on edit, blank keeps the current password
+        requiredWhen: (context) => !context?.isEdit,
         customValidator: (value, _formData, context) => {
           if (context?.isEdit){
             if (!value) return true;
