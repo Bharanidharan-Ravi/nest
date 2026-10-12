@@ -16,8 +16,8 @@ import { EmployeeAreaFeature } from "../features/employeeArea"
 
 export const bootstrapApp = () => {
   registerFeature(DashboardFeature)
-  registerFeature(RepositoryFeature)
   registerFeature(TicketsFeature)
+  registerFeature(RepositoryFeature)
   registerFeature(ProjectFeature)
   registerFeature(LabelFeature)
   registerFeature(EmployeeFeature)

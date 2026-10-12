@@ -10,6 +10,7 @@ import {
 import dayjs from "dayjs";
 import {
   formatDate,
+  formatDateTime,
   HtmlRenderer,
 } from "../../../../app/shared/utilities/utilities";
 import { ROUTE_KEYS } from "../../../../core/routing/paths";
@@ -834,7 +835,7 @@ console.log("multiassigneeraw", parentTicket?.multiAssignees);;
                           {/* DATE TIME */}
                           <div className="text-[11px] text-gray-400 mt-1">
                             {data.activeLog?.CreatedAt
-                              ? dayjs(data.activeLog.CreatedAt).format("MMM D, YYYY h:mm A")
+                              ? formatDateTime(data.activeLog.CreatedAt)
                               : ""}
                           </div>
                         </div>
@@ -885,7 +886,7 @@ console.log("multiassigneeraw", parentTicket?.multiAssignees);;
                                   {/* DATE TIME */}
                                   <div className="text-[10px] text-gray-400 mt-1">
                                     {log.CreatedAt
-                                      ? dayjs(log.CreatedAt).format("MMM D, YYYY h:mm A")
+                                      ? formatDateTime(log.CreatedAt)
                                       : ""}
                                   </div>
                                 </div>

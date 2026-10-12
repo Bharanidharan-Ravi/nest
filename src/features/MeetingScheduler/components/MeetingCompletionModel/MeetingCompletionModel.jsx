@@ -18,7 +18,6 @@ import {
     formatTime24h,
     minutesToTime,
     nowTime,
-    parseDay,
     todayKey,
     toMinutes,
 } from "../../Helpers/dateTime";
@@ -94,14 +93,9 @@ function durationBetween(start, end) {
     return formatDuration(minutesToTime(to - from));
 }
 
-/** "2026-09-28" -> "Mon, 28 Sep 2026" */
+/** "2026-09-28" -> "28/09/2026" */
 function formatOccurrenceLabel(dayKey) {
-    return parseDay(dayKey).toLocaleDateString("en-GB", {
-        weekday: "short",
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+    return formatDate(dayKey);
 }
 
 // Default the actual end to "now" when completing today's meeting after it

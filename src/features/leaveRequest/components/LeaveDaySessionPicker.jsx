@@ -1,5 +1,6 @@
 import dayjs from "dayjs"
 import { SESSION_OPTIONS, describeHalfDays } from "../leaveSessions"
+import { formatDate } from "../../../app/shared/utils/dateFormat"
 
 export default function LeaveDaySessionPicker({ days, onChange, enabled, onToggle }) {
   if (!days.length) return null
@@ -46,7 +47,7 @@ export default function LeaveDaySessionPicker({ days, onChange, enabled, onToggl
             >
               <div className="min-w-0">
                 <div className="text-sm font-medium text-gray-800">
-                  {d.format("ddd, DD MMM")}
+                  {formatDate(d)}
                   {d.isSame(dayjs(), "day") && (
                     <span className="ml-2 text-[10px] font-semibold uppercase text-brand-yellow">Today</span>
                   )}

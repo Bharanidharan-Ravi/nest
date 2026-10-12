@@ -18,6 +18,7 @@ import ConfirmDialog, { useConfirmDialog } from "../../../../app/shared/confirma
 import { MeetingFormModal } from "../../../MeetingScheduler/components/MeetingFormModal";
 import TicketFeedbackDialog from "../TicketFeedbackDialog";
 import { useThreadWorkType } from "../../hooks/useHours";
+import { parseActivities } from "../IssueLogger/issueLog.utils";
 
 
 dayjs.extend(relativeTime);
@@ -58,9 +59,20 @@ const TicketThreads = ({
   editingItem,
   setEditingItem,
   currentUser,
+  issueLogs,
 }) => {
 
-  
+  // Threads created by an Issue Logger submit carry issue activity; they are not editable.
+  const issueLoggerThreadIds = React.useMemo(
+    () =>
+      new Set(
+        (Array.isArray(issueLogs) ? issueLogs : []).flatMap((row) =>
+          parseActivities(row.Activities).map((a) => String(a.ThreadId)),
+        ),
+      ),
+    [issueLogs],
+  );
+
   const [expandCount, setExpandCount] = useState(0);
   
   // Track which history blocks have been expanded
@@ -79,11 +91,7 @@ const TicketThreads = ({
   };
 
   const { dialogProps, openDialog } = useConfirmDialog();
-  const{data:threadworktype}=useThreadWorkType()
-const threadWorkTypeList=Array.isArray(threadworktype)
-?threadworktype
-:threadworktype?.Data ??[]
-  console.log("threadworktypehh",threadWorkTypeList);
+
   
   const rawThreads = React.useMemo(() => {
     const threadsArray = Array.isArray(threadsData) ? threadsData : [];
@@ -558,7 +566,7 @@ let parsedReactionsJSON = []
               parentTicket,
               editingItem,
               ...formContext,
-              data:{...formContext?.data,ThreadWorkType:threadWorkTypeList}
+            
             }}
             module="Thread"
             onCancel={() => setEditingItem(null)}
@@ -576,6 +584,7 @@ let parsedReactionsJSON = []
           item={item}
           currentUser={currentUser}
           onEdit={() => setEditingItem(item)}
+          isEditLocked={issueLoggerThreadIds.has(String(item.id))}
           formContext={formContext}
           toggles={togglesConfig}
           onReply={(thread) => {
@@ -684,7 +693,6 @@ let parsedReactionsJSON = []
                 isQuickStatusOpen: null,
                 openDialog,
                 replyingToId: replyingToThread ? String(replyingToThread.id) : null,
-                data:{...formContext?.data,ThreadWorkType:threadWorkTypeList}
               }}
               module="Ticket"
               onSuccessCallback={() => {

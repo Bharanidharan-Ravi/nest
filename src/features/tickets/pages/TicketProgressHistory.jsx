@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useParams } from "react-router-dom";
 import { FaChevronDown, FaChevronUp, FaHistory } from "react-icons/fa";
 import { useTicketProgress } from "../../../core/master/selectors/selectors"; // Adjust path as needed
+import { formatDateTime } from "../../../app/shared/utils/dateFormat";
 
 const TicketProgressHistory = ({ options }) => {
   const routeParams = useParams();
@@ -45,12 +46,7 @@ const TicketProgressHistory = ({ options }) => {
     }));
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    return new Date(dateString).toLocaleString("en-US", {
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
-    });
-  };
+  const formatDate = (dateString) => formatDateTime(dateString, "");
 
   const flagColors = {
     Priority: {

@@ -11,10 +11,10 @@ export const VIEW_MODES = ["List", "Day", "Week", "Month"];
 
 export const WEEKDAY_LABELS_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-// Office hours the Day / Week grid always shows (10:00 - 19:00); the grid
+// Office hours the Day / Week grid always shows (08:00 - 19:00); the grid
 // stretches past them when a meeting starts earlier or ends later.
-export const WEEK_VIEW_START_HOUR = 10;
-export const WEEK_VIEW_HOUR_COUNT = 9;
+export const WEEK_VIEW_START_HOUR = 8;
+export const WEEK_VIEW_HOUR_COUNT = 11;
 
 // ---------------------------------------------------------------------------
 // Calendar colours
@@ -101,7 +101,7 @@ export function layoutOverlaps(items) {
 
 /**
  * The hours to draw: office hours, stretched so no meeting falls outside.
- * Returns whole hours, endHour exclusive (10 and 19 draw 10:00 – 19:00).
+ * Returns whole hours, endHour exclusive (8 and 19 draw 08:00 – 19:00).
  */
 export function visibleHours(
   items,

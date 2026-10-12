@@ -4,11 +4,11 @@ export const VIEW_MODES = ["List", "Month", "Week"];
 
 export const WEEKDAY_LABELS_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 
-// Visible calendar hours in WeekView (10:00 - 18:00). Pulled out as a
+// Visible calendar hours in WeekView (08:00 - 19:00). Pulled out as a
 // constant instead of a magic Array.from(...) so it's obvious what it
 // controls and easy to extend to a configurable office-hours range later.
-export const WEEK_VIEW_START_HOUR = 10;
-export const WEEK_VIEW_HOUR_COUNT = 9;
+export const WEEK_VIEW_START_HOUR = 8;
+export const WEEK_VIEW_HOUR_COUNT = 11;
 
 // Left border color used on calendar/list meeting chips, keyed by status.
 export const STATUS_BAR_COLOR = {

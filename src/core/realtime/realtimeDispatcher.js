@@ -10,7 +10,7 @@
 //
 // queryKeys is the single source of truth for all cache key construction.
 
-import { masterKeys } from "../master/masterCall/masterKeys";
+import { MASTER_DATA_KEYS, masterKeys } from "../master/masterCall/masterKeys";
 import { queryKeys } from "../query/queryKeys";
 import { executeApi } from "../api/executor";
 import { buildSyncPayload } from "../sync/buildSyncPayload";
@@ -28,8 +28,6 @@ const MASTER_ENTITY_MAP = {
   Status: "StatusMaster",
   Team: "TeamMaster",
 };
-
-const MASTER_KEYS = Object.values(MASTER_ENTITY_MAP); // keeps it DRY
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  MEETING SCHEDULER REFRESH  (used by the MeetingData entry below)
@@ -248,9 +246,24 @@ const REALTIME_ENTITY_CONFIG = {
     queryKeys: () => [queryKeys.leaveRequest.list(), queryKeys.notification.leaveRequestCount()],
   },
 
+  // ── Permission requests ──────────────────────────────────────────────────
+  // Same partial {ID, EMPLOYEE_ID, STATUS} payload as LeaveRequest above, so
+  // invalidate and refetch. Without this entry the approve / reject / cancel
+  // broadcasts were dropped and the list stayed stale until a manual reload.
+  PermissionRequest: {
+    type: "invalidate",
+    queryKeys: () => [queryKeys.permissionRequest.list(), queryKeys.notification.leaveRequestCount()],
+  },
+
+  // Not a bulk master: loaded only by the thread screens (useThreadWorkType)
+  ThreadWorkType: {
+    type: "invalidate",
+    queryKeys: () => [queryKeys.ThreadWorkType.list()],
+  },
+
   MeetingData: {
     type: "query",
-  
+
     queryKeys: (msg) => {
       refreshMeetingLists(msg.Payload ?? msg.payload ?? {});
      
@@ -677,7 +690,7 @@ function normalizeKeyPart(part) {
 function updateMasterCache(queryClient, entity, action, payload, keyField) {
   const listField = MASTER_ENTITY_MAP[entity];
 
-  queryClient.setQueryData(masterKeys.multi(MASTER_KEYS), (oldData) => {
+  queryClient.setQueryData(masterKeys.multi(MASTER_DATA_KEYS), (oldData) => {
     if (!oldData || !(listField in oldData)) return oldData;
     const updated = applyAction(
       oldData[listField],

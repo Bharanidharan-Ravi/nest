@@ -5,8 +5,8 @@
 import { idKey, safeParseList, sameId } from "./common";
 import { formatDate, minutesToTime, parseDay, toDayKey, todayKey, toMinutes } from "./dateTime";
 
-/** Earliest allowed meeting start (office opens at 10:00). */
-export const OFFICE_START_MINUTES = 10 * 60;
+/** Earliest allowed meeting start (office opens at 08:00). */
+export const OFFICE_START_MINUTES = 8 * 60;
 /** Longest allowed Validate From -> Validate To span for daily / weekly meetings. */
 const MAX_RECURRENCE_DAYS = 366;
 const TITLE_MAX_LENGTH = 255; // MeetingMaster.title
@@ -84,7 +84,7 @@ function upcomingRange(dateText) {
   return from ? [from, parseDay(end) ?? from] : null;
 }
 
-function upcomingOccursOn(meeting, dayKey) {
+export function upcomingOccursOn(meeting, dayKey) {
   const range = upcomingRange(meeting.Date);
   const day = parseDay(dayKey);
   if (!range || !day || day < range[0] || day > range[1]) return false;
@@ -175,7 +175,7 @@ export function validateStartTime(value, data, context) {
   if (!value) return true;
   const start = toMinutes(value);
   if (start == null) return "Enter a valid time, like 10:30";
-  if (start < OFFICE_START_MINUTES) return "Start Time cannot be before 10:00 AM";
+  if (start < OFFICE_START_MINUTES) return "Start Time cannot be before 8:00 AM";
 
   if (!context?.isEditMode && recurrenceOf(data) === "ONETIME" && parseDay(data?.meeting_Date)
       && toDayKey(parseDay(data.meeting_Date)) === todayKey()) {

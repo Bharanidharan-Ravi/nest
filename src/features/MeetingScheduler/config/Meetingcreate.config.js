@@ -53,11 +53,13 @@ const hostTypeOptions = [
 ];
 
 /** A meeting's saved participants (JSON from the API) -> selected options for the edit form. */
-const toParticipantOptions = (participants) =>
-  safeParseList(participants).map((p) => ({
-    label: p.Participant_Name,
-    value: { id: p.Participant_Id, name: p.Participant_Name },
-  }));
+const toParticipantOptions = (participants, hostId) =>
+  safeParseList(participants)
+    .filter((p) => hostId == null || idKey(p.Participant_Id) !== idKey(hostId))
+    .map((p) => ({
+      label: p.Participant_Name,
+      value: { id: p.Participant_Id, name: p.Participant_Name },
+    }));
 export const MeetinglFieldConfig = () => [
   {
     name: "host_Type",
@@ -424,14 +426,19 @@ export const MeetinglFieldConfig = () => [
     apiKey: "internalParticipants",
     ui: "mui",
     customValidator: validateNotHost,
-    optionsResolver: buildOptionsResolver(
-      "EmployeeList",
-      "UserID",
-      "UserName",
-      (user) => user.Status === "Active", // 👈 Simple 1-condition filter
-    ),
+    optionsResolver: ({ masterData, formData }) => {
+      const hostId = formData?.host_Name?.value?.id;
+      const hostKey = hostId == null ? null : idKey(hostId);
+      return (masterData?.EmployeeList || [])
+        .filter((user) => user.Status === "Active")
+        .filter((user) => !hostKey || idKey(user.UserID) !== hostKey)
+        .map((user) => ({
+          label: user.UserName,
+          value: { id: user.UserID, name: user.UserName },
+        }));
+    },
     initValueResolver: ({ context }) =>
-      context.isEditMode ? toParticipantOptions(context.entityData?.InternalParticipants) : [],
+      context.isEditMode ? toParticipantOptions(context.entityData?.InternalParticipants, context.entityData?.host_id) : [],
   },
   {
     label: "Client Participants",
@@ -441,7 +448,9 @@ export const MeetinglFieldConfig = () => [
     apiKey: "clientParticipants",
     ui: "mui",
     customValidator: validateNotHost,
-    optionsResolver: ({ masterData }) => {
+    optionsResolver: ({ masterData, formData }) => {
+      const hostId = formData?.host_Name?.value?.id;
+      const hostKey = hostId == null ? null : idKey(hostId);
       const options = (masterData?.RepoList || []).flatMap((repo) => {
         return safeParseList(repo.RepoUserList)
           .filter((user) => user.Status === "Active")
@@ -458,13 +467,13 @@ export const MeetinglFieldConfig = () => [
       const seen = new Set();
       return options.filter(({ value }) => {
         const key = idKey(value.id);
-        if (seen.has(key)) return false;
+        if (seen.has(key) || (hostKey && key === hostKey)) return false;
         seen.add(key);
         return true;
       });
     },
     initValueResolver: ({ context }) =>
-      context.isEditMode ? toParticipantOptions(context.entityData?.ClientParticipants) : [],
+      context.isEditMode ? toParticipantOptions(context.entityData?.ClientParticipants, context.entityData?.host_id) : [],
   },
   {
     name: "booking_Type",

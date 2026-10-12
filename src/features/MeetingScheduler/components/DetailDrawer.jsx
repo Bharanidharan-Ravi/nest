@@ -1,6 +1,7 @@
 import Badge from "../components/Badge";
 import Avatar from "../components/Avatar";
 import { fmtTime, avatarColor, initials } from "../utils/helpers";
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 
 /**
  * Slide-in drawer (from right) showing full details of a
@@ -60,8 +61,7 @@ export default function DetailDrawer({ event, onClose, onDisband }) {
           <p className="text-white/70 text-xs mt-1">
             {fmtTime(event.fromTime)} – {fmtTime(event.endTime)}
             {event.bookingDate && (
-              ` · ${new Date(event.bookingDate + "T00:00:00")
-                .toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}`
+              ` · ${formatDate(event.bookingDate)}`
             )}
           </p>
         </div>

@@ -1,17 +1,8 @@
 // src/core/master/masterCall/masterBootstrap.js
 
 import { queryClient }     from "../../api/queryClient";
-import { masterKeys }      from "./masterKeys";
+import { MASTER_DATA_KEYS, masterKeys } from "./masterKeys";
 import { fetchMasterData } from "./masterService";
-
-const PRELOAD_KEYS = [
-  "RepoList",
-  "ProjectList",
-  "EmployeeList",
-  "LabelMaster",
-  "StatusMaster",
-  "TeamMaster",
-];
 
 /**
  * Called once on app boot (inside AppBootstrap.jsx).
@@ -19,7 +10,7 @@ const PRELOAD_KEYS = [
  */
 export const preloadMasterData = async () => {
   await queryClient.ensureQueryData({
-    queryKey: masterKeys.multi(PRELOAD_KEYS),
-    queryFn:  () => fetchMasterData(PRELOAD_KEYS),
+    queryKey: masterKeys.multi(MASTER_DATA_KEYS),
+    queryFn:  () => fetchMasterData(MASTER_DATA_KEYS),
   });
 };

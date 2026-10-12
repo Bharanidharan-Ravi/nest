@@ -1,0 +1,148 @@
+/* Birthday decorations — every layer ignores the pointer so the app stays usable */
+
+.bday-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 950;
+}
+
+/* ── Glowing rainbow frame around the whole screen ─────────────────────── */
+.bday-frame {
+  position: fixed;
+  inset: 0;
+  padding: 4px;
+  pointer-events: none;
+  background: linear-gradient(90deg, #f43f5e, #f59e0b, #facc15, #22c55e, #3b82f6, #a855f7, #ec4899, #f43f5e);
+  background-size: 300% 100%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: bday-frame-shift 8s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes bday-frame-shift {
+  to { background-position: 300% 0; }
+}
+
+/* ── Bunting across the top ────────────────────────────────────────────── */
+.bday-bunting {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 26px;
+  display: flex;
+  justify-content: space-around;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.bday-bunting::before {
+  /* the string */
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 0;
+  right: 0;
+  border-top: 2px solid rgba(120, 72, 0, 0.35);
+}
+
+.bday-flag {
+  width: 18px;
+  height: 22px;
+  margin-top: 4px;
+  flex-shrink: 0;
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  transform-origin: top center;
+  animation: bday-sway 2.6s ease-in-out infinite alternate;
+  opacity: 0.9;
+}
+
+@keyframes bday-sway {
+  from { transform: rotate(-6deg); }
+  to { transform: rotate(6deg); }
+}
+
+/* ── Balloons in the bottom corners ────────────────────────────────────── */
+.bday-balloons {
+  position: fixed;
+  bottom: 56px;
+  display: flex;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.bday-balloons--left { left: 14px; }
+.bday-balloons--right { right: 14px; }
+
+.bday-balloon {
+  position: relative;
+  width: 30px;
+  height: 38px;
+  border-radius: 50% 50% 50% 50% / 42% 42% 58% 58%;
+  box-shadow: inset -5px -6px 0 rgba(0, 0, 0, 0.12), inset 5px 5px 0 rgba(255, 255, 255, 0.35);
+  animation: bday-bob 3.2s ease-in-out infinite alternate;
+  opacity: 0.92;
+}
+
+.bday-balloon::after {
+  /* the string */
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 1px;
+  height: 34px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+@keyframes bday-bob {
+  from { transform: translateY(0) rotate(-4deg); }
+  to { transform: translateY(-12px) rotate(4deg); }
+}
+
+/* ── Greeting card ─────────────────────────────────────────────────────── */
+.bday-card {
+  animation: bday-pop 0.5s cubic-bezier(0.18, 1.4, 0.4, 1) both;
+}
+
+@keyframes bday-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.bday-title {
+  background: linear-gradient(90deg, #ec4899, #f59e0b, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ── Header chip ───────────────────────────────────────────────────────── */
+.bday-chip {
+  background: linear-gradient(90deg, #fdf2f8, #fef3c7, #f3e8ff);
+  border: 1px solid #fbcfe8;
+}
+
+.bday-chip-icon {
+  animation: bday-wiggle 1.8s ease-in-out infinite;
+}
+
+@keyframes bday-wiggle {
+  0%, 70%, 100% { transform: rotate(0); }
+  80% { transform: rotate(-14deg); }
+  90% { transform: rotate(14deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bday-frame,
+  .bday-flag,
+  .bday-balloon,
+  .bday-card,
+  .bday-chip-icon {
+    animation: none;
+  }
+}

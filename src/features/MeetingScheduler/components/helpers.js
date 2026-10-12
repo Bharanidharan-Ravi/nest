@@ -2,12 +2,10 @@
 export const dateKey = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
-/** "9:00 AM" from "09:00" */
-export const fmtTime = (t) => {
-  if (!t) return "";
-  const [h, m] = t.split(":").map(Number);
-  return `${h % 12 || 12}:${String(m).padStart(2, "0")} ${h >= 12 ? "PM" : "AM"}`;
-};
+import { formatTime } from "../../../app/shared/utils/dateFormat";
+
+/** "09:00:00" from "09:00" */
+export const fmtTime = (t) => formatTime(t, "");
 
 /** "AB" from "AnbuMani" */
 export const initials = (name) =>

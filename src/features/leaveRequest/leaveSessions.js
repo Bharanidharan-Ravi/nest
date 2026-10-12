@@ -1,4 +1,5 @@
 import dayjs from "dayjs"
+import { formatDate } from "../../app/shared/utils/dateFormat"
 
 export const SESSION = {
   FULL: "FULL",
@@ -57,7 +58,8 @@ export const buildTakenSessions = (leaveRequests, userId) => {
 
 // Which sessions can still be picked for a date, and why some can't.
 // Pass now = null to skip the "only 2nd half left today" rule (admin edits).
-export const getDayAvailability = (date, takenSessions, now = dayjs()) => {
+// holidays: Map of "YYYY-MM-DD" → name; a holiday can't be split into halves.
+export const getDayAvailability = (date, takenSessions, now = dayjs(), holidays) => {
   const taken = takenSessions.get(date)
   if (taken?.has(SESSION.FULL) || (taken?.has(SESSION.FIRST_HALF) && taken?.has(SESSION.SECOND_HALF))) {
     return { allowed: [], note: "Already requested" }
@@ -77,6 +79,11 @@ export const getDayAvailability = (date, takenSessions, now = dayjs()) => {
     note = allowed.length ? "Only the 2nd half is left today" : "No time left today"
   }
 
+  if (holidays?.has(date)) {
+    allowed = allowed.filter((s) => s === SESSION.FULL)
+    note = `Holiday (${holidays.get(date)})`
+  }
+
   return { allowed, note }
 }
 
@@ -84,5 +91,5 @@ export const getDayAvailability = (date, takenSessions, now = dayjs()) => {
 export const describeHalfDays = (days = []) =>
   days
     .filter((d) => d.session && d.session !== SESSION.FULL)
-    .map((d) => `${dayjs(d.date).format("DD MMM")} (${SESSION_LABEL[d.session]})`)
+    .map((d) => `${formatDate(d.date)} (${SESSION_LABEL[d.session]})`)
     .join(", ")

@@ -399,7 +399,7 @@ export const ThreadFieldConfig = (ticketId) => [
     name: "Contributor",
     type: "select",
     ui: "mui",
-    colSpan: 6,
+    colSpan: 3,
     multiple: true,
     required: false,
     dataType: "string",
@@ -431,6 +431,27 @@ export const ThreadFieldConfig = (ticketId) => [
     disableWhen: (context) => {
       return isTimeLocked(context);
     },
+  },
+  {
+    label:"Thread For",
+    name:"ThreadFor",
+    apiKey:"ThreadFor",
+    type:"select",
+    ui:"mui",
+    dataType:"string",
+    required:true,
+    colSpan:3,
+    optionsResolver:buildOptionsResolver(
+      "ThreadWorkType",
+      "TypeName","TypeName"
+    ),
+    initValueResolver:({context})=>{
+      const saved=context?.editingItem?.ThreadFor
+      if(!saved) return null
+      return {label:saved,value:{id:saved,name:saved}}
+    },
+    visibleWhen:(formData,context)=>
+      !context?.isViewer && ![15,16].includes(context?.parentTicket?.statusId)
   },
   {
     name: "Priority",
@@ -555,27 +576,7 @@ export const ThreadFieldConfig = (ticketId) => [
     },
     transform: (value) => value === true ? true : false
   },
-  {
-    label:"Thread For",
-    name:"ThreadFor",
-    apiKey:"ThreadFor",
-    type:"select",
-    ui:"mui",
-    dataType:"string",
-    required:true,
-    colSpan:3,
-    optionsResolver:buildOptionsResolver(
-      "ThreadWorkType",
-      "TypeName","TypeName"
-    ),
-    initValueResolver:({context})=>{
-      const saved=context?.editingItem?.ThreadFor
-      if(!saved) return null
-      return {label:saved,value:{id:saved,name:saved}}
-    },
-    visibleWhen:(formData,context)=>
-      !context?.isViewer && ![15,16].includes(context?.parentTicket?.statusId)
-  },
+
 
   {
     name: "TicketProgressHistoryWidget",

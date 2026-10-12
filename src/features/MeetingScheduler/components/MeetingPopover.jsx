@@ -148,7 +148,7 @@ export default function MeetingPopover({
         {day && (
           <DetailRow icon={CalendarDays}>
             <span className="font-medium text-gray-900">
-              {day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {formatDate(day)}
             </span>
           </DetailRow>
         )}

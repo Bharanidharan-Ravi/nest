@@ -12,6 +12,8 @@ import { useLeaveRequestMaster, useLeaveTypeLabel } from "../../../core/master/s
 import { SESSION, buildTakenSessions, getDayAvailability, sessionDays } from "../leaveSessions"
 import LeaveDateRangePicker from "./LeaveDateRangePicker"
 import LeaveDaySessionPicker from "./LeaveDaySessionPicker"
+import { useHolidayDates } from "../useHolidayDates"
+import { formatDate } from "../../../app/shared/utils/dateFormat"
 
 const fmt = (value) => dayjs(value).format("YYYY-MM-DD")
 
@@ -25,6 +27,7 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
   const isApproved = request.status === "APPROVED"
   const leaveTypeLabel = useLeaveTypeLabel(request.leaveTypeId)
   const leaveRequests = useLeaveRequestMaster()
+  const holidays = useHolidayDates()
 
   // Original sessions keyed by date — dates missing from `days` are FULL.
   const originalSessions = useMemo(
@@ -58,12 +61,12 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
     const rows = []
     for (let d = dayjs(fromDate); !d.isAfter(dayjs(toDate), "day"); d = d.add(1, "day")) {
       const date = d.format("YYYY-MM-DD")
-      const { allowed, note } = getDayAvailability(date, takenSessions, null)
+      const { allowed, note } = getDayAvailability(date, takenSessions, null, holidays)
       const picked = halfDayEnabled ? sessionOverrides[date] : undefined
       rows.push({ date, allowed, note, session: allowed.includes(picked) ? picked : allowed[0] })
     }
     return rows
-  }, [fromDate, toDate, takenSessions, sessionOverrides, halfDayEnabled])
+  }, [fromDate, toDate, takenSessions, sessionOverrides, halfDayEnabled, holidays])
 
   const noOfDays = leaveDays.reduce((sum, d) => sum + (d.session ? sessionDays(d.session) : 0), 0)
 
@@ -113,7 +116,11 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
     if (datesChanged) {
       const unavailable = leaveDays.find((d) => !d.session)
       if (unavailable) {
-        setError(`${dayjs(unavailable.date).format("DD MMM")} is not available — please change the dates.`)
+        setError(`${formatDate(unavailable.date)} is not available — please change the dates.`)
+        return
+      }
+      if (leaveDays.every((d) => holidays.has(d.date))) {
+        setError("The selected dates are all holidays — please change the dates.")
         return
       }
     }
@@ -192,6 +199,7 @@ const LeaveRequestActionDialog = ({ request, onClose, onDone }) => {
               toDate={toDate}
               onChange={handleRangeChange}
               blockedDates={blockedDates}
+              holidays={holidays}
               allowPast
             />
 

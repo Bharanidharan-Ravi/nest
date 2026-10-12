@@ -6,8 +6,7 @@ import {
   Clock,
   Loader2,
 } from "lucide-react";
-import dayjs from "dayjs";
-
+import { formatDateTime } from "../../../app/shared/utils/dateFormat";
 export const PolicyTab = ({ isAdmin, policyData, onUpload }) => {
   const fileInputRef = useRef(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -125,7 +124,7 @@ export const PolicyTab = ({ isAdmin, policyData, onUpload }) => {
 
               <span className="truncate">
                 Last updated:{" "}
-                {dayjs(updatedAt).format("DD/MM/YYYY hh:mm A")} by{" "}
+                {formatDateTime(updatedAt)} by{" "}
                 {updatedBy}
               </span>
             </div>

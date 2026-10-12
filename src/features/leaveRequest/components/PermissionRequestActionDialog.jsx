@@ -5,8 +5,9 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState } from "react"
 import { executeApi } from "../../../core/api/executor"
+import { formatDate as formatDisplayDate } from "../../../app/shared/utils/dateFormat"
 
-const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "")
+const formatDate = (value) => formatDisplayDate(value, "")
 
 const formatDuration = (minutes) => {
   if (!minutes) return ""

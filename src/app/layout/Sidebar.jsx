@@ -11,11 +11,13 @@ import { useMasterData } from "../../core/master/masterCall/useMasterData";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 import MessengerNavBadge from "../../features/messenger/components/MessengerNavBadge";
 import LeaveRequestNavBadge from "../../features/leaveRequest/components/LeaveRequestNavBadge";
+import MeetingNavBadge from "../../features/MeetingScheduler/components/MeetingNavBadge";
 
 // Sidebar nav keys that carry an unread/pending badge, and the badge to render.
 const NAV_BADGES = {
   [ROUTE_KEYS.MESSENGER]: MessengerNavBadge,
   [ROUTE_KEYS.LEAVE_LIST]: LeaveRequestNavBadge,
+  [ROUTE_KEYS.MEETING_LIST]: MeetingNavBadge,
 };
 
 export const Sidebar = ({ isOpen, onClose, onToggle }) => {

@@ -19,9 +19,11 @@ import { WeekRangeFilter } from "../../../packages/ui-List/components/weeklyFilt
 import LeaveRequestActionDialog from "../components/LeaveRequestActionDialog"
 import PermissionRequestActionDialog from "../components/PermissionRequestActionDialog"
 import CountFilterDropdown from "../components/CountFilterDropdown"
+import ConfirmDialog, { useConfirmDialog } from "../../../app/shared/confirmation/confirmationModel"
 import { describeHalfDays } from "../leaveSessions"
+import { formatDate as formatDisplayDate } from "../../../app/shared/utils/dateFormat"
 
-const formatDate = (value) => (value ? new Date(value).toLocaleDateString() : "")
+const formatDate = (value) => formatDisplayDate(value, "")
 
 const formatDuration = (minutes) => {
   if (!minutes) return ""
@@ -49,7 +51,10 @@ const STATUS_STYLES = {
   REQUESTED: "bg-amber-100 text-amber-700",
   APPROVED: "bg-green-100 text-green-700",
   REJECTED: "bg-red-100 text-red-700",
+  CANCELLED: "bg-gray-100 text-gray-500",
 }
+
+const isSameId = (a, b) => !!a && !!b && String(a).toLowerCase() === String(b).toLowerCase()
 
 const LeaveRequestPage = () => {
   const { goTo } = useSmartNavigation()
@@ -61,6 +66,10 @@ const LeaveRequestPage = () => {
   const leaveTypes = useLeaveTypeMaster()
   const activeEmployees = useActiveEmployees()
   const [searchParams, setSearchParams] = useSearchParams()
+  const currentUserId = readUserFromSession()?.userId
+  const { dialogProps, openDialog } = useConfirmDialog()
+  const [cancellingId, setCancellingId] = useState(null)
+  const [cancelError, setCancelError] = useState("")
 
   const activeTab = searchParams.get(TAB_URL_KEY) === "permission" ? "permission" : "leave"
   const switchTab = (key) => {
@@ -70,6 +79,60 @@ const LeaveRequestPage = () => {
     setSearchParams(next, { replace: true })
   }
   const requests = activeTab === "leave" ? leaveRequests : permissionRequests
+
+  // The requester may withdraw their own request only while it awaits a decision.
+  const canCancel = (request) =>
+    request.status?.toUpperCase() === "REQUESTED" && isSameId(request.employeeId, currentUserId)
+  // A cancelled request is closed — admins can't open it to approve/reject.
+  const canOpen = (request) => isAdmin && request.status?.toUpperCase() !== "CANCELLED"
+
+  const cancelRequest = async (request, kind) => {
+    setCancellingId(request.id)
+    setCancelError("")
+    try {
+      const result = await executeApi({
+        url: `/${kind === "leave" ? "LeaveRequest" : "PermissionRequest"}/${request.id}/cancel`,
+        method: "PATCH",
+      })
+      if (result?.Ok === false) throw new Error(result?.Err?.M || "Failed to cancel the request.")
+      queryClient.invalidateQueries({
+        queryKey: kind === "leave" ? queryKeys.leaveRequest.list() : queryKeys.permissionRequest.list(),
+      })
+    } catch (error) {
+      setCancelError(error?.message || "Failed to cancel the request.")
+    } finally {
+      setCancellingId(null)
+    }
+  }
+
+  const confirmCancel = (event, request, kind) => {
+    event.stopPropagation()
+    openDialog({
+      variant: "danger",
+      title: `Cancel this ${kind === "leave" ? "leave" : "permission"} request?`,
+      description: "It will be withdrawn and can no longer be approved or rejected.",
+      confirmText: "Yes, Cancel",
+      cancelText: "Keep",
+      onConfirm: () => cancelRequest(request, kind),
+    })
+  }
+
+  const renderCancelCell = (request, kind) => (
+    <td className={TD}>
+      {canCancel(request) ? (
+        <button
+          type="button"
+          onClick={(event) => confirmCancel(event, request, kind)}
+          disabled={cancellingId === request.id}
+          className="px-2.5 py-1 rounded-md border border-red-200 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
+        >
+          {cancellingId === request.id ? "Cancelling..." : "Cancel"}
+        </button>
+      ) : (
+        "-"
+      )}
+    </td>
+  )
 
   const urlRange = searchParams.get(RANGE_URL_KEY) || ""
   const [dateRange, setDateRange] = useState(urlRange)
@@ -233,12 +296,13 @@ const LeaveRequestPage = () => {
                 <th className={TH}>Leave Taken</th>
                 {isAdmin && <th className={TH}>Requested By</th>}
                 <th className={TH}>Requested Date</th>
+                <th className={TH}>Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
               {filteredRequests.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 9 : 8} className="px-4 py-10 text-center text-gray-500">
+                  <td colSpan={isAdmin ? 10 : 9} className="px-4 py-10 text-center text-gray-500">
                     {userFiltered ? "No leave requests in this date range." : "No leave requests yet."}
                   </td>
                 </tr>
@@ -246,8 +310,8 @@ const LeaveRequestPage = () => {
               {filteredRequests.map((request) => (
                 <tr
                   key={request.id}
-                  className={`transition-colors ${isAdmin ? "cursor-pointer hover:bg-yellow-50/60" : "hover:bg-gray-50"}`}
-                  onClick={() => isAdmin && setSelectedRequest(request)}
+                  className={`transition-colors ${canOpen(request) ? "cursor-pointer hover:bg-yellow-50/60" : "hover:bg-gray-50"}`}
+                  onClick={() => canOpen(request) && setSelectedRequest(request)}
                 >
                   <td className={TD}>{formatDate(request.fromDate)}</td>
                   <td className={TD}>{formatDate(request.toDate)}</td>
@@ -283,6 +347,7 @@ const LeaveRequestPage = () => {
                   </td>
                   {isAdmin && <td className={TD}>{request.requestedBy}</td>}
                   <td className={TD}>{formatDate(request.requestedDate)}</td>
+                  {renderCancelCell(request, "leave")}
                 </tr>
               ))}
             </tbody>
@@ -298,12 +363,13 @@ const LeaveRequestPage = () => {
                 <th className={TH}>Status</th>
                 {isAdmin && <th className={TH}>Requested By</th>}
                 <th className={TH}>Requested Date</th>
+                <th className={TH}>Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100 text-gray-700">
               {filteredRequests.length === 0 && (
                 <tr>
-                  <td colSpan={isAdmin ? 7 : 6} className="px-4 py-10 text-center text-gray-500">
+                  <td colSpan={isAdmin ? 8 : 7} className="px-4 py-10 text-center text-gray-500">
                     {userFiltered ? "No permission requests in this date range." : "No permission requests yet."}
                   </td>
                 </tr>
@@ -311,8 +377,8 @@ const LeaveRequestPage = () => {
               {filteredRequests.map((request) => (
                 <tr
                   key={request.id}
-                  className={`transition-colors ${isAdmin ? "cursor-pointer hover:bg-yellow-50/60" : "hover:bg-gray-50"}`}
-                  onClick={() => isAdmin && setSelectedRequest(request)}
+                  className={`transition-colors ${canOpen(request) ? "cursor-pointer hover:bg-yellow-50/60" : "hover:bg-gray-50"}`}
+                  onClick={() => canOpen(request) && setSelectedRequest(request)}
                 >
                   <td className={TD}>{formatDate(request.permissionDate)}</td>
                   <td className={TD}>{formatDuration(request.durationMinutes)}</td>
@@ -333,12 +399,21 @@ const LeaveRequestPage = () => {
                   </td>
                   {isAdmin && <td className={TD}>{request.requestedBy}</td>}
                   <td className={TD}>{formatDate(request.requestedDate)}</td>
+                  {renderCancelCell(request, "permission")}
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {cancelError && (
+        <div className="flex-none text-sm text-red-600 bg-red-50 border border-red-200 rounded-md px-3 py-2">
+          {cancelError}
+        </div>
+      )}
+
+      <ConfirmDialog {...dialogProps} />
 
       {selectedRequest && activeTab === "leave" && (
         <LeaveRequestActionDialog

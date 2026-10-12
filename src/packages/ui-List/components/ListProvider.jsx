@@ -8,7 +8,12 @@ export function ListProvider({ config, data, children, userRole }) {
 
   useUrlSync(state);
 
-  useInfiniteScroll(state.loadMore, state.hasMore, Boolean(config?.infinite));
+  // Server-mode lists page from the card view (pages around the one on screen)
+  useInfiniteScroll(
+    state.loadMore,
+    state.hasMore,
+    Boolean(config?.infinite) && !config?.useServerData,
+  );
 
   return (
     <ListContext.Provider value={{ ...state, userRole }}>

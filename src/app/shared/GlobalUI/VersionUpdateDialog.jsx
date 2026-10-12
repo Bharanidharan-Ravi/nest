@@ -9,8 +9,7 @@ import {
 
 import { useAppStore } from "../../../core/state/useAppStore";
 import { handleLogout } from "../../Hooks/Logout";
-import dayjs from "dayjs";
-
+import { formatDateTime } from "../utils/dateFormat";
 export default function VersionUpdateDialog() {
   const versionModal = useAppStore((s) => s.versionModal);
 
@@ -41,7 +40,7 @@ export default function VersionUpdateDialog() {
           Latest Version: {versionModal.latestVersion.Version}
         </Typography>
          <Typography>
-          Deployed At: {dayjs(versionModal.latestVersion.DeployedAt).format("DD MMM YYYY")}
+          Deployed At: {formatDateTime(versionModal.latestVersion.DeployedAt)}
         </Typography>
 
         <Typography sx={{ mt: 2 }}>

@@ -1,6 +1,12 @@
 // Dates and times for the whole scheduler: parsing ("HH:mm", "yyyy-MM-dd"),
 // day keys, and how dates, times, durations and weekdays are shown.
 
+import {
+  formatDate as formatDateOnly,
+  formatDateTime,
+  formatTime,
+} from "../../../app/shared/utils/dateFormat";
+
 const WEEKDAY_LABELS_LONG = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 const pad2 = (number) => String(number).padStart(2, "0");
@@ -54,30 +60,23 @@ export function parseDay(value) {
 // Display
 // ---------------------------------------------------------------------------
 
-/** "14:30:00" -> "14:30" (used for compact table/list rendering) */
+/** "14:30" | "14:30:00" -> "14:30:00" */
 export function formatTime24h(time) {
-  if (!time) return "-";
-  return time.slice(0, 5);
+  return formatTime(time);
 }
 
-const formatDay = (date) =>
-  date.toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-
-/** "yyyy-MM-dd" | Date | ISO string -> "04 Jul 2026" */
+/** "yyyy-MM-dd" | Date | ISO string -> "04/07/2026" */
 export function formatDate(value) {
-  if (!value) return "-";
-  const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "-";
-  return formatDay(date);
+  // "yyyy-MM-dd" is a calendar day: read it as local midnight, not UTC.
+  return formatDateOnly(parseDay(value) ?? value);
 }
+
+/** API timestamp -> "04/07/2026 14:30:00" */
+export { formatDateTime };
 
 /**
- * "2026-07-15~2026-07-15" -> "15 Jul 2026"
- * "2026-07-15~2026-07-19" -> "15 Jul 2026 - 19 Jul 2026"
+ * "2026-07-15~2026-07-15" -> "15/07/2026"
+ * "2026-07-15~2026-07-19" -> "15/07/2026 - 19/07/2026"
  */
 export function formatDateRange(range) {
   if (!range) return "-";
@@ -87,15 +86,9 @@ export function formatDateRange(range) {
   const [start, end] = parts;
 
   if (!start) return "-";
-
-  const startDate = new Date(start);
-  const endDate = end ? new Date(end) : startDate;
-
-  if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    return "-";
-  }
-  const startFormatted = formatDay(startDate);
-  const endFormatted = formatDay(endDate);
+  const startFormatted = formatDate(start);
+  const endFormatted = end ? formatDate(end) : startFormatted;
+  if (startFormatted === "-" || endFormatted === "-") return "-";
 
   return startFormatted === endFormatted
     ? startFormatted
@@ -119,4 +112,15 @@ export function binaryToDaysList(binary) {
     .split("")
     .map((bit, index) => (bit === "1" ? WEEKDAY_LABELS_LONG[index] : null))
     .filter(Boolean);
+}
+
+/**
+ * An API stamp time ("2026-10-06T04:30:00", usually UTC without a "Z") as a
+ * Date, or null when empty / invalid.
+ */
+export function parseStamp(value) {
+  if (!value) return null;
+  const text = String(value).trim().replace(" ", "T");
+  const date = new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(text) ? text : `${text}Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
 }

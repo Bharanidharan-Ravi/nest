@@ -1,22 +1,22 @@
+import { formatDate, formatTime } from "../../../app/shared/utils/dateFormat";
+
 const sameDay = (a, b) => a.toDateString() === b.toDateString();
 
-/** "14:05" today, "Yesterday", "Mon" this week, otherwise "12 Sep". */
+/** "14:05:09" today, "Yesterday", otherwise "12/09/2026". */
 export function formatListTime(value) {
   if (!value) return "";
   const date = new Date(value);
   const now = new Date();
-  if (sameDay(date, now)) return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  if (sameDay(date, now)) return formatTime(date, "");
 
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (sameDay(date, yesterday)) return "Yesterday";
 
-  if (now - date < 6 * 24 * 60 * 60 * 1000) return date.toLocaleDateString([], { weekday: "short" });
-  return date.toLocaleDateString([], { day: "2-digit", month: "short" });
+  return formatDate(date, "");
 }
 
-export const formatMessageTime = (value) =>
-  value ? new Date(value).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+export const formatMessageTime = (value) => (value ? formatTime(new Date(value), "") : "");
 
 /** Divider label between days in a timeline. */
 export function formatDayLabel(value) {
@@ -26,7 +26,7 @@ export function formatDayLabel(value) {
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
   if (sameDay(date, yesterday)) return "Yesterday";
-  return date.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  return formatDate(date, "");
 }
 
 export const isSameDay = (a, b) => !!a && !!b && sameDay(new Date(a), new Date(b));

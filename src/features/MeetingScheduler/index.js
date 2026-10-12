@@ -1,4 +1,5 @@
 import { lazy } from "react";
+import { Calendar } from "lucide-react";
 import { ROUTE_ROLES } from "../../core/auth/permissions";
 import { ROUTE_KEYS } from "../../core/routing/paths";
 
@@ -20,6 +21,7 @@ export const MeetingsFeature = {
             parent:    ROUTE_KEYS.DASHBOARD,
             create:    ROUTE_KEYS.MEETING_LIST,
             inSidebar: true,
+            icon:      Calendar,
           },
         },
 

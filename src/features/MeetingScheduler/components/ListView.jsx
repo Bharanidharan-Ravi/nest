@@ -20,10 +20,12 @@ import {
 } from "lucide-react";
 import { Avatar, Button, EmptyState, IconText, InfoTile, JoinDetails, Pill, StatusBadge } from "./Common";
 import { getAllParticipants, getJoinInfo, sameId } from "../Helpers/common";
-import { binaryToDaysList, formatDate, formatDuration, formatTime24h } from "../Helpers/dateTime";
+import { binaryToDaysList, formatDate, formatDateTime, formatDuration, formatTime24h } from "../Helpers/dateTime";
 // import { isTwiceADay } from "../Helpers/recurrence"; // Times per day is disabled for now
 import { canManageMeeting } from "../Helpers/meetingValidation";
 import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
+import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { ROUTE_KEYS } from "../../../core/routing/paths";
 
 // BUG FIX: original switch only handled "Scheduled" and "Completed" and fell
 // through to the green "open" icon for everything else — including
@@ -32,6 +34,39 @@ function StatusIcon({ status }) {
   if (status === "Completed") return <CircleCheck size={15} className="mt-1.5 text-violet-500" title="Completed" />;
   if (status === "Cancelled") return <CircleX size={15} className="mt-1.5 text-red-500" title="Cancelled" />;
   return <CircleDot size={15} className="mt-1.5 text-green-500" title="Active" />;
+}
+
+// Project / ticket chip that opens that page; Ctrl/Cmd-click opens it in a new tab.
+// Without params (no id on the meeting) it is a plain label.
+function LinkChip({ routeKey, params, className, children }) {
+  const { goTo, getPath } = useSmartNavigation();
+  if (!params) return <span className={className}>{children}</span>;
+
+  const open = (e) => {
+    e.stopPropagation(); // don't expand / collapse the row
+    if (e.ctrlKey || e.metaKey) {
+      window.open(getPath(routeKey, params), "_blank", "noopener,noreferrer");
+    } else {
+      goTo(routeKey, params);
+    }
+  };
+
+  return (
+    <span
+      role="link"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          open(e);
+        }
+      }}
+      className={`cursor-pointer hover:underline hover:brightness-95 ${className}`}
+    >
+      {children}
+    </span>
+  );
 }
 
 function ParticipantChip({ name, role }) {
@@ -108,14 +143,22 @@ function MeetingRow({ meeting, isOpen, isFocused, onToggle, onEdit, onComplete, 
             {(meeting.project_Name || meeting.Ticket_Title) && (
               <div className="flex flex-wrap items-center gap-2">
                 {meeting.project_Name && (
-                  <span className="px-1 py-1 rounded-md bg-violet-50 text-violet-700 border border-violet-100">
+                  <LinkChip
+                    routeKey={ROUTE_KEYS.PROJ_DETAIL}
+                    params={meeting.project_id && { projId: meeting.project_id }}
+                    className="px-1 py-1 rounded-md bg-violet-50 text-violet-700 border border-violet-100"
+                  >
                     {meeting.project_Code} - {meeting.project_Name}
-                  </span>
+                  </LinkChip>
                 )}
                 {meeting.Ticket_Title && (
-                  <span className="px-1 py-1 rounded-md bg-gray-50 text-gray-600 border border-gray-100">
+                  <LinkChip
+                    routeKey={ROUTE_KEYS.TICKET_DETAIL}
+                    params={meeting.ticket_id && { ticketId: meeting.ticket_id }}
+                    className="px-1 py-1 rounded-md bg-gray-50 text-gray-600 border border-gray-100"
+                  >
                     {meeting.issue_Code} - {meeting.Ticket_Title}
-                  </span>
+                  </LinkChip>
                 )}
               </div>
             )}
@@ -186,7 +229,7 @@ function MeetingRow({ meeting, isOpen, isFocused, onToggle, onEdit, onComplete, 
         <div className="border-t border-gray-100 px-4 pb-4 pt-3 space-y-4 text-xs text-gray-700">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
 
-            <InfoTile icon={FilePlus} value={formatDate(meeting.created_at)} hint="Created date" />
+            <InfoTile icon={FilePlus} value={formatDateTime(meeting.created_at)} hint="Created date" />
             <InfoTile icon={Users} value={meeting.host_type} hint="Host type" />
             <InfoTile icon={Repeat} value={meeting.recurrence_type} hint="Recurrence" />
             <InfoTile icon={Clock} value={formatDuration(meeting.slot_duration)} hint="Slot duration" />

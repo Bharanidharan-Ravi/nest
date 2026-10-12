@@ -3,6 +3,7 @@ import dayjs from "dayjs";
 import { LocalizationProvider, DateCalendar, PickersDay } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Badge from "./Badge"; // Your badge component
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 
 
 // Helper to get unique meeting dates
@@ -417,11 +418,7 @@ const LEGEND = [
 
 // -------------------- DATE FORMAT --------------------
 function fmtDate(str) {
-  return new Date(str).toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDate(str);
 }
 
 // -------------------- PARSE SINGLE / RANGE DATES --------------------

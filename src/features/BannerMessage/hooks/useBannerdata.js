@@ -36,6 +36,25 @@ import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
 
   }
 
+// Header ticker: only Status = 'Active' banners not yet past EndDate
+// (GetBannerMessage @ActiveOnly). The admin screens use useBannerMessage().
+export const useActiveBanners = () =>
+  useApiQuery({
+    queryKey: [...queryKeys.BannerData.list(), "active"],
+    url: "/sync/v2",
+    method: "POST",
+    source: "BannerData",
+    payload: {
+      configKeys: ["BannerData"],
+      params: { BannerData: { ActiveOnly: "1" } },
+    },
+    options: {
+      staleTime: Infinity,
+      gcTime: Infinity,
+      meta: { keepUntilReload: true },
+    },
+  });
+
 export const getMessageType = (MessageTypeId=null) => {
     const query = queryKeys.BannerDataType.all;
   

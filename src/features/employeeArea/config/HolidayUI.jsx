@@ -1,5 +1,4 @@
-import dayjs from "dayjs";
-
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 export const HolidayDataTable = {
     syncUrl: false,
     defaultView: "table",
@@ -16,7 +15,7 @@ export const HolidayDataTable = {
             label: "Date",
             render: (item) => (
                 <div className={`h-30 ${item.status === 'past' ? 'text-gray-400' : 'text-gray-900'}`}>
-                    {item.HolidayDate ? dayjs(item.HolidayDate).format("DD/MM/YYYY") : "-"}
+                    {item.HolidayDate ? formatDate(item.HolidayDate) : "-"}
                 </div>
             ),
         },

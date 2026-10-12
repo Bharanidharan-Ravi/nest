@@ -6,16 +6,19 @@
 // drag-selection would cross one, the range is truncated right before it
 // (a leave request is a single contiguous FROM/TO pair, so a range can't
 // have a hole in the middle) and a warning explains what was excluded.
+// Holidays (Map of "YYYY-MM-DD" → name) can't be clicked on their own, but a
+// range may span them (leave taken around a holiday).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import dayjs from "dayjs"
+import { formatDate } from "../../../app/shared/utils/dateFormat"
 
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 const fmt = (d) => d.format("YYYY-MM-DD")
 
 // allowPast: admins re-adjusting an existing request may pick past dates.
-export default function LeaveDateRangePicker({ fromDate, toDate, onChange, blockedDates, allowPast = false }) {
+export default function LeaveDateRangePicker({ fromDate, toDate, onChange, blockedDates, holidays, allowPast = false }) {
   const [showCal, setShowCal] = useState(false)
   const [activeField, setActiveField] = useState(null) // "from" | "to" | null
   const [month, setMonth] = useState(() => (fromDate ? dayjs(fromDate) : dayjs()))
@@ -37,9 +40,19 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
   }
 
   const blockedSet = useMemo(() => blockedDates || new Set(), [blockedDates])
+  const holidayMap = useMemo(() => holidays || new Map(), [holidays])
   const isPast = (d) => !allowPast && d.isBefore(dayjs().startOf("day"), "day")
   const isRequested = (d) => blockedSet.has(fmt(d))
+  const holidayName = (d) => holidayMap.get(fmt(d))
   const isDisabled = useCallback(
+    (d) =>
+      (!allowPast && d.isBefore(dayjs().startOf("day"), "day")) ||
+      blockedSet.has(fmt(d)) ||
+      holidayMap.has(fmt(d)),
+    [blockedSet, holidayMap, allowPast],
+  )
+  // A drag-selection is only cut short by past / already requested dates.
+  const isBlocked = useCallback(
     (d) => (!allowPast && d.isBefore(dayjs().startOf("day"), "day")) || blockedSet.has(fmt(d)),
     [blockedSet, allowPast],
   )
@@ -133,7 +146,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
       while (true) {
         const next = cursor.add(forward ? 1 : -1, "day")
         if (forward ? next.isAfter(target, "day") : next.isBefore(target, "day")) break
-        if (isDisabled(next)) {
+        if (isBlocked(next)) {
           blockedHit = next
           break
         }
@@ -144,7 +157,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
       const from = forward ? anchor : boundary
       const to = forward ? boundary : anchor
       const warning = blockedHit
-        ? `${blockedHit.format("DD MMM")} is already requested — selection limited to ${from.format("DD MMM")}–${to.format("DD MMM")} (${to.diff(from, "day") + 1} day${to.diff(from, "day") + 1 > 1 ? "s" : ""}).`
+        ? `${formatDate(blockedHit)} is already requested — selection limited to ${formatDate(from)}–${formatDate(to)} (${to.diff(from, "day") + 1} day${to.diff(from, "day") + 1 > 1 ? "s" : ""}).`
         : null
 
       onChange(fmt(from), fmt(to), warning)
@@ -153,7 +166,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
       setHover(null)
       setShowCal(false)
     },
-    [onChange, isDisabled],
+    [onChange, isDisabled, isBlocked],
   )
 
   useEffect(() => {
@@ -201,6 +214,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
       !disabled && inR ? "bg-blue-100 text-blue-700" : "",
       !disabled && !isS && !isE && !inR ? "hover:bg-gray-100 active:bg-gray-200 rounded-full text-gray-700" : "",
       isRequested(d) && !isPast(d) ? "bg-red-50 text-red-400" : "",
+      holidayName(d) && !isPast(d) ? "bg-purple-50 text-purple-400 rounded-full" : "",
       isT && !isS && !isE ? "font-bold underline underline-offset-2" : "",
     ]
       .filter(Boolean)
@@ -216,7 +230,7 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
   }
 
   const label = (value, placeholder) =>
-    value ? dayjs(value).format("DD MMM YYYY") : placeholder
+    value ? formatDate(value) : placeholder
 
   return (
     <div ref={wrapRef} className="grid grid-cols-2 gap-4 md:col-span-2">
@@ -298,7 +312,13 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
                   <div
                     key={fmt(date)}
                     data-date={fmt(date)}
-                    title={isRequested(date) && !isPast(date) ? "Already requested" : undefined}
+                    title={
+                      holidayName(date)
+                        ? `Holiday: ${holidayName(date)}`
+                        : isRequested(date) && !isPast(date)
+                          ? "Already requested"
+                          : undefined
+                    }
                     className={getDayClass(date)}
                     onMouseDown={() => {
                       if (isDisabled(date)) return
@@ -324,6 +344,9 @@ export default function LeaveDateRangePicker({ fromDate, toDate, onChange, block
             <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-500">
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-50 border border-red-200 inline-block" /> Already requested
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-50 border border-purple-200 inline-block" /> Holiday
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-gray-100 border border-gray-200 inline-block" /> Unavailable

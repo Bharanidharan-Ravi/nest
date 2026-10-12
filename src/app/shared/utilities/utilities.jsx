@@ -388,14 +388,8 @@ export const stripHtml = (str = "") =>
     .replace(/&nbsp;|&zwnj;/gi, "")
     .trim();
 
-export const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-};
+// Display formats live in ../utils/dateFormat; re-exported here for existing imports.
+export { formatDate, formatDateTime, formatTime } from "../utils/dateFormat";
 
 export const calcHHMM = (from, to) => {
   if (!from || !to) return null;

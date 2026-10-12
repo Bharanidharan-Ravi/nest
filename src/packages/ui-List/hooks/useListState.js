@@ -968,7 +968,9 @@ export function useListState(config, rawData = [], userRole = null) {
   /* --- SERVER MODE ---
      config.useServerData(params, config) is a hook that filters, sorts, pages
      and counts on the server. It returns { data, total, hasMore, loadMore,
-     tabCounts, filterCounts, dataUpdatedAt }, and all local work below is
+     tabCounts, filterCounts, dataUpdatedAt }, optionally showPages(top,
+     bottom) + pageOffset for a windowed page cache (the card view then
+     reports the pages on screen), and all local work below is
      skipped. A list config always has it or never has it, so the hook order
      is stable. */
   const useServerData = config.useServerData ?? noServerData;
@@ -1349,8 +1351,11 @@ export function useListState(config, rawData = [], userRole = null) {
       total: switchingView ? 0 : server.total,
       hasMore: !switchingView && server.hasMore,
       loadMore: server.loadMore,
+      showPages: server.showPages,
+      pageOffset: switchingView ? 0 : (server.pageOffset ?? 0),
       tabCounts: server.tabCounts,
       filterCounts: server.filterCounts,
+      isStale: !!server.isStale,
       dataUpdatedAt: server.dataUpdatedAt,
     }),
   };

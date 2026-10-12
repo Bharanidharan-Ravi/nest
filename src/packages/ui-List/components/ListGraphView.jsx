@@ -8,7 +8,7 @@ import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { withBasePath } from "../../../core/env/environment";
 import { User } from "lucide-react";
-import { formatDate } from "../../../app/shared/utilities/utilities";
+import { formatDate, formatDateTime } from "../../../app/shared/utilities/utilities";
 
 // const parseValue = (val) => {
 //   if (typeof val === "string" && val.includes(":")) {
@@ -289,7 +289,7 @@ import { formatDate } from "../../../app/shared/utilities/utilities";
 
 //     return keys.map((key) => ({
 //       key,
-//       label: graphConfig.isDateAxis ? dayjs(key).format("DD MMM") : key,
+//       label: graphConfig.isDateAxis ? formatDate(key) : key,
 //     }));
 //   }, [data, graphConfig, isValidGraphRecord]);
 
@@ -1276,7 +1276,7 @@ const ChartTooltip = ({
       <div className="flex items-start justify-between gap-2">
         {isReportView && (
           <div className="text-gray-500 text-[10px] font-semibold">
-            {formatDate(raw.updatedAt)}
+            {formatDateTime(raw.updatedAt)}
           </div>
         )}
 
@@ -1633,7 +1633,7 @@ const StackedBarDesign = ({
 
     return keys.map((key) => ({
       key,
-      label: graphConfig.isDateAxis ? dayjs(key).format("DD MMM") : key,
+      label: graphConfig.isDateAxis ? formatDate(key) : key,
     }));
   }, [
     data,

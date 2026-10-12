@@ -1,5 +1,5 @@
 import React from "react";
-import dayjs from "dayjs";
+import { formatDateTime } from "../../../app/shared/utils/dateFormat";
 import { FiClock, FiUser } from "react-icons/fi";
 
 export default function TimelineListCard({ item }) {
@@ -14,7 +14,7 @@ export default function TimelineListCard({ item }) {
             <FiUser size={12} /> {item.actorName}
           </span>
           <span className="flex items-center gap-1">
-            <FiClock size={12} /> {dayjs(item.createdAt).format("DD MMM, HH:mm")}
+            <FiClock size={12} /> {formatDateTime(item.createdAt)}
           </span>
         </div>
       </div>

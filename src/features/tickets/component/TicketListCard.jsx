@@ -13,6 +13,9 @@ import { tryBuildPath } from "../../../core/routing/routeRegistry";
 import { withBasePath } from "../../../core/env/environment";
 import { useState } from "react";
 import {
+  formatDate,
+  formatDateTime,
+  formatTime,
   getDueStatus,
   getInitials,
   getLabelStyle,
@@ -292,7 +295,7 @@ export default function TicketListCard({
 
                   <span className="meta-divider">•</span>
                   <Tooltip
-                    title={dayjs(item.createdAt).format("YYYY-MM-DD")}
+                    title={formatDateTime(item.createdAt)}
                     arrow
                   >
                     <span className="created-key">
@@ -433,8 +436,8 @@ export default function TicketListCard({
                   {item.StartTime && item.EndTime && (
                     <span className="timesheet-item">
                       <FiClock className="due-icon" />
-                      Working Time: {dayjs(item.StartTime).format("HH:mm")} -{" "}
-                      {dayjs(item.EndTime).format("HH:mm")}
+                      Working Time: {formatTime(item.StartTime)} -{" "}
+                      {formatTime(item.EndTime)}
                     </span>
                   )}
 
@@ -514,7 +517,7 @@ export default function TicketListCard({
               <div className="grid-col">
                 <div className="due-date-text">
                   {item.dueDate
-                    ? dayjs(item.dueDate).format("DD MMM YYYY")
+                    ? formatDate(item.dueDate)
                     : ""}
                 </div>
 

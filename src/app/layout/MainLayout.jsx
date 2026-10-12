@@ -5,6 +5,8 @@ import Header from "../shared/Header/Header";
 import { useState } from "react";
 import MessageDock from "../../features/messenger/components/MessageDock";
 import NotificationManager from "../../core/notifications/NotificationManager";
+import MeetingReminder from "../../features/MeetingScheduler/components/MeetingReminder";
+import BirthdayCelebration from "../../features/birthday/components/BirthdayCelebration";
 import { AvatarDataProvider } from "../../features/tickets/component/AvatarDataProvider";
 
 // Only this subscribes to the URL. MainLayout used to, so the sidebar,
@@ -28,6 +30,12 @@ export default function MainLayout() {
     <div className="flex h-screen w-screen overflow-hidden bg-brand-gray-light">
       {/* Unread count → tab title, notification permission/sound priming */}
       <NotificationManager />
+
+      {/* Popup + chime 5 minutes before a meeting, on any screen */}
+      <MeetingReminder />
+
+      {/* Confetti + decorations on the logged-in employee's birthday */}
+      <BirthdayCelebration />
 
       {/* 1. Sidebar is a full-height column of its own, so the header/banner
              to its right never runs behind it */}

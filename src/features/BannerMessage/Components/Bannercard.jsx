@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import { GoIssueClosed, GoIssueOpened } from "react-icons/go";
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 
 dayjs.extend(relativeTime);
 
@@ -24,9 +25,9 @@ const Bannerlist = ({ item }) => {
       </div>
 
       <p className="flex items-center gap-2 text-ghMuted text-xs m-0">
-        <span>{dayjs(item.StartDate).format("DD/MM/YYYY")}</span>
+        <span>{formatDate(item.StartDate)}</span>
         <span className="text-ghMuted">-</span>
-        <span>{dayjs(item.EndDate).format("DD/MM/YYYY")}</span>
+        <span>{formatDate(item.EndDate)}</span>
       </p>
     </div>
   );

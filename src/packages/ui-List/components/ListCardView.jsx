@@ -8,14 +8,18 @@
 // below are in the DOM (~60 cards). The others become empty blocks of their
 // measured height, so the scroll position and scrollbar don't move. Scrolling
 // back up re-renders them from memory, without a request.
-// The next page is requested as soon as the last chunk comes on screen, so it
-// is usually loaded before the user reaches the end of the list.
+// Server lists (showPages): the chunks on screen are reported and the list
+// keeps 1 page above and 2 below them loaded (ticket list: pages 1-3 on
+// open, at most 5 kept). Local lists: the next slice is shown when the end of
+// the list comes within LOAD_AHEAD_PX of the viewport.
 
 import {
   memo,
   startTransition,
   useCallback,
+  useDeferredValue,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -26,6 +30,8 @@ import { FiEdit } from "react-icons/fi";
 const CHUNK_BUFFER = 1;
 // Height guess for a card that was never rendered
 const ESTIMATED_CARD_HEIGHT = 90;
+// Next page is fetched when the list's end is this close below the viewport
+const LOAD_AHEAD_PX = 200;
 
 const DEFAULT_ITEM_CLASSES =
   "p-1.5 border-b border-ghBorder bg-white hover:bg-ghHover transition-colors duration-150 last:border-b-0 w-full overflow-hidden break-words relative cursor-pointer";
@@ -180,7 +186,7 @@ function useAfterFirstPaint() {
 
 const sameSet = (a, b) => a.size === b.size && [...a].every((v) => b.has(v));
 
-function WindowedCards({ data, config, hasMore, loadMore }) {
+function WindowedCards({ data, config, hasMore, loadMore, showPages, pageOffset = 0 }) {
   const chunkSize = config.pageSize || 20;
   const [visible, setVisible] = useState(() => new Set([0]));
   const [heights, setHeights] = useState(() => new Map());
@@ -209,7 +215,10 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
     );
   }, []);
 
-  const chunks = [];
+  // Chunk index = page index in the whole list. Pages the server list dropped
+  // above (pageOffset) stay as empty blocks of their measured height, so the
+  // cards on screen don't move when a page is dropped or fetched again.
+  const chunks = Array.from({ length: pageOffset }, () => null);
   for (let start = 0; start < data.length; start += chunkSize) {
     chunks.push(data.slice(start, start + chunkSize));
   }
@@ -228,7 +237,7 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
   const buffer = buffered ? CHUNK_BUFFER : 0;
 
   const isRendered = (index) => {
-    if (!painted) return false;
+    if (!painted || !chunks[index]) return false;
     if (!observer) return true;
     for (let i = index - buffer; i <= index + buffer; i++) {
       if (visible.has(i)) return true;
@@ -236,11 +245,40 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
     return false;
   };
 
-  // Load ahead: the last chunk is on screen → fetch the page after it
-  const lastOnScreen = visible.has(lastChunk);
+  // Next page only when the end of the list is near the viewport. (Paging on
+  // "last chunk on screen" fetched pages 2 and 3 on open: page 1 is a single
+  // chunk, and the top of page 2's chunk peeks in under 20 compact cards.)
+  const sentinelRef = useRef(null);
+  const [nearEnd, setNearEnd] = useState(false);
   useEffect(() => {
-    if (lastOnScreen && hasMore) loadMore();
-  }, [lastOnScreen, hasMore, loadMore, lastChunk]);
+    const node = sentinelRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return undefined;
+    const io = new IntersectionObserver(
+      ([entry]) => setNearEnd(entry.isIntersecting),
+      { rootMargin: `0px 0px ${LOAD_AHEAD_PX}px 0px` },
+    );
+    io.observe(node);
+    return () => io.disconnect();
+  }, []);
+  // data.length: still near the end after a short page lands → next one
+  useEffect(() => {
+    if (!showPages && painted && nearEnd && hasMore) loadMore();
+  }, [showPages, painted, nearEnd, hasMore, loadMore, data.length]);
+
+  // Server lists: report the pages on screen; the list keeps the ones around
+  // them loaded. (A chunk removed while on screen leaves its index in
+  // `visible`: an unobserved node gets no "left the screen" entry.)
+  let top = Infinity;
+  let bottom = -1;
+  visible.forEach((index) => {
+    if (index > lastChunk) return;
+    top = Math.min(top, index);
+    bottom = Math.max(bottom, index);
+  });
+  // showPages changes once each page request ends → re-checked
+  useEffect(() => {
+    if (showPages && painted && bottom >= 0) showPages(top, bottom);
+  }, [showPages, painted, top, bottom]);
 
   const measured = [...heights.values()];
   const chunkEstimate = measured.length
@@ -253,15 +291,19 @@ function WindowedCards({ data, config, hasMore, loadMore }) {
         <CardChunk
           key={index}
           index={index}
-          items={items}
+          items={items ?? []}
           config={config}
           rendered={isRendered(index)}
           observer={observer}
           // A never-rendered chunk: the average, scaled for a short last chunk
-          height={heights.get(index) ?? (chunkEstimate * items.length) / chunkSize}
+          height={
+            heights.get(index) ??
+            (chunkEstimate * (items?.length ?? chunkSize)) / chunkSize
+          }
           onHeight={onHeight}
         />
       ))}
+      <div ref={sentinelRef} aria-hidden="true" style={{ height: 1 }} />
     </div>
   );
 }
@@ -272,18 +314,40 @@ function PlainCards({ data, config }) {
 }
 
 export function ListCardView() {
-  const { data, config, hasMore, loadMore } = useList();
+  const { data: currentData, config, hasMore, loadMore, showPages, pageOffset, isStale } =
+    useList();
+  // A filter click paints the dropdown / chips at once; the cards follow as
+  // interruptible background work instead of blocking that frame.
+  // The rows and their page offset change together (a page dropped above)
+  const current = useMemo(
+    () => ({ data: currentData, pageOffset: pageOffset ?? 0 }),
+    [currentData, pageOffset],
+  );
+  const shown = useDeferredValue(current);
+  const { data } = shown;
+  // Dim while other rows (a filter change) are pending, not for paging
+  const dimmed =
+    isStale ||
+    (shown !== current &&
+      shown.pageOffset === current.pageOffset &&
+      data[0] !== currentData[0]);
 
-  if (config.infinite) {
-    return (
-      <WindowedCards
-        data={data}
-        config={config}
-        hasMore={hasMore}
-        loadMore={loadMore}
-      />
-    );
-  }
-
-  return <PlainCards data={data} config={config} />;
+  return (
+    <div
+      className={`transition-opacity duration-150 ${dimmed ? "opacity-50" : "opacity-100"}`}
+    >
+      {config.infinite ? (
+        <WindowedCards
+          data={data}
+          config={config}
+          hasMore={hasMore}
+          loadMore={loadMore}
+          showPages={showPages}
+          pageOffset={shown.pageOffset}
+        />
+      ) : (
+        <PlainCards data={data} config={config} />
+      )}
+    </div>
+  );
 }

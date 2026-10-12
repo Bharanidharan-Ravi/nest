@@ -14,7 +14,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { parseDay } from "./dateTime";
+import { formatDate, parseDay } from "./dateTime";
 
 const CALENDAR_VIEWS = ["Day", "Week", "Month"];
 export const isCalendarView = (view) => CALENDAR_VIEWS.includes(view);
@@ -71,17 +71,11 @@ export function shiftAnchor(view, anchor, step) {
   return addMonths(anchor, step);
 }
 
-/** Header text: "Thu, 1 Oct 2026", "27 Sep – 3 Oct 2026", "October 2026". */
+/** Header text: "01/10/2026", "27/09/2026 – 03/10/2026", "October 2026". */
 export function rangeLabel(view, anchor) {
-  if (view === "Day") return format(anchor, "EEE, d MMM yyyy");
+  if (view === "Day") return formatDate(anchor);
   if (view === "Month") return format(anchor, "MMMM yyyy");
 
   const { start, end } = rangeForView("Week", anchor);
-  if (start.getFullYear() !== end.getFullYear()) {
-    return `${format(start, "d MMM yyyy")} – ${format(end, "d MMM yyyy")}`;
-  }
-  if (start.getMonth() !== end.getMonth()) {
-    return `${format(start, "d MMM")} – ${format(end, "d MMM yyyy")}`;
-  }
-  return `${format(start, "d")} – ${format(end, "d MMM yyyy")}`;
+  return `${formatDate(start)} – ${formatDate(end)}`;
 }

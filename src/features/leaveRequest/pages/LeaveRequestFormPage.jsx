@@ -18,8 +18,10 @@ import LeaveSingleDatePicker from "../components/LeaveSingleDatePicker"
 import LeaveDaySessionPicker from "../components/LeaveDaySessionPicker"
 import { buildTakenSessions, getDayAvailability, sessionDays } from "../leaveSessions"
 import { PERMISSION_MAX_HOURS, getMaxPermissionHours } from "../permissionLimits"
+import { useHolidayDates } from "../useHolidayDates"
 import MuiSelectInput from "../../../packages/react-input-engine/adapters/mui/MuiSelectInput"
 import dayjs from "dayjs"
+import { formatDate } from "../../../app/shared/utils/dateFormat"
 
 // Master data returns leave type names in ALL CAPS (e.g. "CASUAL LEAVE") —
 // title-case them for display without touching the underlying value/id.
@@ -41,6 +43,7 @@ const LeaveRequestFormPage = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const leaveRequests = useLeaveRequestMaster()
   const rawLeaveTypeOptions = useLeaveTypeOptions()
+  const holidays = useHolidayDates()
   const currentUser = readUserFromSession()
 
   const leaveTypeOptions = useMemo(
@@ -73,7 +76,9 @@ const LeaveRequestFormPage = () => {
 
   // Permission defaults to today while there's still time left before 6:30 PM.
   const today = dayjs().format("YYYY-MM-DD")
-  const [permissionDate, setPermissionDate] = useState(() => (getMaxPermissionHours(today) > 0 ? today : ""))
+  const [pickedPermissionDate, setPermissionDate] = useState(() => (getMaxPermissionHours(today) > 0 ? today : ""))
+  // Holidays load async — the default "today" is dropped if it turns out to be one.
+  const permissionDate = holidays.has(pickedPermissionDate) ? "" : pickedPermissionDate
   const [permissionHours, setPermissionHours] = useState("")
   const [permissionRemarks, setPermissionRemarks] = useState("")
   const [permissionError, setPermissionError] = useState("")
@@ -110,12 +115,12 @@ const LeaveRequestFormPage = () => {
     const rows = []
     for (let d = dayjs(fromDate); !d.isAfter(dayjs(toDate), "day"); d = d.add(1, "day")) {
       const date = d.format("YYYY-MM-DD")
-      const { allowed, note } = getDayAvailability(date, takenSessions)
+      const { allowed, note } = getDayAvailability(date, takenSessions, dayjs(), holidays)
       const picked = halfDayEnabled ? sessionOverrides[date] : undefined
       rows.push({ date, allowed, note, session: allowed.includes(picked) ? picked : allowed[0] })
     }
     return rows
-  }, [fromDate, toDate, takenSessions, sessionOverrides, halfDayEnabled])
+  }, [fromDate, toDate, takenSessions, sessionOverrides, halfDayEnabled, holidays])
 
   const noOfDays = useMemo(
     () => (leaveDays.length ? leaveDays.reduce((sum, d) => sum + (d.session ? sessionDays(d.session) : 0), 0) : ""),
@@ -155,7 +160,12 @@ const LeaveRequestFormPage = () => {
     }
     const unavailable = leaveDays.find((d) => !d.session)
     if (unavailable) {
-      setError(`${dayjs(unavailable.date).format("DD MMM")} is not available — please change the dates.`)
+      setError(`${formatDate(unavailable.date)} is not available — please change the dates.`)
+      return
+    }
+    // Leave may span a holiday, but can't be only holidays.
+    if (leaveDays.every((d) => holidays.has(d.date))) {
+      setError("The selected dates are all holidays — please change the dates.")
       return
     }
     if (!leaveType?.value?.id) {
@@ -196,6 +206,10 @@ const LeaveRequestFormPage = () => {
 
     if (!permissionDate) {
       setPermissionError("Please select a Permission Date.")
+      return
+    }
+    if (holidays.has(permissionDate)) {
+      setPermissionError(`${formatDate(permissionDate)} is a holiday (${holidays.get(permissionDate)}).`)
       return
     }
     if (!permissionHours) {
@@ -258,6 +272,7 @@ const LeaveRequestFormPage = () => {
               toDate={toDate}
               onChange={handleRangeChange}
               blockedDates={blockedDates}
+              holidays={holidays}
             />
 
             {warning && (
@@ -351,6 +366,7 @@ const LeaveRequestFormPage = () => {
                 value={permissionDate}
                 onChange={handlePermissionDateChange}
                 blockedDates={permissionBlockedDates}
+                holidays={holidays}
               />
             </div>
 

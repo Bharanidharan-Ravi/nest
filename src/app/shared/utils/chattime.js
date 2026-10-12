@@ -1,3 +1,5 @@
+import { formatDateTime } from "./dateFormat"
+
 export function formatLastSeen(dateStr){
     if(!dateStr) return "a while ago"
     const date=new Date(dateStr)
@@ -10,29 +12,13 @@ export function formatLastSeen(dateStr){
      const diffHr=Math.floor(diffMin/60)
      if(diffHr<24) return `${diffHr}h ago`
 
-     return date.toLocaleDateString("en-In",{
-        day:"numeric",month:"short",
-        hour:"2-digit",minute:"2-digit"
-     })
+     return formatDateTime(date)
 
 }
-
-// One shared formatter: toLocaleDateString(locale, options) builds a new
-// Intl.DateTimeFormat on every call, which is slow when called per row.
-const DATE_TIME_FORMAT = new Intl.DateTimeFormat("en-IN",{
-   day:"numeric",
-   month:"short",
-   year:"numeric",
-   hour:"2-digit",
-   minute:"2-digit",
-   second:"2-digit"
-})
 
 export function formateDateTime(dateStr){
    if(!dateStr) return ""
    // const normalized=dateStr.endsWith("Z")||dateStr.includes("+")
    // ?dateStr:dateStr + "Z";
-   const date=new Date(dateStr)
-   if(Number.isNaN(date.getTime())) return "Invalid Date"
-   return DATE_TIME_FORMAT.format(date)
+   return formatDateTime(dateStr, "Invalid Date")
 }

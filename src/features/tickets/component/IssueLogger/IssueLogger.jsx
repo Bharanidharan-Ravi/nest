@@ -1,5 +1,9 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from "react";
-import dayjs from "dayjs";
+import {
+  formatDate as formatDisplayDate,
+  formatDateTime as formatDisplayDateTime,
+  formatTime as formatDisplayTime,
+} from "../../../../app/shared/utils/dateFormat";
 import {
   FiEdit2,
   FiAlertCircle,
@@ -35,6 +39,7 @@ import EntityFormPage from "../../../../packages/crud/pages/EntityFormPage";
 import { ThreadFieldConfig } from "../../config/Thread.config";
 import { ThreadFormConfig, completeAndCloseAction } from "../../config/ThreadForm.config";
 import { stripHtml, HtmlRenderer } from "../../../../app/shared/utilities/utilities";
+import { useThreadWorkType } from "../../hooks/useHours";
 
 
 
@@ -74,7 +79,7 @@ const uploadTempFile = async (file) => {
 
 const cleanupTempFiles = (Delete, temps) => {
   if (!temps?.length) return;
-  executeApi({ url: "Attachment/tempCleanUp", method: "POST", payload: { Delete, temps } }).catch(() => {});
+  executeApi({ url: "Attachment/tempCleanUp", method: "POST", payload: { Delete, temps } }).catch(() => { });
 };
 
 // Accent per row kind, matching the row: amber for new issues, sky for edits.
@@ -87,8 +92,29 @@ const ATTACHMENT_EDITOR_TONES = {
 // `files` is a list of { url, name }.
 const AttachmentEditor = ({ files, uploadingCount, onAdd, onRemove, tone = "amber" }) => {
   const toneClass = ATTACHMENT_EDITOR_TONES[tone];
+  const [dragging, setDragging] = useState(false);
   return (
-    <div className="flex flex-col gap-1.5">
+    <div
+      tabIndex={0}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragging(true);
+      }}
+      onDragLeave={() => setDragging(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragging(false);
+        onAdd(e.dataTransfer.files);
+      }}
+      onPaste={(e) => {
+        if (e.clipboardData.files.length > 0) {
+          e.preventDefault();
+          onAdd(e.clipboardData.files);
+        }
+      }}
+      title="Drag & drop or paste files here"
+      className={`flex flex-col gap-1.5 rounded-lg p-1 outline-none focus:ring-2 focus:ring-slate-200 ${dragging ? "bg-slate-100 ring-2 ring-slate-300" : ""}`}
+    >
       {files.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {files.map((f) => (
@@ -118,7 +144,7 @@ const AttachmentEditor = ({ files, uploadingCount, onAdd, onRemove, tone = "ambe
       )}
       <label className={`inline-flex items-center gap-1 self-center px-2 py-1 rounded-lg border border-dashed ${toneClass.picker} bg-white text-[11px] font-medium transition-colors cursor-pointer`}>
         <FiPaperclip size={11} />
-        {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : "Add files"}
+        {uploadingCount > 0 ? `Uploading ${uploadingCount}...` : "Add, drop or paste files"}
         <input
           type="file"
           multiple
@@ -220,7 +246,7 @@ const EDIT_INPUT_CLASS =
 const EDIT_SELECT_CLASS =
   "text-xs font-medium rounded-lg border border-sky-200 bg-white px-2 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-300/50 cursor-pointer";
 
-const formatDateTime = (value) => (value ? dayjs(value).format("DD MMM YYYY, hh:mm A") : "—");
+const formatDateTime = (value) => formatDisplayDateTime(value, "—");
 
 // The list proc sends "IssuelogId" plus the issue's ISSUEACTIVITY rows, whose
 // JSON leaves out null fields. Editing an issue only adds an activity row (the
@@ -348,83 +374,83 @@ const AttachmentsCell = ({ html, onPreview, empty = EMPTY_DASH }) => {
 // Table shape lives here as data, not markup: each entry drives one <th>/<td> pair,
 // so adding, reordering, or hiding a column never touches the render tree below.
 const buildColumns = ({ onPreview, onEdit, expandedId, onToggleExpand }) => [
-    {
-      key: "issueId",
-      header: "Issue #",
-      cellClassName: "whitespace-nowrap",
-      render: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleExpand(row.IssueLogId);
-          }}
-          className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-slate-900 tabular-nums cursor-pointer"
-        >
-          {expandedId === row.IssueLogId ? (
-            <FiChevronDown size={13} className="text-slate-500 shrink-0" />
-          ) : (
-            <FiChevronRight size={13} className="text-slate-300 shrink-0" />
-          )}
-          #{row.IssueNo ?? row.IssueLogId}
-        </button>
-      ),
-    },
-    {
-      key: "description",
-      header: "Description",
-      headerClassName: "min-w-[220px]",
-      cellClassName: "text-[12.5px] font-medium text-slate-800 max-w-[320px] truncate",
-      title: (row) => stripHtml(row.Description),
-      render: (row) => stripHtml(row.Description) || EMPTY_DASH,
-    },
-    {
-      key: "status",
-      header: "Status",
-      cellClassName: "whitespace-nowrap",
-      render: (row) => <StatusBadge value={row.Status} />,
-    },
-    {
-      key: "priority",
-      header: "Priority",
-      cellClassName: "whitespace-nowrap",
-      render: (row) => <PriorityBadge value={row.Priority} />,
-    },
-    {
-      key: "remarks",
-      header: "Remarks",
-      headerClassName: "min-w-[200px]",
-      cellClassName: "font-normal text-slate-500 max-w-[280px] truncate",
-      title: (row) => row.Remarks,
-      render: (row) => row.Remarks || EMPTY_DASH,
-    },
-    {
-      key: "attachments",
-      header: "Attachments",
-      headerClassName: "text-center",
-      cellClassName: "text-center whitespace-nowrap",
-      render: (row) => <AttachmentsCell html={row.AttachmentsHtml} onPreview={onPreview} />,
-    },
-    {
-      key: "actions",
-      header: "Actions",
-      headerClassName: "text-right",
-      cellClassName: "text-right whitespace-nowrap",
-      render: (row) => (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onEdit(row);
-          }}
-          className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
-          title="Edit issue"
-        >
-          <FiEdit2 size={13} />
-        </button>
-      ),
-    },
-  ];
+  {
+    key: "issueId",
+    header: "Issue #",
+    cellClassName: "whitespace-nowrap",
+    render: (row) => (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleExpand(row.IssueLogId);
+        }}
+        className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-slate-900 tabular-nums cursor-pointer"
+      >
+        {expandedId === row.IssueLogId ? (
+          <FiChevronDown size={13} className="text-slate-500 shrink-0" />
+        ) : (
+          <FiChevronRight size={13} className="text-slate-300 shrink-0" />
+        )}
+        #{row.IssueNo ?? row.IssueLogId}
+      </button>
+    ),
+  },
+  {
+    key: "description",
+    header: "Description",
+    headerClassName: "min-w-[220px]",
+    cellClassName: "text-[12.5px] font-medium text-slate-800 max-w-[320px] truncate",
+    title: (row) => stripHtml(row.Description),
+    render: (row) => stripHtml(row.Description) || EMPTY_DASH,
+  },
+  {
+    key: "status",
+    header: "Status",
+    cellClassName: "whitespace-nowrap",
+    render: (row) => <StatusBadge value={row.Status} />,
+  },
+  {
+    key: "priority",
+    header: "Priority",
+    cellClassName: "whitespace-nowrap",
+    render: (row) => <PriorityBadge value={row.Priority} />,
+  },
+  {
+    key: "remarks",
+    header: "Remarks",
+    headerClassName: "min-w-[200px]",
+    cellClassName: "font-normal text-slate-500 max-w-[280px] truncate",
+    title: (row) => row.Remarks,
+    render: (row) => row.Remarks || EMPTY_DASH,
+  },
+  {
+    key: "attachments",
+    header: "Attachments",
+    headerClassName: "text-center",
+    cellClassName: "text-center whitespace-nowrap",
+    render: (row) => <AttachmentsCell html={row.AttachmentsHtml} onPreview={onPreview} />,
+  },
+  {
+    key: "actions",
+    header: "Actions",
+    headerClassName: "text-right",
+    cellClassName: "text-right whitespace-nowrap",
+    render: (row) => (
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onEdit(row);
+        }}
+        className="inline-flex items-center justify-center w-7 h-7 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-800 transition-colors cursor-pointer"
+        title="Edit issue"
+      >
+        <FiEdit2 size={13} />
+      </button>
+    ),
+  },
+];
 
 const initials = (name = "") =>
   name
@@ -498,6 +524,13 @@ const ACTIVITY_COLUMNS = [
     ),
   },
   {
+    // Read-only: the thread an activity was logged on is set by the submit and never edited.
+    key: "thread",
+    header: "Thread",
+    cellClassName: "whitespace-nowrap font-semibold text-slate-700 tabular-nums",
+    render: (a) => (a.ThreadId != null ? `#${a.ThreadId}` : EMPTY_DASH),
+  },
+  {
     key: "status",
     header: "Status",
     cellClassName: "whitespace-nowrap",
@@ -549,8 +582,8 @@ const ACTIVITY_COLUMNS = [
     render: (a) =>
       a.ChangedAt ? (
         <div className="flex flex-col leading-tight">
-          <span className="text-xs font-medium text-slate-700">{dayjs(a.ChangedAt).format("DD MMM YYYY")}</span>
-          <span className="text-[10.5px] font-normal text-slate-400">{dayjs(a.ChangedAt).format("hh:mm A")}</span>
+          <span className="text-xs font-medium text-slate-700">{formatDisplayDate(a.ChangedAt)}</span>
+          <span className="text-[10.5px] font-normal text-slate-400">{formatDisplayTime(a.ChangedAt)}</span>
         </div>
       ) : (
         EMPTY_DASH
@@ -617,11 +650,10 @@ const ExpandedIssueRow = ({ row, columnCount, onPreview }) => {
                     return (
                       <tr
                         key={activity.ActivityId ?? index}
-                        className={`align-middle transition-colors ${
-                          isLatest && activities.length > 1
+                        className={`align-middle transition-colors ${isLatest && activities.length > 1
                             ? "bg-sky-50/40 shadow-[inset_3px_0_0_#0ea5e9]"
                             : "hover:bg-slate-50/60"
-                        }`}
+                          }`}
                       >
                         {ACTIVITY_COLUMNS.map(({ key, cellClassName, render }) => (
                           <td key={key} className={`px-4 py-2.5 ${cellClassName || ""}`}>
@@ -729,20 +761,20 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
       prev[row.IssueLogId]
         ? prev
         : {
-            ...prev,
-            [row.IssueLogId]: {
-              IssueLogId: row.IssueLogId,
+          ...prev,
+          [row.IssueLogId]: {
+            IssueLogId: row.IssueLogId,
+            Status: row.Status,
+            Priority: row.Priority || "",
+            Remarks: "",
+            uploadingCount: 0,
+            tempFiles: [],
+            original: {
               Status: row.Status,
               Priority: row.Priority || "",
-              Remarks: "",
-              uploadingCount: 0,
-              tempFiles: [],
-              original: {
-                Status: row.Status,
-                Priority: row.Priority || "",
-              },
             },
           },
+        },
     );
   };
 
@@ -832,7 +864,12 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
   // assignees, notify flags and progress: new drafts as IssueLogs (a new
   // IssueLog row each) and edited rows as IssueLogUpdates (a new ISSUEACTIVITY
   // row each; the IssueLog row itself is left as it is).
+  const lastSubmitAtRef = useRef(0);
   const submitWithIssues = (submitForm, overrides = {}, skipValidation) => {
+    // The API has no duplicate check, so a double click / Enter / re-render
+    // race that fires the same submit twice would log every new issue twice.
+    if (Date.now() - lastSubmitAtRef.current < 1500) return;
+    lastSubmitAtRef.current = Date.now();
     // Rows opened for edit but left unchanged are just closed, not sent.
     editList.filter((d) => !isEditChanged(d)).forEach((d) => cancelEdit(d.IssueLogId));
     submittedRef.current = {
@@ -875,6 +912,12 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
     setEditDrafts((prev) => Object.fromEntries(Object.entries(prev).filter(([, d]) => !editIds.has(d.IssueLogId))));
     submittedRef.current = { draftIds: new Set(), editIds: new Set() };
   };
+  const { data: threadworktype } = useThreadWorkType()
+  console.log("issue log thread work type",threadworktype);
+  
+  const threadWorkTypeList = Array.isArray(threadworktype)
+    ? threadworktype
+    : threadworktype?.Data ?? []
 
   const threadFormConfig = {
     ...ThreadFormConfig,
@@ -995,9 +1038,8 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
               type="button"
               key={key ?? "total"}
               onClick={() => setStatusFilter((current) => (key === null || current === key ? null : key))}
-              className={`group flex items-center gap-2.5 border bg-white rounded-xl px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all text-left cursor-pointer ${
-                isActive ? activeClass : `border-slate-200/80 ${ringClass} hover:shadow-sm`
-              }`}
+              className={`group flex items-center gap-2.5 border bg-white rounded-xl px-2.5 py-2 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition-all text-left cursor-pointer ${isActive ? activeClass : `border-slate-200/80 ${ringClass} hover:shadow-sm`
+                }`}
             >
               <span className={`flex items-center justify-center w-7 h-7 shrink-0 rounded-lg ${tileClass}`}>
                 <Icon size={13} />
@@ -1140,7 +1182,7 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
                   </td>
                 </tr>
               ))}
-  
+
               {filteredRows.length === 0 && draftIssues.length === 0 && (
                 <tr>
                   <td colSpan={columns.length} className="px-4 py-16 text-center">
@@ -1178,11 +1220,11 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
                   </td>
                 </tr>
               )}
-  
+
               {filteredRows.map((row) => {
                 const editDraft = editDrafts[row.IssueLogId];
                 const isEditing = Boolean(editDraft);
-  
+
                 if (isEditing) {
                   return (
                     <tr key={row.IssueLogId} className="bg-sky-50/40 border-b border-sky-100 align-top">
@@ -1245,14 +1287,13 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
                     </tr>
                   );
                 }
-  
+
                 return (
                   <React.Fragment key={row.IssueLogId}>
                     <tr
                       onClick={() => setExpandedId((current) => (current === row.IssueLogId ? null : row.IssueLogId))}
-                      className={`border-b border-slate-100 last:border-0 align-middle transition-colors cursor-pointer ${
-                        expandedId === row.IssueLogId ? "bg-slate-50/70" : "hover:bg-slate-50/60"
-                      }`}
+                      className={`border-b border-slate-100 last:border-0 align-middle transition-colors cursor-pointer ${expandedId === row.IssueLogId ? "bg-slate-50/70" : "hover:bg-slate-50/60"
+                        }`}
                     >
                       {columns.map(({ key, cellClassName, title, render }) => (
                         <td key={key} className={`px-4 py-3 ${cellClassName || ""}`} title={title?.(row)}>
@@ -1274,32 +1315,32 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
       {/* Thread form: the same fields as the Threads tab's reply form. New
           issues are submitted together with it and linked to the thread it creates. */}
       {/* <div className="border border-slate-200/80 bg-white rounded-2xl shadow-[0_1px_2px_rgba(15,23,42,0.04)] overflow-hidden"> */}
-        <div className="flex flex-wrap items-center justify-end gap-3 ">
-          
-          <span
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ring-1 ring-inset ${
-              hasInvalidDraft
-                ? "bg-red-50 text-red-700 ring-red-200/70"
-                : canSubmit
-                  ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
-                  : "bg-slate-50 text-slate-500 ring-slate-200"
+      <div className="flex flex-wrap items-center justify-end gap-3 ">
+
+        <span
+          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium ring-1 ring-inset ${hasInvalidDraft
+              ? "bg-red-50 text-red-700 ring-red-200/70"
+              : canSubmit
+                ? "bg-emerald-50 text-emerald-700 ring-emerald-200/70"
+                : "bg-slate-50 text-slate-500 ring-slate-200"
             }`}
-          >
-            {hasInvalidDraft ? <FiAlertCircle size={12} /> : canSubmit ? <FiCheckCircle size={12} /> : <FiLoader size={12} className={isUploading ? "animate-spin" : ""} />}
-            {submitHint}
-          </span>
-        </div>
-        <EntityFormPage
-          mode="Create"
-          module="Issue Log"
-          config={threadFormConfig}
-          context={{
-            ...formContext,
-            parentTicket,
-            isClosed: false,
-          }}
-          onSuccessCallback={handleThreadSubmitted}
-        />
+        >
+          {hasInvalidDraft ? <FiAlertCircle size={12} /> : canSubmit ? <FiCheckCircle size={12} /> : <FiLoader size={12} className={isUploading ? "animate-spin" : ""} />}
+          {submitHint}
+        </span>
+      </div>
+      <EntityFormPage
+        mode="Create"
+        module="Issue Log"
+        config={threadFormConfig}
+        context={{
+          ...formContext,
+          parentTicket,
+          isClosed: false,
+          data: { ...formContext?.data, ThreadWorkType: threadWorkTypeList }
+        }}
+        onSuccessCallback={handleThreadSubmitted}
+      />
       {/* </div> */}
 
       {preview && (

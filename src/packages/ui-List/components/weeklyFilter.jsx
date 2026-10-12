@@ -2,6 +2,7 @@ import dayjs from "dayjs";
 import isBetween from "dayjs/plugin/isBetween";
 import { useRef, useEffect, useState, useCallback } from "react";
 import {createPortal} from "react-dom";
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 dayjs.extend(isBetween);
 
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
@@ -317,8 +318,8 @@ export function WeekRangeFilter({ filter, currentValue, updateQuery }) {
   // ── Label ─────────────────────────────────────────────────────────────────
   const isSingleDay = start.isSame(end, "day");
   const label = isSingleDay
-    ? start.format("DD MMM YYYY")
-    : `${start.format("DD MMM")} – ${end.format("DD MMM")}`;
+    ? formatDate(start)
+    : `${formatDate(start)} – ${formatDate(end)}`;
 
   return (
     <div className="relative" ref={ref}>

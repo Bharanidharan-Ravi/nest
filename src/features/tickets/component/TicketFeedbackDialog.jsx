@@ -7,6 +7,7 @@ import { queryKeys } from "../../../core/query/queryKeys";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
+import { formatDateTime } from "../../../app/shared/utils/dateFormat";
 
 export default function TicketFeedbackDialog({
   open,
@@ -123,14 +124,7 @@ export default function TicketFeedbackDialog({
     ? dateString
     : dateString + "Z";
 
-    return new Date(normalizedDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return formatDateTime(new Date(normalizedDate), "");
   };
 
   return (

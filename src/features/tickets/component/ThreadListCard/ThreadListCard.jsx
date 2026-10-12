@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { HtmlRenderer } from "../../../../app/shared/utilities/utilities";
+import { formatDate, formatDateTime, formatTime } from "../../../../app/shared/utils/dateFormat";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import {
@@ -25,22 +26,12 @@ const getInitials = (name) => {
 };
 
 function formatDateRange(fromTime, toTime) {
-  const currentYear = dayjs().year();
-  const from = dayjs(fromTime);
-  const to = dayjs(toTime);
-  const formatStr = currentYear === from.year() ? "D MMM h:mm A" : "D MMM YYYY h:mm A";
-  return `${from.format(formatStr)} - ${to.format(formatStr)}`;
+  return `${formatDateTime(fromTime)} - ${formatDateTime(toTime)}`;
 }
 
 const formatTimeStr = (timeStr) => {
   if (!timeStr) return "";
-  if (/\d+:\d+\s*(AM|PM)/i.test(timeStr)) return timeStr;
-
-  let t = dayjs(timeStr);
-  if (!t.isValid() || timeStr.length <= 5) {
-    t = dayjs(`2026-01-01T${timeStr}`);
-  }
-  return t.isValid() ? t.format("h:mm A") : timeStr;
+  return formatTime(timeStr, timeStr);
 };
 
 const formatTimeRange = (startTimeStr, endTimeStr) => {
@@ -56,8 +47,7 @@ const formatTimeRange = (startTimeStr, endTimeStr) => {
 
 const formatDateStr = (dateStr) => {
   if (!dateStr) return "";
-  const d = dayjs(dateStr);
-  return d.isValid() ? d.format("ddd, D MMM YYYY") : dateStr;
+  return formatDate(dateStr, dateStr);
 };
 
 // 🔥 HELPER: Parses the raw backend string into structured meeting data (regex fallback)
@@ -170,6 +160,7 @@ const parseDetails = (item) => {
 const ThreadListCard = ({
   item,
   onEdit,
+  isEditLocked = false,
   currentUser,
   formContext,
   toggles = [],
@@ -320,7 +311,7 @@ const ThreadListCard = ({
   };
 
   const isWithin24Hours = dayjs().diff(dayjs(item.createdAt), "hour") <= 24;
-  const canEdit = (isMe && isWithin24Hours) ;
+  const canEdit = isMe && isWithin24Hours && !isEditLocked;
 
   const renderCoContributors = (coContributors) => {
     if (formContext?.isViewer) return null;
@@ -734,7 +725,7 @@ const ThreadListCard = ({
                 {isMe ? "You" : user?.role === 3 && item.team !== null ? "WorkGlow Support" : item.CreatedBy}
               </strong>
               {renderCoContributors(item.CoContributors)}
-              <span className="text-[11px] opacity-75 ml-0.5" title={dayjs(item.createdAt).format("MMMM D, YYYY h:mm A")}>
+              <span className="text-[11px] opacity-75 ml-0.5" title={formatDateTime(item.createdAt)}>
                 {isMeeting
                   ? isMeetingCompleted
                     ? "completed a meeting"

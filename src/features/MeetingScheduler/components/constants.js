@@ -4,7 +4,7 @@ export const MONTHS = [
 ];
 
 export const DAYS_SHORT = ["Su","Mo","Tu","We","Th","Fr","Sa"];
-export const HOURS = Array.from({ length: 9 }, (_, i) => i + 10);
+export const HOURS = Array.from({ length: 11 }, (_, i) => i + 8);
 
 // export const EMPLOYEES = [
 //   "AnbuMani","Gowtham","Akash","Rekha","RamKumar",

@@ -70,7 +70,7 @@
 //   ]);
 // }
 
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 
 export function useUrlSync(state) {
@@ -116,7 +116,9 @@ export function useUrlSync(state) {
     const defaultView = state.config.defaultView || "table";
     syncParam(`${prefix}view`, state.view, defaultView, true);
 
-    if (hasChanges) setParams(newParams, { replace: true });
+    // The URL write re-renders the whole router tree (navigations run at
+    // normal priority, see App.jsx); low priority keeps it out of the click frame
+    if (hasChanges) startTransition(() => setParams(newParams, { replace: true }));
 
     // 👇 CHANGED: only write the separate "which view is active" tracker
     //             when the module genuinely has multiple views

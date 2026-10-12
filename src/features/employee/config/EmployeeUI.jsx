@@ -1,4 +1,4 @@
-import dayjs from "dayjs";
+import { formatDate } from "../../../app/shared/utils/dateFormat";
 import { HtmlRenderer } from "../../../app/shared/utilities/utilities";
 import AvatarCell from "../components/AvatarCell";
 
@@ -48,7 +48,7 @@ export const EmployeedataTable = {
     {
       key: "DoB",
       label: "DoB",
-      render: (item) => <div className="h-30">{item.DoB ? dayjs(item.DoB).format("DD-MM-YYYY") : "-"}</div>,
+      render: (item) => <div className="h-30">{item.DoB ? formatDate(item.DoB) : "-"}</div>,
     },
     {
       key: "Email",

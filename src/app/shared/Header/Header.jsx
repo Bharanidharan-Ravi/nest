@@ -16,7 +16,7 @@ import {
   useNotificationCount,
 } from "../../Hooks/useNotificationCount";
 import { requestNotificationPermission } from "../../../core/notifications/browserNotification";
-import { useBannerMessage } from "../../../features/BannerMessage/hooks/useBannerdata";
+import { useActiveBanners } from "../../../features/BannerMessage/hooks/useBannerdata";
 import { banner } from "../../../features/BannerMessage/elements";
 import {
   AlertTriangle,
@@ -29,6 +29,9 @@ import {
 } from 'lucide-react';
 import { handleLogout } from "../../Hooks/Logout";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
+import { useMeetingBadge } from "../../../features/MeetingScheduler/hooks/useMeetingBadge";
+import { reminderLabel } from "../../../features/MeetingScheduler/Helpers/reminders";
+import { parseStamp } from "../../../features/MeetingScheduler/Helpers/dateTime";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import dayjs, { Dayjs } from "dayjs";
 import { useQueryClient } from "@tanstack/react-query";
@@ -43,6 +46,10 @@ import { Bell } from "lucide-react";
 import { Trophy } from "lucide-react";
 import { PartyPopper } from "lucide-react";
 import { Megaphone } from "lucide-react";
+import { Cake } from "lucide-react";
+import { BirthdayHeaderChip } from "../../../features/birthday/components/BirthdayCelebration";
+import { useTodayBirthdays } from "../../../features/birthday/hooks/useTodayBirthdays";
+import { firstName } from "../../../features/birthday/helpers/birthday";
 
 // 🔥 THIS IS THE MISSING PART
 dayjs.extend(relativeTime);
@@ -64,7 +71,12 @@ const Header = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const { data } = useNotificationCount();
   const { data: notificationList } = getNotification(meetingShowNotifications || showNotifications);
-  const meetingCount = data?.MEETING;
+  // Same count as the sidebar entry (see useMeetingBadge)
+  const {
+    todayMeetings,
+    unseenNotifications: unseenMeetingNotifications,
+    count: meetingCount,
+  } = useMeetingBadge();
   const ticketCount = (data?.TICKET || 0) + (data?.COMPANY_POLICY || 0);
 
   const { data: statleTicketsData } = useGetStaleTicketData(user?.userId);
@@ -76,7 +88,7 @@ const Header = () => {
   const notificationRef = useRef(null);
   const { goTo } = useSmartNavigation();
   const queryClient = useQueryClient();
-  const { data: bannerListWrapper } = useBannerMessage();
+  const { data: bannerListWrapper } = useActiveBanners();
   const bannerContainerRef = useRef(null);
   const bannerTrackRef = useRef(null);
   const [repeatedBanners, setRepeatedBanners] = useState([]);
@@ -229,15 +241,30 @@ const Header = () => {
       case "ti-times":
         return <XCircle {...props} />;
 
+      case "ti-cake":
+        return <Cake {...props} />;
+
       default:
         return <Info {...props} />;
     }
   };
   const now = useMemo(() => dayjs(), []);
 
+  // Colleagues' birthdays today, ahead of the admin banners (empty for Clients)
+  const { others: birthdayPeople } = useTodayBirthdays();
+
   const filteredBanners = useMemo(() => {
-    return activeBanners.filter((banner) => dayjs(banner.EndDate).endOf("day").isAfter(now));
-  }, [activeBanners, now]);
+    const birthdayBanners = birthdayPeople.map((emp) => ({
+      IconClass: "ti-cake",
+      ColorCode: "#db2777",
+      Type_Name: "Birthday",
+      MessageText: `🎂 Today is ${emp.name}'s birthday! Don't forget to wish ${firstName(emp.name)} 🎉`,
+    }));
+    return [
+      ...birthdayBanners,
+      ...activeBanners.filter((banner) => dayjs(banner.EndDate).endOf("day").isAfter(now)),
+    ];
+  }, [activeBanners, now, birthdayPeople]);
 
   useEffect(() => {
     if (!filteredBanners.length) {
@@ -299,8 +326,11 @@ const Header = () => {
   return (
     <>
       <header className="header relative py-4 px-8 grid grid-cols-[1fr_auto_1fr] items-center w-full bg-white shadow-sm">
-        {/* Left spacer keeps the center column truly centered */}
-        <div />
+        {/* Left column keeps the center column truly centered; on the user's
+            birthday it carries their greeting */}
+        <div className="min-w-0">
+          <BirthdayHeaderChip />
+        </div>
 
         {/* Center column: reserves its own grid track, so it never overlaps the right side */}
         {!isViewer && (
@@ -334,7 +364,7 @@ const Header = () => {
                   onClick={() => {
                     setMeetinShowNotifications(prev => !prev);
                     setShowNotifications(false); // close ticket dropdown if open
-                    markSeen("MEETING");
+                    if (unseenMeetingNotifications > 0) markSeen("MEETING");
                     requestNotificationPermission({ explicit: true });
                   }}
                 />
@@ -389,6 +419,41 @@ const Header = () => {
 
 
                     <div className="max-h-[300px] overflow-y-auto">
+                      {todayMeetings.length > 0 && (
+                        <div className="border-b">
+                          <p className="px-4 pt-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+                            Today
+                          </p>
+                          {todayMeetings.map((item) => (
+                            <div
+                              key={item.meeting_id}
+                              onClick={() => {
+                                goTo(ROUTE_KEYS.MEETING_LIST);
+                                setMeetinShowNotifications(false);
+                              }}
+                              className="px-4 py-2.5 border-b last:border-b-0 hover:bg-gray-50 cursor-pointer transition"
+                            >
+                              <div className="flex flex-col gap-1 min-w-0">
+                                <h4 className="text-sm font-medium text-gray-900 truncate">{item.title}</h4>
+
+                                {item.startsAt != null && (
+                                  <p className="text-sm text-gray-600 truncate">
+                                    {item.startLabel}
+                                    {item.endLabel ? ` - ${item.endLabel}` : ""} · {reminderLabel(item)}
+                                  </p>
+                                )}
+
+                                <div className="flex items-center justify-between text-xs text-gray-500">
+                                  <span>Scheduled By: {item.Organizer || "-"}</span>
+                                  {parseStamp(item.created_at) && (
+                                    <span>{dayjs(parseStamp(item.created_at)).fromNow()}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       {notificationList?.length > 0 ? (
                         notificationList
                           ?.filter((item) => item.entityType === "MEETING"
@@ -429,9 +494,11 @@ const Header = () => {
                             </div>
                           ))
                       ) : (
-                        <div className="p-8 text-center text-gray-500">
-                          No Meetings
-                        </div>
+                        todayMeetings.length === 0 && (
+                          <div className="p-8 text-center text-gray-500">
+                            No Meetings
+                          </div>
+                        )
                       )}
                     </div>
                   </div>

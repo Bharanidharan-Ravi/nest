@@ -7,11 +7,13 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import dayjs from "dayjs"
+import { formatDate } from "../../../app/shared/utils/dateFormat"
 
 const CAL_DAYS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]
 const fmt = (d) => d.format("YYYY-MM-DD")
 
-export default function LeaveSingleDatePicker({ value, onChange, blockedDates, allowPast = false }) {
+// holidays: Map of "YYYY-MM-DD" → holiday name; those dates can't be picked.
+export default function LeaveSingleDatePicker({ value, onChange, blockedDates, holidays, allowPast = false }) {
   const [showCal, setShowCal] = useState(false)
   const [month, setMonth] = useState(() => (value ? dayjs(value) : dayjs()))
 
@@ -20,7 +22,10 @@ export default function LeaveSingleDatePicker({ value, onChange, blockedDates, a
   const [calPosition, setCalPosition] = useState({ top: 0, left: 0 })
 
   const blockedSet = useMemo(() => blockedDates || new Set(), [blockedDates])
-  const isDisabled = (d) => (!allowPast && d.isBefore(dayjs().startOf("day"), "day")) || blockedSet.has(fmt(d))
+  const holidayMap = useMemo(() => holidays || new Map(), [holidays])
+  const isPast = (d) => !allowPast && d.isBefore(dayjs().startOf("day"), "day")
+  const holidayName = (d) => holidayMap.get(fmt(d))
+  const isDisabled = (d) => isPast(d) || blockedSet.has(fmt(d)) || holidayMap.has(fmt(d))
 
   const selected = value ? dayjs(value) : null
 
@@ -68,13 +73,14 @@ export default function LeaveSingleDatePicker({ value, onChange, blockedDates, a
       disabled ? "text-gray-300 cursor-not-allowed line-through" : "cursor-pointer",
       !disabled && isSel ? "bg-blue-500 text-white rounded-full" : "",
       !disabled && !isSel ? "hover:bg-gray-100 active:bg-gray-200 rounded-full text-gray-700" : "",
+      holidayName(d) && !isPast(d) ? "bg-purple-50 text-purple-400 rounded-full" : "",
       isT && !isSel ? "font-bold underline underline-offset-2" : "",
     ]
       .filter(Boolean)
       .join(" ")
   }
 
-  const label = (val, placeholder) => (val ? dayjs(val).format("DD MMM YYYY") : placeholder)
+  const label = (val, placeholder) => (val ? formatDate(val) : placeholder)
 
   return (
     <div ref={wrapRef}>
@@ -128,6 +134,7 @@ export default function LeaveSingleDatePicker({ value, onChange, blockedDates, a
                 ) : (
                   <div
                     key={fmt(date)}
+                    title={holidayName(date) ? `Holiday: ${holidayName(date)}` : undefined}
                     className={getDayClass(date)}
                     onClick={() => {
                       if (isDisabled(date)) return
@@ -139,6 +146,15 @@ export default function LeaveSingleDatePicker({ value, onChange, blockedDates, a
                   </div>
                 ),
               )}
+            </div>
+
+            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center gap-3 text-[10px] text-gray-500">
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-purple-50 border border-purple-200 inline-block" /> Holiday
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-full bg-gray-100 border border-gray-200 inline-block" /> Unavailable
+              </span>
             </div>
           </div>,
           document.body,
