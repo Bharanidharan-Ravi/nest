@@ -1,6 +1,7 @@
 // Hooks for the meeting scheduler.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiQuery } from "../../../core/query/useApiQuery";
+import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { useList } from "../../../packages/ui-List/context/ListContext";
 import { parseQuery } from "../../../packages/ui-List/hooks/useQueryParser";
 import { parseRangeValue, toRangeValue } from "../Helpers/calendarRange";
@@ -9,8 +10,12 @@ import { setQueryFilter } from "../Helpers/common";
 // The meetings themselves are loaded by the scheduler list's own API call
 // (see the Host filter and the date range in MeetingDashboard).
 
-/** Meetings that still have a day left, for the sidebar's "Upcoming Meetings". */
+/**
+ * Meetings that still have a day left, for the sidebar's "Upcoming Meetings".
+ * Staff only: the list is company-wide, so clients (role 3) never request it.
+ */
 export const useUpcomingMeeting = () => {
+  const { isViewer } = useCurrentUser();
   return useApiQuery({
     url: "/sync/v2",
     method: "POST",
@@ -21,6 +26,7 @@ export const useUpcomingMeeting = () => {
     source: "UpcomingMeeting",
     options: {
       staleTime: 10 * 60 * 1000,
+      enabled: !isViewer,
     },
   });
 };

@@ -22,6 +22,9 @@ export const queryKeys = {
     // Single ticket
     detail: (ticketId) => [...queryKeys.ticket.all, "detail", ticketId],
 
+    // "#" picker rows (TicketTagsV2); no repoId = every visible ticket
+    tags: (repoId = "all") => [...queryKeys.ticket.all, "tags", repoId],
+
     // Ticket thread/comments
     thread: (ticketId) => [...queryKeys.ticket.all, "thread", ticketId],
     issueLog: (ticketId) => [...queryKeys.ticket.all, "issueLog", ticketId],

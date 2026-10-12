@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import React, { useMemo, useRef } from "react";
-import { useTicketMaster } from "../hooks/useTicketMaster";
 import { useTicketList } from "../hooks/useTicketList";
 import "../css/ViewTickets.css";
 import { ListProvider } from "../../../packages/ui-List/components/ListProvider";
@@ -8,7 +7,6 @@ import { ListLayout } from "../../../packages/ui-List/components/ListLayout";
 import { TicketListConfig } from "../config/TicketUI.config";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
-import { normalizeTicket } from "../../../app/shared/utils/normalizer";
 import {
   useEmployeeOptions,
   useLabelOptions,
@@ -24,9 +22,9 @@ import {
 import { TicketsHeader } from "./TicketsHeader";
 import TicketListCard from "../component/TicketListCard";
 
-// true: paged TicketListV2 / TicketListCountsV2 (filters, sort, counts and
-// visibility on the server). false: old full TicketsList, filtered here.
-const USE_TICKET_LIST_V2 = true;
+// Rows come from the paged TicketListV2 / TicketListCountsV2 (filters, sort,
+// counts and visibility on the server, see useTicketList), not from here.
+const NO_LOCAL_ROWS = [];
 
 export const isAllowedToView = (item, userId) => {
   const normalizedUserId = String(userId ?? "").toLowerCase().trim();
@@ -67,15 +65,6 @@ export default function TicketsPage() {
   const { goTo } = useSmartNavigation();
   const { isViewer } = useCurrentUser();
 
-  const { data } = useTicketMaster(
-    {
-      repoId: repoId ?? null,
-      projectId: activeProjectId ?? null,
-    },
-    { enabled: !USE_TICKET_LIST_V2 },
-  );
-  // const data  = useTicketMaster(activeProjectId);
-
   const projectFilterOptions = useProjectOptions(true);
   const labelFilterOptions = useLabelOptions(true);
   const employeeFilterOptions = useEmployeeOptions(true);
@@ -85,8 +74,6 @@ export default function TicketsPage() {
   
 
   const currentUser = readUserFromSession();
-  const currentUserId =
-    currentUser?.id ?? currentUser?.userId ?? currentUser?.UserId ?? null;
 
   const editRouteKey = projId
     ? ROUTE_KEYS.PROJ_TICKET_EDIT
@@ -98,10 +85,6 @@ export default function TicketsPage() {
       ? ROUTE_KEYS.PROJ_TICKET_CREATE
       : ROUTE_KEYS.TICKET_CREATE
 
-  const ticketList = useMemo(() => {
-    const rawList = (data ?? []).map(normalizeTicket);
-    return rawList.filter((item) => isAllowedToView(item, currentUserId));
-  }, [data, currentUserId]);
   const ownerFilterOptions = useEmployeeOptions(true, "Owner");
 
   // This page re-renders on every URL change (router hooks). The config is
@@ -114,12 +97,10 @@ export default function TicketsPage() {
     ...TicketListConfig(isViewer),
     enablequickComment: isViewer ? false : true,
     enablequickStatus: isViewer ? false : true,
-    ...(USE_TICKET_LIST_V2 && {
-      useServerData: useTicketList,
-      serverScope: { repoId: repoId ?? null, projectId: activeProjectId ?? null },
-    }),
-    // serverKey: TicketListV2 filter key (dbo.TicketListQueryDef) used in
-    // server mode; customFilter is the local-mode equivalent.
+    useServerData: useTicketList,
+    serverScope: { repoId: repoId ?? null, projectId: activeProjectId ?? null },
+    // serverKey: TicketListV2 filter key (dbo.TicketListQueryDef);
+    // customFilter is the local equivalent (instant preview while it loads).
     filters: [
       ...(!repoId
         ? [
@@ -486,7 +467,7 @@ export default function TicketsPage() {
       <div className="w-full pb-10">
         <ListProvider
           config={listConfigWithNav}
-          data={ticketList}
+          data={NO_LOCAL_ROWS}
           userRole={currentUser?.role}
         >
           {!repoId && !projId && (

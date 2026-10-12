@@ -1152,6 +1152,18 @@ const formatConsumeTime = (value) => {
   return `${h}h:${m.toString().padStart(2, "0")}m`;
 };
 
+// Stacked bar markers: one letter each; a bar can carry several ("CR")
+const MARKER_LABELS = { C: "Closed", R: "Reopened", M: "Meeting" };
+// Bar overlay + badge colour per marker (patterns are defined in the SVG defs)
+const MARKER_STYLES = {
+  C: { pattern: "diagonalStripes", color: "#1e293b" },
+  R: { pattern: "reopenDots", color: "#d97706" },
+  M: { pattern: "meetingLines", color: "#4f46e5" },
+};
+// A marked block stays tall enough to show its pattern; badges keep this gap
+const MARKER_MIN_H = 14;
+const BADGE_GAP = 13;
+
 const buildTooltipData = ({ item, x, y, display, color, markerType }) => ({
   rawItem: item,
   x,
@@ -1282,7 +1294,7 @@ const ChartTooltip = ({
 
         {tooltip.markerType && (
           <span className="bg-gray-800 text-white text-[7px] px-1 py-0.5 rounded uppercase tracking-wider shrink-0">
-            {tooltip.markerType === "C" ? "Closed" : "Reopened"}
+            {[...tooltip.markerType].map((m) => MARKER_LABELS[m] ?? m).join(" · ")}
           </span>
         )}
       </div>
@@ -1495,8 +1507,15 @@ const StackedBarDesign = ({
     return map;
   }, [data, graphConfig, getTicketId, getConsumeTime, hasNoConsumeTime, getStatus]);
 
+  // graphConfig.graphMarkerKey(item) → "C" | "R" | "M" | null: every row
+  // gets its own marker on its own day. Without it only the latest close /
+  // reopen of a ticket is marked (status-only rows).
+  const markerKey = graphConfig.graphMarkerKey;
+
   const getLatestMarkerType = useCallback(
     (item) => {
+      if (markerKey) return markerKey(item) ?? null;
+
       const status = getStatus(item);
       const isClosed = status === "closed";
       const isReopened = status === "reopened";
@@ -1515,26 +1534,24 @@ const StackedBarDesign = ({
 
       return latest.markerType;
     },
-    [getStatus, getTicketId, getUpdatedAt, latestStatusMap]
+    [markerKey, getStatus, getTicketId, getUpdatedAt, latestStatusMap]
+  );
+
+  // A row with no time that is only there for its marker
+  const isMarkerOnly = useCallback(
+    (item) => {
+      if (!hasNoConsumeTime(item)) return false;
+      const marker = getLatestMarkerType(item);
+      if (markerKey) return marker != null;
+      const status = getStatus(item);
+      return (status === "closed" || status === "reopened") && marker != null;
+    },
+    [markerKey, getStatus, hasNoConsumeTime, getLatestMarkerType]
   );
 
   const isValidGraphRecord = useCallback(
-    (item) => {
-      const consumeTime = getConsumeTime(item);
-      const status = getStatus(item);
-      const isClosed = status === "closed";
-      const isReopened = status === "reopened";
-      const isNullConsume = hasNoConsumeTime(item);
-      const latestMarker = getLatestMarkerType(item);
-
-      const isLatestStatusMarker =
-        isNullConsume &&
-        (isClosed || isReopened) &&
-        latestMarker != null;
-
-      return !isNullConsume || isLatestStatusMarker;
-    },
-    [getConsumeTime, getStatus, hasNoConsumeTime, getLatestMarkerType]
+    (item) => !hasNoConsumeTime(item) || isMarkerOnly(item),
+    [hasNoConsumeTime, isMarkerOnly]
   );
 
   const xaxis = useMemo(() => {
@@ -1648,17 +1665,10 @@ const StackedBarDesign = ({
     xaxis.forEach((column) => (grouped[column.key] = {}));
 
     data.forEach((item) => {
-      const status = getStatus(item);
-      const isClosed = status === "closed";
-      const isReopened = status === "reopened";
       const consumeTime = getConsumeTime(item);
       const isNullConsume = hasNoConsumeTime(item);
       const markerType = getLatestMarkerType(item);
-
-      const isStatusMarker =
-        isNullConsume &&
-        (isClosed || isReopened) &&
-        markerType != null;
+      const isStatusMarker = isMarkerOnly(item);
 
       if (isNullConsume && !isStatusMarker) return;
 
@@ -1705,9 +1715,14 @@ const StackedBarDesign = ({
       const finalColor =
         originalColorMap.get(ticketId) || getHashColor(ticketId);
 
-      const effectiveConsumeTime = isStatusMarker ? "00:05" : consumeTime;
+      // graphMarkerKey: a close / reopen with no time adds no time — it
+      // marks the ticket's bar that day, or shows as a thin bar of its own
+      const effectiveConsumeTime = isStatusMarker
+        ? (markerKey ? "00:00" : "00:05")
+        : consumeTime;
       const rawValue = getSafeValue(item, graphConfig.graphValueKey);
-      const isMarker = rawValue === 0.1 || rawValue === "0.1";
+      const isMarker =
+        rawValue === 0.1 || rawValue === "0.1" || (markerKey && isStatusMarker);
 
       const minutes = isMarker
         ? 0
@@ -1715,9 +1730,14 @@ const StackedBarDesign = ({
 
       if (minutes <= 0 && !isMarker) return;
 
-      const segmentKey = isStatusMarker
-        ? `${ticketId}__STATUS__${xKey}__${markerType}`
-        : ticketId;
+      // graphMarkerKey: every entry is a block of its own — each thread
+      // (work or meeting) and each close / reopen without a thread
+      const segmentKey = markerKey
+        ? `${ticketId}__${getSafeValue(item, "id") ?? getUpdatedAt(item)}`
+        : isStatusMarker
+          ? `${ticketId}__STATUS__${xKey}__${markerType}`
+          : ticketId;
+      const segmentMarker = markerKey || isStatusMarker ? markerType : null;
 
       if (!grouped[xKey][segmentKey]) {
         const rawLabel =
@@ -1760,7 +1780,7 @@ const StackedBarDesign = ({
           recordCount: 1,
           noConsumeTime: isNullConsume,
           latestUpdatedAt: getUpdatedAt(item),
-          markerType: isStatusMarker ? markerType : null,
+          markerType: segmentMarker,
         };
 
         return;
@@ -1768,6 +1788,15 @@ const StackedBarDesign = ({
 
       const segment = grouped[xKey][segmentKey];
       segment.history.push(item);
+      // Closed and reopened the same day → "CR" (in time order)
+      if (segmentMarker && !String(segment.markerType ?? "").includes(segmentMarker)) {
+        const earlier =
+          new Date(getUpdatedAt(item) || 0).getTime() <
+          new Date(segment.latestUpdatedAt || 0).getTime();
+        segment.markerType = earlier
+          ? `${segmentMarker}${segment.markerType ?? ""}`
+          : `${segment.markerType ?? ""}${segmentMarker}`;
+      }
       segment.totalMins += minutes;
       segment.value = segment.totalMins / 60;
       segment.recordCount += 1;
@@ -1850,12 +1879,13 @@ const StackedBarDesign = ({
     data,
     graphConfig,
     xaxis,
-    getStatus,
+    markerKey,
     getUpdatedAt,
     getTicketId,
     getConsumeTime,
     hasNoConsumeTime,
     getLatestMarkerType,
+    isMarkerOnly,
     originalColorMap,
   ]);
 
@@ -1971,6 +2001,16 @@ const StackedBarDesign = ({
             <rect width="2.5" height="6" fill="#ffffff" fillOpacity="0.6" />
           </pattern>
 
+          {/* Reopen marker fill */}
+          <pattern id="reopenDots" width="5" height="5" patternUnits="userSpaceOnUse">
+            <circle cx="2.5" cy="2.5" r="1.4" fill="#ffffff" fillOpacity="0.8" />
+          </pattern>
+
+          {/* Meeting marker fill */}
+          <pattern id="meetingLines" width="6" height="5" patternUnits="userSpaceOnUse">
+            <rect width="6" height="1.6" fill="#ffffff" fillOpacity="0.6" />
+          </pattern>
+
           <marker id="arrowhead" markerWidth="5" markerHeight="5" refX="4" refY="2.5" orient="auto">
             <polygon points="0 0, 5 2.5, 0 5" fill="#1e293b" />
           </marker>
@@ -2030,6 +2070,8 @@ const StackedBarDesign = ({
                 const x = index * segmentW + (segmentW - safeBarW) / 2;
 
                 let currentY = padTop + innerH - ry;
+                // Badges go bottom → top; each stays BADGE_GAP above the last
+                let lastBadgeY = Infinity;
 
                 const dayTotalMins = (chartData[column.key] || []).reduce(
                   (sum, item) => sum + (item.totalMins || 0),
@@ -2045,9 +2087,15 @@ const StackedBarDesign = ({
                 return (
                   <g key={column.key}>
                     {(chartData[column.key] || []).map((item, segmentIndex) => {
-                      const height = Math.max(6, item.value * unitH);
+                      const height = Math.max(
+                        item.markerType ? MARKER_MIN_H : 6,
+                        item.value * unitH
+                      );
                       const y = currentY - height;
                       currentY = y;
+                      const midY = y + height / 2;
+                      const badgeY = item.markerType ? Math.min(midY, lastBadgeY - BADGE_GAP) : midY;
+                      if (item.markerType) lastBadgeY = badgeY;
 
                       return (
                         <g
@@ -2133,47 +2181,57 @@ const StackedBarDesign = ({
 
                             {item.markerType && (
                               <g className="pointer-events-none">
-                                <path
-                                  d={`
+                                {/* C → diagonal stripes, R → dots, M → horizontal lines */}
+                                {[...item.markerType].map((m) => {
+                                  const style = MARKER_STYLES[m];
+                                  if (!style?.pattern) return null;
+                                  const body = `
                                     M ${x} ${y}
                                     L ${x} ${y + height}
                                     A ${rx} ${ry} 0 0 0 ${x + safeBarW} ${y + height}
                                     L ${x + safeBarW} ${y}
                                     Z
-                                  `}
-                                  fill="url(#diagonalStripes)"
-                                />
-
-                                <ellipse
-                                  cx={x + rx}
-                                  cy={y}
-                                  rx={rx}
-                                  ry={ry}
-                                  fill="url(#diagonalStripes)"
-                                />
+                                  `;
+                                  return (
+                                    <g key={m}>
+                                      <path d={body} fill={`url(#${style.pattern})`} />
+                                      <ellipse
+                                        cx={x + rx}
+                                        cy={y}
+                                        rx={rx}
+                                        ry={ry}
+                                        fill={`url(#${style.pattern})`}
+                                      />
+                                    </g>
+                                  );
+                                })}
 
                                 <line
                                   x1={x + safeBarW + 13}
-                                  y1={y + height / 2}
+                                  y1={badgeY}
                                   x2={x + safeBarW + 3}
-                                  y2={y + height / 2}
+                                  y2={midY}
                                   stroke="#1e293b"
                                   strokeWidth="1.5"
                                   markerEnd="url(#arrowhead)"
                                 />
 
                                 <circle
-                                  cx={x + safeBarW + 18}
-                                  cy={y + height / 2}
-                                  r="5.5"
-                                  fill="#1e293b"
+                                  cx={x + safeBarW + 18 + (item.markerType.length - 1) * 2}
+                                  cy={badgeY}
+                                  r={5.5 + (item.markerType.length - 1) * 2}
+                                  fill={
+                                    item.markerType.length === 1
+                                      ? (MARKER_STYLES[item.markerType]?.color ?? "#1e293b")
+                                      : "#1e293b"
+                                  }
                                   stroke="#ffffff"
                                   strokeWidth="1"
                                 />
 
                                 <text
-                                  x={x + safeBarW + 18}
-                                  y={y + height / 2 + 2.5}
+                                  x={x + safeBarW + 18 + (item.markerType.length - 1) * 2}
+                                  y={badgeY + 2.5}
                                   fill="#ffffff"
                                   fontSize="7"
                                   fontWeight="bold"

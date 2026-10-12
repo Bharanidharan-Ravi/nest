@@ -9,12 +9,10 @@ import { applyListFilters } from "../../packages/ui-List/core/filterEngine";
 import { normalizeTicket } from "../../app/shared/utils/normalizer";
 import { useTicketMaster } from "../../features/tickets/hooks/useTicketMaster";
 import { queryClient } from "../api/queryClient";
-import { executeApi } from "../api/executor";
-import { extractSourceData } from "../query/useApiQuery";
 import { queryKeys } from "../query/queryKeys";
-import { buildSyncPayload } from "../sync/buildSyncPayload";
+import { fetchTicketTags } from "../sync/ticketListV2";
 
-const REPO_TICKETS_STALE_TIME = 1000 * 60 * 3; // same as useTicketMaster list
+const TICKET_TAGS_STALE_TIME = 1000 * 60 * 3; // same as the chat "#" picker
 
 // Filter config consumed by applyListFilters (same shape as a list UI config)
 export const TICKET_FILTER_CONFIG = {
@@ -99,24 +97,17 @@ export const useRepoTickets = (repoId) => {
   return { tickets, isLoading };
 };
 
-// Hook-free version for non-React callers (editor mention sources, etc.).
-// Reads the same cache entry as useRepoTickets and fetches only when missing/stale.
+// Hook-free, for the editor's "#" mentions: id / code / title / repo only
+// (TicketTagsV2). One cache entry for every repo and the chat "#" picker,
+// filtered to the repo here; fetched only when missing / stale.
 export const fetchRepoTickets = async (repoId) => {
   if (!repoId) return [];
   const repoKey = String(repoId);
 
   const rows = await queryClient.ensureQueryData({
-    queryKey: queryKeys.ticket.list({ repoId: repoKey, projectId: "all" }),
-    queryFn: async () => {
-      const res = await executeApi({
-        url: "/sync/v2",
-        method: "POST",
-        payload: buildSyncPayload({ configKey: "TicketsList", repoId: repoKey }),
-        config: { _silent: true },
-      });
-      return extractSourceData(res, "TicketsList") ?? res;
-    },
-    staleTime: REPO_TICKETS_STALE_TIME,
+    queryKey: queryKeys.ticket.tags(),
+    queryFn: () => fetchTicketTags(),
+    staleTime: TICKET_TAGS_STALE_TIME,
     revalidateIfStale: true, // serve cache instantly, refresh in background
   });
 

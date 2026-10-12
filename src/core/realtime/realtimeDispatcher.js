@@ -12,8 +12,9 @@
 
 import { MASTER_DATA_KEYS, masterKeys } from "../master/masterCall/masterKeys";
 import { queryKeys } from "../query/queryKeys";
-import { executeApi } from "../api/executor";
-import { buildSyncPayload } from "../sync/buildSyncPayload";
+import { queryClient } from "../api/queryClient";
+import { readUserFromSession } from "../auth/useCurrentUser";
+import { fetchTicketDetailRow } from "../sync/ticketListV2";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  1.  MASTER BULK CACHE
@@ -340,11 +341,11 @@ const TICKET_SCOPED_ENTITIES = new Set([
 const TICKET_ROW_ENTITIES = new Set(["Ticket", "TicketsList"]);
 
 // ["ticket", <sub>, issueId] keys that hold one ticket's thread-page data.
-// "detail" is not here: it holds a TicketsList row and is patched with the
+// "detail" is not here: it holds a ticket row and is patched with the
 // fresh row like every other list.
 const TICKET_SUB_KEYS = new Set(["thread", "history", "feedbacks"]);
 
-// Caches holding raw TicketsList rows, on any screen:
+// Caches holding raw TicketListV2 rows, on any screen:
 //   ["ticket","list",repo,project]   project / repo ticket lists
 //   ["ticket","detail",id]           ticket thread page header
 //   ["ticket","TicketsList",{…}]     per-employee list (meeting scheduler)
@@ -358,7 +359,7 @@ function isTicketRowCache([root, sub]) {
 }
 
 // Screens built from ticket data in another shape (logged time, daily plan).
-// They can't take a TicketsList row, so they refetch. Stale tickets are
+// They can't take a ticket row, so they refetch. Stale tickets are
 // deliberately left out: they're loaded once per page load.
 const TICKET_DERIVED_ROOTS = new Set([
   "TimeSheet",
@@ -470,27 +471,23 @@ function scheduleDerivedRefresh(queryClient) {
     queryClient.invalidateQueries({
       predicate: (q) => isTicketDerivedCache(q.queryKey),
     });
+    // "#" picker lists: only mark stale (no request now); the next "#"
+    // refetches, so new / renamed tickets show up there.
+    queryClient.invalidateQueries({
+      queryKey: [...queryKeys.ticket.all, queryKeys.ticket.tags()[1]],
+      refetchType: "none",
+    });
   }, DERIVED_REFRESH_DELAY_MS);
 }
 
 // This user's current view of one ticket (row visibility is role-aware on
 // the server, so the broadcast payload — built for the sender — isn't used).
 // Resolves to null when the ticket is gone or no longer visible.
+// The detail row (TicketDetailV2) serves the ticket screen header as well as
+// every list holding this ticket (same row shape as TicketListV2).
 async function fetchTicketRow(issueId) {
-  const res = await executeApi({
-    url: "/sync/v2",
-    method: "POST",
-    payload: buildSyncPayload({
-      configKey: "TicketsList",
-      idKey: "IssueId",
-      idValue: issueId,
-    }),
-    config: { _silent: true },
-  });
-  const section = res?.Res?.TicketsList ?? res?.TicketsList;
-  const rows = Array.isArray(section) ? section : section?.Data;
-  if (!Array.isArray(rows)) throw new Error("Unexpected TicketsList response");
-  return rows.find((r) => normalize(getCI(r, "Issue_Id")) === issueId) ?? null;
+  const row = await fetchTicketDetailRow(issueId, { silent: true });
+  return row && normalize(getCI(row, "Issue_Id")) === issueId ? row : null;
 }
 
 function cacheHasTicket(data, issueId) {

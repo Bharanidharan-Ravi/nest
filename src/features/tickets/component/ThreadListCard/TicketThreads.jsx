@@ -92,7 +92,11 @@ const TicketThreads = ({
 
   const { dialogProps, openDialog } = useConfirmDialog();
 
-  
+  // "Thread For" options; viewers don't see the field, so they don't fetch it
+  const { data: threadWorkTypeList = [] } = useThreadWorkType({ enabled: !formContext?.isViewer });
+  const threadFormData = { ...formContext?.data, ThreadWorkType: threadWorkTypeList };
+
+
   const rawThreads = React.useMemo(() => {
     const threadsArray = Array.isArray(threadsData) ? threadsData : [];
     const allHandoffs = [];
@@ -566,7 +570,7 @@ let parsedReactionsJSON = []
               parentTicket,
               editingItem,
               ...formContext,
-            
+              data: threadFormData,
             }}
             module="Thread"
             onCancel={() => setEditingItem(null)}
@@ -687,6 +691,7 @@ let parsedReactionsJSON = []
               }}
               context={{
                 ...formContext,
+                data: threadFormData,
                 isClosed: isTerminalState,
                 parentTicket,
                 isQuickFormOpen: null,

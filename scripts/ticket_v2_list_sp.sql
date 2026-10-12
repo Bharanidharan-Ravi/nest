@@ -1,6 +1,6 @@
 /* =============================================================================
    Ticket V2 — slim ticket LIST + COUNTS SPs with dynamic filters/sort/paging
-   (run on WG_APP; safe to re-run)
+   (WG_APP_TEST1 first, then WG_APP; safe to re-run)
 
    Creates
      1. dbo.TicketListQueryDef      — whitelist of filters (Kind 'F'), sorts
@@ -11,11 +11,18 @@
      4. dbo.GetTicketListCounts_V2  — total + per-value counts for every filter
                                       dropdown / status tab (API key
                                       "TicketListCountsV2").
+     5. dbo.GetTicketDetail_V2      — one ticket with the ticket screen / edit
+                                      form columns (API key "TicketDetailV2");
+                                      role 3 gets the client view only.
+     6. dbo.GetTicketTags_V2        — id / code / title / owner / repo of every
+                                      visible ticket for the "#" pickers (API
+                                      key "TicketTagsV2").
 
    Why
      The list only needs ids + a few scalars. Names (employee, repo, project,
      team, label, status) are mapped in the UI from masters it already holds,
-     so these SPs join NO master tables. Detail/edit keep using "TicketsList".
+     so these SPs join NO master tables. All four share TicketListV2_Base, so
+     security can't drift between them.
      With paging the UI no longer holds every ticket, so dropdown / tab counts
      come from GetTicketListCounts_V2 instead of being counted in the browser.
 
@@ -61,6 +68,9 @@
      guid so the UI shows it as "WorkGlow Solutions", as the old SP did; the
      handler / assignee filters treat the empty guid as NULL to match.
      TotalConsumeMinutes is minutes (INT); the UI formats it as H:MM.
+     Description, HtmlDesc, the Web / Functional / Technical / Client times,
+     CurrentStatusSummary and Streams_JSON (work streams with their hand-offs,
+     ids only) are always NULL in the list; GetTicketDetail_V2 fills them.
 
    Visibility enforced here (was UI-only in isAllowedToView)
      private / status 19 tickets → only owner or active work-stream assignee.
@@ -68,8 +78,8 @@
      thread count / last comment use client-visible (toClient) threads only.
    ============================================================================= */
 
-USE [WG_APP]
-GO
+-- No USE: the database comes from sqlcmd -d (WG_APP_TEST1 first, then WG_APP)
+--   sqlcmd -S WGSQLSAP -d WG_APP_TEST1 -U sa -P <password> -C -b -i scripts\ticket_v2_list_sp.sql
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -280,18 +290,24 @@ GO
 /* ---------------------------------------------------------------------------
    3. Shared pieces (one place for the security scope and the APPLYs)
 
-   @Where   — fixed security predicates ("AND ..." lines) for alias T0.
-   @Applies — TS / LP / U APPLYs for alias T0.
-   Both reference @Role, @UserId, @RepoId, @RepoIds: pass those to
+   @Where      — fixed security predicates ("AND ..." lines) for alias T0.
+   @Applies    — TS / LP / U APPLYs for alias T0.
+   @Columns    — the row's SELECT list (list + detail SPs share one row
+                 shape, so the API maps both with GetTicketListRow).
+                 Needs @Applies and @RowApplies in the FROM.
+   @RowApplies — LT APPLY (latest comment); only for the returned rows.
+   All reference @Role, @UserId, @RepoId, @RepoIds: pass those to
    sp_executesql with exactly these names.
    --------------------------------------------------------------------------- */
 CREATE OR ALTER PROCEDURE [dbo].[TicketListV2_Base]
 (
-    @Role     INT,
-    @RepoId   UNIQUEIDENTIFIER = NULL,
-    @RepoIds  NVARCHAR(MAX)    = NULL,
-    @Where    NVARCHAR(MAX) OUTPUT,
-    @Applies  NVARCHAR(MAX) OUTPUT
+    @Role       INT,
+    @RepoId     UNIQUEIDENTIFIER = NULL,
+    @RepoIds    NVARCHAR(MAX)    = NULL,
+    @Where      NVARCHAR(MAX) OUTPUT,
+    @Applies    NVARCHAR(MAX) OUTPUT,
+    @Columns    NVARCHAR(MAX) = NULL OUTPUT,
+    @RowApplies NVARCHAR(MAX) = NULL OUTPUT
 )
 AS
 BEGIN
@@ -367,6 +383,69 @@ BEGIN
                        ELSE TS.LastThreadAt
                    END AS UpdatedAt
         ) U';
+
+    SET @Columns = CAST(N'' AS NVARCHAR(MAX)) + N'
+            T0.Issue_Id,
+            T0.Issue_Code,
+            T0.Title,
+            T0.Status              AS StatusId,
+            T0.Priority,
+            T0.IsPrivate,
+            T0.RaiseToClient,
+            T0.ProjKey,
+            T0.RepoKey,
+            T0.Project_Id,
+            T0.RepoId,
+            T0.Assignee_Id,
+            T0.CreatedBy,
+            T0.CreatedAt,
+            T0.UpdatedBy,
+            U.UpdatedAt,
+            T0.Due_Date,
+            T0.Hours,
+            T0.CompletionPct,
+            ISNULL(LP.Percentage, 0) AS OverallPercentage,
+            T0.IsCloseRequested,
+            T0.PriorityRequest,
+            T0.FuncResponse,
+            T0.WebResponse,
+            T0.TechnicalResponse,
+            T0.AdminResponse,
+            T0.ReopenedBy,
+            ISNULL(TS.ThreadCount, 0) AS ThreadCount,
+            TS.TotalConsumeMinutes,
+            TS.TeamConsumeMinutes,
+            LEFT(LT.CommentText, 300) AS commenttext,
+            (
+                SELECT STRING_AGG(CAST(IL.Label_Id AS VARCHAR(12)), '','')
+                FROM ISSUE_LABELS IL
+                WHERE IL.Issue_Id = T0.Issue_Id
+            ) AS Label_Ids,
+            (
+                SELECT STRING_AGG(LOWER(CAST(X.ResourceId AS CHAR(36))), '','')
+                FROM (
+                    SELECT DISTINCT WS.ResourceId
+                    FROM WorkStreams WS
+                    WHERE WS.IssueId = T0.Issue_Id
+                      AND WS.ResourceId IS NOT NULL
+                      AND (WS.StreamStatus IS NULL OR WS.StreamStatus <> 17)
+                ) X
+            ) AS Assignee_Ids,
+            (
+                SELECT STRING_AGG(LOWER(CAST(ISNULL(M.Move_to, ''00000000-0000-0000-0000-000000000000'') AS CHAR(36))), '','')
+                FROM IssueMoveTo M
+                WHERE M.Issue_Id = T0.Issue_Id
+            ) AS Handler_Ids';
+
+    SET @RowApplies = CAST(N'' AS NVARCHAR(MAX)) + N'
+        -- Latest thread comment (clients: latest client-visible thread)
+        OUTER APPLY (
+            SELECT TOP 1 IT.CommentText
+            FROM ISSUETHREADS IT
+            WHERE IT.Issue_Id = T0.Issue_Id
+              AND (@Role <> 3 OR IT.toClient = 1)
+            ORDER BY IT.UpdatedAt DESC, IT.ThreadId DESC
+        ) LT';
 END
 GO
 
@@ -398,9 +477,11 @@ BEGIN
     IF @Filters IS NOT NULL AND ISJSON(@Filters) = 0
         THROW 50001, N'GetTicketList_V2: @Filters is not valid JSON.', 1;
 
-    DECLARE @where NVARCHAR(MAX), @applies NVARCHAR(MAX), @order NVARCHAR(MAX);
+    DECLARE @where NVARCHAR(MAX), @applies NVARCHAR(MAX), @order NVARCHAR(MAX),
+            @columns NVARCHAR(MAX), @rowApplies NVARCHAR(MAX);
 
-    EXEC dbo.TicketListV2_Base @Role, @RepoId, @RepoIds, @where OUTPUT, @applies OUTPUT;
+    EXEC dbo.TicketListV2_Base @Role, @RepoId, @RepoIds, @where OUTPUT, @applies OUTPUT,
+                               @columns OUTPUT, @rowApplies OUTPUT;
 
     -- ── Dynamic filters: whitelisted keys with a non-empty array ────────
     SELECT @where += ISNULL(STRING_AGG(
@@ -479,70 +560,19 @@ BEGIN
         WHERE X.RowNo >  @skip
           AND X.RowNo <= @skip + @take;
 
-        SELECT
-            T0.Issue_Id,
-            T0.Issue_Code,
-            T0.Title,
-            T0.Status              AS StatusId,
-            T0.Priority,
-            T0.IsPrivate,
-            T0.RaiseToClient,
-            T0.ProjKey,
-            T0.RepoKey,
-            T0.Project_Id,
-            T0.RepoId,
-            T0.Assignee_Id,
-            T0.CreatedBy,
-            T0.CreatedAt,
-            T0.UpdatedBy,
-            U.UpdatedAt,
-            T0.Due_Date,
-            T0.Hours,
-            T0.CompletionPct,
-            ISNULL(LP.Percentage, 0) AS OverallPercentage,
-            T0.IsCloseRequested,
-            T0.PriorityRequest,
-            T0.FuncResponse,
-            T0.WebResponse,
-            T0.TechnicalResponse,
-            T0.AdminResponse,
-            T0.ReopenedBy,
-            ISNULL(TS.ThreadCount, 0) AS ThreadCount,
-            TS.TotalConsumeMinutes,
-            TS.TeamConsumeMinutes,
-            LEFT(LT.CommentText, 300) AS commenttext,
-            (
-                SELECT STRING_AGG(CAST(IL.Label_Id AS VARCHAR(12)), '','')
-                FROM ISSUE_LABELS IL
-                WHERE IL.Issue_Id = T0.Issue_Id
-            ) AS Label_Ids,
-            (
-                SELECT STRING_AGG(LOWER(CAST(X.ResourceId AS CHAR(36))), '','')
-                FROM (
-                    SELECT DISTINCT WS.ResourceId
-                    FROM WorkStreams WS
-                    WHERE WS.IssueId = T0.Issue_Id
-                      AND WS.ResourceId IS NOT NULL
-                      AND (WS.StreamStatus IS NULL OR WS.StreamStatus <> 17)
-                ) X
-            ) AS Assignee_Ids,
-            (
-                SELECT STRING_AGG(LOWER(CAST(ISNULL(M.Move_to, ''00000000-0000-0000-0000-000000000000'') AS CHAR(36))), '','')
-                FROM IssueMoveTo M
-                WHERE M.Issue_Id = T0.Issue_Id
-            ) AS Handler_Ids
+        -- Detail columns are NULL here (GetTicketDetail_V2 fills them): one
+        -- row shape for both SPs; the API leaves null fields out of the JSON.
+        SELECT' + @columns + N',
+            CAST(NULL AS NVARCHAR(MAX)) AS Description,
+            CAST(NULL AS NVARCHAR(MAX)) AS HtmlDesc,
+            CAST(NULL AS NVARCHAR(100)) AS Web,
+            CAST(NULL AS NVARCHAR(100)) AS Functional,
+            CAST(NULL AS NVARCHAR(100)) AS Technical,
+            CAST(NULL AS NVARCHAR(100)) AS Client,
+            CAST(NULL AS NVARCHAR(MAX)) AS CurrentStatusSummary,
+            CAST(NULL AS NVARCHAR(MAX)) AS Streams_JSON
         FROM #pg P
-        JOIN ISSUEMASTER T0 ON T0.Issue_Id = P.Issue_Id' + @applies + N'
-
-        -- Latest thread comment (clients: latest client-visible thread)
-        OUTER APPLY (
-            SELECT TOP 1 IT.CommentText
-            FROM ISSUETHREADS IT
-            WHERE IT.Issue_Id = T0.Issue_Id
-              AND (@Role <> 3 OR IT.toClient = 1)
-            ORDER BY IT.UpdatedAt DESC, IT.ThreadId DESC
-        ) LT
-
+        JOIN ISSUEMASTER T0 ON T0.Issue_Id = P.Issue_Id' + @applies + @rowApplies + N'
         ORDER BY P.RowNo;';
 
     EXEC sp_executesql
@@ -683,5 +713,205 @@ BEGIN
         Cnt
     FROM #out
     ORDER BY Facet, Cnt DESC, Value;
+END
+GO
+
+/* ---------------------------------------------------------------------------
+   6. Detail SP — one ticket (ticket screen, edit form, realtime row refresh)
+
+   API key "TicketDetailV2", param IssueId. Same security as the list
+   (TicketListV2_Base) and the same row shape (GetTicketListRow), but a
+   primary-key seek: no filter JSON, no sort, no paging temp table.
+
+   Role 3 (client) gets the client view only: the ticket, its labels,
+   handlers ("Move To", required by the client edit form) and the
+   client-visible thread count / latest comment. Owner, assignees, work
+   streams, due date, estimates, logged / team times, progress and the
+   internal request flags come back NULL / 0. (The API's ticket update keeps
+   those fields unchanged for clients, so a client save can't clear them.)
+   --------------------------------------------------------------------------- */
+/*
+set statistics io on
+set statistics time on
+  EXEC GetTicketDetail_V2 @DbName = 'wg_app', @Role = 1,
+       @UserId = '00000000-0000-0000-0000-000000000000',
+       @IssueId = '00000000-0000-0000-0000-000000000000';
+set statistics io off
+set statistics time off
+*/
+CREATE OR ALTER PROCEDURE [dbo].[GetTicketDetail_V2]
+(
+    @DbName  NVARCHAR(255)    = NULL,   -- always sent by the API; unused
+    @Role    INT,
+    @UserId  UNIQUEIDENTIFIER = NULL,
+    @RepoId  UNIQUEIDENTIFIER = NULL,
+    @RepoIds NVARCHAR(MAX)    = NULL,
+    @IssueId UNIQUEIDENTIFIER = NULL    -- missing = no row
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @where NVARCHAR(MAX), @applies NVARCHAR(MAX),
+            @columns NVARCHAR(MAX), @rowApplies NVARCHAR(MAX), @select NVARCHAR(MAX);
+
+    EXEC dbo.TicketListV2_Base @Role, @RepoId, @RepoIds, @where OUTPUT, @applies OUTPUT,
+                               @columns OUTPUT, @rowApplies OUTPUT;
+
+    IF @Role = 3
+        SET @select = CAST(N'' AS NVARCHAR(MAX)) + N'
+            T0.Issue_Id,
+            T0.Issue_Code,
+            T0.Title,
+            T0.Status                         AS StatusId,
+            T0.Priority,
+            CAST(NULL AS BIT)                 AS IsPrivate,
+            T0.RaiseToClient,
+            T0.ProjKey,
+            T0.RepoKey,
+            T0.Project_Id,
+            T0.RepoId,
+            CAST(NULL AS UNIQUEIDENTIFIER)    AS Assignee_Id,
+            T0.CreatedBy,
+            T0.CreatedAt,
+            CAST(NULL AS UNIQUEIDENTIFIER)    AS UpdatedBy,
+            U.UpdatedAt,
+            CAST(NULL AS DATETIME)            AS Due_Date,
+            CAST(NULL AS NVARCHAR(50))        AS Hours,
+            CAST(NULL AS DECIMAL(18, 2))      AS CompletionPct,
+            CAST(NULL AS DECIMAL(18, 2))      AS OverallPercentage,
+            CAST(0 AS BIT)                    AS IsCloseRequested,
+            CAST(0 AS BIT)                    AS PriorityRequest,
+            CAST(0 AS BIT)                    AS FuncResponse,
+            CAST(0 AS BIT)                    AS WebResponse,
+            CAST(0 AS BIT)                    AS TechnicalResponse,
+            CAST(0 AS BIT)                    AS AdminResponse,
+            CAST(NULL AS UNIQUEIDENTIFIER)    AS ReopenedBy,
+            ISNULL(TS.ThreadCount, 0)         AS ThreadCount,   -- toClient threads only
+            CAST(NULL AS INT)                 AS TotalConsumeMinutes,
+            CAST(NULL AS INT)                 AS TeamConsumeMinutes,
+            LEFT(LT.CommentText, 300)         AS commenttext,   -- toClient threads only
+            (
+                SELECT STRING_AGG(CAST(IL.Label_Id AS VARCHAR(12)), '','')
+                FROM ISSUE_LABELS IL
+                WHERE IL.Issue_Id = T0.Issue_Id
+            ) AS Label_Ids,
+            CAST(NULL AS NVARCHAR(MAX))       AS Assignee_Ids,
+            (
+                SELECT STRING_AGG(LOWER(CAST(ISNULL(M.Move_to, ''00000000-0000-0000-0000-000000000000'') AS CHAR(36))), '','')
+                FROM IssueMoveTo M
+                WHERE M.Issue_Id = T0.Issue_Id
+            ) AS Handler_Ids,
+            T0.Description,
+            T0.HtmlDesc,
+            CAST(NULL AS NVARCHAR(100))       AS Web,
+            CAST(NULL AS NVARCHAR(100))       AS Functional,
+            CAST(NULL AS NVARCHAR(100))       AS Technical,
+            CAST(NULL AS NVARCHAR(100))       AS Client,
+            CAST(NULL AS NVARCHAR(MAX))       AS CurrentStatusSummary,
+            CAST(NULL AS NVARCHAR(MAX))       AS Streams_JSON';
+    ELSE
+        SET @select = @columns + N',
+            T0.Description,
+            T0.HtmlDesc,
+            T0.Web,
+            T0.Functional,
+            T0.Technical,
+            T0.Client,
+            (
+                SELECT TOP 1 TPL.StatusSummary
+                FROM TicketProgressLogs TPL
+                WHERE TPL.Issue_Id = T0.Issue_Id
+                  AND TPL.IsActive = 1
+                ORDER BY TPL.CreatedAt DESC
+            ) AS CurrentStatusSummary,
+            -- Active work streams + their hand-offs; names come from the masters
+            (
+                SELECT
+                    WS.ResourceId AS Assignee_Id,
+                    WS.StreamName AS Assignee_Type,
+                    WS.StreamId,
+                    WS.StreamStatus,
+                    WS.CompletionPct,
+                    WS.TargetDate,
+                    WS.ThreadId,
+                    WS.ParentThreadId,
+                    (
+                        SELECT
+                            WH.HandsOffId,
+                            WH.IssueId,
+                            WH.SourceStreamId,
+                            WH.TargetStreamId,
+                            WH.InitiatingThreadId,
+                            WH.Status,
+                            WH.CompletionPct,
+                            WH.ResolvedByHandOffId,
+                            WH.CreatedBy,
+                            WH.CreatedAt
+                        FROM WorkStreamHandOffs WH
+                        WHERE WH.IssueId = T0.Issue_Id
+                          AND WH.SourceStreamId = WS.StreamId
+                        FOR JSON PATH
+                    ) AS HandOffData
+                FROM WorkStreams WS
+                WHERE WS.IssueId = T0.Issue_Id
+                  AND WS.ResourceId IS NOT NULL
+                  AND (WS.StreamStatus IS NULL OR WS.StreamStatus <> 17)
+                FOR JSON PATH, INCLUDE_NULL_VALUES
+            ) AS Streams_JSON';
+
+    DECLARE @sql NVARCHAR(MAX) = CAST(N'' AS NVARCHAR(MAX)) + N'
+        SELECT' + @select + N'
+        FROM ISSUEMASTER T0' + @applies + @rowApplies + N'
+        WHERE T0.Issue_Id = @IssueId' + @where + N';';
+
+    EXEC sp_executesql
+        @sql,
+        N'@Role INT, @UserId UNIQUEIDENTIFIER, @RepoId UNIQUEIDENTIFIER, @RepoIds NVARCHAR(MAX),
+          @IssueId UNIQUEIDENTIFIER',
+        @Role, @UserId, @RepoId, @RepoIds, @IssueId;
+END
+GO
+
+/* ---------------------------------------------------------------------------
+   7. Tags SP — "#" ticket pickers (chat tags, editor mentions)
+
+   API key "TicketTagsV2". Every visible ticket (same security as the list),
+   five columns, no APPLYs: one cheap scan, a small payload the UI caches and
+   searches in the browser. Optional @RepoId = one repo (editor mentions).
+   Assignee_Id (owner, for the chat-tag notification) is NULL for clients.
+   --------------------------------------------------------------------------- */
+CREATE OR ALTER PROCEDURE [dbo].[GetTicketTags_V2]
+(
+    @DbName  NVARCHAR(255)    = NULL,   -- always sent by the API; unused
+    @Role    INT,
+    @UserId  UNIQUEIDENTIFIER = NULL,
+    @RepoId  UNIQUEIDENTIFIER = NULL,
+    @RepoIds NVARCHAR(MAX)    = NULL
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @where NVARCHAR(MAX), @applies NVARCHAR(MAX);
+
+    -- Only @where is used; it references T0 alone (no APPLY aliases).
+    EXEC dbo.TicketListV2_Base @Role, @RepoId, @RepoIds, @where OUTPUT, @applies OUTPUT;
+
+    DECLARE @sql NVARCHAR(MAX) = CAST(N'' AS NVARCHAR(MAX)) + N'
+        SELECT
+            T0.Issue_Id,
+            T0.Issue_Code,
+            T0.Title,
+            CASE WHEN @Role = 3 THEN NULL ELSE T0.Assignee_Id END AS Assignee_Id,
+            T0.RepoId
+        FROM ISSUEMASTER T0
+        WHERE 1 = 1' + @where + N'
+        ORDER BY T0.UpdatedAt DESC, T0.Issue_Id;';
+
+    EXEC sp_executesql
+        @sql,
+        N'@Role INT, @UserId UNIQUEIDENTIFIER, @RepoId UNIQUEIDENTIFIER, @RepoIds NVARCHAR(MAX)',
+        @Role, @UserId, @RepoId, @RepoIds;
 END
 GO

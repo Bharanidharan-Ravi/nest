@@ -4,6 +4,7 @@ export const MAIN_ASSIGNEE_TYPE = "Main Assignee";
 // Old list SP: ISNULL(repo title, 'WorkGlow Solutions') for a handler with no
 // repo; TicketListV2 sends that case as the empty guid.
 const DEFAULT_HANDLER_NAME = "WorkGlow Solutions";
+const EMPTY_GUID = "00000000-0000-0000-0000-000000000000";
 
 const parseJsonList = (json) => {
   if (!json) return [];
@@ -23,7 +24,7 @@ const splitIds = (csv) =>
     : [];
 
 // 125 → "2:05" (same format as the old TotalConsumeTime)
-const formatMinutes = (minutes) =>
+export const formatMinutes = (minutes) =>
   minutes === null || minutes === undefined
     ? null
     : `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, "0")}`;
@@ -62,6 +63,7 @@ export const normalizeTicket = (ticket) => ({
   teamId: ticket.Assignee_TeamId,
   teamName: ticket.Assignee_TeamName,
   overallPercentage: ticket.OverallPercentage,
+  currentStatusSummary: ticket.CurrentStatusSummary,
   isCloseRequested: ticket.IsCloseRequested,
   priorityRequest: ticket.PriorityRequest,
   funcResponse: ticket.FuncResponse,
@@ -80,22 +82,50 @@ export const normalizeTicket = (ticket) => ({
   createdBy: ticket.CreatedBy,
 });
 
+// The owner has no work stream (same as the old All_Assignees row)
+const NO_STREAM = {
+  StreamId: null,
+  StreamStatus: null,
+  CompletionPct: null,
+  TargetDate: null,
+  ThreadId: null,
+  ParentThreadId: null,
+  HandOffData: null,
+};
+
 // TicketListV2 row → the same shape as normalizeTicket. The row carries ids
 // only; names / colours come from the masters (lookup = useMasterLookup()).
+// A "detail" row (ticket screen) also has Streams_JSON: the work streams with
+// their hand-offs, used in place of Assignee_Ids.
 export const normalizeTicketListRow = (row, lookup) => {
+  // Employee, or a client (repo user), who isn't in the employee master
+  const person = (id) => lookup.get("employee", id) ?? lookup.get("repoUser", id);
   const toAssignee = (id, type) => {
     const employee = lookup.get("employee", id);
     return {
       Assignee_Id: id,
-      Assignee_Name: employee?.name ?? null,
+      Assignee_Name: person(id)?.name ?? null,
       Assignee_Type: type,
       Assignee_TeamId: employee?.Team ?? null,
       Assignee_TeamName: lookup.get("team", employee?.Team)?.name ?? null,
     };
   };
   const owner = row.Assignee_Id
-    ? toAssignee(row.Assignee_Id, MAIN_ASSIGNEE_TYPE)
+    ? { ...toAssignee(row.Assignee_Id, MAIN_ASSIGNEE_TYPE), ...NO_STREAM }
     : null;
+
+  const streams = row.Streams_JSON
+    ? parseJsonList(row.Streams_JSON).map((stream) => ({
+        ...toAssignee(stream.Assignee_Id, stream.Assignee_Type),
+        ...stream,
+        StatusName: lookup.get("status", stream.StreamStatus)?.name ?? null,
+      }))
+    : splitIds(row.Assignee_Ids).map((id) => toAssignee(id, "Assignee"));
+
+  const handlers = splitIds(row.Handler_Ids).map((id) => ({
+    id,
+    name: lookup.get("repo", id)?.name ?? DEFAULT_HANDLER_NAME,
+  }));
 
   return {
     ...normalizeTicket(row),
@@ -103,17 +133,14 @@ export const normalizeTicketListRow = (row, lookup) => {
     assginedName: owner?.Assignee_Name,
     teamId: owner?.Assignee_TeamId,
     teamName: owner?.Assignee_TeamName,
-    ticketCreater: lookup.get("employee", row.CreatedBy)?.name,
+    ticketCreater: person(row.CreatedBy)?.name,
     EntireWorkingTime: formatMinutes(row.TotalConsumeMinutes),
     // Staff-logged hours only (client hours excluded); null when nothing logged.
     // An API without TeamConsumeMinutes yet → fall back to all logged hours.
     teamWorkingTime: formatMinutes(
       (row.TeamConsumeMinutes === undefined ? row.TotalConsumeMinutes : row.TeamConsumeMinutes) || null,
     ),
-    multiAssignees: [
-      ...(owner ? [owner] : []),
-      ...splitIds(row.Assignee_Ids).map((id) => toAssignee(id, "Assignee")),
-    ],
+    multiAssignees: [...(owner ? [owner] : []), ...streams],
     label: splitIds(row.Label_Ids).map((id) => {
       const label = lookup.get("label", id);
       return {
@@ -122,10 +149,64 @@ export const normalizeTicketListRow = (row, lookup) => {
         LABEL_COLOR: label?.color,
       };
     }),
-    handlers: splitIds(row.Handler_Ids).map((id) => ({
-      id,
-      name: lookup.get("repo", id)?.name ?? DEFAULT_HANDLER_NAME,
-    })),
+    handlers,
+    // Old Move_toJson shape for the handler pickers (empty guid = no repo)
+    move_toJson: handlers.length
+      ? JSON.stringify(
+          handlers.map((h) => ({
+            Move_to: h.id === EMPTY_GUID ? null : h.id,
+            Title: h.name,
+          })),
+        )
+      : null,
+  };
+};
+
+// TimesheetV2 entry (GetTimesheet_V2) + its ticket (normalizeTicketListRow
+// output) → the timesheet item the graph / tree / summary views read (same
+// field names as createTimesheetNormalizer).
+//   entryType : "WORK" | "MEETING" | "STATUS" (closed / reopened, no thread)
+//   action    : "C" closed / "R" reopened on that day, null = plain entry
+//   marker    : graph marker — the action, else "M" for a meeting
+const TIMESHEET_ACTION_STATUS = { C: "Closed", R: "Reopened" };
+
+export const normalizeTimesheetRow = (row, ticket, lookup) => {
+  const employeeName = lookup.get("employee", row.EmployeeId)?.name ?? null;
+  return {
+    ...ticket,
+    id: row.Id,
+    rawId: row.Id,
+    threadId: row.ThreadId,
+    ticketId: row.Issue_Id,
+    issueId: row.Issue_Id,
+    navId: row.Issue_Id,
+    TicketName: ticket.title,
+    entryType: row.EntryType,
+    action: row.Action ?? null,
+    isMeeting: row.EntryType === "MEETING",
+    isDirectUpdate: row.EntryType === "STATUS",
+    isCoContributor: !!row.IsCoContributor,
+    marker: row.Action ?? (row.EntryType === "MEETING" ? "M" : null),
+    employeeId: row.EmployeeId,
+    employeeName,
+    createdByName: employeeName,
+    Comment: row.Comment,
+    startTime: row.From_Time,
+    EndTime: row.To_Time,
+    // "H:MM"; null for a close / reopen without a thread
+    ConsumeTime: formatMinutes(row.Minutes),
+    workDate: row.WorkDate,
+    // The graph's date axis and the summary's ordering read updatedAt
+    updatedAt: row.EventAt,
+    createdAt: row.EventAt,
+    threadStatusName: TIMESHEET_ACTION_STATUS[row.Action] ?? null,
+    threadStatusId: row.Action ? row.NewStatusId : null,
+    projectName: lookup.get("project", ticket.project)?.name ?? null,
+    repoName: lookup.get("repo", ticket.repoId)?.name ?? null,
+    repoKey: ticket.RepoKey,
+    CurrentStatusSummary: row.CurrentStatusSummary,
+    currentStatusSummary: row.CurrentStatusSummary,
+    IsPrivate: ticket.privateTicket,
   };
 };
 

@@ -36,15 +36,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { executeApi } from "../../../core/api/executor";
-import { extractSourceData, useApiQuery } from "../../../core/query/useApiQuery";
+import { useApiQuery } from "../../../core/query/useApiQuery";
 import { queryKeys } from "../../../core/query/queryKeys";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
+import { fetchTicketRows } from "../../../core/sync/ticketListV2";
 import { useMasterLookup } from "../../../core/master/useMasterLookup";
 import { normalizeTicketListRow } from "../../../app/shared/utils/normalizer";
 import { readUserFromSession } from "../../../core/auth/useCurrentUser";
 import { buildTicketListPreview } from "./ticketListPreview";
 
-const LIST_KEY = "TicketListV2";
 const COUNTS_KEY = "TicketListCountsV2";
 const TAB_SERVER_KEY = "status";
 // Realtime refetches these caches when a ticket changes, so a cached page is
@@ -90,20 +90,6 @@ const buildSort = (config, sortField, sortOrder) => {
   ];
 };
 
-const fetchSync = async (configKey, repoId, filters, silent) => {
-  const res = await executeApi({
-    url: "/sync/v2",
-    method: "POST",
-    payload: buildSyncPayload({
-      configKey,
-      repoId,
-      customParams: { Filters: JSON.stringify(filters) },
-    }),
-    config: { _silent: silent },
-  });
-  return extractSourceData(res, configKey) ?? [];
-};
-
 // Pages kept per list: the card view keeps 2 pages ahead and 1 behind the
 // page on screen, so 5 leaves room for both. Past it, fetching a page at one
 // end drops the page at the other end (fetched again when scrolled back to).
@@ -114,7 +100,7 @@ const PAGES_BEHIND = 1;
 const pageQueryOptions = ({ repoId, f, sort, size }, isSilent) => ({
   queryKey: queryKeys.ticket.page({ repoId, f, sort, size }),
   queryFn: ({ pageParam }) =>
-    fetchSync(LIST_KEY, repoId, { f, sort, page: pageParam, size }, isSilent(pageParam)),
+    fetchTicketRows({ f, sort, page: pageParam, size }, { repoId, silent: isSilent(pageParam) }),
   initialPageParam: 1,
   // Page numbers from the params, not pages.length: the first kept page
   // isn't page 1 once pages have been dropped

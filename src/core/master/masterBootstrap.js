@@ -22,7 +22,7 @@ import { masterKeys } from "./masterKeys";
 import { fetchMasterData } from "./masterService";
 
 export const preloadMasterData = async () => {
-  const keys = ["RepoList", "ProjectList", "EmployeeList", "LabelMaster","StatusMaster","TeamMaster","ThreadWorkType"];
+  const keys = ["RepoList", "ProjectList", "EmployeeList", "LabelMaster","StatusMaster","TeamMaster"];
 
   await queryClient.ensureQueryData({
     queryKey: masterKeys.multi(keys),

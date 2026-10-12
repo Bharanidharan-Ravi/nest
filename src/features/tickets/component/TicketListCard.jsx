@@ -31,6 +31,7 @@ import { useCallback } from "react";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { ThreadFormConfig } from "../config/ThreadForm.config";
 import { ThreadFieldConfig } from "../config/Thread.config";
+import { useThreadWorkType } from "../hooks/useHours";
 import { FaHistory, FaRegClock, FaStopwatch } from "react-icons/fa";
 import { HiPause } from "react-icons/hi";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
@@ -74,6 +75,8 @@ export default function TicketListCard({
   const isQuickFormOpen = quickFormTicket?.navId === item.navId;
   const isQuickStatusOpen = quickTicketStatus?.navId === item.navId;
   const { isViewer } = useCurrentUser();
+  // "Thread For" options for the quick comment form, fetched only once it opens
+  const { data: threadWorkTypeList = [] } = useThreadWorkType({ enabled: isQuickFormOpen && !isViewer });
   const updated = useEmployeeById(item.updatedBy);
   const query = useListQuery();
   const { text } = parseQuery(query);
@@ -430,8 +433,17 @@ export default function TicketListCard({
             {(item.StartTime ||
               item.EndTime ||
               item.ConsumeTime ||
-              item.Comment) && (
+              item.Comment ||
+              item.lastThreadAt ||
+              item.Checked_Person) && (
                 <div className="ticket-timesheet-info">
+                  {/* who checked it (Checked Tickets) */}
+                  {item.Checked_Person && (
+                    <span className="timesheet-item">
+                      Checked by: {item.Checked_Person}
+                    </span>
+                  )}
+
                   {/* working time */}
                   {item.StartTime && item.EndTime && (
                     <span className="timesheet-item">
@@ -439,6 +451,20 @@ export default function TicketListCard({
                       Working Time: {formatTime(item.StartTime)} -{" "}
                       {formatTime(item.EndTime)}
                     </span>
+                  )}
+
+                  {/* last thread (Checked Tickets) */}
+                  {item.lastThreadAt && (
+                    <>
+                      <span className="meta-divider">•</span>
+                      <Tooltip title={formatDateTime(item.lastThreadAt)} arrow>
+                        <span className="timesheet-item">
+                          <FiMessageCircle className="due-icon" />
+                          Last thread {dayjs(item.lastThreadAt).fromNow()}
+                          {item.lastThreadBy && ` by ${item.lastThreadBy}`}
+                        </span>
+                      </Tooltip>
+                    </>
                   )}
 
                   {/* time taken */}
@@ -708,6 +734,7 @@ export default function TicketListCard({
                         return field;
                       }),
                   }}
+                  context={{ data: { ThreadWorkType: threadWorkTypeList } }}
                   module="Thread"
                   onCancel={closeQuickForm}
                   onSuccessCallback={() => {

@@ -7,7 +7,6 @@ import ModuleSwitcher from "../component/ModuleSwitcher";
 import { ROUTE_KEYS } from "../../../core/routing/paths";
 import { useSmartNavigation } from "../../../core/navigation/useSmartNavigation";
 import { normalizeTicket } from "../../../app/shared/utils/normalizer";
-import { createTimesheetNormalizer } from "../../../app/shared/utils/normalizer";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   useEmployeeOptions,
@@ -31,9 +30,9 @@ import TicketListCard from "../../tickets/component/TicketListCard";
 import { useGetStaleTicketData } from "../../../app/shared/Header/hook/GetStaleTickets.Api";
 import { Tooltip } from "@mui/material";
 import { TimesheetSummary } from "../component/summery/TreeTableSummary";
-import { isAllowedToView } from "../../../app/shared/utils/ticketVisibility";
 import { useTicketList } from "../../tickets/hooks/useTicketList";
 import { useCheckedTicketList } from "../hooks/useCheckedTicketList";
+import { TIMESHEET_QUERY_ROOT, useTimesheetList } from "../hooks/useTimesheetList";
 
 
 
@@ -679,6 +678,10 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     terminalStatusKey: "threadStatusId",
     terminalStatusIds: [15, 16],
 
+    // Per day: "C" closed / "R" reopened (on the thread that did it, or its
+    // own bar when done without a thread), "M" meeting (its own bar)
+    graphMarkerKey: (item) => item.marker,
+
     minYValue: 0,
     yAxisStep: 2,
 
@@ -696,13 +699,23 @@ const dashboardTimesheetGraph = (parsedFilters) => {
   };
 };
 
+  // Timesheet entries from TimesheetV2, tickets from TicketListV2 (visibility
+  // applied on the server). weekRange / assignedTo go to the SP; project,
+  // repo and label filter the merged rows (useTimesheetList).
+  const timesheetDateFilter = {
+    type: "weekRange",
+    key: "weekRange",
+    enableDailyNav: true,
+    defaultRange: "today",
+  };
+
   const dashboardTimesheet = {
     ...TicketListConfig(isViewer),
+    useServerData: useTimesheetList,
 
     theme: {
       stickyTop: 50,
     },
-    itemVisibilityFilter:(item)=>isAllowedToView(item,currentUserId),
     syncUrl: true,
     moduleId: "timesheets",
     enableSearch: false,
@@ -741,64 +754,17 @@ const dashboardTimesheetGraph = (parsedFilters) => {
       timesheetsView == "report"
         ? [
           // Report: ONLY weekRange exists
-          {
-            type: "weekRange",
-            key: "weekRange",
-
-            enableDailyNav: true,
-
-            filterType: "api",
-            api: "/sync/v2",
-            configKey: "TimeSheet",
-            source: "TimeSheet",
-
-            defaultRange: "today",
-
-            normalizer: createTimesheetNormalizer,
-
-            apiMode: "split",
-            apiStartKey: "FromDate",
-            apiEndKey: "ToDate",
-            apiDateFormat: "YYYY-MM-DD",
-          },
+          timesheetDateFilter,
         ]
         : [
           // Graph / Card
-          {
-            type: "weekRange",
-            key: "weekRange",
-
-            enableDailyNav: true,
-
-            filterType: "api",
-            api: "/sync/v2",
-            configKey: "TimeSheet",
-            source: "TimeSheet",
-
-            defaultRange:"today",
-
-            normalizer: createTimesheetNormalizer,
-
-            apiMode: "split",
-            apiStartKey: "FromDate",
-            apiEndKey: "ToDate",
-            apiDateFormat: "YYYY-MM-DD",
-          },
+          timesheetDateFilter,
 
           {
+            // Whose timesheet ("" = everyone); read by useTimesheetList
             key: "assignedTo",
-            apiKey: "EmployeeID",
             view: "Assignee",
-
-            filterType: "api",
-            api: "/sync/v2",
-            configKey: "TimeSheet",
-            source: "TimeSheet",
-
-            normalizer: createTimesheetNormalizer,
-
             options: employeeFilterOptions,
-
             defaultValue: currentUserId
           },
 
@@ -851,29 +817,9 @@ const dashboardTimesheetGraph = (parsedFilters) => {
     },
     onItemClick: (item) =>
       goTo(ROUTE_KEYS.TICKET_DETAIL, { ticketId: item.issueId || item.navId }),
+    // The card shows Checked_Person, the last thread and time taken
     cardRenderer: (item, controls, config) => (
-      <div style={{ position: "relative" }}>
-        <TicketListCard item={item} controls={controls} config={config} />
-        {item.Checked_Person && (
-          <div style={{
-            position: "absolute",
-            bottom: 0,
-            right: 300,
-            background: "#absolute",
-            color: "#92400E",
-            fontWeight: 500,
-            fontSize: "11px",
-            padding: "2px 8px",
-            borderRadius: "4px",
-            display: "flex",
-            zIndex: 10,
-            alignItems: "center",
-            gap: "4px"
-          }}>
-            {item.Checked_Person}
-          </div>
-        )}
-      </div>
+      <TicketListCard item={item} controls={controls} config={config} />
     ),
     tabsExtra: () => (
       <button
@@ -1093,7 +1039,7 @@ const dashboardTimesheetGraph = (parsedFilters) => {
                   onSuccessCallback={() => {
                     setQuickTicketStatus(null);
                     // Refresh data after submit so the graph updates immediately!
-                    queryClient.invalidateQueries({ queryKey: ["TimeSheet"] });
+                    queryClient.invalidateQueries({ queryKey: TIMESHEET_QUERY_ROOT });
                   }}
                 />
               </div>

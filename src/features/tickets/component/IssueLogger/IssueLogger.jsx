@@ -912,12 +912,7 @@ const IssueLogger = ({ ticketId, formContext, parentTicket, issueLogs }) => {
     setEditDrafts((prev) => Object.fromEntries(Object.entries(prev).filter(([, d]) => !editIds.has(d.IssueLogId))));
     submittedRef.current = { draftIds: new Set(), editIds: new Set() };
   };
-  const { data: threadworktype } = useThreadWorkType()
-  console.log("issue log thread work type",threadworktype);
-  
-  const threadWorkTypeList = Array.isArray(threadworktype)
-    ? threadworktype
-    : threadworktype?.Data ?? []
+  const { data: threadWorkTypeList = [] } = useThreadWorkType()
 
   const threadFormConfig = {
     ...ThreadFormConfig,

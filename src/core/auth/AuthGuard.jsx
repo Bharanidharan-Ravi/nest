@@ -10,11 +10,6 @@ export default function AuthGuard() {
 
   try {
     const parsedUser = JSON.parse(userData);
-      // const decryptedUser = decryptUserInfo(parsedUser);
-      // const jwtToken = Array.isArray(decryptedUser)
-      //   ? decryptedUser[0]?.JwtToken
-      //   : decryptedUser?.JwtToken;
-
     if (!parsedUser || isTokenExpired(parsedUser)) {
       logoutUser();
       return null; // Prevents flashing content before redirect

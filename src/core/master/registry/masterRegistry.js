@@ -20,7 +20,7 @@ import {
 } from "../../adapters/masterAdapter";
 import { queryKeys } from "../../query/queryKeys";
 import { buildSyncPayload } from "../../sync/buildSyncPayload";
-import { normalizeTicket, normalizeLeaveRequest, normalizePermissionRequest } from "../../../app/shared/utils/normalizer";
+import { normalizeLeaveRequest, normalizePermissionRequest } from "../../../app/shared/utils/normalizer";
 
 export const MASTER_REGISTRY = {
   // ── Masters from the bulk /sync/v2 preload ────────────────────────────────
@@ -89,36 +89,6 @@ export const MASTER_REGISTRY = {
     method: "GET",
     staleTime: Infinity,
     adapter: (raw) => ({ id: raw.StatusId, name: raw.StatusName }),
-  },
-  ticketMaster: {
-    source: "api",
-    queryKey: (params) => queryKeys.ticket.detail(params?.Id),
-    url: "/sync/v2",
-    method: "POST",
-    staleTime: Infinity,
-    source: "TicketsList",
-    payload: (params) =>
-      buildSyncPayload({
-        configKey: "TicketsList",
-        idKey: "IssueId",
-        idValue: params?.Id,
-      }),
-    adapter: normalizeTicket,
-
-    enrich: {
-      project: {
-        source: "project",
-
-        localKey: "project",
-
-        fields: {
-          projectName: "name",
-          projectKey: "projectKey",
-          repoKey: "repoKey",
-          repoName: "repoName",
-        },
-      },
-    },
   },
   department: {
     source: "api",

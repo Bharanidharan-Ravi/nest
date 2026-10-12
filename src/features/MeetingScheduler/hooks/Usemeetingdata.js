@@ -35,18 +35,6 @@ export const useMeetingData = ({
 
 
 
-export const useUpcomingMeeting = () => {
-  return useApiQuery({
-    url: "/sync/v2",
-    method: "POST",
-    queryKey: ["UpcomingMeeting"],
-    payload: {
-      ConfigKeys: ["UpcomingMeeting"],
-    },
-    source: "UpcomingMeeting",
-    options: {
-      staleTime: 10 * 60 * 1000,
-    },
-  });
-};
+// One definition (staff-only guard included) — see ./index
+export { useUpcomingMeeting } from "./index";
 

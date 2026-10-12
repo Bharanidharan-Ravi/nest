@@ -3,6 +3,7 @@ import {
   MAIN_ASSIGNEE_TYPE,
   normalizeTicket,
   normalizeTicketListRow,
+  normalizeTimesheetRow,
 } from "./normalizer";
 
 // Same contract as useMasterLookup(): case-insensitive id → master item
@@ -15,7 +16,7 @@ const makeLookup = (masters) => ({
         ) ?? null,
 });
 
-const lookup = makeLookup({
+const masters = {
   employee: [
     { id: "aaaa", name: "Owner One", Team: 1 },
     { id: "bbbb", name: "Helper Two", Team: 2 },
@@ -27,7 +28,8 @@ const lookup = makeLookup({
   label: [{ id: 10, name: "Development", color: "#048a35" }],
   repo: [{ id: "rrrr", name: "Tunga Aerospace" }],
   status: [{ id: 5, name: "In Development" }],
-});
+};
+const lookup = makeLookup(masters);
 
 const row = {
   Issue_Id: "t1",
@@ -83,6 +85,40 @@ describe("normalizeTicketListRow", () => {
     expect(normalizeTicketListRow(oldRow, lookup).teamWorkingTime).toBe("4:05");
   });
 
+  it("detail row: work streams from Streams_JSON, client names, Move_toJson", () => {
+    const t = normalizeTicketListRow(
+      {
+        ...row,
+        CreatedBy: "cccc",
+        HtmlDesc: "<p>Desc</p>",
+        Client: "1:00",
+        Streams_JSON: JSON.stringify([
+          { Assignee_Id: "bbbb", Assignee_Type: "1", StreamId: "s1", StreamStatus: 5, CompletionPct: 40, HandOffData: [{ HandsOffId: 7 }] },
+        ]),
+      },
+      makeLookup({ ...masters, repoUser: [{ id: "cccc", name: "Client Three" }] }),
+    );
+
+    expect(t.description).toBe("<p>Desc</p>");
+    expect(t.clientTime).toBe("1:00");
+    expect(t.ticketCreater).toBe("Client Three");
+    expect(t.multiAssignees.map((a) => [a.Assignee_Name, a.StreamId])).toEqual([
+      ["Owner One", null],
+      ["Helper Two", "s1"],
+    ]);
+    expect(t.multiAssignees[1]).toMatchObject({
+      Assignee_Type: "1",
+      Assignee_TeamName: "Technical",
+      StreamStatus: 5,
+      StatusName: "In Development",
+      HandOffData: [{ HandsOffId: 7 }],
+    });
+    expect(JSON.parse(t.move_toJson)).toEqual([
+      { Move_to: "rrrr", Title: "Tunga Aerospace" },
+      { Move_to: null, Title: "WorkGlow Solutions" },
+    ]);
+  });
+
   it("does not crash on empty ids or ids missing from the masters", () => {
     const t = normalizeTicketListRow(
       { Issue_Id: "t2", Assignee_Id: null, Label_Ids: "99", TotalConsumeMinutes: null, TeamConsumeMinutes: 0 },
@@ -104,5 +140,59 @@ describe("normalizeTicket handlers", () => {
       normalizeTicket({ Move_toJson: '[{"Move_to":"R1","Title":"Melwa"}]' }).handlers,
     ).toEqual([{ id: "R1", name: "Melwa" }]);
     expect(normalizeTicket({}).handlers).toEqual([]);
+  });
+});
+
+describe("normalizeTimesheetRow", () => {
+  const ticket = normalizeTicketListRow({ ...row, RepoId: "RRRR" }, lookup);
+  const entry = (overrides) => ({
+    Id: "T:1:aaaa",
+    EntryType: "WORK",
+    Action: null,
+    Issue_Id: "t1",
+    ThreadId: 1,
+    EmployeeId: "AAAA",
+    EventAt: "2026-10-05T10:00:00",
+    Minutes: 125,
+    NewStatusId: null,
+    Comment: "Worked",
+    ...overrides,
+  });
+
+  it("keeps the ticket columns and adds the entry", () => {
+    const item = normalizeTimesheetRow(entry(), ticket, lookup);
+    expect(item).toMatchObject({
+      id: "T:1:aaaa",
+      issueId: "t1",
+      title: "Title",
+      ticketKey: "T488",
+      TicketName: "Title",
+      employeeName: "Owner One",
+      repoName: "Tunga Aerospace",
+      ConsumeTime: "2:05",
+      updatedAt: "2026-10-05T10:00:00",
+      marker: null,
+      threadStatusName: null,
+    });
+  });
+
+  it("marks meetings M and close / reopen C / R", () => {
+    expect(normalizeTimesheetRow(entry({ EntryType: "MEETING" }), ticket, lookup).marker).toBe("M");
+
+    const closed = normalizeTimesheetRow(entry({ Action: "C", NewStatusId: 15 }), ticket, lookup);
+    expect(closed).toMatchObject({ marker: "C", threadStatusName: "Closed", threadStatusId: 15 });
+
+    // Reopened without a thread: no time
+    const reopened = normalizeTimesheetRow(
+      entry({ Id: "H:x", EntryType: "STATUS", Action: "R", ThreadId: null, Minutes: null }),
+      ticket,
+      lookup,
+    );
+    expect(reopened).toMatchObject({
+      marker: "R",
+      threadStatusName: "Reopened",
+      isDirectUpdate: true,
+      ConsumeTime: null,
+    });
   });
 });

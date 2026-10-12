@@ -7,16 +7,23 @@
 import { useMemo } from "react";
 import { useMasterData } from "../../../core/master/masterCall/useMasterData";
 import { useApiQuery } from "../../../core/query/useApiQuery";
+import { queryKeys } from "../../../core/query/queryKeys";
 import { buildSyncPayload } from "../../../core/sync/buildSyncPayload";
+import { TICKET_TAGS_KEY, ticketTagsPayload } from "../../../core/sync/ticketListV2";
 import { normalizeMeeting, normalizePerson, normalizeProject, normalizeRepo, normalizeTicket } from "../utils/tagEntities";
 import { useChatPeople } from "./useChat";
 
-function useEntityList(configKey, enabled) {
+function useEntityList(
+  configKey,
+  enabled,
+  payload = buildSyncPayload({ configKey }),
+  queryKey = ["chat-tag-source", configKey],
+) {
   return useApiQuery({
-    queryKey: ["chat-tag-source", configKey],
+    queryKey,
     url: "/sync/v2",
     method: "POST",
-    payload: buildSyncPayload({ configKey }),
+    payload,
     source: configKey,
     options: { enabled, staleTime: 3 * 60_000 },
   });
@@ -28,7 +35,14 @@ function useEntityList(configKey, enabled) {
  */
 export function useTagEntitySources(enabled) {
   const { data: master } = useMasterData();
-  const { data: tickets } = useEntityList("TicketsList", enabled);
+  // Every visible ticket: id / code / title / owner only (TicketTagsV2).
+  // Same cache entry as the editor's "#" (fetchRepoTickets).
+  const { data: tickets } = useEntityList(
+    TICKET_TAGS_KEY,
+    enabled,
+    ticketTagsPayload(),
+    queryKeys.ticket.tags(),
+  );
   const { data: meetings } = useEntityList("MeetingData", enabled);
 
   return useMemo(

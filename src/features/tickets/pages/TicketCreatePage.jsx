@@ -2,31 +2,21 @@ import { useParams } from "react-router-dom";
 import EntityFormPage from "../../../packages/crud/pages/EntityFormPage";
 import { TicketFormConfig } from "../config/ticketForm.config";
 import { queryKeys } from "../../../core/query/queryKeys";
-import { useTicketMaster } from "../hooks/useTicketMaster";
-import { useMemo } from "react";
-import { normalizeTicket } from "../../../app/shared/utils/normalizer";
+import { useTicketMaster } from "../../../core/master/selectors/selectors";
 import { useCurrentUser } from "../../../core/auth/useCurrentUser";
 import { PERMISSIONS } from "../../../core/auth/permissions";
 import ConfirmDialog from "../../../app/shared/confirmation/confirmationModel";
 import { useConfirmDialog } from "../../../app/shared/confirmation/confirmationModel";
 const TicketCreatePage = () => {
   const params = useParams();
-  const { data: TicketWrapper } = useTicketMaster({
-    ticketId: params.ticketId,
-  });
-  console.log("TicketWrapper",TicketWrapper);
-  
+  // Edit: the ticket (names mapped from the masters); create: nothing loaded
+  const [ticket] = useTicketMaster(params.ticketId);
+
   const { isViewer, isAdmin, can } = useCurrentUser();
   const canSetStatus = can(PERMISSIONS.TICKET_STATUS_CHANGE);
   const isEdit = !!params.ticketId;
   const { dialogProps, openDialog } = useConfirmDialog();
-  const entityData = useMemo(() => {
-    if (!isEdit) return null;
-    if (!Array.isArray(TicketWrapper) || TicketWrapper.length === 0) {
-      return null;
-    }
-    return normalizeTicket(TicketWrapper[0]);
-  }, [TicketWrapper, isEdit]);
+  const entityData = isEdit ? (ticket ?? null) : null;
   const dynamicConfig = {
     ...TicketFormConfig,
     api: isEdit ? `Ticket/${params.ticketId}` : TicketFormConfig.api,

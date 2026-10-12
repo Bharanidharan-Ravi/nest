@@ -32,6 +32,15 @@ const isTimeLocked = (context) => {
   return diffDays > 1; // Returns true if it is older than Yesterday
 };
 
+// A comment or logged time means a thread is posted, not just a status update
+const hasThreadContent = (formData) => {
+  const text = String(formData?.description ?? "")
+    .replace(/<[^>]*>/g, "")
+    .replace(/&nbsp;|&zwnj;/gi, "")
+    .trim();
+  return !!(text || formData?.hours || formData?.fromTime || formData?.toTime);
+};
+
 export const ThreadFieldConfig = (ticketId) => [
   {
     label: "Description",
@@ -439,7 +448,9 @@ export const ThreadFieldConfig = (ticketId) => [
     type:"select",
     ui:"mui",
     dataType:"string",
-    required:true,
+    // Only when a thread is posted (comment or time); a status-only update
+    // doesn't need it
+    requiredWhen:(context,formData)=>hasThreadContent(formData),
     colSpan:3,
     optionsResolver:buildOptionsResolver(
       "ThreadWorkType",

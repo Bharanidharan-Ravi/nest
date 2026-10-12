@@ -8,6 +8,9 @@ import { useEnrichedMaster } from "../enrich/useEnrichedMaster";
 import { useRegistryQuery } from "../query/useRegistryQuery";
 import { MASTER_REGISTRY } from "../registry/masterRegistry";
 import { useMasterFilter, useMasterFind, useMasterList } from "../useMasterItem";
+import { useMasterLookup } from "../useMasterLookup";
+import { normalizeTicketListRow } from "../../../app/shared/utils/normalizer";
+import { useTicketMaster as useTicketRows } from "../../../features/tickets/hooks/useTicketMaster";
 
 // ─── Find helpers ─────────────────────────────────────────────────────────────
 export const useEmployeeById = (id) => useMasterFind("employee", "id", id);
@@ -18,16 +21,35 @@ export const useProjectById = (id) => useMasterFind("project", "id", id);
 export const useProjectMaster = () => useMasterList("project");
 export const useRepoWithOutId = () => useMasterList("repo");
 
+// Project / repo names for a normalized ticket (from its project id)
+const TICKET_ENRICH = {
+  project: {
+    source: "project",
+    localKey: "project",
+    fields: {
+      projectName: "name",
+      projectKey: "projectKey",
+      repoKey: "repoKey",
+      repoName: "repoName",
+    },
+  },
+};
+
+// One ticket for the ticket screen / edit form: [ticket] once loaded, else [].
+// TicketDetailV2 row, names mapped from the masters.
 export const useTicketMaster = (Id) => {
-  const ticket = useMasterList(
-    "ticketMaster",
-    { Id }
+  const { data } = useTicketRows({ ticketId: Id }, { enabled: Boolean(Id) });
+  const lookup = useMasterLookup();
+
+  const tickets = useMemo(
+    () =>
+      lookup.ready && Array.isArray(data)
+        ? data.map((row) => normalizeTicketListRow(row, lookup))
+        : [],
+    [data, lookup],
   );
 
-  return useEnrichedMaster(
-    ticket,
-    MASTER_REGISTRY.ticketMaster.enrich
-  );
+  return useEnrichedMaster(tickets, TICKET_ENRICH);
 };
 export const useTeamMaster = () => useMasterList("team");
 export const useLeaveRequestMaster = () => useMasterList("leaveRequest");
