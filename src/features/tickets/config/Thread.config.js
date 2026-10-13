@@ -31,6 +31,11 @@ const isTimeLocked = (context) => {
 
   return diffDays > 1; // Returns true if it is older than Yesterday
 };
+const hasDescription=(formData)=>
+  !!(formData?.description || "")
+.replace(/<[^]>/g,"")
+.replace(/&nbsp;|&zwnj;/gi,"")
+.trim()
 
 // A comment or logged time means a thread is posted, not just a status update
 const hasThreadContent = (formData) => {
@@ -452,6 +457,14 @@ export const ThreadFieldConfig = (ticketId) => [
     // doesn't need it
     requiredWhen:(context,formData)=>hasThreadContent(formData),
     colSpan:3,
+    requiredWhen:(context,formData)=>hasDescription(formData),
+    customValidator:(value,formData,context)=>{
+      if(context?.isViewer) return true
+      if(hasDescription(formData) && !value){
+        return "Thread for is required when a desctription is entered"
+      }
+      return true
+    },
     optionsResolver:buildOptionsResolver(
       "ThreadWorkType",
       "TypeName","TypeName"

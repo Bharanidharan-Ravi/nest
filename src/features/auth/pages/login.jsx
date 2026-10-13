@@ -22,6 +22,7 @@ export default function DND() {
       const byteNumber = new Array(byteCharacters.length);
       for (let i= 0; i < byteCharacters.length; i++) {
         byteNumber[i] = byteCharacters.charCodeAt(i);
+        
       }
 
       const byteArray = new Uint8Array(byteNumber);
